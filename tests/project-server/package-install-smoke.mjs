@@ -343,6 +343,8 @@ assert.equal(typeof createNextChangeOperation, "function");
 assert.equal(typeof projectAlignmentGraph, "function");
 assert.equal(typeof packageModule.createReviewAttempt, "function");
 assert.equal(typeof packageModule.createReviewGate, "function");
+assert.equal(typeof packageModule.createGateEvaluationPackage, "function");
+assert.equal(typeof packageModule.assertGateEvaluationPackage, "function");
 assert.equal(typeof packageModule.commitReviewOperationSequence, "function");
 assert.equal(typeof issueAuthorizedClientPairing, "function");
 assert.equal(typeof revokeAuthorizedClientPairing, "function");

@@ -1,12 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {createCheckInputSelection} from "../../src/checks/protocol.ts";
 import {createGateRunner} from "../../src/checks/runner.ts";
 import {
 	checkExecutor,
 	checkOutput,
 	checkSnapshot,
 	checkSubject,
+	digest,
 	executionIdentity,
+	gatePackageContext,
 	packagedCheck,
 } from "../helpers/checks.mjs";
 
@@ -49,9 +52,11 @@ test("Gate runs Code Checks before Model Checks and fail-fast skips Model", asyn
 	const report = await runner.run({
 		subject: checkSubject(),
 		snapshot: checkSnapshot([code, model]),
+		...gatePackageContext(),
 	});
 	assert.equal(report.status, "failed");
 	assert.deepEqual(report.results.map((result) => result.checkId), ["code-fails"]);
+	assert.equal(report.results[0].gatePackageDigest, report.gatePackageDigest);
 	assert.equal(modelCalls, 0);
 });
 
@@ -78,7 +83,11 @@ test("invalid output retries within Check limit then stops without Result", asyn
 			}),
 		],
 	});
-	const report = await runner.run({subject: checkSubject(), snapshot: checkSnapshot([check])});
+	const report = await runner.run({
+		subject: checkSubject(),
+		snapshot: checkSnapshot([check]),
+		...gatePackageContext(),
+	});
 	assert.equal(report.status, "stopped");
 	assert.equal(report.results.length, 0);
 	assert.equal(report.executions[0].attempts, 2);
@@ -110,6 +119,7 @@ test("timeout retry uses a fresh cancellation boundary", async () => {
 	const report = await createGateRunner({executors: [executor]}).run({
 		subject: checkSubject(),
 		snapshot: checkSnapshot([check]),
+		...gatePackageContext(),
 	});
 	assert.equal(report.status, "passed");
 	assert.equal(report.executions[0].attempts, 2);
@@ -133,11 +143,54 @@ test("input resolver failures stop Gate instead of escaping process boundary", a
 				throw new Error("collector unavailable");
 			},
 		},
-	}).run({subject: checkSubject(), snapshot: checkSnapshot([check])});
+	}).run({
+		subject: checkSubject(),
+		snapshot: checkSnapshot([check]),
+		...gatePackageContext(),
+	});
 	assert.equal(report.status, "stopped");
 	assert.equal(report.stoppedReason.code, "missing_inputs");
 	assert.match(report.stoppedReason.message, /collector unavailable/);
 	assert.deepEqual(report.results, []);
+});
+
+test("Gate package resolves each declared non-subject input exactly once", async () => {
+	const check = packagedCheck({
+		definition: {
+			id: "single-resolution",
+			inputs: [
+				{source: "subject", refs: [], required: true, maximumBytes: 131072},
+				{source: "evidence", refs: ["evidence:one"], required: true, maximumBytes: 131072},
+			],
+		},
+	});
+	let resolutions = 0;
+	const report = await createGateRunner({
+		executors: [checkExecutor()],
+		inputResolver: {
+			resolve({selector}) {
+				resolutions += 1;
+				return createCheckInputSelection({
+					selector,
+					status: "ready",
+					items: [{
+						source: "evidence",
+						ref: "evidence:one",
+						digest: digest({status: "passed"}),
+						content: {status: "passed"},
+					}],
+					truncated: false,
+					stale: false,
+				});
+			},
+		},
+	}).run({
+		subject: checkSubject(),
+		snapshot: checkSnapshot([check]),
+		...gatePackageContext(),
+	});
+	assert.equal(report.status, "passed", JSON.stringify(report.stoppedReason));
+	assert.equal(resolutions, 1);
 });
 
 test("missing required selected input stops only affected Gate", async () => {
@@ -153,6 +206,7 @@ test("missing required selected input stops only affected Gate", async () => {
 	const report = await createGateRunner({executors: [checkExecutor()]}).run({
 		subject: checkSubject(),
 		snapshot: checkSnapshot([check]),
+		...gatePackageContext(),
 	});
 	assert.equal(report.status, "stopped");
 	assert.equal(report.stoppedReason.code, "missing_inputs");
@@ -200,7 +254,11 @@ test("parallel fail-fast reduction keeps deterministic earliest terminal prefix"
 			await createGateRunner({
 				executors: [executor],
 				maximumCodeConcurrency: 4,
-			}).run({subject: checkSubject(), snapshot: checkSnapshot(checks)}),
+			}).run({
+				subject: checkSubject(),
+				snapshot: checkSnapshot(checks),
+				...gatePackageContext(),
+			}),
 		);
 	}
 	for (const report of reports) {
@@ -240,7 +298,11 @@ test("Code execution uses configured bounded concurrency", async () => {
 	const report = await createGateRunner({
 		executors: [executor],
 		limits: {maximumCodeConcurrency: 2, maximumModelConcurrency: 1},
-	}).run({subject: checkSubject(), snapshot: checkSnapshot(checks)});
+	}).run({
+		subject: checkSubject(),
+		snapshot: checkSnapshot(checks),
+		...gatePackageContext(),
+	});
 	assert.equal(report.status, "passed");
 	assert.equal(report.results.length, 4);
 	assert.equal(maximum, 2);

@@ -28,7 +28,10 @@ test("published schemas cover selectors, Invocation, Result, warnings, stops, an
 	]) {
 		assert.equal(typeof schema, "object");
 	}
+	assert.equal(JSON.stringify(CheckInvocationSchema).includes("gatePackageDigest"), true);
+	assert.equal(JSON.stringify(CheckResultSchema).includes("gatePackageDigest"), true);
 	assert.equal(JSON.stringify(CheckResultSchema).includes("indeterminate"), false);
+	assert.equal(JSON.stringify(GateReportSchema).includes("gatePackageDigest"), true);
 	assert.equal(JSON.stringify(GateReportSchema).includes("stopped"), true);
 });
 

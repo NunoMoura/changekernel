@@ -103,6 +103,8 @@ test("Decision Gate with zero Checks passes explicitly and approve advances to P
 	});
 	assert.equal(run.report.status, "passed");
 	assert.equal(run.report.selectedCheckCount, 0);
+	assert.ok(run.evaluationPackage);
+	assert.equal(run.report.gatePackageDigest, run.evaluationPackage.packageDigest);
 	assert.deepEqual(run.report.results, []);
 	assert.deepEqual(run.report.warnings.map((warning) => warning.code), [
 		"no_checks_configured",
@@ -142,6 +144,8 @@ test("stopped Decision Gate preserves lifecycle state", async () => {
 	assert.equal(run.report.status, "stopped");
 	assert.equal(run.report.results.length, 0);
 	assert.equal(run.report.stoppedReason.code, "executor_unavailable");
+	assert.equal(run.evaluationPackage, null);
+	assert.equal(run.report.gatePackageDigest, null);
 	assert.equal(run.transition.target, "preserve_state");
 });
 
@@ -171,6 +175,8 @@ test("Review Gate passes zero Checks and permits only guarded delivery", async (
 	});
 	assert.equal(run.report.status, "passed");
 	assert.equal(run.report.selectedCheckCount, 0);
+	assert.ok(run.evaluationPackage);
+	assert.equal(run.report.gatePackageDigest, run.evaluationPackage.packageDigest);
 	assert.equal(run.transition.target, "guarded_delivery");
 	assert.deepEqual(run.feedback, []);
 });

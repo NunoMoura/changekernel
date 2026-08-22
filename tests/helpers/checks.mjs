@@ -98,6 +98,64 @@ export function checkSubject(overrides = {}) {
 	});
 }
 
+export function gatePackageContext(stage = "decision") {
+	const stageBindings = {
+		decision: {
+			stage,
+			changeRevisionDigest: digest("revision"),
+			knowledgeTransitionDigest: digest("transition"),
+			compilerDigest: digest("compiler"),
+			applicationPlanDigest: digest("application-plan"),
+			projectedKnowledgeStateDigest: digest("projected-state"),
+			projectedKnowledgeProjectionDigest: digest("projected-projection"),
+			semanticViewDigest: digest("semantic-view"),
+			acceptedActiveChangesDigest: digest("accepted-active-changes"),
+		},
+		planning: {
+			stage,
+			changeRevisionDigest: digest("revision"),
+			acceptedKnowledgeTargetsDigest: digest("targets"),
+			acceptanceRequirementsDigest: digest("requirements"),
+			planningDeltaDigest: digest("planning-delta"),
+		},
+		implementation: {
+			stage,
+			changeRevisionDigest: digest("revision"),
+			acceptedKnowledgeTargetsDigest: digest("targets"),
+			acceptanceRequirementsDigest: digest("requirements"),
+			implementationPolicyDigest: digest("implementation-policy"),
+			workUnitDigest: digest("work-unit"),
+			assignmentDigest: digest("assignment"),
+			resultTreeDigest: digest("result-tree"),
+		},
+		review: {
+			stage,
+			changeRevisionDigest: digest("revision"),
+			acceptedKnowledgeTargetsDigest: digest("targets"),
+			acceptanceRequirementsDigest: digest("requirements"),
+			workGraphDigest: digest("work-graph"),
+			aggregateDigest: digest("aggregate"),
+			lineageDigest: digest("lineage"),
+			integratedTreeDigest: digest("integrated-tree"),
+		},
+	}[stage];
+	return {
+		sources: {
+			workStateDigest: digest("work-state"),
+			knowledgeStateDigest: digest("knowledge-state"),
+			knowledgeProjectionDigest: digest("knowledge-projection"),
+			alignmentDigest: digest("alignment"),
+			repositoryTreeDigest: digest("repository-tree"),
+			repositoryBase: "refs/heads/main",
+			evidenceDigest: digest("evidence"),
+			resultsDigest: digest("results"),
+			configurationDigest: digest("configuration"),
+			routesDigest: digest("routes"),
+		},
+		stageBindings,
+	};
+}
+
 export function executionIdentity(overrides = {}) {
 	const kind = overrides.kind ?? "code";
 	return {

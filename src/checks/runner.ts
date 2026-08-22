@@ -33,6 +33,12 @@ import {
 	type CheckPackSnapshot,
 	type PackagedCheck,
 } from "./packs/contracts.ts";
+import {
+	createGateEvaluationPackage,
+	type GateEvaluationPackage,
+	type GateEvaluationSourceHeads,
+	type GateEvaluationStageBindings,
+} from "./gate-package.ts";
 import {canonicalJsonDigest} from "../utils/canonical-json.ts";
 
 export interface CheckExecutorContext {
@@ -79,11 +85,25 @@ export interface CreateGateRunnerInput {
 export interface RunGateInput {
 	readonly subject: CheckSubject;
 	readonly snapshot: CheckPackSnapshot;
+	readonly sources: GateEvaluationSourceHeads;
+	readonly stageBindings: GateEvaluationStageBindings;
 	readonly signal?: AbortSignal;
+}
+
+export interface GateEvaluationRun {
+	readonly evaluationPackage: GateEvaluationPackage | null;
+	readonly report: GateReport;
 }
 
 export interface GateRunner {
 	run(input: RunGateInput): Promise<GateReport>;
+	runEvaluation(input: RunGateInput): Promise<GateEvaluationRun>;
+}
+
+interface AdmittedCheck {
+	readonly check: PackagedCheck;
+	readonly executor: CheckExecutor;
+	readonly selections: readonly CheckInputSelection[];
 }
 
 interface PreparedCheck {
@@ -91,6 +111,24 @@ interface PreparedCheck {
 	readonly executor: CheckExecutor;
 	readonly invocation: CheckInvocation;
 	readonly cacheKey: ReturnType<typeof checkResultCacheKey>;
+}
+
+class GatePackageCompilationError extends Error {
+	readonly check: PackagedCheck;
+	readonly reason: GateStopReason;
+	readonly execution?: CheckExecutionIdentity;
+
+	constructor(
+		check: PackagedCheck,
+		reason: GateStopReason,
+		execution?: CheckExecutionIdentity,
+	) {
+		super(reason.message);
+		this.name = "GatePackageCompilationError";
+		this.check = check;
+		this.reason = reason;
+		this.execution = execution;
+	}
 }
 
 interface BatchOutcome {
@@ -125,7 +163,106 @@ export function createGateRunner(input: CreateGateRunnerInput = {}): GateRunner 
 				resolver,
 				limits,
 			}),
+		runEvaluation: async (runInput: RunGateInput) => {
+			let evaluationPackage: GateEvaluationPackage | null = null;
+			const report = await runGate({
+				input: runInput,
+				executors,
+				cache,
+				resolver,
+				limits,
+				onPackage: (value) => {
+					evaluationPackage = value;
+				},
+			});
+			return Object.freeze({evaluationPackage, report});
+		},
 	});
+}
+
+async function compileGatePackage(context: {
+	readonly input: RunGateInput;
+	readonly executors: readonly CheckExecutor[];
+	readonly resolver: CheckInputResolver;
+}, checks: readonly PackagedCheck[]): Promise<{
+	readonly evaluationPackage: GateEvaluationPackage;
+	readonly admitted: readonly AdmittedCheck[];
+}> {
+	const admitted: AdmittedCheck[] = [];
+	for (const check of checks) {
+		let executor: CheckExecutor | undefined;
+		try {
+			executor = matchingExecutor(context.executors, check);
+		} catch (error) {
+			throw new GatePackageCompilationError(
+				check,
+				stopReason(
+					"execution_failed",
+					`Check executor admission failed: ${errorMessage(error)}`,
+					check,
+				),
+			);
+		}
+		if (!executor) {
+			throw new GatePackageCompilationError(
+				check,
+				stopReason(
+					"executor_unavailable",
+					`No admitted ${check.definition.implementation.kind} executor supports ${qualifiedCheckId(check.packId, check.checkId)}.`,
+					check,
+				),
+			);
+		}
+		let selections: CheckInputSelection[];
+		try {
+			selections = await resolveSelections({
+				subject: context.input.subject,
+				check,
+				resolver: context.resolver,
+				signal: context.input.signal,
+			});
+		} catch (error) {
+			throw new GatePackageCompilationError(
+				check,
+				stopReason(
+					"missing_inputs",
+					`Check input collection failed: ${errorMessage(error)}`,
+					check,
+				),
+				executor.identity,
+			);
+		}
+		const invalidSelection = selections.find(
+			(selection) =>
+				selection.status !== "ready" || selection.truncated || selection.stale,
+		);
+		if (invalidSelection) {
+			throw new GatePackageCompilationError(
+				check,
+				stopReason(
+					invalidSelection.stale ? "stale_subject" : "missing_inputs",
+					`Declared ${invalidSelection.selector.source} inputs are not complete for ${qualifiedCheckId(check.packId, check.checkId)}.`,
+					check,
+				),
+				executor.identity,
+			);
+		}
+		admitted.push(Object.freeze({check, executor, selections: Object.freeze(selections)}));
+	}
+	const evaluationPackage = createGateEvaluationPackage({
+		subject: context.input.subject,
+		checkPackSnapshot: context.input.snapshot,
+		sources: context.input.sources,
+		stageBindings: context.input.stageBindings,
+		checks: admitted.map(({check, executor, selections}) => ({
+			packId: check.packId,
+			checkId: check.checkId,
+			checkDigest: check.checkDigest,
+			execution: executor.identity,
+			inputs: selections,
+		})),
+	});
+	return Object.freeze({evaluationPackage, admitted: Object.freeze(admitted)});
 }
 
 async function runGate(context: {
@@ -134,6 +271,7 @@ async function runGate(context: {
 	readonly cache: CheckResultCache;
 	readonly resolver: CheckInputResolver;
 	readonly limits: GateRunnerLimits;
+	readonly onPackage?: (value: GateEvaluationPackage) => void;
 }): Promise<GateReport> {
 	assertCheckPackSnapshot(context.input.snapshot, context.input.subject.stage);
 	if (context.input.subject.digest !== canonicalJsonDigest({
@@ -145,108 +283,52 @@ async function runGate(context: {
 		throw new Error("Gate subject digest does not match its content.");
 	}
 	const checks = packagedChecks(context.input.snapshot);
-	if (checks.length === 0) {
-		return createGateReport({
-			snapshot: context.input.snapshot,
-			subjectDigest: context.input.subject.digest,
-			results: [],
-			executions: [],
-		});
-	}
-	if (context.input.signal?.aborted) {
+	if (context.input.signal?.aborted && checks[0]) {
 		return stoppedBeforeExecution(
 			context.input,
 			checks[0],
 			stopReason("cancelled", "Gate was cancelled before Check execution."),
 		);
 	}
+	let compilation: Awaited<ReturnType<typeof compileGatePackage>>;
+	try {
+		compilation = await compileGatePackage(context, checks);
+	} catch (error) {
+		if (!(error instanceof GatePackageCompilationError)) throw error;
+		return stoppedBeforeExecution(
+			context.input,
+			error.check,
+			error.reason,
+			[],
+			[],
+			[],
+			error.execution,
+		);
+	}
+	const {evaluationPackage, admitted} = compilation;
+	context.onPackage?.(evaluationPackage);
+	if (checks.length === 0) {
+		return createGateReport({
+			snapshot: context.input.snapshot,
+			subjectDigest: context.input.subject.digest,
+			gatePackageDigest: evaluationPackage.packageDigest,
+			results: [],
+			executions: [],
+		});
+	}
 	const prepared: PreparedCheck[] = [];
 	const cachedResults: CheckResult[] = [];
 	const facts: CheckExecutionFact[] = [];
 	const cacheHitCheckIds: string[] = [];
-	for (const check of checks) {
-		let executor: CheckExecutor | undefined;
-		try {
-			executor = matchingExecutor(context.executors, check);
-		} catch (error) {
-			return stoppedBeforeExecution(
-				context.input,
-				check,
-				stopReason(
-					"execution_failed",
-					`Check executor admission failed: ${errorMessage(error)}`,
-					check,
-				),
-				facts,
-				cachedResults,
-				cacheHitCheckIds,
-			);
-		}
-		if (!executor) {
-			return stoppedBeforeExecution(
-				context.input,
-				check,
-				stopReason(
-					"executor_unavailable",
-					`No admitted ${check.definition.implementation.kind} executor supports ${qualifiedCheckId(check.packId, check.checkId)}.`,
-					check,
-				),
-				facts,
-				cachedResults,
-				cacheHitCheckIds,
-			);
-		}
-		let selections: CheckInputSelection[];
-		let invocation: CheckInvocation;
-		try {
-			selections = await resolveSelections({
-				subject: context.input.subject,
-				check,
-				resolver: context.resolver,
-				signal: context.input.signal,
-			});
-			const invalidSelection = selections.find(
-				(selection) =>
-					selection.selector.required &&
-					(selection.status !== "ready" || selection.truncated || selection.stale),
-			);
-			if (invalidSelection) {
-				const code = invalidSelection.stale ? "stale_subject" : "missing_inputs";
-				return stoppedBeforeExecution(
-					context.input,
-					check,
-					stopReason(
-						code,
-						`Required ${invalidSelection.selector.source} inputs are not complete for ${qualifiedCheckId(check.packId, check.checkId)}.`,
-						check,
-					),
-					facts,
-					cachedResults,
-					cacheHitCheckIds,
-					executor.identity,
-				);
-			}
-			invocation = assembleCheckInvocation({
-				subject: context.input.subject,
-				snapshot: context.input.snapshot,
-				check,
-				inputs: selections,
-			});
-		} catch (error) {
-			return stoppedBeforeExecution(
-				context.input,
-				check,
-				stopReason(
-					"missing_inputs",
-					`Check input collection failed: ${errorMessage(error)}`,
-					check,
-				),
-				facts,
-				cachedResults,
-				cacheHitCheckIds,
-				executor.identity,
-			);
-		}
+	for (const admittedCheck of admitted) {
+		const {check, executor, selections} = admittedCheck;
+		const invocation = assembleCheckInvocation({
+			subject: context.input.subject,
+			snapshot: context.input.snapshot,
+			gatePackageDigest: evaluationPackage.packageDigest,
+			check,
+			inputs: selections,
+		});
 		const cacheKey = checkResultCacheKey({
 			invocation,
 			execution: executor.identity,
@@ -260,6 +342,7 @@ async function runGate(context: {
 					cached.invocationDigest !== invocation.invocationDigest ||
 					cached.checkDigest !== check.checkDigest ||
 					cached.packSnapshotDigest !== context.input.snapshot.checkPackDigest ||
+					cached.gatePackageDigest !== evaluationPackage.packageDigest ||
 					canonicalJsonDigest(cached.execution) !==
 						canonicalJsonDigest(executor.identity)
 				) {
@@ -301,6 +384,7 @@ async function runGate(context: {
 		return createGateReport({
 			snapshot: context.input.snapshot,
 			subjectDigest: context.input.subject.digest,
+			gatePackageDigest: evaluationPackage.packageDigest,
 			results: cachedResults,
 			executions: facts,
 			cacheHitCheckIds,
@@ -322,6 +406,7 @@ async function runGate(context: {
 		return createGateReport({
 			snapshot: context.input.snapshot,
 			subjectDigest: context.input.subject.digest,
+			gatePackageDigest: evaluationPackage.packageDigest,
 			results: afterCodeResults,
 			executions: afterCodeFacts,
 			cacheHitCheckIds,
@@ -341,6 +426,7 @@ async function runGate(context: {
 	return createGateReport({
 		snapshot: context.input.snapshot,
 		subjectDigest: context.input.subject.digest,
+		gatePackageDigest: evaluationPackage.packageDigest,
 		results: [...afterCodeResults, ...model.results],
 		executions: [...afterCodeFacts, ...model.facts],
 		cacheHitCheckIds,

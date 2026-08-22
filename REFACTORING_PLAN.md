@@ -466,12 +466,12 @@ Success: producer queries are local, immutable, snapshot-bound, cache-efficient,
 
 ### Slice 10 — Gate Evaluation Package
 
-- Define immutable Candidate-checkpoint package and declared Check-input projections.
-- For Decision, freeze exact Change revision and Effect set, base and projected Knowledge State, compiler and application plan, current-to-projected semantic view, accepted active Changes coverage, WorkState, Alignment, Evidence, Results, Check files, configuration, and routes.
-- For Planning, Implementation, and Review, freeze exact accepted Knowledge target and requirement lineage together with repository tree, base, WorkState, Evidence, and stage-specific realization inputs.
-- Resolve all producer context handles before package creation; prohibit handles and live Project Server access from Checks.
-- Bind Check cache and Gate identity to all package inputs, including compiler and projected-state identities where applicable.
-- Prove tamper, omission, staleness, compiler drift, target drift, and unknown-coverage failures.
+- [x] Define immutable Candidate-checkpoint package and declared Check-input projections.
+- [x] For Decision, freeze exact Change revision and Effect set, base and projected Knowledge State, compiler and application plan, current-to-projected semantic view, accepted active Changes coverage, WorkState, Alignment, Evidence, Results, Check files, configuration, and routes.
+- [x] For Planning, Implementation, and Review, freeze exact accepted Knowledge target and requirement lineage together with repository tree, base, WorkState, Evidence, and stage-specific realization inputs.
+- [x] Resolve all producer context handles before package creation; prohibit handles and live Project Server access from Checks.
+- [x] Bind Check cache and Gate identity to all package inputs, including compiler and projected-state identities where applicable.
+- [x] Prove tamper, omission, staleness, compiler drift, target drift, and unknown-coverage failures.
 
 Success: producer inquiry may refresh; Candidate judgment remains exact, immutable, and bound to the same semantic and byte result later eligible for application.
 
@@ -557,7 +557,6 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 - Stable path-independent Knowledge identity, reducible Change Effects, deterministic materialization, and atomic confirmed Knowledge application are not implemented.
 - Top-down Effect-to-requirement-to-source/test-to-Git realization lineage is not implemented end to end.
-- Mounted Project Context Snapshot and separate Gate Evaluation Package are not implemented.
 - Incremental Change-scoped Planning and Work Unit aggregate completion are not implemented.
 - Persistent Session lease/CAS and exact same-build resume are not implemented.
 - Durable ledger/raw-log/receipt completion is not wired end to end.

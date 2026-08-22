@@ -9,6 +9,7 @@ import {
 import {
 	checkSnapshot,
 	checkSubject,
+	digest,
 	packagedCheck,
 } from "../../helpers/checks.mjs";
 
@@ -39,6 +40,7 @@ function request() {
 	const invocation = assembleCheckInvocation({
 		subject,
 		snapshot,
+		gatePackageDigest: digest("gate-package"),
 		check,
 		inputs: [subjectInputSelection(subject, check.definition.inputs[0])],
 	});

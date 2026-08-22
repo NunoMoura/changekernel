@@ -3,6 +3,7 @@ import type {
 	GateReport,
 	GateStopReason,
 } from "../../checks/contracts.ts";
+import type {GateEvaluationPackage} from "../../checks/gate-package.ts";
 import {checkSubjectFromCandidate} from "../../checks/identity.ts";
 import {createGateReport} from "../../checks/results.ts";
 import {
@@ -13,9 +14,7 @@ import {
 } from "../../checks/runner.ts";
 import type {EvidenceRecord} from "../../evidence/contracts.ts";
 import {
-	createImplementationGateEvaluationPackage,
 	assertImplementationStagePolicy,
-	type ImplementationGateEvaluationPackage,
 	type ImplementationStagePolicy,
 } from "../../loops/implementation/policy.ts";
 import {
@@ -27,6 +26,7 @@ import {
 	type WorkUnitCandidateLifecycle,
 } from "../../loops/implementation/status.ts";
 import {evidenceInputResolver} from "./evidence-input.ts";
+import {implementationGatePackageContext} from "./gate-package-bindings.ts";
 
 export interface CreateImplementationGateInput {
 	readonly policy: ImplementationStagePolicy;
@@ -46,7 +46,7 @@ export interface RunImplementationGateInput {
 export interface ImplementationGateRun {
 	readonly candidate: WorkUnitCandidate;
 	readonly policy: ImplementationStagePolicy;
-	readonly evaluationPackage: ImplementationGateEvaluationPackage;
+	readonly evaluationPackage: GateEvaluationPackage | null;
 	readonly report: GateReport;
 	readonly lifecycle: WorkUnitCandidateLifecycle;
 }
@@ -67,19 +67,17 @@ export function createImplementationStageGate(
 			assertWorkUnitCandidate(runInput.candidate);
 			const evidenceRecords = [...(runInput.evidenceRecords ?? [])];
 			assertExactCandidateEvidence(runInput.candidate, evidenceRecords);
-			const evaluationPackage = createImplementationGateEvaluationPackage({
-				candidate: runInput.candidate,
-				policy,
-				evidenceRecordIds: evidenceRecords.map((record) => record.evidenceId),
-			});
 			const subject = checkSubjectFromCandidate(runInput.candidate);
-			const report = input.stoppedReason
-				? createGateReport({
+			const evaluation = input.stoppedReason
+				? Object.freeze({
+						evaluationPackage: null,
+						report: createGateReport({
 						snapshot: policy.packSnapshot,
 						subjectDigest: subject.digest,
 						results: [],
 						executions: [],
-						stoppedReason: input.stoppedReason,
+							stoppedReason: input.stoppedReason,
+						}),
 					})
 				: await createGateRunner({
 						executors: input.executors,
@@ -89,11 +87,19 @@ export function createImplementationStageGate(
 						}),
 						cache: input.cache,
 						limits: input.limits,
-					}).run({
+					}).runEvaluation({
 						subject,
 						snapshot: policy.packSnapshot,
+						...implementationGatePackageContext({
+							candidate: runInput.candidate,
+							snapshot: policy.packSnapshot,
+							policyDigest: policy.policyDigest,
+							executors: input.executors,
+							evidenceRecords,
+						}),
 						signal: runInput.signal,
 					});
+			const {evaluationPackage, report} = evaluation;
 			return Object.freeze({
 				candidate: runInput.candidate,
 				policy,

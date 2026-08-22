@@ -173,7 +173,7 @@ function projectResult(
 	const inline = inlineArtifact(payload.result, "Check Result");
 	const artifact = artifactRecord(inline);
 	const active =
-		artifact.schemaVersion === "1.0.0" &&
+		artifact.schemaVersion === "2.0.0" &&
 		(artifact.status === "passed" || artifact.status === "failed") &&
 		typeof artifact.resultDigest === "string";
 	const failed = active && artifact.status === "failed";
@@ -210,7 +210,7 @@ function projectReport(
 	const inline = inlineArtifact(payload.report, "Gate Report");
 	const artifact = artifactRecord(inline);
 	const active =
-		artifact.schemaVersion === "1.0.0" &&
+		artifact.schemaVersion === "2.0.0" &&
 		(artifact.status === "passed" ||
 			artifact.status === "failed" ||
 			artifact.status === "stopped") &&
@@ -280,6 +280,7 @@ function inlineArtifact(
 	) {
 		throw new Error(`${label} inline artifact is invalid.`);
 	}
+	// SAFETY: required wrapper fields are checked above; artifact payload remains unknown by contract.
 	return artifact as unknown as CanonicalInlineSemanticArtifact;
 }
 

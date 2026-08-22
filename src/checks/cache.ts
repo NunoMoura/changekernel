@@ -17,7 +17,8 @@ export function checkResultCacheKey(input: {
 	readonly execution: CheckExecutionIdentity;
 }): Sha256Digest {
 	return canonicalJsonDigest({
-		protocolVersion: "1.0.0",
+		protocolVersion: "2.0.0",
+		gatePackageDigest: input.invocation.gatePackageDigest,
 		invocationDigest: input.invocation.invocationDigest,
 		execution: normalizeExecutionIdentity(input.execution),
 	});

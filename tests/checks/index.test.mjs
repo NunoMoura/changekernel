@@ -2,7 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createChecks} from "../../src/checks/index.ts";
 import {createCheckInputSelection} from "../../src/checks/protocol.ts";
-import {checkExecutor, checkSnapshot, checkSubject} from "../helpers/checks.mjs";
+import {
+	checkExecutor,
+	checkSnapshot,
+	checkSubject,
+	digest,
+	gatePackageContext,
+} from "../helpers/checks.mjs";
 
 test("Checks service creates Gate runners over one shared exact Result cache", async () => {
 	let executions = 0;
@@ -27,13 +33,26 @@ test("Checks service creates Gate runners over one shared exact Result cache", a
 			},
 		},
 	});
-	const input = {subject: checkSubject(), snapshot: checkSnapshot()};
+	const input = {
+		subject: checkSubject(),
+		snapshot: checkSnapshot(),
+		...gatePackageContext(),
+	};
 	const first = await checks.createRunner().run(input);
 	const second = await checks.createRunner().run(input);
+	const drifted = await checks.createRunner().run({
+		...input,
+		stageBindings: {
+			...input.stageBindings,
+			compilerDigest: digest("compiler-drift"),
+		},
+	});
 	assert.equal(first.status, "passed");
 	assert.equal(second.status, "passed");
 	assert.deepEqual(second.cacheHitCheckIds, ["default/check-one"]);
-	assert.equal(executions, 1);
+	assert.notEqual(first.gatePackageDigest, drifted.gatePackageDigest);
+	assert.deepEqual(drifted.cacheHitCheckIds, []);
+	assert.equal(executions, 2);
 });
 
 test("Checks service exposes Gate terminology only", async () => {

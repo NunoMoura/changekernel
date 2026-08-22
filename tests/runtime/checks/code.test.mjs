@@ -23,6 +23,7 @@ function fixture() {
 	const invocation = assembleCheckInvocation({
 		subject,
 		snapshot,
+		gatePackageDigest: digest("gate-package"),
 		check,
 		inputs: [subjectInputSelection(subject, check.definition.inputs[0])],
 	});

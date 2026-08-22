@@ -371,6 +371,7 @@ export * from "./project-server/sessions/state.ts";
 export * from "./checks/contracts.ts";
 export * from "./checks/cache.ts";
 export * from "./checks/identity.ts";
+export * from "./checks/gate-package.ts";
 export * from "./checks/protocol.ts";
 export * from "./checks/results.ts";
 export * from "./checks/runner.ts";
@@ -457,12 +458,9 @@ export {
 	type WorkUnitRunAttemptBinding,
 } from "./loops/implementation/work-unit-candidate.ts";
 export {
-	IMPLEMENTATION_GATE_PACKAGE_PROTOCOL,
 	IMPLEMENTATION_STAGE_POLICY_PROTOCOL,
 	assertImplementationStagePolicy,
-	createImplementationGateEvaluationPackage,
 	createImplementationStagePolicy,
-	type ImplementationGateEvaluationPackage,
 	type ImplementationStagePolicy,
 } from "./loops/implementation/policy.ts";
 export {

@@ -17,6 +17,7 @@ import type {
 } from "../../checks/contracts.ts";
 import {createGateReport} from "../../checks/results.ts";
 import type {CheckResultCache} from "../../checks/cache.ts";
+import type {GateEvaluationPackage} from "../../checks/gate-package.ts";
 import type {EvidenceRecord} from "../../evidence/contracts.ts";
 import {ACTIVE_CHANGE_COMPATIBILITY_CHECK_ID} from "../../loops/decision/accepted-active-changes.ts";
 import type {DecisionCandidate} from "../../loops/decision/candidate.ts";
@@ -39,6 +40,11 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 import {evidenceInputResolver} from "./evidence-input.ts";
+import {
+	decisionGatePackageContext,
+	planningGatePackageContext,
+	reviewGatePackageContext,
+} from "./gate-package-bindings.ts";
 
 export interface DecisionGateEvidenceCollector {
 	collect(input: {
@@ -83,6 +89,7 @@ export type DecisionLifecycleTransition = Readonly<{
 export interface DecisionGateRun {
 	readonly candidate: DecisionCandidate;
 	readonly packSnapshot: CheckPackSnapshot;
+	readonly evaluationPackage: GateEvaluationPackage | null;
 	readonly report: GateReport;
 	readonly transition: DecisionLifecycleTransition;
 	readonly collectedEvidenceRecords: readonly EvidenceRecord[];
@@ -115,6 +122,7 @@ export type PlanningLifecycleTransition = Readonly<{
 export interface PlanningGateRun {
 	readonly candidate: PlanningCandidate;
 	readonly packSnapshot: CheckPackSnapshot;
+	readonly evaluationPackage: GateEvaluationPackage | null;
 	readonly report: GateReport;
 	readonly transition: PlanningLifecycleTransition;
 }
@@ -145,6 +153,7 @@ export interface ReviewGateRun {
 	readonly attempt: ReviewAttempt;
 	readonly packSnapshot: CheckPackSnapshot;
 	readonly evidenceRecords: readonly EvidenceRecord[];
+	readonly evaluationPackage: GateEvaluationPackage | null;
 	readonly report: GateReport;
 	readonly feedback: readonly ReviewFeedbackItem[];
 	readonly transition: ReviewLifecycleTransition;
@@ -188,6 +197,7 @@ export function createDecisionGate(input: CreateDecisionGateInput = {}): Readonl
 				return Object.freeze({
 					candidate: runInput.candidate,
 					packSnapshot,
+					evaluationPackage: null,
 					report,
 					transition: deriveDecisionLifecycleTransition(runInput.candidate, report),
 					collectedEvidenceRecords: Object.freeze([]),
@@ -219,14 +229,22 @@ export function createDecisionGate(input: CreateDecisionGateInput = {}): Readonl
 				cache: input.cache,
 				limits: input.limits,
 			});
-			const report = await runner.run({
+			const packageContext = decisionGatePackageContext({
+				candidate: runInput.candidate,
+				snapshot: packSnapshot,
+				executors: input.executors,
+				evidenceRecords,
+			});
+			const {evaluationPackage, report} = await runner.runEvaluation({
 				subject,
 				snapshot: packSnapshot,
+				...packageContext,
 				signal: runInput.signal,
 			});
 			return Object.freeze({
 				candidate: runInput.candidate,
 				packSnapshot,
+				evaluationPackage,
 				report,
 				transition: deriveDecisionLifecycleTransition(runInput.candidate, report),
 				collectedEvidenceRecords: Object.freeze(collectedEvidenceRecords),
@@ -248,13 +266,16 @@ export function createPlanningGate(input: CreatePlanningGateInput = {}): Readonl
 				throw new Error("Planning Gate requires Planning Candidate.");
 			}
 			const subject = checkSubjectFromCandidate(runInput.candidate);
-			const report = input.stoppedReason
-				? createGateReport({
-						snapshot: packSnapshot,
-						subjectDigest: subject.digest,
-						results: [],
-						executions: [],
-						stoppedReason: input.stoppedReason,
+			const evaluation = input.stoppedReason
+				? Object.freeze({
+						evaluationPackage: null,
+						report: createGateReport({
+							snapshot: packSnapshot,
+							subjectDigest: subject.digest,
+							results: [],
+							executions: [],
+							stoppedReason: input.stoppedReason,
+						}),
 					})
 				: await createGateRunner({
 						executors: input.executors,
@@ -264,10 +285,22 @@ export function createPlanningGate(input: CreatePlanningGateInput = {}): Readonl
 						}),
 						cache: input.cache,
 						limits: input.limits,
-					}).run({subject, snapshot: packSnapshot, signal: runInput.signal});
+					}).runEvaluation({
+						subject,
+						snapshot: packSnapshot,
+						...planningGatePackageContext({
+							candidate: runInput.candidate,
+							snapshot: packSnapshot,
+							executors: input.executors,
+							evidenceRecords: runInput.evidenceRecords,
+						}),
+						signal: runInput.signal,
+					});
+			const {evaluationPackage, report} = evaluation;
 			return Object.freeze({
 				candidate: runInput.candidate,
 				packSnapshot,
+				evaluationPackage,
 				report,
 				transition: derivePlanningLifecycleTransition(runInput.candidate, report),
 			});
@@ -296,13 +329,16 @@ export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 				evidence: runInput.evidence,
 				providerReceipts: runInput.providerReceipts,
 			});
-			const report = input.stoppedReason
-				? createGateReport({
-						snapshot: input.packSnapshot,
-						subjectDigest: subject.digest,
-						results: [],
-						executions: [],
-						stoppedReason: input.stoppedReason,
+			const evaluation = input.stoppedReason
+				? Object.freeze({
+						evaluationPackage: null,
+						report: createGateReport({
+							snapshot: input.packSnapshot,
+							subjectDigest: subject.digest,
+							results: [],
+							executions: [],
+							stoppedReason: input.stoppedReason,
+						}),
 					})
 				: await createGateRunner({
 						executors: input.executors,
@@ -312,11 +348,18 @@ export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 						}),
 						cache: input.cache,
 						limits: input.limits,
-					}).run({
+					}).runEvaluation({
 						subject,
 						snapshot: input.packSnapshot,
+						...reviewGatePackageContext({
+							attempt: runInput.attempt,
+							snapshot: input.packSnapshot,
+							executors: input.executors,
+							evidenceRecords,
+						}),
 						signal: runInput.signal,
 					});
+			const {evaluationPackage, report} = evaluation;
 			const failureOwnership = normalizeReviewFailureOwnership({
 				attempt: runInput.attempt,
 				report,
@@ -333,6 +376,7 @@ export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 				attempt: runInput.attempt,
 				packSnapshot: input.packSnapshot,
 				evidenceRecords,
+				evaluationPackage,
 				report,
 				feedback: reviewFeedbackFromGate({attempt: runInput.attempt, report}),
 				transition: deriveReviewLifecycleTransition(

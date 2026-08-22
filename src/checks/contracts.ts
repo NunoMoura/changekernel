@@ -10,12 +10,12 @@ import {
 
 export const CHECK_DEFINITION_SCHEMA_VERSION = "1.0.0" as const;
 export const CHECK_INVOCATION_PROTOCOL_ID = "codewiki.check-invocation" as const;
-export const CHECK_INVOCATION_PROTOCOL_VERSION = "2.0.0" as const;
+export const CHECK_INVOCATION_PROTOCOL_VERSION = "3.0.0" as const;
 export const CHECK_OUTPUT_PROTOCOL_ID = "codewiki.check-output" as const;
 export const CHECK_OUTPUT_PROTOCOL_VERSION = "1.0.0" as const;
-export const CHECK_RESULT_SCHEMA_VERSION = "1.0.0" as const;
-export const GATE_REPORT_SCHEMA_VERSION = "1.0.0" as const;
-export const GATE_REPORT_REDUCTION_VERSION = "1.0.0" as const;
+export const CHECK_RESULT_SCHEMA_VERSION = "2.0.0" as const;
+export const GATE_REPORT_SCHEMA_VERSION = "2.0.0" as const;
+export const GATE_REPORT_REDUCTION_VERSION = "2.0.0" as const;
 
 export const CHECK_STAGES = [
 	"decision",
@@ -130,6 +130,7 @@ export interface CheckInvocation {
 	readonly protocolVersion: typeof CHECK_INVOCATION_PROTOCOL_VERSION;
 	readonly subject: CheckSubject;
 	readonly packSnapshotDigest: Sha256Digest;
+	readonly gatePackageDigest: Sha256Digest;
 	readonly check: CheckInvocationBinding;
 	readonly inputs: readonly CheckInputSelection[];
 	readonly inputDigest: Sha256Digest;
@@ -178,6 +179,7 @@ export interface CheckResult {
 	readonly stage: CheckStage;
 	readonly subjectDigest: Sha256Digest;
 	readonly packSnapshotDigest: Sha256Digest;
+	readonly gatePackageDigest: Sha256Digest;
 	readonly packId: string;
 	readonly checkId: string;
 	readonly checkVersion: string;
@@ -235,6 +237,7 @@ export interface GateReport {
 	readonly stage: CheckStage;
 	readonly subjectDigest: Sha256Digest;
 	readonly packSnapshotDigest: Sha256Digest;
+	readonly gatePackageDigest: Sha256Digest | null;
 	readonly status: GateReportStatus;
 	readonly selectedCheckCount: number;
 	readonly results: readonly CheckResult[];
@@ -447,6 +450,7 @@ export const CheckInvocationSchema = Type.Object(
 			{additionalProperties: false},
 		),
 		packSnapshotDigest: DigestSchema,
+		gatePackageDigest: DigestSchema,
 		check: Type.Object(
 			{
 				packId: IdentifierSchema,
@@ -499,6 +503,7 @@ export const CheckResultSchema = Type.Object(
 		stage: StageSchema,
 		subjectDigest: DigestSchema,
 		packSnapshotDigest: DigestSchema,
+		gatePackageDigest: DigestSchema,
 		packId: IdentifierSchema,
 		checkId: IdentifierSchema,
 		checkVersion: VersionSchema,
@@ -553,6 +558,7 @@ export const GateReportSchema = Type.Object(
 		stage: StageSchema,
 		subjectDigest: DigestSchema,
 		packSnapshotDigest: DigestSchema,
+		gatePackageDigest: Type.Union([DigestSchema, Type.Null()]),
 		status: Type.Union([
 			Type.Literal("passed"),
 			Type.Literal("failed"),
@@ -614,6 +620,7 @@ export function normalizeCheckOutput(
 		throw new Error(`Check Output exceeds ${maximumOutputBytes} bytes.`);
 	}
 	assertTypeboxSchema(CheckOutputSchema, normalized, "Check Output");
+	// SAFETY: TypeBox validation above proves normalized Check Output shape.
 	const output = normalized as unknown as CheckOutput;
 	if (output.invocationDigest !== expectedInvocationDigest) {
 		throw new Error("Check Output invocation digest does not match its Invocation.");
@@ -764,7 +771,7 @@ function assertIdentifier(value: string, label: string): void {
 }
 
 function assertExactObject(
-	value: object,
+	value: unknown,
 	allowed: ReadonlySet<string>,
 	label: string,
 ): void {
@@ -785,5 +792,6 @@ function compareText(left: string, right: string): number {
 }
 
 function immutable<T>(value: T): T {
+	// SAFETY: callers construct validated protocol-shaped JSON values before freezing.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

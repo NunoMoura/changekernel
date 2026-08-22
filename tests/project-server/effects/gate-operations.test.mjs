@@ -132,9 +132,11 @@ function failedReviewArtifacts(context) {
 	const packSnapshot = checkSnapshot([check], {stage: "review"});
 	const attempt = aggregateReviewAttempt(context, packSnapshot);
 	const subject = reviewSubjectFromAttempt(attempt);
+	const gatePackageDigest = canonicalJsonDigest("review-gate-package");
 	const invocation = assembleCheckInvocation({
 		subject,
 		snapshot: packSnapshot,
+		gatePackageDigest,
 		check,
 		inputs: [subjectInputSelection(subject, check.definition.inputs[0])],
 	});
@@ -153,6 +155,7 @@ function failedReviewArtifacts(context) {
 	const report = createGateReport({
 		snapshot: packSnapshot,
 		subjectDigest: subject.digest,
+		gatePackageDigest,
 		results: [result],
 		executions: [
 			{
@@ -196,9 +199,11 @@ function nativeDecisionArtifacts(
 	});
 	const packSnapshot = checkSnapshot([check]);
 	const subject = checkSubjectFromCandidate(candidate);
+	const gatePackageDigest = canonicalJsonDigest("decision-gate-package");
 	const invocation = assembleCheckInvocation({
 		subject,
 		snapshot: packSnapshot,
+		gatePackageDigest,
 		check,
 		inputs: [subjectInputSelection(subject, check.definition.inputs[0])],
 	});
@@ -213,6 +218,7 @@ function nativeDecisionArtifacts(
 	const report = createGateReport({
 		snapshot: packSnapshot,
 		subjectDigest: candidate.digest,
+		gatePackageDigest,
 		results: [result],
 		executions: [
 			{

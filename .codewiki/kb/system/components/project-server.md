@@ -49,7 +49,7 @@ Project Server owns Actor and delegation binding, idempotency, identity, admissi
 
 Git owns content-addressed artifact history. A commit, branch, pull request, author, trailer, note, or provider status may identify Evidence or part of an immutable subject; none is a lifecycle transition by itself. External Git state is captured without changing accepted head and receives no inherited execution proof. Divergence pauses guarded effects; Project Server never silently adopts, overwrites, discards, or certifies it.
 
-Project Server invokes exactly four Stage Loops under `src/loops/**`: Decision, Planning, Implementation, and Review. Checks separately owns Check Packs, Results, coordination, and Gate Reports. Stage Loops own subjects, Candidates, attempts, and feedback meaning. Project Server owns Project Context Snapshot `1.0.0` construction, authorization, retention, and idle refresh; it freezes separate Gate Evaluation Packages for Checks.
+Project Server invokes exactly four Stage Loops under `src/loops/**`: Decision, Planning, Implementation, and Review. Checks separately owns Check Packs, Results, coordination, and Gate Reports. Stage Loops own subjects, Candidates, attempts, and feedback meaning. Project Server owns Project Context Snapshot `1.0.0` construction, authorization, retention, and idle refresh. After Candidate checkpoint it freezes Gate Evaluation Package `1.0.0`, resolving every declared input once and binding source heads, stage lineage, Check files, execution identities, and complete coverage before Checks run.
 
 Project Server applies one fixed authority model with Work Unit-granular Implementation:
 

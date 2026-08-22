@@ -43,6 +43,7 @@ export interface CreateCheckResultInput {
 export interface CreateGateReportInput {
 	readonly snapshot: CheckPackSnapshot;
 	readonly subjectDigest: Sha256Digest;
+	readonly gatePackageDigest?: Sha256Digest;
 	readonly results: readonly CheckResult[];
 	readonly executions: readonly CheckExecutionFact[];
 	readonly cacheHitCheckIds?: readonly string[];
@@ -88,6 +89,7 @@ export function createCheckResult(input: CreateCheckResultInput): CheckResult {
 		stage: input.check.stage,
 		subjectDigest: input.invocation.subject.digest,
 		packSnapshotDigest: input.snapshot.checkPackDigest,
+		gatePackageDigest: input.invocation.gatePackageDigest,
 		packId: input.check.packId,
 		checkId: input.check.checkId,
 		checkVersion: input.check.definition.version,
@@ -115,6 +117,7 @@ export function assertValidCheckResult(
 			"stage",
 			"subjectDigest",
 			"packSnapshotDigest",
+			"gatePackageDigest",
 			"packId",
 			"checkId",
 			"checkVersion",
@@ -136,6 +139,7 @@ export function assertValidCheckResult(
 	for (const [digest, label] of [
 		[result.subjectDigest, "subject"],
 		[result.packSnapshotDigest, "Pack snapshot"],
+		[result.gatePackageDigest, "Gate Evaluation Package"],
 		[result.checkDigest, "Check"],
 		[result.invocationDigest, "Invocation"],
 		[result.inputDigest, "input"],
@@ -163,10 +167,18 @@ export function assertValidCheckResult(
 export function createGateReport(input: CreateGateReportInput): GateReport {
 	assertCheckPackSnapshot(input.snapshot);
 	assertSha256Digest(input.subjectDigest, "Gate Report subject digest");
+	if (input.gatePackageDigest !== undefined) {
+		assertSha256Digest(input.gatePackageDigest, "Gate Evaluation Package digest");
+	}
 	const selected = packagedChecks(input.snapshot);
 	const results = [...input.results].sort(compareResults);
 	const executions = [...input.executions].sort(compareExecutionFacts);
-	assertResultSet(results, input.snapshot, input.subjectDigest);
+	assertResultSet(
+		results,
+		input.snapshot,
+		input.subjectDigest,
+		input.gatePackageDigest,
+	);
 	assertExecutionFacts(executions, input.snapshot, results);
 	const stoppedReason = input.stoppedReason
 		? normalizeStopReason(input.stoppedReason)
@@ -193,6 +205,7 @@ export function createGateReport(input: CreateGateReportInput): GateReport {
 		stage: input.snapshot.stage,
 		subjectDigest: input.subjectDigest,
 		packSnapshotDigest: input.snapshot.checkPackDigest,
+		gatePackageDigest: input.gatePackageDigest ?? null,
 		status,
 		selectedCheckCount: selected.length,
 		results,
@@ -217,6 +230,7 @@ export function assertValidGateReport(
 			"stage",
 			"subjectDigest",
 			"packSnapshotDigest",
+			"gatePackageDigest",
 			"status",
 			"selectedCheckCount",
 			"results",
@@ -238,9 +252,13 @@ export function assertValidGateReport(
 	if (report.packSnapshotDigest !== snapshot.checkPackDigest) {
 		throw new Error("Gate Report Pack snapshot digest does not match.");
 	}
+	if (report.gatePackageDigest !== null) {
+		assertSha256Digest(report.gatePackageDigest, "Gate Evaluation Package digest");
+	}
 	const expected = createGateReport({
 		snapshot,
 		subjectDigest: report.subjectDigest,
+		...(report.gatePackageDigest ? {gatePackageDigest: report.gatePackageDigest} : {}),
 		results: report.results,
 		executions: report.executions,
 		cacheHitCheckIds: report.cacheHitCheckIds,
@@ -282,12 +300,16 @@ function assertResultSet(
 	results: readonly CheckResult[],
 	snapshot: CheckPackSnapshot,
 	subjectDigest: Sha256Digest,
+	gatePackageDigest: Sha256Digest | undefined,
 ): void {
 	const seen = new Set<string>();
 	for (const result of results) {
 		assertValidCheckResult(result, snapshot);
 		if (result.subjectDigest !== subjectDigest) {
 			throw new Error("Gate Result subject does not match Gate Report subject.");
+		}
+		if (!gatePackageDigest || result.gatePackageDigest !== gatePackageDigest) {
+			throw new Error("Gate Result does not match Gate Evaluation Package.");
 		}
 		const id = qualifiedCheckId(result.packId, result.checkId);
 		if (seen.has(id)) throw new Error(`Gate Report contains duplicate Result ${id}.`);
@@ -431,7 +453,7 @@ function compareExecutionFacts(
 }
 
 function assertExactKeys(
-	value: object,
+	value: unknown,
 	allowed: readonly string[],
 	label: string,
 ): void {
@@ -447,5 +469,6 @@ function assertExactKeys(
 }
 
 function immutable<T>(value: T): T {
+	// SAFETY: callers construct validated protocol-shaped JSON values before freezing.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

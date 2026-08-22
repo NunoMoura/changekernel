@@ -15,6 +15,7 @@ import {
 	checkOutput,
 	checkSnapshot,
 	checkSubject,
+	digest,
 	executionIdentity,
 	packagedCheck,
 } from "../helpers/checks.mjs";
@@ -27,6 +28,7 @@ function resultFixture(overrides = {}) {
 	const invocation = assembleCheckInvocation({
 		subject,
 		snapshot,
+		gatePackageDigest: digest("gate-package"),
 		check,
 		inputs: [subjectInputSelection(subject, selector)],
 	});

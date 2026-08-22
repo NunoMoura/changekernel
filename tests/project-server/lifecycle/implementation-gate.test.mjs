@@ -70,12 +70,25 @@ describe("shared Implementation policy and Work Unit Gate", () => {
 		assert.equal(first.lifecycle.status, "gate_passed");
 		assert.equal(first.policy.policyDigest, policy.policyDigest);
 		assert.equal(second.policy.policyDigest, policy.policyDigest);
-		assert.equal(first.evaluationPackage.workUnitId, candidate.content.workUnitId);
+		assert.ok(first.evaluationPackage);
+		assert.ok(second.evaluationPackage);
 		assert.equal(
-			first.evaluationPackage.checkPackDigest,
+			first.evaluationPackage.stageBindings.workUnitDigest,
+			candidate.content.workUnitDigest,
+		);
+		assert.equal(
+			first.evaluationPackage.stageBindings.implementationPolicyDigest,
+			policy.policyDigest,
+		);
+		assert.equal(
+			first.evaluationPackage.checkPackSnapshot.checkPackDigest,
 			snapshot.checkPackDigest,
 		);
-		assert.equal(first.evaluationPackage.candidateDigest, candidate.digest);
+		assert.equal(first.evaluationPackage.subject.digest, candidate.digest);
+		assert.equal(
+			first.evaluationPackage.packageDigest,
+			second.evaluationPackage.packageDigest,
+		);
 		assert.throws(
 			() =>
 				createImplementationStagePolicy(

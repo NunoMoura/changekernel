@@ -33,6 +33,7 @@ export interface CreateCheckInputSelectionInput {
 export interface AssembleCheckInvocationInput {
 	readonly subject: CheckSubject;
 	readonly snapshot: CheckPackSnapshot;
+	readonly gatePackageDigest: Sha256Digest;
 	readonly check: PackagedCheck;
 	readonly inputs: readonly CheckInputSelection[];
 }
@@ -92,7 +93,8 @@ export function assembleCheckInvocation(
 			`Check ${qualifiedCheckId(input.check.packId, input.check.checkId)} is absent from snapshot.`,
 		);
 	}
-	const inputs = normalizedSelections(input.check, input.inputs);
+	assertSha256Digest(input.gatePackageDigest, "Gate Evaluation Package digest");
+	const inputs = normalizeCheckInputSelections(input.check, input.inputs);
 	const inputDigest = canonicalJsonDigest(
 		inputs.map((selection) => selection.selectionDigest),
 	);
@@ -101,6 +103,7 @@ export function assembleCheckInvocation(
 		protocolVersion: CHECK_INVOCATION_PROTOCOL_VERSION,
 		subject: input.subject,
 		packSnapshotDigest: input.snapshot.checkPackDigest,
+		gatePackageDigest: input.gatePackageDigest,
 		check: {
 			packId: input.check.packId,
 			checkId: input.check.checkId,
@@ -146,6 +149,10 @@ export function assertCheckInvocation(
 	}
 	assertCheckSubject(invocation.subject);
 	assertSha256Digest(invocation.packSnapshotDigest, "Check Invocation Pack digest");
+	assertSha256Digest(
+		invocation.gatePackageDigest,
+		"Check Invocation Gate Evaluation Package digest",
+	);
 	assertSha256Digest(invocation.check.checkDigest, "Check Invocation Check digest");
 	assertSha256Digest(invocation.inputDigest, "Check Invocation input digest");
 	assertSha256Digest(invocation.invocationDigest, "Check Invocation digest");
@@ -161,7 +168,7 @@ export function assertCheckInvocation(
 	}
 }
 
-function normalizedSelections(
+export function normalizeCheckInputSelections(
 	check: PackagedCheck,
 	values: readonly CheckInputSelection[],
 ): CheckInputSelection[] {
@@ -241,6 +248,7 @@ function compareInputItems(left: CheckInputItem, right: CheckInputItem): number 
 }
 
 function immutable<T>(value: T): T {
+	// SAFETY: callers construct protocol-shaped JSON values before canonical freezing.
 	return toCanonicalJsonValue(value) as unknown as T;
 }
 
