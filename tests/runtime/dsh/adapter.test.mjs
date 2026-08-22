@@ -17,6 +17,10 @@ import {
 	createRunSessionLeaseBinding,
 } from "../../../src/runtime/contracts.ts";
 import {
+	COMPACTION_SUMMARY_PROTOCOL,
+	createStageRunContinuationBinding,
+} from "../../../src/runtime/continuation.ts";
+import {
 	canonicalJsonDigest,
 	sha256Digest,
 } from "../../../src/utils/canonical-json.ts";
@@ -107,6 +111,113 @@ describe("CodeWiki DSH Adapter", () => {
 		assert.equal(secondRequest.session.expectedHead, first.rawLog.digest);
 		assert.equal(second.output, "DSH resumed process complete.");
 		assert.notEqual(second.rawLog.digest, first.rawLog.digest);
+		const retained = (await readFile(second.rawLogPath, "utf8"))
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+		assert.deepEqual(
+			retained
+				.filter((event) => event.type === "goal/change")
+				.map((event) => event.data.operation),
+			["create", "pause", "resume", "pause"],
+		);
+		assert.deepEqual(
+			retained
+				.filter((event) => event.type === "user/message" && event.data.source.kind === "goal")
+				.map((event) => event.data.source.round),
+			[1, 2],
+		);
+		assert.equal(
+			retained.some((event) =>
+				event.type === "goal/change" && event.data.operation === "complete"),
+			false,
+		);
+	});
+
+	it("rehydrates Gate feedback through controlled restart for every producer stage", async () => {
+		const stages = [
+			["decision", "decision-producer"],
+			["planning", "planning-producer"],
+			["implementation", "implementation-worker"],
+			["review", "review-producer"],
+		];
+		for (const [stage, role] of stages) {
+			const root = await temporaryRoot();
+			const sessionId = `session-dsh-${stage}`;
+			const initialPrompt = `Produce the ${stage} Candidate.`;
+			const first = await runDshAgent({
+				request: runRequest(`run-${stage}-1`, sessionId, null, null, {
+					prompt: initialPrompt,
+					stage,
+					role,
+				}),
+				artifacts: artifacts(root, initialPrompt),
+				installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+			});
+			const feedbackDigest = digest(`${stage}-gate-feedback`);
+			const feedbackPrompt = `Revise the ${stage} Candidate from canonical Gate feedback.`;
+			const request = runRequest(`run-${stage}-2`, sessionId, null, first.rawLog, {
+				prompt: feedbackPrompt,
+				stage,
+				role,
+				feedbackDigest,
+			});
+			const second = await runDshAgent({
+				request,
+				artifacts: artifacts(root, feedbackPrompt),
+				installModelAdapter: createDshReplayModelInstaller({
+					fixturePath: turnTwoFixturePath,
+					fixtureDigest: turnTwoFixtureDigest,
+				}),
+			});
+			assert.equal(request.continuation.stage, stage);
+			assert.equal(request.continuation.rehydration.feedbackDigest, feedbackDigest);
+			assert.equal(second.outcome, "completed");
+			const raw = await readFile(second.rawLogPath, "utf8");
+			assert.match(raw, /\"operation\":\"pause\"/);
+			assert.doesNotMatch(raw, /\"operation\":\"complete\"/);
+		}
+	});
+
+	it("compacts pressured continuation without deleting exact retained history", async () => {
+		const root = await temporaryRoot();
+		const longPrompt = "Preserve this unresolved observation until canonical admission. ".repeat(500);
+		const first = await runDshAgent({
+			request: runRequest(
+				"run-dsh-compact-1",
+				"session-dsh-compact",
+				null,
+				null,
+				{prompt: longPrompt},
+			),
+			artifacts: artifacts(root, longPrompt),
+			installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+		});
+		const nextPrompt = "Continue from canonical state and return qualification text.";
+		const second = await runDshAgent({
+			request: runRequest(
+				"run-dsh-compact-2",
+				"session-dsh-compact",
+				null,
+				first.rawLog,
+				{prompt: nextPrompt},
+			),
+			artifacts: artifacts(root, nextPrompt),
+			installModelAdapter: createDshReplayModelInstaller({
+				fixturePath: turnTwoFixturePath,
+				fixtureDigest: turnTwoFixtureDigest,
+			}),
+		});
+		const observation = second.executionLedger.entries.find(
+			(entry) => entry.kind === "compaction",
+		)?.payload;
+		assert.equal(observation?.protocol.name, COMPACTION_SUMMARY_PROTOCOL.name);
+		assert.equal(observation?.outcome, "compacted");
+		assert.deepEqual(observation.pruned, []);
+		assert.equal(observation.prunedCharacters, 0);
+		assert.ok(observation.shadowedSeqs.length > 0);
+		assert.match(await readFile(second.rawLogPath, "utf8"), /Preserve this unresolved observation/);
+		assert.ok(second.sessionEvents.some((event) => event.type === "compaction/summary"));
 	});
 
 	it("creates no shared DSH Agent Session state across concurrent Runs", async () => {
@@ -202,16 +313,28 @@ async function temporaryRoot() {
 	return path;
 }
 
-function artifacts(root) {
+function artifacts(root, prompt = "Return qualification text.") {
 	return {
 		systemPrompt: "CodeWiki deterministic qualification",
-		prompt: "Return qualification text.",
+		prompt,
 		workspacePath: root,
 		sessionRoot: join(root, "sessions"),
 	};
 }
 
-function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog = null) {
+function runRequest(
+	runId,
+	sessionId,
+	projectContextSnapshot = null,
+	resumeLog = null,
+	settings = {},
+) {
+	const prompt = settings.prompt ?? "Return qualification text.";
+	const stage = settings.stage ?? "decision";
+	const role = settings.role ?? (
+		stage === "implementation" ? "implementation-worker" : `${stage}-producer`
+	);
+	const feedbackDigest = settings.feedbackDigest ?? null;
 	const optionsDigest = digest("model-options");
 	const modelRoute = {
 		provider: "codewiki-replay",
@@ -227,8 +350,8 @@ function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog =
 		runId,
 		operationId: `operation-${runId}`,
 		custody: "backend-owned",
-		role: "decision-producer",
-		stage: "decision",
+		role,
+		stage,
 		subject: {id: `subject-${runId}`, digest: digest("subject")},
 		runtimeBuild: {
 			buildDigest: digest("runtime-build"),
@@ -236,7 +359,7 @@ function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog =
 		},
 		session: {
 			mode: resumeLog ? "resume" : "create",
-			continuityKey: `decision:${sessionId}`,
+			continuityKey: `${stage}:${sessionId}`,
 			sessionId,
 			expectedHead: resumeLog?.digest ?? "absent",
 			lease: createRunSessionLeaseBinding({
@@ -251,9 +374,9 @@ function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog =
 		inputs: {
 			projectContextSnapshotDigest: projectContextSnapshot?.snapshotDigest ?? digest("project-context"),
 			materialDigest: digest("static-inputs"),
-			feedbackDigest: null,
+			feedbackDigest,
 			systemPromptDigest: canonicalJsonDigest("CodeWiki deterministic qualification"),
-			promptDigest: canonicalJsonDigest("Return qualification text."),
+			promptDigest: canonicalJsonDigest(prompt),
 			producerSkillSetDigest: null,
 			toolMode: projectContextSnapshot ? "admitted" : "none",
 			toolSetDigest: projectContextSnapshot
@@ -261,10 +384,33 @@ function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog =
 				: digest("no-tools"),
 			modelRoute,
 		},
-		workspace: {
-			kind: "immutable",
-			repositorySnapshotDigest: digest("repository"),
-		},
+		continuation: createStageRunContinuationBinding({
+			stage,
+			objectiveDigest: canonicalJsonDigest(prompt),
+			maxRounds: 3,
+			semanticStateDigest: digest("static-inputs"),
+			authorityPromotionDigest: canonicalJsonDigest({runId, resumeHead: resumeLog?.digest ?? null}),
+			unresolvedObligationsDigest: digest(`${stage}-obligations`),
+			feedbackDigest,
+			contextWindowTokens: 4_096,
+			pressureThresholdTokens: 3_500,
+			expectedNextRunInputTokens: 1_024,
+			toolResultReserveTokens: 256,
+			candidateOutputReserveTokens: 64,
+			retainRecentTokens: 1,
+			maxSummaryCharacters: 2_000,
+		}),
+		workspace: role === "implementation-worker"
+			? {
+					kind: "runtime-workbench",
+					repositorySnapshotDigest: digest("repository"),
+					assignmentId: `assignment-${sessionId}`,
+					workbenchRef: `workbench-${sessionId}`,
+				}
+			: {
+					kind: "immutable",
+					repositorySnapshotDigest: digest("repository"),
+				},
 		budget: {
 			timeoutMs: 30_000,
 			maxModelRequests: projectContextSnapshot ? 2 : 1,

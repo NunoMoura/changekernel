@@ -6,7 +6,10 @@ import type {
 	RunSessionBinding,
 	RuntimeBuildBinding,
 } from "../../runtime/contracts.ts";
-import {createRunRequest} from "../../runtime/contracts.ts";
+import {
+	createRunRequest,
+	createStageRunContinuationBinding,
+} from "../../runtime/contracts.ts";
 import type {
 	ScheduledAssignment,
 	WorkbenchBinding,
@@ -61,6 +64,7 @@ export function createImplementationRunRequest(
 		runtimeBuild: input.runtimeBuild,
 		session: input.session,
 		inputs: input.inputs,
+		continuation: implementationContinuationBinding(input),
 		workspace: {
 			kind: "runtime-workbench",
 			repositorySnapshotDigest: input.workbench.workbenchDigest,
@@ -70,6 +74,42 @@ export function createImplementationRunRequest(
 		budget: input.budget,
 		createdAt: input.createdAt,
 		deadlineAt: input.deadlineAt,
+	});
+}
+
+function implementationContinuationBinding(
+	input: CreateImplementationRunRequestInput,
+) {
+	const toolResultReserveTokens = Math.max(1, input.budget.maxToolCalls * 512);
+	const contextWindowTokens = Math.max(
+		32_768,
+		input.budget.maxInputTokens +
+			toolResultReserveTokens +
+			input.budget.maxOutputTokens +
+			8_192,
+	);
+	return createStageRunContinuationBinding({
+		stage: "implementation",
+		objectiveDigest: input.inputs.promptDigest,
+		maxRounds: MAXIMUM_IMPLEMENTATION_ATTEMPTS,
+		semanticStateDigest: input.inputs.materialDigest,
+		authorityPromotionDigest: canonicalJsonDigest({
+			assignment: input.assignment,
+			workUnit: input.workUnit,
+			previousReceiptDigest: input.priorReceipts.at(-1)?.receiptDigest ?? null,
+		}),
+		unresolvedObligationsDigest: canonicalJsonDigest({
+			workUnitId: input.workUnit.id,
+			workUnit: input.workUnit,
+		}),
+		feedbackDigest: input.inputs.feedbackDigest,
+		contextWindowTokens,
+		pressureThresholdTokens: Math.floor(contextWindowTokens * 0.8),
+		expectedNextRunInputTokens: input.budget.maxInputTokens,
+		toolResultReserveTokens,
+		candidateOutputReserveTokens: input.budget.maxOutputTokens,
+		retainRecentTokens: Math.floor(contextWindowTokens * 0.16),
+		maxSummaryCharacters: 12_000,
 	});
 }
 

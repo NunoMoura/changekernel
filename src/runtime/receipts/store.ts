@@ -143,6 +143,7 @@ function normalizeReceipt(value: RunReceipt): Readonly<RunReceipt> {
 		sessionId: value.sessionId,
 		expectedSessionHead: value.expectedSessionHead,
 		sessionLeaseDigest: value.sessionLeaseDigest,
+		continuationBindingDigest: value.continuationBindingDigest,
 		materialDigest: value.materialDigest,
 		feedbackDigest: value.feedbackDigest,
 		acceptedAt: value.acceptedAt,

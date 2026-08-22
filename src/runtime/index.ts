@@ -5,6 +5,7 @@ export * from "./context/contracts.ts";
 export * from "./context/bundle.ts";
 export * from "./context/project-context-mount.ts";
 export * from "./context/project-context-query.ts";
+export * from "./continuation.ts";
 export * from "./evidence/execution-ledger.ts";
 export * from "./evidence/store.ts";
 export * from "./receipts/store.ts";

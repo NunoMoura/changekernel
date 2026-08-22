@@ -496,10 +496,10 @@ Success: Project Server never receives an admitted Candidate without complete du
 
 ### Slice 13 — DSH Goal and stage-aware compaction
 
-- Spike controlled Goal activation for bounded same-Session continuation.
-- Withhold `complete_goal` authority from models; Candidate submission pauses an attempt and Project Server/Gates determine completion.
-- Implement authority promotion, predictive pressure, safe semantic checkpoints, CodeWiki summarizer, exact history retention, and deterministic rehydration.
-- Qualify Candidate pause/resume, Gate feedback, restart, compaction, and rollover for Decision, Planning, Work Unit Implementation, and Review.
+- [x] Spike controlled Goal activation for bounded same-Session continuation.
+- [x] Withhold `complete_goal` authority from models; Candidate submission pauses an attempt and Project Server/Gates determine completion.
+- [x] Implement authority promotion, predictive pressure, safe semantic checkpoints, CodeWiki summarizer, exact history retention, and deterministic rehydration.
+- [x] Qualify Candidate pause/resume, Gate feedback, restart, compaction, and rollover for Decision, Planning, Work Unit Implementation, and Review.
 
 Success: long-running continuity survives compaction without moving project authority into conversation state.
 
@@ -555,11 +555,9 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ## Release blockers
 
-- Durable ledger/raw-log/receipt completion is not wired end to end.
 - Live provider broker is not qualified.
 - Secure inner Code Runtime is unavailable.
 - Qualified outer whole-process containment is unavailable.
-- Stage-aware compaction and canonical rehydration are not qualified.
 - Pi/DSH parity and Pi execution deletion are incomplete.
 - Full development audit still carries known Pi-related advisories even though production audit is clean.
 

@@ -22,6 +22,7 @@ import {
 	createRunRawLogReference,
 	createRunRequest,
 	createRunSessionLeaseBinding,
+	createStageRunContinuationBinding,
 	createQualifiedRuntimeBuild,
 	createRuntimeBuildManifest,
 	createRuntimeBuildRegistrySnapshot,
@@ -272,9 +273,9 @@ describe("execution ports", () => {
 		);
 		const spec = runRequest(build.buildDigest);
 		const {requestDigest, ...digestBody} = spec;
-		assert.equal(RUN_PROTOCOL.version, "3.0.0");
-		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "3.0.0");
-		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "2.0.0");
+		assert.equal(RUN_PROTOCOL.version, "4.0.0");
+		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "4.0.0");
+		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "3.0.0");
 		assert.equal(spec.schemaVersion, RUN_REQUEST_SCHEMA_VERSION);
 		assert.equal(requestDigest, canonicalJsonDigest(digestBody));
 		assert.equal(Object.isFrozen(spec), true);
@@ -313,6 +314,35 @@ describe("execution ports", () => {
 					producerSkillSetDigest: sha256Digest("forbidden-skill"),
 				}),
 			/Model Check Runs cannot receive producer Skills or tools/,
+		);
+		const modelCheck = runRequest(build.buildDigest, {role: "model-check"});
+		const {
+			schemaVersion: _schemaVersion,
+			requestDigest: _requestDigest,
+			continuation: _continuation,
+			...modelCheckInput
+		} = modelCheck;
+		assert.throws(
+			() => createRunRequest({
+				...modelCheckInput,
+				continuation: createStageRunContinuationBinding({
+					stage: "decision",
+					objectiveDigest: modelCheck.inputs.promptDigest,
+					maxRounds: 2,
+					semanticStateDigest: modelCheck.inputs.materialDigest,
+					authorityPromotionDigest: sha256Digest("promotion"),
+					unresolvedObligationsDigest: sha256Digest("obligations"),
+					feedbackDigest: null,
+					contextWindowTokens: 32_768,
+					pressureThresholdTokens: 24_000,
+					expectedNextRunInputTokens: 8_000,
+					toolResultReserveTokens: 2_000,
+					candidateOutputReserveTokens: 2_000,
+					retainRecentTokens: 4_000,
+					maxSummaryCharacters: 4_000,
+				}),
+			}),
+			/Model Check Runs cannot inherit Goal or compaction continuity/,
 		);
 		assert.throws(
 			() =>

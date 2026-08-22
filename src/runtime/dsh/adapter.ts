@@ -1,22 +1,9 @@
 import {isAbsolute} from "node:path";
 
 import {Context, type Fiber} from "@deepseek-ai/cordis";
-import AgentRegistry, {
-	type AgentHandle,
-} from "@deepseek-ai/dsh-agent";
-import AgentLoop from "@deepseek-ai/dsh-agent-loop";
-import * as AgentLoopInvariant from "@deepseek-ai/dsh-agent-loop/invariant";
-import * as AgentInvariant from "@deepseek-ai/dsh-agent/invariant";
-import InvariantRegistry from "@deepseek-ai/dsh-invariants";
-import LlmRuntime, {createUserMessage} from "@deepseek-ai/dsh-llm";
-import SessionStore, {
-	SessionId,
-	type SessionEvent,
-} from "@deepseek-ai/dsh-session";
-import * as SessionInvariant from "@deepseek-ai/dsh-session/invariant";
-import JsonlSessionPersistence from "@deepseek-ai/dsh-session-persistence-jsonl";
-import SystemPrompt from "@deepseek-ai/dsh-system-prompt";
-import ToolRuntime from "@deepseek-ai/dsh-tools";
+import type {AgentHandle} from "@deepseek-ai/dsh-agent";
+import {createUserMessage} from "@deepseek-ai/dsh-llm";
+import {SessionId, type SessionEvent} from "@deepseek-ai/dsh-session";
 
 import {
 	createRunRawLogReference,
@@ -43,6 +30,11 @@ import {
 	sha256Digest,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
+import {
+	pauseGoalAtCandidateBoundary,
+	prepareDshContinuation,
+} from "./execution-context.ts";
+import {mountDshExecutionPlugins} from "./plugins.ts";
 
 export interface DshRunArtifacts {
 	readonly systemPrompt: string;
@@ -98,7 +90,7 @@ export async function runDshAgent(
 	const startedAt = now();
 	const execution = await createDshExecution(options, startedAt, now);
 	try {
-		const snapshot = await executeDshSession(execution, options);
+		const snapshot = await executeDshSession(execution, options, now);
 		return buildDshRunResult({
 			options,
 			execution,
@@ -156,6 +148,7 @@ function createDshExecutionLedger(
 				}
 				: null,
 			inputBindings: options.request.inputs,
+			continuation: options.request.continuation,
 		},
 	});
 	return {
@@ -196,7 +189,12 @@ async function createDshExecution(
 	now: () => string,
 ): Promise<DshExecution> {
 	const context = new Context();
-	const fibers = await mountDshContext(context, options.artifacts);
+	const fibers = await mountDshExecutionPlugins({
+		context,
+		systemPrompt: options.artifacts.systemPrompt,
+		sessionRoot: options.artifacts.sessionRoot,
+		continuation: options.request.continuation,
+	});
 	const ledger = createDshExecutionLedger(options, startedAt);
 	let modelLease: DshModelAdapterLease | undefined;
 	let agentHandle: AgentHandle | undefined;
@@ -272,30 +270,6 @@ async function assertDshSessionHead(
 	}
 }
 
-async function mountDshContext(
-	context: Context,
-	artifacts: DshRunArtifacts,
-): Promise<readonly Fiber[]> {
-	const fibers: Fiber[] = [];
-	fibers.push(await context.plugin(InvariantRegistry));
-	fibers.push(await context.plugin(LlmRuntime));
-	fibers.push(await context.plugin(SessionStore));
-	fibers.push(await context.plugin(SystemPrompt, {persona: artifacts.systemPrompt}));
-	fibers.push(await context.plugin(ToolRuntime));
-	fibers.push(await context.plugin(AgentRegistry));
-	fibers.push(await context.plugin(JsonlSessionPersistence, {
-		root: artifacts.sessionRoot,
-		compression: "none",
-		packChunks: false,
-		writeBatchMaxDelayMs: 1,
-	}));
-	fibers.push(await context.plugin(AgentLoop, {agents: []}));
-	fibers.push(await context.plugin(SessionInvariant));
-	fibers.push(await context.plugin(AgentInvariant));
-	fibers.push(await context.plugin(AgentLoopInvariant));
-	return fibers;
-}
-
 function bindDshCancellation(
 	agentHandle: AgentHandle,
 	signal: AbortSignal | undefined,
@@ -310,12 +284,29 @@ function bindDshCancellation(
 async function executeDshSession(
 	execution: DshExecution,
 	options: RunDshAgentOptions,
+	now: () => string,
 ): Promise<DshSessionSnapshot> {
+	const goal = await prepareDshContinuation({
+		context: execution.context,
+		agent: execution.agentHandle.agent,
+		request: options.request,
+		prompt: options.artifacts.prompt,
+		signal: options.signal,
+		now,
+		record: (entry) => execution.ledger.record(entry),
+	});
 	execution.agentHandle.agent.followup(createUserMessage({
 		content: [{type: "text", text: options.artifacts.prompt}],
-		source: {kind: "user"},
+		source: goal
+			? {kind: "goal", goalId: goal.goalId, revision: goal.revision, round: goal.round}
+			: {kind: "user"},
 	}));
 	await execution.agentHandle.agent.whenIdle();
+	pauseGoalAtCandidateBoundary({
+		context: execution.context,
+		agent: execution.agentHandle.agent,
+		continuation: options.request.continuation,
+	});
 	const flushed = await execution.context.sessions.flush(
 		execution.agentHandle.agent.session,
 	);
@@ -421,6 +412,16 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 	if (options.request.custody !== "backend-owned") {
 		throw new Error("DSH-backed Runs require backend-owned custody.");
 	}
+	assertDshProjectContextOptions(options);
+	assertDshArtifactBindings(options);
+	assertAbsolutePath(options.artifacts.workspacePath, "DSH workspace path");
+	assertAbsolutePath(options.artifacts.sessionRoot, "DSH session root");
+	if (options.signal?.aborted) {
+		throw new Error("DSH Run was cancelled before Agent Session admission.");
+	}
+}
+
+function assertDshProjectContextOptions(options: RunDshAgentOptions): void {
 	if (options.request.inputs.toolMode === "none") {
 		if (options.request.budget.maxToolCalls !== 0) {
 			throw new Error("Tool-free DSH Runs require a zero tool-call budget.");
@@ -428,38 +429,33 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 		if (options.projectContextSnapshot !== undefined && options.projectContextSnapshot !== null) {
 			throw new Error("Tool-free DSH Runs cannot receive a Project Context Snapshot.");
 		}
-	} else {
-		const snapshot = assertProjectContextSnapshot(options.projectContextSnapshot);
-		if (snapshot.snapshotDigest !== options.request.inputs.projectContextSnapshotDigest) {
-			throw new Error("DSH Project Context Snapshot does not match its Run Request digest.");
-		}
-		if (
-			snapshot.manifest.stage !== options.request.stage ||
-			snapshot.manifest.subject.id !== options.request.subject.id ||
-			snapshot.manifest.subject.digest !== options.request.subject.digest
-		) {
-			throw new Error("DSH Project Context Snapshot does not match its Run subject.");
-		}
-		if (options.request.inputs.toolSetDigest !== DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST) {
-			throw new Error("DSH Project Context tool set does not match its Run Request digest.");
-		}
+		return;
 	}
+	const snapshot = assertProjectContextSnapshot(options.projectContextSnapshot);
+	if (snapshot.snapshotDigest !== options.request.inputs.projectContextSnapshotDigest) {
+		throw new Error("DSH Project Context Snapshot does not match its Run Request digest.");
+	}
+	if (
+		snapshot.manifest.stage !== options.request.stage ||
+		snapshot.manifest.subject.id !== options.request.subject.id ||
+		snapshot.manifest.subject.digest !== options.request.subject.digest
+	) {
+		throw new Error("DSH Project Context Snapshot does not match its Run subject.");
+	}
+	if (options.request.inputs.toolSetDigest !== DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST) {
+		throw new Error("DSH Project Context tool set does not match its Run Request digest.");
+	}
+}
+
+function assertDshArtifactBindings(options: RunDshAgentOptions): void {
 	if (
 		canonicalJsonDigest(options.artifacts.systemPrompt) !==
 		options.request.inputs.systemPromptDigest
 	) {
 		throw new Error("DSH system prompt does not match its Run Request digest.");
 	}
-	if (
-		canonicalJsonDigest(options.artifacts.prompt) !==
-		options.request.inputs.promptDigest
-	) {
+	if (canonicalJsonDigest(options.artifacts.prompt) !== options.request.inputs.promptDigest) {
 		throw new Error("DSH prompt does not match its Run Request digest.");
-	}
-	assertAbsolutePath(options.artifacts.workspacePath, "DSH workspace path");
-	assertAbsolutePath(options.artifacts.sessionRoot, "DSH session root");
-	if (options.signal?.aborted) {
-		throw new Error("DSH Run was cancelled before Agent Session admission.");
 	}
 }
 

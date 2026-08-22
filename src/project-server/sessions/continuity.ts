@@ -26,6 +26,7 @@ export type SessionRolloverReason =
 	| "corruption"
 	| "role-change"
 	| "compaction-lock"
+	| "summary-drift"
 	| "quality-decline";
 
 export interface ActiveSessionLease {
@@ -482,6 +483,7 @@ function rolloverReason(value: unknown): SessionRolloverReason {
 		"corruption",
 		"role-change",
 		"compaction-lock",
+		"summary-drift",
 		"quality-decline",
 	];
 	if (!reasons.includes(value as SessionRolloverReason)) {

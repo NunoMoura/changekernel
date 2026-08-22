@@ -42,9 +42,9 @@ Run Request and Run Receipt form the semantic boundary between Project Server an
 
 ## Run lifecycle
 
-Run Process Protocol `3.0.0` accepts only exact Project Context Snapshot mounts for admitted producer tools. Run Request `3.0.0` binds role, stage, subject, custody, Runtime Build and protocol, logical continuity, DSH Session and expected head, exclusive lease, Project Context Snapshot, material, feedback, prompts, Skills, tools, route, repository or Workbench, and budgets. Runtime freezes it before acceptance; Project Server decides why the Run exists and what follows. Run Receipt `2.0.0` binds the same continuity, lease, material, feedback, build, expected head, resulting raw-log head, ledger, output, and custody facts. Sessions span Runs under one writer; each Candidate has one producing Run.
+Run Process `4.0.0` accepts exact producer snapshot mounts. Run Request `4.0.0` binds stage, subject, custody, Build, Session head and lease, context, inputs, route, workspace, budgets, and Run Continuation `1.0.0`. Project Server decides why it exists and what follows. Run Receipt `3.0.0` binds that execution, resulting raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
 
-Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@2.0.0` uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
+Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@3.0.0` uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
 
 A Run Process sends one authenticated terminal result after its final event and before quiescence. It is not a receipt. Runtime issues a receipt only after validating request, result, events, custody, logs, ledger, quiescence, and exit. Missing required proof prevents `completed`; delegated custody records visibility gaps.
 
@@ -64,7 +64,7 @@ CodeWiki's in-process DSH Adapter constructs exact DSH Agents from Requests and 
 
 DSH owns AgentLoop request, streaming, tool pairing, continuation, cancellation, Session events, compaction mechanics, and delegated plumbing. CodeWiki owns prompts, Skills, local context bindings, provider-broker capability, routes, secrets, budgets, policy, observations, and receipts.
 
-Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, creation mode, DSH UI/Host API, product MCP, and uncontrolled workflow/goal/task drivers. DSH never selects CodeWiki stages, retries, Results, Gates, or effects. Fixed replay proves the process path but is no user backend or fallback.
+Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, DSH UI/Host API, product MCP, and uncontrolled drivers. CodeWiki mounts DSH Goal state without a model Goal tool or autonomous driver. Project Server authorizes each Run; Candidate output pauses the Goal; Project Server and Gates determine completion. DSH never selects stages, retries, Results, Gates, or effects. Replay is qualification, not fallback.
 
 Each Runtime Plugin contributes one first-party allowlisted capability through the DSH Adapter: tool, context binding, Skill provider, model/delegate adapter, observer, or compaction policy. Project files install no executable Runtime Plugins. Effective capability is the intersection of CodeWiki release ceiling, Project Server authorization, Run Request, and any narrower Skill declaration.
 
@@ -84,13 +84,13 @@ Producer Runs mount immutable content-addressed Project Context Snapshot Protoco
 
 Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer context-query tools, producer Session, or memory. Production Run Processes require an exact unexpired authorization and read-only snapshot mount, then expose separate Knowledge, Alignment, Project State, repository, Evidence, Result, and Change-delta tools. `StageContextBundle` and `query_stage_context` remain isolated replay qualification evidence only.
 
-Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters Execution Ledger `3.0.0`. Its header binds Request, Build, continuity, expected Session head, lease, material, feedback, input, route, tools, and Skills. Authenticated header and entry frames persist the canonical digest chain under expected-head CAS; recovery revalidates it.
+Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters Execution Ledger `4.0.0`. Its header binds Request, Build, continuity, continuation policy, expected Session head, lease, material, feedback, input, route, tools, and Skills. Authenticated header and entry frames persist the canonical digest chain under expected-head CAS; recovery revalidates it.
 
 Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
 
 Raw DSH Agent Session bytes remain evidence, not project state. Bounded authenticated chunks append by digest and offset; interruption resumes idempotently. Runtime revalidates exact retained bytes on each read. A completed Receipt commits only after its ledger, raw log, terminal output, quiescence, and process exit close. Commit is immutable, identity-keyed, atomic, and CAS-guarded; recovery rejects missing, corrupt, mismatched, or misnamed evidence and duplicate Run authority.
 
-Compaction changes model-visible surface only. Authority facts become canonical first. DSH owns pressure, pruning, replacement, and Session events; CodeWiki owns predictive stage policy, safe idle checkpoints, promotion, rehydration, and rollover. Checkpoints cite replaced ranges and retain exact history. Never compact during an open turn, unmatched tool pair, pending child work, or before Candidate freezing. Opaque heap is never canonical.
+Compaction changes model-visible surface only. Run Continuation binds promoted authority, semantic state, feedback, obligations, predictive reserves, retention, and threshold. At resumed idle Sessions, DSH measures and prunes, then invokes deterministic CodeWiki Compaction Summary `1.0.0`; unavailable pressured reduction stops for rollover. Checkpoints cite shadowed sequences and digests while raw history remains. Never compact during open work or before Candidate freezing. Summary text and opaque heap are never canonical.
 
 ## Authority and API
 

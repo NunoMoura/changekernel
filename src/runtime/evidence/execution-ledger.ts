@@ -7,7 +7,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const EXECUTION_LEDGER_SCHEMA_VERSION = "3.0.0" as const;
+export const EXECUTION_LEDGER_SCHEMA_VERSION = "4.0.0" as const;
 
 export type ExecutionLedgerEntryKind =
 	| "static-input"
@@ -42,6 +42,7 @@ export interface ExecutionLedgerHeader {
 	readonly modelRouteDigest: Sha256Digest;
 	readonly toolSetDigest: Sha256Digest;
 	readonly producerSkillSetDigest: Sha256Digest | null;
+	readonly continuationBindingDigest: Sha256Digest;
 	readonly createdAt: string;
 	readonly headerDigest: Sha256Digest;
 }
@@ -125,6 +126,10 @@ export function createExecutionLedgerHeader(
 		producerSkillSetDigest: optionalDigest(
 			request.inputs.producerSkillSetDigest,
 			"Execution Ledger producer Skill set digest",
+		),
+		continuationBindingDigest: assertSha256Digest(
+			request.continuation.bindingDigest,
+			"Execution Ledger continuation binding digest",
 		),
 		createdAt: input.createdAt,
 	};
@@ -278,6 +283,10 @@ function normalizeHeader(value: unknown): Readonly<ExecutionLedgerHeader> {
 		producerSkillSetDigest: optionalDigest(
 			header.producerSkillSetDigest,
 			"Execution Ledger producer Skill set digest",
+		),
+		continuationBindingDigest: assertSha256Digest(
+			header.continuationBindingDigest,
+			"Execution Ledger continuation binding digest",
 		),
 		createdAt: timestamp(header.createdAt, "Execution Ledger createdAt"),
 	};

@@ -40,7 +40,7 @@ import {
 
 export const RUNNER_PROCESS_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "2.0.0",
+	version: "3.0.0",
 } as const);
 
 export const MAX_RUN_RAW_LOG_CHUNK_BYTES = 64 * 1_024;
@@ -432,6 +432,7 @@ function normalizeRequest(value: unknown): RunRequest {
 			"runtimeBuild",
 			"session",
 			"inputs",
+			"continuation",
 			"workspace",
 			"budget",
 			"createdAt",
@@ -470,6 +471,7 @@ function normalizeHandle(
 			"sessionId",
 			"expectedSessionHead",
 			"sessionLeaseDigest",
+			"continuationBindingDigest",
 			"materialDigest",
 			"feedbackDigest",
 			"acceptedAt",

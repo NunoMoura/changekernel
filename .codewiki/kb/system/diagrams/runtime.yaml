@@ -42,13 +42,13 @@ connections:
     from: project-server
     to: runtime
     type: invokes
-    label: submits exact bounded Run Request under one Session lease
+    label: submits bounded Run, continuation binding, and Session lease
     boundary: { type: authority, failure: Reject stale context, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
   - id: runtime-returns-project-server
     from: runtime
     to: project-server
     type: returns
-    label: returns custody-scoped Receipt with expected and resulting Session heads
+    label: returns Receipt with continuation and exact Session heads
     boundary: { type: authority, failure: Stop Run on malformed output, mismatched Session head or lease, incomplete ledger, undeclared custody gap, failed quiescence, or missing process-exit proof. }
   - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: admits exact Runtime output to the active Assignment }
   - { id: implementation-returns-project-server, from: implementation, to: project-server, type: returns, label: returns exact Work Unit Candidate for policy and lineage admission }

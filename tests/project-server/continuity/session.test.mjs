@@ -144,6 +144,31 @@ describe("persistent Session continuity", () => {
 		assert.equal(rolled.rollover.rehydrationDigest, digest("rehydration"));
 	});
 
+	it("rolls semantic continuity into fresh Sessions with canonical rehydration", () => {
+		for (const reason of [
+			"corruption",
+			"role-change",
+			"compaction-lock",
+			"summary-drift",
+			"quality-decline",
+		]) {
+			const initial = continuity();
+			const rehydrationDigest = digest(`rehydration-${reason}`);
+			const rolled = rolloverSessionContinuity({
+				record: initial,
+				expectedRecordDigest: initial.recordDigest,
+				newSessionId: `session-${reason}`,
+				newRuntimeBuild: build,
+				reason,
+				rehydrationDigest,
+				rolledAt: "2026-08-22T10:01:00.000Z",
+			});
+			assert.equal(rolled.sessionHead, "absent");
+			assert.equal(rolled.rollover.reason, reason);
+			assert.equal(rolled.rollover.rehydrationDigest, rehydrationDigest);
+		}
+	});
+
 	it("rejects truncated or tampered continuity journals during restart", async () => {
 		const stateRoot = await mkdtemp(join(tmpdir(), "codewiki-session-corrupt-"));
 		await createStoredSessionContinuity({

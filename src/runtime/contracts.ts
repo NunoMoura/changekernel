@@ -1,5 +1,10 @@
 import type {CheckStage} from "../checks/contracts.ts";
 import {
+	assertRunContinuationBinding,
+	createSingleRunContinuationBinding,
+	type RunContinuationBinding,
+} from "./continuation.ts";
+import {
 	assertPackSkillSetSnapshot,
 	type PackSkillSetSnapshot,
 } from "../checks/packs/contracts.ts";
@@ -10,6 +15,8 @@ import {
 	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
+
+export * from "./continuation.ts";
 
 export const SECURITY_SCANNER_TYPES = Object.freeze([
 	"static_analysis",
@@ -238,7 +245,7 @@ export interface SessionIsolationPort {
 
 export const RUN_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "3.0.0",
+	version: "4.0.0",
 } as const);
 
 export const RUNTIME_BUILD_SCHEMA_VERSION = "1.0.0" as const;
@@ -329,7 +336,7 @@ export function admitRunProcessHandshake(
 	});
 }
 
-export const RUN_REQUEST_SCHEMA_VERSION = "3.0.0" as const;
+export const RUN_REQUEST_SCHEMA_VERSION = "4.0.0" as const;
 
 export type RunCustody = "backend-owned" | "backend-delegated";
 export type RunRole =
@@ -592,14 +599,16 @@ export interface RunRequestInput {
 	readonly runtimeBuild: RuntimeBuildBinding;
 	readonly session: RunSessionBinding;
 	readonly inputs: RunInputBindings;
+	readonly continuation?: RunContinuationBinding;
 	readonly workspace: RunWorkspaceBinding;
 	readonly budget: RunBudget;
 	readonly createdAt: string;
 	readonly deadlineAt: string;
 }
 
-export interface RunRequest extends RunRequestInput {
+export interface RunRequest extends Omit<RunRequestInput, "continuation"> {
 	readonly schemaVersion: typeof RUN_REQUEST_SCHEMA_VERSION;
+	readonly continuation: RunContinuationBinding;
 	readonly requestDigest: Sha256Digest;
 }
 
@@ -633,7 +642,10 @@ export function createRunRawLogReference(
 export function createRunRequest(
 	value: RunRequestInput,
 ): Readonly<RunRequest> {
-	if (!hasExactKeys(value, RUN_REQUEST_INPUT_KEYS)) {
+	const expectedInputKeys = value.continuation === undefined
+		? RUN_REQUEST_INPUT_KEYS_WITHOUT_CONTINUATION
+		: RUN_REQUEST_INPUT_KEYS;
+	if (!hasExactKeys(value, expectedInputKeys)) {
 		throw new Error("Run Request shape is invalid.");
 	}
 	assertIdentifier(value.runId, "Run runId");
@@ -650,6 +662,14 @@ export function createRunRequest(
 	const runtimeBuild = Object.freeze({...value.runtimeBuild});
 	const session = normalizeRunSession(value.session, runtimeBuild, value.runId, value.role);
 	const inputs = normalizeRunInputs(value.inputs, value.role);
+	const continuation = value.continuation === undefined
+		? createSingleRunContinuationBinding({
+				stage: value.stage,
+				semanticStateDigest: inputs.materialDigest,
+				feedbackDigest: inputs.feedbackDigest,
+			})
+		: assertRunContinuationBinding(value.continuation);
+	assertRunContinuationRequestBinding(continuation, value.stage, value.role, inputs);
 	const workspace = normalizeRunWorkspace(value.workspace, value.role);
 	const budget = normalizeRunBudget(value.budget, inputs.toolMode);
 	const createdAt = assertTimestamp(value.createdAt, "Run createdAt");
@@ -674,6 +694,7 @@ export function createRunRequest(
 		runtimeBuild,
 		session,
 		inputs,
+		continuation,
 		workspace,
 		budget,
 		createdAt,
@@ -682,7 +703,7 @@ export function createRunRequest(
 	return Object.freeze({...body, requestDigest: canonicalJsonDigest(body)});
 }
 
-export const RUN_RECEIPT_SCHEMA_VERSION = "2.0.0" as const;
+export const RUN_RECEIPT_SCHEMA_VERSION = "3.0.0" as const;
 
 export const RUN_EVENT_KINDS = Object.freeze([
 	"accepted",
@@ -723,6 +744,7 @@ export interface RunHandle {
 	readonly sessionId: string;
 	readonly expectedSessionHead: Sha256Digest | "absent";
 	readonly sessionLeaseDigest: Sha256Digest;
+	readonly continuationBindingDigest: Sha256Digest;
 	readonly materialDigest: Sha256Digest;
 	readonly feedbackDigest: Sha256Digest | null;
 	readonly acceptedAt: string;
@@ -816,6 +838,7 @@ export function createRunHandle(
 		sessionId: request.session.sessionId,
 		expectedSessionHead: request.session.expectedHead,
 		sessionLeaseDigest: request.session.lease.leaseDigest,
+		continuationBindingDigest: request.continuation.bindingDigest,
 		materialDigest: request.inputs.materialDigest,
 		feedbackDigest: request.inputs.feedbackDigest,
 		acceptedAt,
@@ -1051,6 +1074,7 @@ export function createRunReceipt(
 		sessionId: value.handle.sessionId,
 		expectedSessionHead: value.handle.expectedSessionHead,
 		sessionLeaseDigest: value.handle.sessionLeaseDigest,
+		continuationBindingDigest: value.handle.continuationBindingDigest,
 		resultingSessionHead: rawLog?.digest ?? null,
 		materialDigest: value.handle.materialDigest,
 		feedbackDigest: value.handle.feedbackDigest,
@@ -1084,6 +1108,7 @@ export function assertRunReceipt(receipt: RunReceipt): void {
 		sessionId: receipt.sessionId,
 		expectedSessionHead: receipt.expectedSessionHead,
 		sessionLeaseDigest: receipt.sessionLeaseDigest,
+		continuationBindingDigest: receipt.continuationBindingDigest,
 		materialDigest: receipt.materialDigest,
 		feedbackDigest: receipt.feedbackDigest,
 		acceptedAt: receipt.acceptedAt,
@@ -1141,6 +1166,7 @@ function assertRunHandle(value: RunHandle): void {
 		assertSha256Digest(value.expectedSessionHead, "Run handle expected Session head");
 	}
 	assertSha256Digest(value.sessionLeaseDigest, "Run handle Session lease digest");
+	assertSha256Digest(value.continuationBindingDigest, "Run handle continuation binding digest");
 	assertSha256Digest(value.materialDigest, "Run handle material digest");
 	optionalSha256Digest(value.feedbackDigest, "Run handle feedback digest");
 	assertTimestamp(value.acceptedAt, "Run handle acceptedAt");
@@ -1292,6 +1318,7 @@ const RUN_REQUEST_KEYS = [
 	"runtimeBuild",
 	"session",
 	"inputs",
+	"continuation",
 	"workspace",
 	"budget",
 	"createdAt",
@@ -1307,6 +1334,7 @@ const RUN_HANDLE_KEYS = [
 	"sessionId",
 	"expectedSessionHead",
 	"sessionLeaseDigest",
+	"continuationBindingDigest",
 	"materialDigest",
 	"feedbackDigest",
 	"acceptedAt",
@@ -1453,6 +1481,35 @@ function assertContinuityRole(continuityKey: string, role: RunRole): void {
 	} as const satisfies Record<RunRole, string>;
 	if (!continuityKey.startsWith(prefixByRole[role])) {
 		throw new Error("Run continuity key does not match its role.");
+	}
+}
+
+function assertRunContinuationRequestBinding(
+	continuation: Readonly<RunContinuationBinding>,
+	stage: CheckStage,
+	role: RunRole,
+	inputs: Readonly<RunInputBindings>,
+): void {
+	if (continuation.stage !== stage || continuation.rehydration.stage !== stage) {
+		throw new Error("Run continuation stage does not match Run Request.");
+	}
+	if (continuation.rehydration.semanticStateDigest !== inputs.materialDigest) {
+		throw new Error("Run continuation semantic state does not match material.");
+	}
+	if (continuation.rehydration.feedbackDigest !== inputs.feedbackDigest) {
+		throw new Error("Run continuation feedback does not match inputs.");
+	}
+	if (
+		continuation.goal.mode === "controlled" &&
+		continuation.goal.objectiveDigest !== inputs.promptDigest
+	) {
+		throw new Error("Run Goal objective does not match prompt.");
+	}
+	if (
+		role === "model-check" &&
+		(continuation.goal.mode !== "disabled" || continuation.compaction.mode !== "disabled")
+	) {
+		throw new Error("Model Check Runs cannot inherit Goal or compaction continuity.");
 	}
 }
 
@@ -1675,11 +1732,16 @@ const RUN_REQUEST_INPUT_KEYS = [
 	"runtimeBuild",
 	"session",
 	"inputs",
+	"continuation",
 	"workspace",
 	"budget",
 	"createdAt",
 	"deadlineAt",
 ] as const;
+
+const RUN_REQUEST_INPUT_KEYS_WITHOUT_CONTINUATION = RUN_REQUEST_INPUT_KEYS.filter(
+	(key) => key !== "continuation",
+);
 
 const RUN_INPUT_KEYS = [
 	"projectContextSnapshotDigest",

@@ -17,6 +17,7 @@ import {
 	createRunSessionLeaseBinding,
 	createRuntimeBuildManifest,
 } from "../../../src/runtime/contracts.ts";
+import {createStageRunContinuationBinding} from "../../../src/runtime/continuation.ts";
 import {
 	activateStoredRuntimeBuild,
 	bindActiveStoredRuntimeBuild,
@@ -440,6 +441,22 @@ function runRequest({
 				: digest("no-tools"),
 			modelRoute,
 		},
+		continuation: createStageRunContinuationBinding({
+			stage: "decision",
+			objectiveDigest: canonicalJsonDigest("Return qualification text."),
+			maxRounds: 3,
+			semanticStateDigest: materialDigest,
+			authorityPromotionDigest: canonicalJsonDigest({runId, resumeHead: resumeLog?.digest ?? null}),
+			unresolvedObligationsDigest: digest("decision-obligations"),
+			feedbackDigest: null,
+			contextWindowTokens: 4_096,
+			pressureThresholdTokens: 3_500,
+			expectedNextRunInputTokens: 1_024,
+			toolResultReserveTokens: 256,
+			candidateOutputReserveTokens: 64,
+			retainRecentTokens: 1,
+			maxSummaryCharacters: 2_000,
+		}),
 		workspace: {
 			kind: "immutable",
 			repositorySnapshotDigest: digest("repository"),
