@@ -11,7 +11,11 @@ import {
 	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {createDshReplayModelInstaller} from "../../../src/runtime/dsh/replay.ts";
-import {createRunRequest} from "../../../src/runtime/contracts.ts";
+import {
+	RUN_PROTOCOL,
+	createRunRequest,
+	createRunSessionLeaseBinding,
+} from "../../../src/runtime/contracts.ts";
 import {
 	canonicalJsonDigest,
 	sha256Digest,
@@ -22,6 +26,11 @@ const fixturePath = resolve(
 	"fixtures/replay-session.jsonl",
 );
 const fixtureDigest = sha256Digest(await readFile(fixturePath));
+const turnTwoFixturePath = resolve(
+	dirname(fileURLToPath(import.meta.url)),
+	"fixtures/replay-session-turn-2.jsonl",
+);
+const turnTwoFixtureDigest = sha256Digest(await readFile(turnTwoFixturePath));
 const projectContextFixturePath = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"fixtures/replay-project-context.jsonl",
@@ -72,6 +81,32 @@ describe("CodeWiki DSH Adapter", () => {
 		const rawLog = await readFile(result.rawLogPath, "utf8");
 		assert.match(rawLog, /"id":"session-dsh-1"/);
 		assert.match(rawLog, /DSH vertical slice complete\./);
+	});
+
+	it("resumes one exact persisted Session head in a fresh adapter context", async () => {
+		const root = await temporaryRoot();
+		const first = await runDshAgent({
+			request: runRequest("run-dsh-resume-1", "session-dsh-resume"),
+			artifacts: artifacts(root),
+			installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+		});
+		const secondRequest = runRequest(
+			"run-dsh-resume-2",
+			"session-dsh-resume",
+			null,
+			first.rawLog,
+		);
+		const second = await runDshAgent({
+			request: secondRequest,
+			artifacts: artifacts(root),
+			installModelAdapter: createDshReplayModelInstaller({
+				fixturePath: turnTwoFixturePath,
+				fixtureDigest: turnTwoFixtureDigest,
+			}),
+		});
+		assert.equal(secondRequest.session.expectedHead, first.rawLog.digest);
+		assert.equal(second.output, "DSH resumed process complete.");
+		assert.notEqual(second.rawLog.digest, first.rawLog.digest);
 	});
 
 	it("creates no shared DSH Agent Session state across concurrent Runs", async () => {
@@ -176,7 +211,7 @@ function artifacts(root) {
 	};
 }
 
-function runRequest(runId, sessionId, projectContextSnapshot = null) {
+function runRequest(runId, sessionId, projectContextSnapshot = null, resumeLog = null) {
 	const optionsDigest = digest("model-options");
 	const modelRoute = {
 		provider: "codewiki-replay",
@@ -197,12 +232,26 @@ function runRequest(runId, sessionId, projectContextSnapshot = null) {
 		subject: {id: `subject-${runId}`, digest: digest("subject")},
 		runtimeBuild: {
 			buildDigest: digest("runtime-build"),
-			runProtocolVersion: "2.0.0",
+			runProtocolVersion: RUN_PROTOCOL.version,
 		},
-		session: {mode: "create", sessionId, resumeLog: null},
+		session: {
+			mode: resumeLog ? "resume" : "create",
+			continuityKey: `decision:${sessionId}`,
+			sessionId,
+			expectedHead: resumeLog?.digest ?? "absent",
+			lease: createRunSessionLeaseBinding({
+				leaseId: `lease-${runId}`,
+				generation: resumeLog ? 2 : 1,
+				runId,
+				acquiredAt: "2026-08-17T20:00:00.000Z",
+				expiresAt: "2026-08-17T20:02:00.000Z",
+			}),
+			resumeLog,
+		},
 		inputs: {
 			projectContextSnapshotDigest: projectContextSnapshot?.snapshotDigest ?? digest("project-context"),
-			staticInputManifestDigest: digest("static-inputs"),
+			materialDigest: digest("static-inputs"),
+			feedbackDigest: null,
 			systemPromptDigest: canonicalJsonDigest("CodeWiki deterministic qualification"),
 			promptDigest: canonicalJsonDigest("Return qualification text."),
 			producerSkillSetDigest: null,

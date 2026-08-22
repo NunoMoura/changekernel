@@ -238,7 +238,7 @@ export interface SessionIsolationPort {
 
 export const RUN_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "2.0.0",
+	version: "3.0.0",
 } as const);
 
 export const RUNTIME_BUILD_SCHEMA_VERSION = "1.0.0" as const;
@@ -329,7 +329,7 @@ export function admitRunProcessHandshake(
 	});
 }
 
-export const RUN_REQUEST_SCHEMA_VERSION = "2.0.0" as const;
+export const RUN_REQUEST_SCHEMA_VERSION = "3.0.0" as const;
 
 export type RunCustody = "backend-owned" | "backend-delegated";
 export type RunRole =
@@ -351,17 +351,58 @@ export interface RunRawLogReference {
 	readonly runtimeBuildDigest: Sha256Digest;
 }
 
+export const RUN_SESSION_LEASE_PROTOCOL = Object.freeze({
+	id: "codewiki.run-session-lease",
+	version: "1.0.0",
+} as const);
+
+export interface RunSessionLeaseBinding {
+	readonly protocol: typeof RUN_SESSION_LEASE_PROTOCOL;
+	readonly leaseId: string;
+	readonly generation: number;
+	readonly runId: string;
+	readonly acquiredAt: string;
+	readonly expiresAt: string;
+	readonly leaseDigest: Sha256Digest;
+}
+
+interface RunSessionBindingBase {
+	readonly continuityKey: string;
+	readonly sessionId: string;
+	readonly lease: RunSessionLeaseBinding;
+}
+
 export type RunSessionBinding =
-	| {
+	| (RunSessionBindingBase & {
 			readonly mode: "create";
-			readonly sessionId: string;
+			readonly expectedHead: "absent";
 			readonly resumeLog: null;
-	  }
-	| {
+	  })
+	| (RunSessionBindingBase & {
 			readonly mode: "resume";
-			readonly sessionId: string;
+			readonly expectedHead: Sha256Digest;
 			readonly resumeLog: RunRawLogReference;
-	  };
+	  });
+
+export function createRunSessionLeaseBinding(input: Omit<RunSessionLeaseBinding, "protocol" | "leaseDigest">): RunSessionLeaseBinding {
+	assertIdentifier(input.leaseId, "Run Session leaseId");
+	assertPositiveInteger(input.generation, "Run Session lease generation");
+	assertIdentifier(input.runId, "Run Session lease runId");
+	const acquiredAt = assertTimestamp(input.acquiredAt, "Run Session lease acquiredAt");
+	const expiresAt = assertTimestamp(input.expiresAt, "Run Session lease expiresAt");
+	if (Date.parse(expiresAt) <= Date.parse(acquiredAt)) {
+		throw new Error("Run Session lease expiry must follow acquisition.");
+	}
+	const body = Object.freeze({
+		protocol: RUN_SESSION_LEASE_PROTOCOL,
+		leaseId: input.leaseId,
+		generation: input.generation,
+		runId: input.runId,
+		acquiredAt,
+		expiresAt,
+	});
+	return Object.freeze({...body, leaseDigest: canonicalJsonDigest(body)});
+}
 
 export interface RunModelRouteBinding {
 	readonly provider: string;
@@ -508,7 +549,8 @@ export interface ProjectContextMountBinding {
 
 export interface RunInputBindings {
 	readonly projectContextSnapshotDigest: Sha256Digest;
-	readonly staticInputManifestDigest: Sha256Digest;
+	readonly materialDigest: Sha256Digest;
+	readonly feedbackDigest: Sha256Digest | null;
 	readonly systemPromptDigest: Sha256Digest;
 	readonly promptDigest: Sha256Digest;
 	readonly producerSkillSetDigest: Sha256Digest | null;
@@ -606,7 +648,7 @@ export function createRunRequest(
 	const subject = normalizeRunSubject(value.subject);
 	assertRuntimeBuildBinding(value.runtimeBuild);
 	const runtimeBuild = Object.freeze({...value.runtimeBuild});
-	const session = normalizeRunSession(value.session, runtimeBuild);
+	const session = normalizeRunSession(value.session, runtimeBuild, value.runId, value.role);
 	const inputs = normalizeRunInputs(value.inputs, value.role);
 	const workspace = normalizeRunWorkspace(value.workspace, value.role);
 	const budget = normalizeRunBudget(value.budget, inputs.toolMode);
@@ -614,6 +656,12 @@ export function createRunRequest(
 	const deadlineAt = assertTimestamp(value.deadlineAt, "Run deadlineAt");
 	if (Date.parse(deadlineAt) <= Date.parse(createdAt)) {
 		throw new Error("Run deadlineAt must be later than createdAt.");
+	}
+	if (
+		Date.parse(createdAt) < Date.parse(session.lease.acquiredAt) ||
+		Date.parse(deadlineAt) > Date.parse(session.lease.expiresAt)
+	) {
+		throw new Error("Run Request window must fit within its Session lease.");
 	}
 	const body = Object.freeze({
 		schemaVersion: RUN_REQUEST_SCHEMA_VERSION,
@@ -634,7 +682,7 @@ export function createRunRequest(
 	return Object.freeze({...body, requestDigest: canonicalJsonDigest(body)});
 }
 
-export const RUN_RECEIPT_SCHEMA_VERSION = "1.0.0" as const;
+export const RUN_RECEIPT_SCHEMA_VERSION = "2.0.0" as const;
 
 export const RUN_EVENT_KINDS = Object.freeze([
 	"accepted",
@@ -671,7 +719,12 @@ export interface RunHandle {
 	readonly requestDigest: Sha256Digest;
 	readonly custody: RunCustody;
 	readonly runtimeBuild: RuntimeBuildBinding;
+	readonly continuityKey: string;
 	readonly sessionId: string;
+	readonly expectedSessionHead: Sha256Digest | "absent";
+	readonly sessionLeaseDigest: Sha256Digest;
+	readonly materialDigest: Sha256Digest;
+	readonly feedbackDigest: Sha256Digest | null;
 	readonly acceptedAt: string;
 }
 
@@ -738,6 +791,7 @@ export interface RunReceipt
 	extends Omit<RunReceiptInput, "handle">,
 		RunHandle {
 	readonly schemaVersion: typeof RUN_RECEIPT_SCHEMA_VERSION;
+	readonly resultingSessionHead: Sha256Digest | null;
 	readonly receiptDigest: Sha256Digest;
 }
 
@@ -758,7 +812,12 @@ export function createRunHandle(
 		requestDigest: request.requestDigest,
 		custody: request.custody,
 		runtimeBuild: Object.freeze({...request.runtimeBuild}),
+		continuityKey: request.session.continuityKey,
 		sessionId: request.session.sessionId,
+		expectedSessionHead: request.session.expectedHead,
+		sessionLeaseDigest: request.session.lease.leaseDigest,
+		materialDigest: request.inputs.materialDigest,
+		feedbackDigest: request.inputs.feedbackDigest,
 		acceptedAt,
 	});
 }
@@ -988,7 +1047,13 @@ export function createRunReceipt(
 		requestDigest: value.handle.requestDigest,
 		custody: value.handle.custody,
 		runtimeBuild: Object.freeze({...value.handle.runtimeBuild}),
+		continuityKey: value.handle.continuityKey,
 		sessionId: value.handle.sessionId,
+		expectedSessionHead: value.handle.expectedSessionHead,
+		sessionLeaseDigest: value.handle.sessionLeaseDigest,
+		resultingSessionHead: rawLog?.digest ?? null,
+		materialDigest: value.handle.materialDigest,
+		feedbackDigest: value.handle.feedbackDigest,
 		acceptedAt: value.handle.acceptedAt,
 		outcome: value.outcome,
 		finalEventSequence: value.finalEventSequence,
@@ -1015,7 +1080,12 @@ export function assertRunReceipt(receipt: RunReceipt): void {
 		requestDigest: receipt.requestDigest,
 		custody: receipt.custody,
 		runtimeBuild: receipt.runtimeBuild,
+		continuityKey: receipt.continuityKey,
 		sessionId: receipt.sessionId,
+		expectedSessionHead: receipt.expectedSessionHead,
+		sessionLeaseDigest: receipt.sessionLeaseDigest,
+		materialDigest: receipt.materialDigest,
+		feedbackDigest: receipt.feedbackDigest,
 		acceptedAt: receipt.acceptedAt,
 	};
 	const expected = createRunReceipt({
@@ -1065,7 +1135,14 @@ function assertRunHandle(value: RunHandle): void {
 		throw new Error("Run handle custody is invalid.");
 	}
 	assertRuntimeBuildBinding(value.runtimeBuild);
+	assertIdentifier(value.continuityKey, "Run handle continuityKey");
 	assertIdentifier(value.sessionId, "Run handle sessionId");
+	if (value.expectedSessionHead !== "absent") {
+		assertSha256Digest(value.expectedSessionHead, "Run handle expected Session head");
+	}
+	assertSha256Digest(value.sessionLeaseDigest, "Run handle Session lease digest");
+	assertSha256Digest(value.materialDigest, "Run handle material digest");
+	optionalSha256Digest(value.feedbackDigest, "Run handle feedback digest");
 	assertTimestamp(value.acceptedAt, "Run handle acceptedAt");
 }
 
@@ -1226,7 +1303,12 @@ const RUN_HANDLE_KEYS = [
 	"requestDigest",
 	"custody",
 	"runtimeBuild",
+	"continuityKey",
 	"sessionId",
+	"expectedSessionHead",
+	"sessionLeaseDigest",
+	"materialDigest",
+	"feedbackDigest",
 	"acceptedAt",
 ] as const;
 const RUN_PROCESS_RESULT_INPUT_KEYS = [
@@ -1273,30 +1355,105 @@ function normalizeRunSubject(
 function normalizeRunSession(
 	value: RunSessionBinding,
 	runtimeBuild: RuntimeBuildBinding,
+	runId: string,
+	role: RunRole,
 ): RunSessionBinding {
-	if (!hasExactKeys(value, ["mode", "sessionId", "resumeLog"])) {
+	if (!hasExactKeys(value, ["mode", "continuityKey", "sessionId", "expectedHead", "lease", "resumeLog"])) {
 		throw new Error("Run session shape is invalid.");
 	}
+	assertIdentifier(value.continuityKey, "Run continuity key");
 	assertIdentifier(value.sessionId, "Run sessionId");
+	assertContinuityRole(value.continuityKey, role);
+	const lease = normalizeRunSessionLease(value.lease);
+	if (lease.runId !== runId) {
+		throw new Error("Run Session lease does not bind the Run ID.");
+	}
 	if (value.mode === "create") {
-		if (value.resumeLog !== null) {
-			throw new Error("New Run sessions cannot carry a resume log.");
+		if (value.expectedHead !== "absent" || value.resumeLog !== null) {
+			throw new Error("New Run sessions require an absent expected head and no resume log.");
 		}
-		return Object.freeze({mode: "create", sessionId: value.sessionId, resumeLog: null});
+		return Object.freeze({
+			mode: "create",
+			continuityKey: value.continuityKey,
+			sessionId: value.sessionId,
+			expectedHead: "absent",
+			lease,
+			resumeLog: null,
+		});
 	}
 	if (value.mode !== "resume" || !value.resumeLog) {
 		throw new Error("Run session mode is invalid.");
 	}
+	const expectedHead = assertSha256Digest(value.expectedHead, "Run expected Session head");
 	const resumeLog = createRunRawLogReference(value.resumeLog);
 	if (resumeLog.sessionId !== value.sessionId) {
 		throw new Error("Resume log session does not match the Run session.");
+	}
+	if (resumeLog.digest !== expectedHead) {
+		throw new Error("Resume log does not match the expected Session head.");
 	}
 	if (resumeLog.runtimeBuildDigest !== runtimeBuild.buildDigest) {
 		throw new Error(
 			"Resume log Runtime Build does not match the Run binding.",
 		);
 	}
-	return Object.freeze({mode: "resume", sessionId: value.sessionId, resumeLog});
+	if (role === "model-check") {
+		throw new Error("Model Check Runs require fresh Sessions.");
+	}
+	return Object.freeze({
+		mode: "resume",
+		continuityKey: value.continuityKey,
+		sessionId: value.sessionId,
+		expectedHead,
+		lease,
+		resumeLog,
+	});
+}
+
+function normalizeRunSessionLease(value: RunSessionLeaseBinding): RunSessionLeaseBinding {
+	if (!hasExactKeys(value, [
+		"protocol",
+		"leaseId",
+		"generation",
+		"runId",
+		"acquiredAt",
+		"expiresAt",
+		"leaseDigest",
+	])) {
+		throw new Error("Run Session lease shape is invalid.");
+	}
+	if (
+		value.protocol?.id !== RUN_SESSION_LEASE_PROTOCOL.id ||
+		value.protocol.version !== RUN_SESSION_LEASE_PROTOCOL.version
+	) {
+		throw new Error("Run Session lease protocol is unsupported.");
+	}
+	assertSha256Digest(value.leaseDigest, "Run Session lease digest");
+	const expected = createRunSessionLeaseBinding({
+		leaseId: value.leaseId,
+		generation: value.generation,
+		runId: value.runId,
+		acquiredAt: value.acquiredAt,
+		expiresAt: value.expiresAt,
+	});
+	if (canonicalJson(value) !== canonicalJson(expected)) {
+		throw new Error("Run Session lease identity is invalid.");
+	}
+	return expected;
+}
+
+function assertContinuityRole(continuityKey: string, role: RunRole): void {
+	const prefixByRole = {
+		"decision-producer": "decision:",
+		"planning-producer": "planning:",
+		"implementation-worker": "implementation:",
+		"review-producer": "review:",
+		"decision-research": "decision-research:",
+		"model-check": "model-check:",
+	} as const satisfies Record<RunRole, string>;
+	if (!continuityKey.startsWith(prefixByRole[role])) {
+		throw new Error("Run continuity key does not match its role.");
+	}
 }
 
 function normalizeRunInputs(
@@ -1327,9 +1484,13 @@ function normalizeRunInputs(
 			value.projectContextSnapshotDigest,
 			"Run Project Context Snapshot digest",
 		),
-		staticInputManifestDigest: assertSha256Digest(
-			value.staticInputManifestDigest,
-			"Run static input manifest digest",
+		materialDigest: assertSha256Digest(
+			value.materialDigest,
+			"Run material digest",
+		),
+		feedbackDigest: optionalSha256Digest(
+			value.feedbackDigest,
+			"Run feedback digest",
 		),
 		systemPromptDigest: assertSha256Digest(
 			value.systemPromptDigest,
@@ -1522,7 +1683,8 @@ const RUN_REQUEST_INPUT_KEYS = [
 
 const RUN_INPUT_KEYS = [
 	"projectContextSnapshotDigest",
-	"staticInputManifestDigest",
+	"materialDigest",
+	"feedbackDigest",
 	"systemPromptDigest",
 	"promptDigest",
 	"producerSkillSetDigest",

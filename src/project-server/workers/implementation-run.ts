@@ -3,6 +3,7 @@ import type {
 	RunInputBindings,
 	RunReceipt,
 	RunRequest,
+	RunSessionBinding,
 	RuntimeBuildBinding,
 } from "../../runtime/contracts.ts";
 import {createRunRequest} from "../../runtime/contracts.ts";
@@ -17,6 +18,7 @@ import {
 	implementationWorkUnitSubjectId,
 } from "../../loops/implementation/work-unit-candidate.ts";
 import {
+	canonicalJson,
 	canonicalJsonDigest,
 	toCanonicalJsonValue,
 } from "../../utils/canonical-json.ts";
@@ -28,6 +30,7 @@ export interface CreateImplementationRunRequestInput {
 	readonly runtimeBuild: RuntimeBuildBinding;
 	readonly inputs: RunInputBindings;
 	readonly budget: RunBudget;
+	readonly session: RunSessionBinding;
 	readonly priorReceipts: readonly RunReceipt[];
 	readonly runId: string;
 	readonly createdAt: string;
@@ -38,19 +41,13 @@ export function createImplementationRunRequest(
 	input: CreateImplementationRunRequestInput,
 ): RunRequest {
 	assertImplementationRunBinding(input.assignment, input.workbench, input.workUnit);
-	const sessionId = implementationContinuityKey(input.workUnit.id);
-	assertPriorReceipts(input.priorReceipts, sessionId, input.runId);
+	const continuityKey = implementationContinuityKey(input.workUnit.id);
+	assertPriorReceipts(input.priorReceipts, continuityKey, input.runId);
+	assertImplementationSession(input.session, continuityKey, input.priorReceipts.at(-1));
 	const previous = input.priorReceipts.at(-1);
 	if (previous?.outputDigest) {
 		throw new Error("Producing Implementation Run already exists for this Assignment.");
 	}
-	const session = previous
-		? {
-				mode: "resume" as const,
-				sessionId,
-				resumeLog: requiredResumeLog(previous),
-			}
-		: {mode: "create" as const, sessionId, resumeLog: null};
 	return createRunRequest({
 		runId: requiredText(input.runId, "Implementation Run ID"),
 		operationId: input.assignment.assignmentAttemptId,
@@ -62,7 +59,7 @@ export function createImplementationRunRequest(
 			digest: canonicalJsonDigest(toCanonicalJsonValue(input.workUnit)),
 		},
 		runtimeBuild: input.runtimeBuild,
-		session,
+		session: input.session,
 		inputs: input.inputs,
 		workspace: {
 			kind: "runtime-workbench",
@@ -96,7 +93,7 @@ function assertImplementationRunBinding(
 
 function assertPriorReceipts(
 	receipts: readonly RunReceipt[],
-	sessionId: string,
+	continuityKey: string,
 	nextRunId: string,
 ): void {
 	if (receipts.length >= MAXIMUM_IMPLEMENTATION_ATTEMPTS) {
@@ -105,7 +102,7 @@ function assertPriorReceipts(
 	const runIds = new Set<string>();
 	for (const receipt of receipts) {
 		if (
-			receipt.sessionId !== sessionId ||
+			receipt.continuityKey !== continuityKey ||
 			receipt.custody !== "backend-owned" ||
 			receipt.custodyGaps.length > 0 ||
 			runIds.has(receipt.runId)
@@ -119,11 +116,29 @@ function assertPriorReceipts(
 	}
 }
 
-function requiredResumeLog(receipt: RunReceipt) {
-	if (!receipt.rawLog || receipt.rawLog.sessionId !== receipt.sessionId) {
-		throw new Error("Implementation retry requires exact prior Session resume log.");
+function assertImplementationSession(
+	session: RunSessionBinding,
+	continuityKey: string,
+	previous: RunReceipt | undefined,
+): void {
+	if (session.continuityKey !== continuityKey) {
+		throw new Error("Implementation Run requires exact Work Unit continuity.");
 	}
-	return receipt.rawLog;
+	if (!previous || previous.sessionId !== session.sessionId) {
+		if (session.mode !== "create" || session.expectedHead !== "absent") {
+			throw new Error("New or rolled Implementation Session must start absent.");
+		}
+		return;
+	}
+	if (
+		session.mode !== "resume" ||
+		previous.resultingSessionHead === null ||
+		session.expectedHead !== previous.resultingSessionHead ||
+		!previous.rawLog ||
+		canonicalJson(session.resumeLog) !== canonicalJson(previous.rawLog)
+	) {
+		throw new Error("Implementation retry requires exact prior Session head and resume log.");
+	}
 }
 
 function requiredText(value: string, label: string): string {

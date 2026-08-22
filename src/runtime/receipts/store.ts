@@ -139,7 +139,12 @@ function normalizeReceipt(value: RunReceipt): Readonly<RunReceipt> {
 		requestDigest: value.requestDigest,
 		custody: value.custody,
 		runtimeBuild: value.runtimeBuild,
+		continuityKey: value.continuityKey,
 		sessionId: value.sessionId,
+		expectedSessionHead: value.expectedSessionHead,
+		sessionLeaseDigest: value.sessionLeaseDigest,
+		materialDigest: value.materialDigest,
+		feedbackDigest: value.feedbackDigest,
 		acceptedAt: value.acceptedAt,
 	};
 	const normalized = createRunReceipt({
@@ -211,6 +216,7 @@ function storedRecord(value: unknown): StoredRunReceiptRecord {
 	) {
 		throw new Error("Stored Run Receipt record shape is invalid.");
 	}
+	// SAFETY: exact record keys and schema discriminator are validated above; receipt is normalized before use.
 	return record as unknown as StoredRunReceiptRecord;
 }
 

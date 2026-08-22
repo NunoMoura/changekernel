@@ -147,3 +147,24 @@ export type {
 	ProjectServerSemanticMode,
 	ProjectServerSemanticOutcome,
 } from "./coordinator/executor.ts";
+export {
+	SESSION_CONTINUITY_PROTOCOL,
+	acquireSessionLease,
+	assertSessionContinuityRecord,
+	commitSessionRunReceipt,
+	createSessionContinuity,
+	expireSessionLease,
+	requestSessionLeaseCancellation,
+	rolloverSessionContinuity,
+	type ActiveSessionLease,
+	type SessionContinuityRecord,
+	type SessionHead,
+	type SessionLeaseAdmission,
+	type SessionRollover,
+	type SessionRolloverReason,
+} from "./sessions/continuity.ts";
+export {
+	appendStoredSessionContinuity,
+	createStoredSessionContinuity,
+	readStoredSessionContinuity,
+} from "./sessions/continuity-store.ts";

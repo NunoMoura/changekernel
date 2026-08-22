@@ -277,7 +277,7 @@ function bindRunAttempts(input: {
 			`Work Unit Candidate requires 1-${MAXIMUM_IMPLEMENTATION_ATTEMPTS} bounded Runs.`,
 		);
 	}
-	const sessionId = implementationContinuityKey(input.assignment.workUnitId);
+	const continuityKey = implementationContinuityKey(input.assignment.workUnitId);
 	const runIds = new Set<string>();
 	const attempts = input.runs.map((run, index) =>
 		bindRunAttempt({
@@ -285,7 +285,7 @@ function bindRunAttempts(input: {
 			run,
 			index,
 			priorReceipt: input.runs[index - 1]?.receipt,
-			sessionId,
+			continuityKey,
 			runIds,
 		}),
 	);
@@ -303,38 +303,24 @@ function bindRunAttempts(input: {
 	return Object.freeze(attempts);
 }
 
-function bindRunAttempt(input: {
+interface BindRunAttemptInput {
 	readonly run: WorkUnitCandidateRun;
 	readonly index: number;
 	readonly priorReceipt?: RunReceipt;
 	readonly assignment: ScheduledAssignment;
 	readonly workbench: WorkbenchBinding;
 	readonly workUnitDigest: Sha256Digest;
-	readonly sessionId: string;
+	readonly continuityKey: string;
 	readonly runIds: Set<string>;
-}): WorkUnitRunAttemptBinding {
+}
+
+function bindRunAttempt(input: BindRunAttemptInput): WorkUnitRunAttemptBinding {
 	const {request, receipt} = input.run;
 	assertRunRequest(request);
 	assertRunReceipt(receipt);
 	assertRunRequestBinding(input, request);
-	if (
-		receipt.runId !== request.runId ||
-		receipt.requestDigest !== request.requestDigest ||
-		receipt.sessionId !== input.sessionId ||
-		receipt.custodyGaps.length > 0 ||
-		input.runIds.has(request.runId)
-	) {
-		throw new Error("Work Unit Candidate Run Receipt binding is invalid.");
-	}
-	if ((input.index === 0) !== (request.session.mode === "create")) {
-		throw new Error("Work Unit Candidate must create one Session then resume it.");
-	}
-	if (
-		request.session.mode === "resume" &&
-		canonicalJson(request.session.resumeLog) !== canonicalJson(input.priorReceipt?.rawLog)
-	) {
-		throw new Error("Work Unit Candidate Run does not resume exact prior Session log.");
-	}
+	assertRunReceiptBinding(input, request, receipt);
+	assertRunSessionLineage(input, request);
 	input.runIds.add(request.runId);
 	return toCanonicalJsonValue({
 		runId: request.runId,
@@ -345,12 +331,55 @@ function bindRunAttempt(input: {
 	}) as WorkUnitRunAttemptBinding;
 }
 
+function assertRunReceiptBinding(
+	input: BindRunAttemptInput,
+	request: RunRequest,
+	receipt: RunReceipt,
+): void {
+	if (
+		receipt.runId !== request.runId ||
+		receipt.requestDigest !== request.requestDigest ||
+		receipt.continuityKey !== input.continuityKey ||
+		receipt.sessionId !== request.session.sessionId ||
+		receipt.custodyGaps.length > 0 ||
+		input.runIds.has(request.runId)
+	) {
+		throw new Error("Work Unit Candidate Run Receipt binding is invalid.");
+	}
+}
+
+function assertRunSessionLineage(
+	input: BindRunAttemptInput,
+	request: RunRequest,
+): void {
+	if (input.index === 0) {
+		if (request.session.mode !== "create") {
+			throw new Error("Work Unit Candidate must begin with a fresh Session.");
+		}
+		return;
+	}
+	const sameSession = input.priorReceipt?.sessionId === request.session.sessionId;
+	if (!sameSession) {
+		if (request.session.mode !== "create") {
+			throw new Error("Rolled Work Unit Session must begin from an absent head.");
+		}
+		return;
+	}
+	if (
+		request.session.mode !== "resume" ||
+		request.session.expectedHead !== input.priorReceipt?.resultingSessionHead ||
+		canonicalJson(request.session.resumeLog) !== canonicalJson(input.priorReceipt?.rawLog)
+	) {
+		throw new Error("Work Unit Candidate Run does not resume exact prior Session log.");
+	}
+}
+
 function assertRunRequestBinding(
 	input: {
 		readonly assignment: ScheduledAssignment;
 		readonly workbench: WorkbenchBinding;
 		readonly workUnitDigest: Sha256Digest;
-		readonly sessionId: string;
+		readonly continuityKey: string;
 	},
 	request: RunRequest,
 ): void {
@@ -359,7 +388,7 @@ function assertRunRequestBinding(
 		request.role !== "implementation-worker" ||
 		request.subject.id !== implementationWorkUnitSubjectId(input.assignment.workUnitId) ||
 		request.subject.digest !== input.workUnitDigest ||
-		request.session.sessionId !== input.sessionId ||
+		request.session.continuityKey !== input.continuityKey ||
 		request.workspace.kind !== "runtime-workbench" ||
 		request.workspace.assignmentId !== input.assignment.assignmentAttemptId ||
 		request.workspace.workbenchRef !== input.workbench.workbenchId

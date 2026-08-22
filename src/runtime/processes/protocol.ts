@@ -382,6 +382,7 @@ function normalizeRequest(value: unknown): RunRequest {
 		throw new Error("Run Request schemaVersion is invalid.");
 	}
 	const {schemaVersion: _schemaVersion, requestDigest, ...input} = request;
+	// SAFETY: exact persisted request keys and schema discriminator are validated above; createRunRequest validates every field.
 	const normalized = createRunRequest(
 		input as unknown as RunRequestInput,
 	);
@@ -403,7 +404,12 @@ function normalizeHandle(
 			"requestDigest",
 			"custody",
 			"runtimeBuild",
+			"continuityKey",
 			"sessionId",
+			"expectedSessionHead",
+			"sessionLeaseDigest",
+			"materialDigest",
+			"feedbackDigest",
 			"acceptedAt",
 		],
 		"Run handle",

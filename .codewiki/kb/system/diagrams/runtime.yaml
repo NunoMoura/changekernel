@@ -4,6 +4,7 @@ purpose: Show Project Server ownership around Runtime Runs, exact context, Imple
 components:
   - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
   - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
+  - { id: session-continuity, concept: cw:component:project-server, label: Session Continuity Journal, zone: core }
   - { id: work-state, concept: cw:component:work-state, label: WorkState, zone: core }
   - { id: alignment, concept: cw:component:alignment, label: Alignment, zone: core }
   - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
@@ -27,18 +28,28 @@ connections:
     type: returns
     label: returns exact accepted Knowledge snapshot
     boundary: { type: persistence, failure: Reject stale or digest-mismatched Knowledge. }
+  - id: project-server-writes-session-continuity
+    from: project-server
+    to: session-continuity
+    type: writes
+    label: admits or advances one expected-head Session writer lease
+  - id: session-continuity-returns-project-server
+    from: session-continuity
+    to: project-server
+    type: returns
+    label: returns current Session, head, Build, lease, Receipt, and rollover
   - id: project-server-invokes-runtime
     from: project-server
     to: runtime
     type: invokes
-    label: submits one exact DSH-backed, delegated, Code Check, or Model Check Run Request
-    boundary: { type: authority, failure: Reject stale context, unsupported capability, unqualified Runtime Build, invalid Workbench capability, or malformed request. }
+    label: submits exact bounded Run Request under one Session lease
+    boundary: { type: authority, failure: Reject stale context, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
   - id: runtime-returns-project-server
     from: runtime
     to: project-server
     type: returns
-    label: returns output and one custody-scoped Run Receipt
-    boundary: { type: authority, failure: Stop Run on malformed output, incomplete ledger, undeclared custody gap, failed quiescence, or missing process-exit proof. }
+    label: returns custody-scoped Receipt with expected and resulting Session heads
+    boundary: { type: authority, failure: Stop Run on malformed output, mismatched Session head or lease, incomplete ledger, undeclared custody gap, failed quiescence, or missing process-exit proof. }
   - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: admits exact Runtime output to the active Assignment }
   - { id: implementation-returns-project-server, from: implementation, to: project-server, type: returns, label: returns exact Work Unit Candidate for policy and lineage admission }
   - id: project-server-invokes-preview
@@ -110,3 +121,5 @@ flows:
   - concept: cw:flow:recovery
     paths:
       - connections: [change-trace-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]
+      - connections: [session-continuity-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]
+      - connections: [project-server-writes-session-continuity, session-continuity-returns-project-server]

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+	EXECUTION_LEDGER_SCHEMA_VERSION,
 	appendExecutionLedgerEntry,
 	assertExecutionLedger,
 	createExecutionLedger,
@@ -31,6 +32,11 @@ test("Execution Ledger retains exact payloads in a contiguous digest chain", () 
 		payload: {text: "Completed"},
 	});
 
+	assert.equal(EXECUTION_LEDGER_SCHEMA_VERSION, "3.0.0");
+	assert.equal(initial.header.schemaVersion, "3.0.0");
+	assert.equal(initial.header.continuityKey, "decision:session-evidence");
+	assert.equal(initial.header.expectedSessionHead, "absent");
+	assert.equal(initial.header.materialDigest, runRequest().inputs.materialDigest);
 	assert.equal(initial.entries.length, 0);
 	assert.equal(completed.entries.length, 2);
 	assert.equal(completed.entries[0].sequence, 0);

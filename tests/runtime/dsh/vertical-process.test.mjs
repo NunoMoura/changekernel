@@ -14,6 +14,7 @@ import {
 	RUN_PROTOCOL,
 	createQualifiedRuntimeBuild,
 	createRunRequest,
+	createRunSessionLeaseBinding,
 	createRuntimeBuildManifest,
 } from "../../../src/runtime/contracts.ts";
 import {
@@ -43,6 +44,11 @@ const replayFixturePath = resolve(
 	"fixtures/replay-session.jsonl",
 );
 const replayFixtureDigest = sha256Digest(await readFile(replayFixturePath));
+const replayTurnTwoFixturePath = resolve(
+	testDirectory,
+	"fixtures/replay-session-turn-2.jsonl",
+);
+const replayTurnTwoFixtureDigest = sha256Digest(await readFile(replayTurnTwoFixturePath));
 const projectContextReplayFixturePath = resolve(
 	testDirectory,
 	"fixtures/replay-project-context.jsonl",
@@ -126,6 +132,45 @@ describe("DSH Runtime vertical process", () => {
 			assert.match(await readFile(rawLogPath, "utf8"), /DSH vertical slice complete\./);
 		} finally {
 			await runtime.shutdown();
+		}
+	});
+
+	it("resumes exact Session head after Runtime and Run Process restart", async () => {
+		const fixture = await runtimeFixture("restart");
+		const firstRuntime = createRuntime({processManager: fixture.processManager});
+		const firstHandle = await firstRuntime.start(fixture.request);
+		const firstReceipt = await firstRuntime.waitForReceipt(firstHandle);
+		await firstRuntime.shutdown();
+
+		const secondManifest = Object.freeze({
+			...fixture.manifest,
+			replayFixturePath: replayTurnTwoFixturePath,
+			replayFixtureDigest: replayTurnTwoFixtureDigest,
+		});
+		await writeFile(fixture.manifestPath, canonicalJson(secondManifest));
+		const secondRequest = runRequest({
+			runId: "run-dsh-process-restart-2",
+			sessionId: fixture.request.session.sessionId,
+			buildDigest: fixture.buildDigest,
+			materialDigest: canonicalJsonDigest(secondManifest),
+			projectContextSnapshot: null,
+			resumeLog: firstReceipt.rawLog,
+		});
+		const secondRuntime = createRuntime({processManager: fixture.processManager});
+		try {
+			const secondHandle = await secondRuntime.start(secondRequest);
+			const secondReceipt = await secondRuntime.waitForReceipt(secondHandle);
+			assert.equal(secondRequest.session.mode, "resume");
+			assert.equal(secondRequest.session.expectedHead, firstReceipt.resultingSessionHead);
+			assert.equal(secondReceipt.expectedSessionHead, firstReceipt.resultingSessionHead);
+			assert.notEqual(secondReceipt.resultingSessionHead, firstReceipt.resultingSessionHead);
+			assert.equal(secondReceipt.outcome, "completed");
+			assert.equal(
+				secondReceipt.outputDigest,
+				canonicalJsonDigest({text: "DSH resumed process complete."}),
+			);
+		} finally {
+			await secondRuntime.shutdown();
 		}
 	});
 
@@ -231,7 +276,7 @@ async function runtimeFixture(suffix, options = {}) {
 		runId,
 		sessionId: `session-dsh-process-${suffix}`,
 		buildDigest: binding.buildDigest,
-		staticInputManifestDigest: canonicalJsonDigest(manifest),
+		materialDigest: canonicalJsonDigest(manifest),
 		projectContextSnapshot,
 	});
 	const storedResolver = createStoredNodeRuntimeBuildResolver({stateRoot});
@@ -260,8 +305,9 @@ function runRequest({
 	runId,
 	sessionId,
 	buildDigest,
-	staticInputManifestDigest,
+	materialDigest,
 	projectContextSnapshot,
+	resumeLog = null,
 }) {
 	const createdAt = new Date(Date.now() - 1_000).toISOString();
 	const deadlineAt = new Date(Date.now() + 30_000).toISOString();
@@ -284,10 +330,24 @@ function runRequest({
 		stage: "decision",
 		subject: {id: `subject-${runId}`, digest: digest("subject")},
 		runtimeBuild: {buildDigest, runProtocolVersion: RUN_PROTOCOL.version},
-		session: {mode: "create", sessionId, resumeLog: null},
+		session: {
+			mode: resumeLog ? "resume" : "create",
+			continuityKey: `decision:${sessionId}`,
+			sessionId,
+			expectedHead: resumeLog?.digest ?? "absent",
+			lease: createRunSessionLeaseBinding({
+				leaseId: `lease-${runId}`,
+				generation: resumeLog ? 2 : 1,
+				runId,
+				acquiredAt: createdAt,
+				expiresAt: new Date(Date.parse(deadlineAt) + 1_000).toISOString(),
+			}),
+			resumeLog,
+		},
 		inputs: {
 			projectContextSnapshotDigest: projectContextSnapshot?.snapshotDigest ?? digest("project-context"),
-			staticInputManifestDigest,
+			materialDigest,
+			feedbackDigest: null,
 			systemPromptDigest: canonicalJsonDigest("CodeWiki deterministic qualification"),
 			promptDigest: canonicalJsonDigest("Return qualification text."),
 			producerSkillSetDigest: null,

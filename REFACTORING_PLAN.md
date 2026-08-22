@@ -477,11 +477,11 @@ Success: producer inquiry may refresh; Candidate judgment remains exact, immutab
 
 ### Slice 11 — Persistent Session leases and multi-Run receipts
 
-- Persist logical continuity to DSH Session binding independently of process lifetime.
-- Add exclusive lease acquisition, expiry, cancellation, and expected Session-head CAS.
-- Extend Run Request and Receipt with continuity key, Session ID, expected/resulting heads, material digest, feedback, raw artifact, ledger head, and build/protocol identity.
-- Prove process restart, Project Server restart, same-build resume, competing writer rejection, and build-change rollover.
-- Keep Review separate from Implementation and Model Checks fresh.
+- [x] Persist logical continuity to DSH Session binding independently of process lifetime.
+- [x] Add exclusive lease acquisition, expiry, cancellation, and expected Session-head CAS.
+- [x] Extend Run Request and Receipt with continuity key, Session ID, expected/resulting heads, material digest, feedback, raw artifact, ledger head, and build/protocol identity.
+- [x] Prove process restart, Project Server restart, same-build resume, competing writer rejection, and build-change rollover.
+- [x] Keep Review separate from Implementation and Model Checks fresh.
 
 Success: one Session may span Runs without hidden warm-process state or concurrent writers.
 
@@ -555,15 +555,11 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ## Release blockers
 
-- Stable path-independent Knowledge identity, reducible Change Effects, deterministic materialization, and atomic confirmed Knowledge application are not implemented.
-- Top-down Effect-to-requirement-to-source/test-to-Git realization lineage is not implemented end to end.
-- Incremental Change-scoped Planning and Work Unit aggregate completion are not implemented.
-- Persistent Session lease/CAS and exact same-build resume are not implemented.
 - Durable ledger/raw-log/receipt completion is not wired end to end.
 - Live provider broker is not qualified.
 - Secure inner Code Runtime is unavailable.
 - Qualified outer whole-process containment is unavailable.
-- Cancellation, compaction, rollover, and aggregate Review are not qualified.
+- Stage-aware compaction and canonical rehydration are not qualified.
 - Pi/DSH parity and Pi execution deletion are incomplete.
 - Full development audit still carries known Pi-related advisories even though production audit is clean.
 

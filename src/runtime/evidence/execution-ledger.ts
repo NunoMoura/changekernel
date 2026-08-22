@@ -7,7 +7,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const EXECUTION_LEDGER_SCHEMA_VERSION = "2.0.0" as const;
+export const EXECUTION_LEDGER_SCHEMA_VERSION = "3.0.0" as const;
 
 export type ExecutionLedgerEntryKind =
 	| "static-input"
@@ -32,9 +32,13 @@ export interface ExecutionLedgerHeader {
 	readonly runId: string;
 	readonly requestDigest: Sha256Digest;
 	readonly runtimeBuildDigest: Sha256Digest;
+	readonly continuityKey: string;
 	readonly sessionId: string;
+	readonly expectedSessionHead: Sha256Digest | "absent";
+	readonly sessionLeaseDigest: Sha256Digest;
 	readonly projectContextSnapshotDigest: Sha256Digest;
-	readonly staticInputManifestDigest: Sha256Digest;
+	readonly materialDigest: Sha256Digest;
+	readonly feedbackDigest: Sha256Digest | null;
 	readonly modelRouteDigest: Sha256Digest;
 	readonly toolSetDigest: Sha256Digest;
 	readonly producerSkillSetDigest: Sha256Digest | null;
@@ -82,17 +86,33 @@ export function createExecutionLedgerHeader(
 			request.runtimeBuild.buildDigest,
 			"Execution Ledger Runtime Build digest",
 		),
+		continuityKey: boundedIdentifier(
+			request.session.continuityKey,
+			"Execution Ledger continuity key",
+		),
 		sessionId: boundedIdentifier(
 			request.session.sessionId,
 			"Execution Ledger DSH Agent Session id",
+		),
+		expectedSessionHead: expectedSessionHead(
+			request.session.expectedHead,
+			"Execution Ledger expected Session head",
+		),
+		sessionLeaseDigest: assertSha256Digest(
+			request.session.lease.leaseDigest,
+			"Execution Ledger Session lease digest",
 		),
 		projectContextSnapshotDigest: assertSha256Digest(
 			request.inputs.projectContextSnapshotDigest,
 			"Execution Ledger Project Context Snapshot digest",
 		),
-		staticInputManifestDigest: assertSha256Digest(
-			request.inputs.staticInputManifestDigest,
-			"Execution Ledger static input manifest digest",
+		materialDigest: assertSha256Digest(
+			request.inputs.materialDigest,
+			"Execution Ledger material digest",
+		),
+		feedbackDigest: optionalDigest(
+			request.inputs.feedbackDigest,
+			"Execution Ledger feedback digest",
 		),
 		modelRouteDigest: assertSha256Digest(
 			request.inputs.modelRoute.routeDigest,
@@ -205,17 +225,33 @@ function normalizeHeader(value: unknown): Readonly<ExecutionLedgerHeader> {
 			header.runtimeBuildDigest,
 			"Execution Ledger Runtime Build digest",
 		),
+		continuityKey: boundedIdentifier(
+			header.continuityKey,
+			"Execution Ledger continuity key",
+		),
 		sessionId: boundedIdentifier(
 			header.sessionId,
 			"Execution Ledger DSH Agent Session id",
+		),
+		expectedSessionHead: expectedSessionHead(
+			header.expectedSessionHead,
+			"Execution Ledger expected Session head",
+		),
+		sessionLeaseDigest: assertSha256Digest(
+			header.sessionLeaseDigest,
+			"Execution Ledger Session lease digest",
 		),
 		projectContextSnapshotDigest: assertSha256Digest(
 			header.projectContextSnapshotDigest,
 			"Execution Ledger Project Context Snapshot digest",
 		),
-		staticInputManifestDigest: assertSha256Digest(
-			header.staticInputManifestDigest,
-			"Execution Ledger static input manifest digest",
+		materialDigest: assertSha256Digest(
+			header.materialDigest,
+			"Execution Ledger material digest",
+		),
+		feedbackDigest: optionalDigest(
+			header.feedbackDigest,
+			"Execution Ledger feedback digest",
 		),
 		modelRouteDigest: assertSha256Digest(
 			header.modelRouteDigest,
@@ -312,6 +348,10 @@ function assertEntryKind(value: unknown): asserts value is ExecutionLedgerEntryK
 
 function optionalDigest(value: unknown, field: string): Sha256Digest | null {
 	return value === null ? null : assertSha256Digest(value, field);
+}
+
+function expectedSessionHead(value: unknown, field: string): Sha256Digest | "absent" {
+	return value === "absent" ? "absent" : assertSha256Digest(value, field);
 }
 
 function boundedIdentifier(value: unknown, field: string): string {

@@ -12,6 +12,7 @@ import {
 	createRunHandle,
 	createRunRawLogReference,
 	createRunReceipt,
+	createRunSessionLeaseBinding,
 } from "../../src/runtime/contracts.ts";
 import {createImplementationStagePolicy} from "../../src/loops/implementation/policy.ts";
 import {createWorkUnitCandidate} from "../../src/loops/implementation/work-unit-candidate.ts";
@@ -136,7 +137,8 @@ export function implementationRunInputs() {
 	const optionsDigest = sha256Digest("implementation-route-options");
 	return {
 		projectContextSnapshotDigest: sha256Digest("implementation-stage-context"),
-		staticInputManifestDigest: sha256Digest("implementation-static-inputs"),
+		materialDigest: sha256Digest("implementation-static-inputs"),
+		feedbackDigest: null,
 		systemPromptDigest: sha256Digest("implementation-system-prompt"),
 		promptDigest: sha256Digest("implementation-prompt"),
 		producerSkillSetDigest: sha256Digest("implementation-skills"),
@@ -162,6 +164,32 @@ export function implementationBudget() {
 }
 
 export function implementationRunRequest(fixture, priorReceipts = [], runId = "run-implementation-1") {
+	const continuityKey = `implementation:${fixture.workUnit.id}`;
+	const previous = priorReceipts.at(-1);
+	const lease = createRunSessionLeaseBinding({
+		leaseId: `lease:${runId}`,
+		generation: priorReceipts.length + 1,
+		runId,
+		acquiredAt: "2026-08-10T10:04:00.000Z",
+		expiresAt: "2026-08-10T10:06:00.000Z",
+	});
+	const session = previous
+		? {
+				mode: "resume",
+				continuityKey,
+				sessionId: previous.sessionId,
+				expectedHead: previous.resultingSessionHead,
+				lease,
+				resumeLog: previous.rawLog,
+			}
+		: {
+				mode: "create",
+				continuityKey,
+				sessionId: continuityKey,
+				expectedHead: "absent",
+				lease,
+				resumeLog: null,
+			};
 	return createImplementationRunRequest({
 		assignment: fixture.assignment,
 		workbench: fixture.workbench,
@@ -169,6 +197,7 @@ export function implementationRunRequest(fixture, priorReceipts = [], runId = "r
 		runtimeBuild: implementationRuntimeBuild(),
 		inputs: implementationRunInputs(),
 		budget: implementationBudget(),
+		session,
 		priorReceipts,
 		runId,
 		createdAt: "2026-08-10T10:04:01.000Z",

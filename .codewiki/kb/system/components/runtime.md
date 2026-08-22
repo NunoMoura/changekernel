@@ -38,11 +38,11 @@ Project Server
   -> Project Server
 ```
 
-Run Request and Run Receipt form the semantic boundary between Project Server and Runtime. The Run Process protocol is a narrower transport boundary internal to Runtime. DSH is an in-process library behind the CodeWiki DSH Adapter; it does not speak the Run Process protocol and receives no canonical project storage handle.
+Run Request and Run Receipt form the semantic boundary between Project Server and Runtime. Run Process protocol is an internal transport boundary. DSH remains behind the Adapter and receives no canonical storage handle.
 
 ## Run lifecycle
 
-Run Process Protocol `2.0.0` accepts only exact Project Context Snapshot mounts for admitted producer tools. A Run Request binds role, stage, subject, custody, Runtime Build, continuity key, DSH Session and expected head, exclusive lease, context snapshot mount, prompts, Skills, tools, route, repository or Workbench, and budgets. Runtime freezes it before acceptance; Project Server decides why the Run exists and what follows. A Session may span Runs, but has one writer and each Candidate one producing Run.
+Run Process Protocol `3.0.0` accepts only exact Project Context Snapshot mounts for admitted producer tools. Run Request `3.0.0` binds role, stage, subject, custody, Runtime Build and protocol, logical continuity, DSH Session and expected head, exclusive lease, Project Context Snapshot, material, feedback, prompts, Skills, tools, route, repository or Workbench, and budgets. Runtime freezes it before acceptance; Project Server decides why the Run exists and what follows. Run Receipt `2.0.0` binds the same continuity, lease, material, feedback, build, expected head, resulting raw-log head, ledger, output, and custody facts. Sessions span Runs under one writer; each Candidate has one producing Run.
 
 Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, raw log, and final receipt. Internal process management uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
 
@@ -84,7 +84,7 @@ Producer Runs mount immutable content-addressed Project Context Snapshot Protoco
 
 Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer context-query tools, producer Session, or memory. Production Run Processes require an exact unexpired authorization and read-only snapshot mount, then expose separate Knowledge, Alignment, Project State, repository, Evidence, Result, and Change-delta tools. `StageContextBundle` and `query_stage_context` remain isolated replay qualification evidence only.
 
-Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters the append-only Execution Ledger. Its header binds Request, Build, continuity, Session/head, snapshot or package input, route, tools, and Skills. Canonical entries form a digest chain; durable append uses expected-head CAS and recovery revalidates it.
+Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters append-only Execution Ledger `3.0.0`. Its header binds Request, Build, continuity, Session expected head, Session lease, material, feedback, snapshot or package input, route, tools, and Skills. Canonical entries form a digest chain; durable append uses expected-head CAS and recovery revalidates it.
 
 Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
 

@@ -91,13 +91,15 @@ describe("canonical Work Unit Candidate", () => {
 			requestDigest: _requestDigest,
 			...secondRequestInput
 		} = secondRequest;
+		const differentSessionHead = sha256Digest("different-session-log");
 		const mismatchedResumeRequest = createRunRequest({
 			...secondRequestInput,
 			session: {
 				...secondRequest.session,
+				expectedHead: differentSessionHead,
 				resumeLog: {
 					...secondRequest.session.resumeLog,
-					digest: sha256Digest("different-session-log"),
+					digest: differentSessionHead,
 				},
 			},
 		});

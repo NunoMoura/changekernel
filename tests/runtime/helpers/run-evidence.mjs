@@ -1,8 +1,10 @@
 import {
+	RUN_PROTOCOL,
 	createRunHandle,
 	createRunRawLogReference,
 	createRunReceipt,
 	createRunRequest,
+	createRunSessionLeaseBinding,
 } from "../../../src/runtime/contracts.ts";
 import {
 	canonicalJsonDigest,
@@ -34,12 +36,26 @@ export function runRequest(runId = "run-evidence", sessionId = "session-evidence
 		subject: {id: `subject-${runId}`, digest: digest("subject")},
 		runtimeBuild: {
 			buildDigest: digest("runtime-build"),
-			runProtocolVersion: "2.0.0",
+			runProtocolVersion: RUN_PROTOCOL.version,
 		},
-		session: {mode: "create", sessionId, resumeLog: null},
+		session: {
+			mode: "create",
+			continuityKey: `decision:${sessionId}`,
+			sessionId,
+			expectedHead: "absent",
+			lease: createRunSessionLeaseBinding({
+				leaseId: `lease-${runId}`,
+				generation: 1,
+				runId,
+				acquiredAt: "2026-08-18T10:00:00.000Z",
+				expiresAt: "2026-08-18T10:02:00.000Z",
+			}),
+			resumeLog: null,
+		},
 		inputs: {
 			projectContextSnapshotDigest: digest("stage-context"),
-			staticInputManifestDigest: digest("static-inputs"),
+			materialDigest: digest("static-inputs"),
+			feedbackDigest: null,
 			systemPromptDigest: canonicalJsonDigest("System prompt"),
 			promptDigest: canonicalJsonDigest("Run prompt"),
 			producerSkillSetDigest: null,

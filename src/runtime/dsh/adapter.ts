@@ -202,6 +202,7 @@ async function createDshExecution(
 	let agentHandle: AgentHandle | undefined;
 	let toolRegistration: DshProjectContextToolRegistration | undefined;
 	try {
+		await assertDshSessionHead(context, options.request);
 		if (options.request.inputs.toolMode === "admitted") {
 			toolRegistration = registerDshProjectContextTools({
 				context,
@@ -212,15 +213,21 @@ async function createDshExecution(
 			});
 		}
 		modelLease = await options.installModelAdapter({context, request: options.request});
-		agentHandle = await context.agents.create({
-			sessionId: SessionId(options.request.session.sessionId),
-			meta: {cwd: options.artifacts.workspacePath},
-			agentOptions: {
-				provider: options.request.inputs.modelRoute.provider,
-				model: options.request.inputs.modelRoute.model,
-				maxTokens: options.request.budget.maxOutputTokens,
-			},
-		});
+		const agentOptions = {
+			provider: options.request.inputs.modelRoute.provider,
+			model: options.request.inputs.modelRoute.model,
+			maxTokens: options.request.budget.maxOutputTokens,
+		};
+		agentHandle = options.request.session.mode === "resume"
+			? await context.agents.resume({
+					resumeSessionId: SessionId(options.request.session.sessionId),
+					agentOptions,
+				})
+			: await context.agents.create({
+					sessionId: SessionId(options.request.session.sessionId),
+					meta: {cwd: options.artifacts.workspacePath},
+					agentOptions,
+				});
 		return {
 			context,
 			fibers,
@@ -236,6 +243,32 @@ async function createDshExecution(
 		toolRegistration?.dispose();
 		await disposeFibers(fibers);
 		throw error;
+	}
+}
+
+async function assertDshSessionHead(
+	context: Context,
+	request: RunRequest,
+): Promise<void> {
+	const raw = await context.sessionPersistence.readRaw(
+		SessionId(request.session.sessionId),
+	);
+	if (request.session.mode === "create") {
+		if (raw != null) {
+			throw new Error("New DSH Agent Session already has persisted state.");
+		}
+		return;
+	}
+	if (!raw) {
+		throw new Error("Resumed DSH Agent Session state is unavailable.");
+	}
+	const reference = request.session.resumeLog;
+	if (
+		raw.meta.version !== reference.formatVersion ||
+		Buffer.byteLength(raw.content) !== reference.byteLength ||
+		sha256Digest(raw.content) !== request.session.expectedHead
+	) {
+		throw new Error("DSH Agent Session state does not match expected head.");
 	}
 }
 
@@ -388,9 +421,6 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 	if (options.request.custody !== "backend-owned") {
 		throw new Error("DSH-backed Runs require backend-owned custody.");
 	}
-	if (options.request.session.mode !== "create") {
-		throw new Error("This DSH Adapter slice supports fresh Agent Sessions only.");
-	}
 	if (options.request.inputs.toolMode === "none") {
 		if (options.request.budget.maxToolCalls !== 0) {
 			throw new Error("Tool-free DSH Runs require a zero tool-call budget.");
@@ -429,7 +459,7 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 	assertAbsolutePath(options.artifacts.workspacePath, "DSH workspace path");
 	assertAbsolutePath(options.artifacts.sessionRoot, "DSH session root");
 	if (options.signal?.aborted) {
-		throw new Error("DSH Run was cancelled before Agent Session creation.");
+		throw new Error("DSH Run was cancelled before Agent Session admission.");
 	}
 }
 

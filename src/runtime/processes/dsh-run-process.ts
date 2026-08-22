@@ -384,7 +384,7 @@ function assertManifestRequest(
 	manifest: DshRunProcessInputManifest,
 	request: RunRequest,
 ): void {
-	if (canonicalJsonDigest(manifest) !== request.inputs.staticInputManifestDigest) {
+	if (canonicalJsonDigest(manifest) !== request.inputs.materialDigest) {
 		throw new Error("DSH input manifest does not match the Run Request digest.");
 	}
 }

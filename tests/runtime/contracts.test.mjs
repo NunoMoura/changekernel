@@ -21,6 +21,7 @@ import {
 	createRunQuiescence,
 	createRunRawLogReference,
 	createRunRequest,
+	createRunSessionLeaseBinding,
 	createQualifiedRuntimeBuild,
 	createRuntimeBuildManifest,
 	createRuntimeBuildRegistrySnapshot,
@@ -271,6 +272,9 @@ describe("execution ports", () => {
 		);
 		const spec = runRequest(build.buildDigest);
 		const {requestDigest, ...digestBody} = spec;
+		assert.equal(RUN_PROTOCOL.version, "3.0.0");
+		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "3.0.0");
+		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "2.0.0");
 		assert.equal(spec.schemaVersion, RUN_REQUEST_SCHEMA_VERSION);
 		assert.equal(requestDigest, canonicalJsonDigest(digestBody));
 		assert.equal(Object.isFrozen(spec), true);
@@ -279,6 +283,18 @@ describe("execution ports", () => {
 			requestDigest,
 			runRequest(build.buildDigest, {
 				promptDigest: sha256Digest("changed-prompt"),
+			}).requestDigest,
+		);
+		assert.notEqual(
+			requestDigest,
+			runRequest(build.buildDigest, {
+				materialDigest: sha256Digest("changed-material"),
+			}).requestDigest,
+		);
+		assert.notEqual(
+			requestDigest,
+			runRequest(build.buildDigest, {
+				feedbackDigest: sha256Digest("feedback"),
 			}).requestDigest,
 		);
 	});
@@ -316,12 +332,31 @@ describe("execution ports", () => {
 			digest: sha256Digest("raw-log"),
 			runtimeBuildDigest: build.buildDigest,
 		});
+		const session = runSession("decision-producer", "run-001", "session-001");
+		assert.throws(
+			() => runRequest(build.buildDigest, {
+				session: {
+					...session,
+					lease: {...session.lease, expiresAt: "2026-08-16T10:03:00.000Z"},
+				},
+			}),
+			/Session lease identity is invalid/,
+		);
+		assert.throws(
+			() => runRequest(build.buildDigest, {
+				role: "review-producer",
+				stage: "review",
+				session,
+			}),
+			/continuity key does not match its role/,
+		);
 		assert.throws(
 			() =>
 				runRequest(build.buildDigest, {
 					session: {
+						...runSession("decision-producer", "run-001", "different-session"),
 						mode: "resume",
-						sessionId: "different-session",
+						expectedHead: rawLog.digest,
 						resumeLog: rawLog,
 					},
 				}),
@@ -331,12 +366,26 @@ describe("execution ports", () => {
 			() =>
 				runRequest(sha256Digest("different-build"), {
 					session: {
+						...runSession("decision-producer", "run-001", "session-001"),
 						mode: "resume",
-						sessionId: "session-001",
+						expectedHead: rawLog.digest,
 						resumeLog: rawLog,
 					},
 				}),
 			/Resume log Runtime Build does not match the Run binding/,
+		);
+		assert.throws(
+			() => runRequest(build.buildDigest, {
+				role: "model-check",
+				stage: "review",
+				session: {
+					...runSession("model-check", "run-001", "session-001"),
+					mode: "resume",
+					expectedHead: rawLog.digest,
+					resumeLog: rawLog,
+				},
+			}),
+			/Model Check Runs require fresh Sessions/,
 		);
 	});
 
@@ -550,10 +599,11 @@ function runRequest(buildDigest, overrides = {}) {
 		},
 		session:
 			overrides.session ||
-			({mode: "create", sessionId: "session-001", resumeLog: null}),
+			runSession(role, "run-001", "session-001"),
 		inputs: {
 			projectContextSnapshotDigest: sha256Digest("stage-context"),
-			staticInputManifestDigest: sha256Digest("static-inputs"),
+			materialDigest: overrides.materialDigest || sha256Digest("static-inputs"),
+			feedbackDigest: overrides.feedbackDigest || null,
 			systemPromptDigest: sha256Digest("system-prompt"),
 			promptDigest: overrides.promptDigest || sha256Digest("prompt"),
 			producerSkillSetDigest:
@@ -580,6 +630,31 @@ function runRequest(buildDigest, overrides = {}) {
 		createdAt: "2026-08-16T10:00:00.000Z",
 		deadlineAt: "2026-08-16T10:01:00.000Z",
 	});
+}
+
+function runSession(role, runId, sessionId) {
+	const prefix = {
+		"decision-producer": "decision",
+		"planning-producer": "planning",
+		"implementation-worker": "implementation",
+		"review-producer": "review",
+		"decision-research": "decision-research",
+		"model-check": "model-check",
+	}[role];
+	return {
+		mode: "create",
+		continuityKey: `${prefix}:test`,
+		sessionId,
+		expectedHead: "absent",
+		lease: createRunSessionLeaseBinding({
+			leaseId: `lease-${runId}`,
+			generation: 1,
+			runId,
+			acquiredAt: "2026-08-16T10:00:00.000Z",
+			expiresAt: "2026-08-16T10:02:00.000Z",
+		}),
+		resumeLog: null,
+	};
 }
 
 function runRawLog(runtimeBuildDigest) {
