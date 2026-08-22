@@ -21,13 +21,11 @@ import ToolRuntime from "@deepseek-ai/dsh-tools";
 import {
 	createRunRawLogReference,
 	type RunOutcome,
+	type ProjectContextSnapshot,
 	type RunRawLogReference,
 	type RunRequest,
 } from "../contracts.ts";
-import {
-	assertStageContextBundle,
-	type StageContextBundle,
-} from "../context/bundle.ts";
+import {assertProjectContextSnapshot} from "../context/project-context-mount.ts";
 import {
 	appendExecutionLedgerEntry,
 	createExecutionLedger,
@@ -36,10 +34,10 @@ import {
 	type ExecutionLedgerEntryInput,
 } from "../evidence/execution-ledger.ts";
 import {
-	DSH_STAGE_CONTEXT_TOOL_SET_DIGEST,
-	registerDshStageContextTools,
-	type DshStageContextToolRegistration,
-} from "./context-tools.ts";
+	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
+	registerDshProjectContextTools,
+	type DshProjectContextToolRegistration,
+} from "./project-context-tools.ts";
 import {
 	canonicalJsonDigest,
 	sha256Digest,
@@ -86,7 +84,7 @@ export interface DshRunResult {
 export interface RunDshAgentOptions {
 	readonly request: RunRequest;
 	readonly artifacts: DshRunArtifacts;
-	readonly stageContextBundle?: StageContextBundle | null;
+	readonly projectContextSnapshot?: ProjectContextSnapshot | null;
 	readonly installModelAdapter: DshModelAdapterInstaller;
 	readonly signal?: AbortSignal;
 	readonly now?: () => string;
@@ -124,7 +122,7 @@ interface DshExecution {
 	readonly modelLease: DshModelAdapterLease;
 	readonly agentHandle: AgentHandle;
 	readonly ledger: DshExecutionLedger;
-	readonly toolRegistration?: DshStageContextToolRegistration;
+	readonly toolRegistration?: DshProjectContextToolRegistration;
 	readonly removeAbortListener?: () => void;
 }
 
@@ -150,7 +148,13 @@ function createDshExecutionLedger(
 		payload: {
 			systemPrompt: options.artifacts.systemPrompt,
 			prompt: options.artifacts.prompt,
-			stageContextBundle: options.stageContextBundle ?? null,
+			projectContextSnapshot: options.projectContextSnapshot
+				? {
+					snapshotDigest: options.projectContextSnapshot.snapshotDigest,
+					semanticContextDigest: options.projectContextSnapshot.manifest.semanticContextDigest,
+					observationDigest: options.projectContextSnapshot.observation.observationDigest,
+				}
+				: null,
 			inputBindings: options.request.inputs,
 		},
 	});
@@ -196,12 +200,12 @@ async function createDshExecution(
 	const ledger = createDshExecutionLedger(options, startedAt);
 	let modelLease: DshModelAdapterLease | undefined;
 	let agentHandle: AgentHandle | undefined;
-	let toolRegistration: DshStageContextToolRegistration | undefined;
+	let toolRegistration: DshProjectContextToolRegistration | undefined;
 	try {
 		if (options.request.inputs.toolMode === "admitted") {
-			toolRegistration = registerDshStageContextTools({
+			toolRegistration = registerDshProjectContextTools({
 				context,
-				bundle: assertStageContextBundle(options.stageContextBundle),
+				snapshot: assertProjectContextSnapshot(options.projectContextSnapshot),
 				maxToolCalls: options.request.budget.maxToolCalls,
 				record: (entry) => ledger.record(entry),
 				now,
@@ -391,23 +395,23 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 		if (options.request.budget.maxToolCalls !== 0) {
 			throw new Error("Tool-free DSH Runs require a zero tool-call budget.");
 		}
-		if (options.stageContextBundle !== undefined && options.stageContextBundle !== null) {
-			throw new Error("Tool-free DSH Runs cannot receive a Stage Context bundle.");
+		if (options.projectContextSnapshot !== undefined && options.projectContextSnapshot !== null) {
+			throw new Error("Tool-free DSH Runs cannot receive a Project Context Snapshot.");
 		}
 	} else {
-		const bundle = assertStageContextBundle(options.stageContextBundle);
-		if (bundle.context.contextDigest !== options.request.inputs.stageContextDigest) {
-			throw new Error("DSH Stage Context bundle does not match its Run Request digest.");
+		const snapshot = assertProjectContextSnapshot(options.projectContextSnapshot);
+		if (snapshot.snapshotDigest !== options.request.inputs.projectContextSnapshotDigest) {
+			throw new Error("DSH Project Context Snapshot does not match its Run Request digest.");
 		}
 		if (
-			bundle.context.stage !== options.request.stage ||
-			bundle.context.subject.id !== options.request.subject.id ||
-			bundle.context.subject.digest !== options.request.subject.digest
+			snapshot.manifest.stage !== options.request.stage ||
+			snapshot.manifest.subject.id !== options.request.subject.id ||
+			snapshot.manifest.subject.digest !== options.request.subject.digest
 		) {
-			throw new Error("DSH Stage Context bundle does not match its Run subject.");
+			throw new Error("DSH Project Context Snapshot does not match its Run subject.");
 		}
-		if (options.request.inputs.toolSetDigest !== DSH_STAGE_CONTEXT_TOOL_SET_DIGEST) {
-			throw new Error("DSH Stage Context tool set does not match its Run Request digest.");
+		if (options.request.inputs.toolSetDigest !== DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST) {
+			throw new Error("DSH Project Context tool set does not match its Run Request digest.");
 		}
 	}
 	if (

@@ -18,7 +18,7 @@ export interface CreateAggregateReviewAttemptInput {
 	readonly producerSessionId: string;
 	readonly producingRunId: string;
 	readonly producerRunReceiptDigest: Sha256Digest;
-	readonly projectMaterialGenerationDigest: Sha256Digest;
+	readonly projectContextSnapshotDigest: Sha256Digest;
 	readonly checkPackSnapshotDigest: Sha256Digest;
 	readonly providerReceiptDigests: readonly Sha256Digest[];
 	readonly evidenceRecordDigests: readonly Sha256Digest[];
@@ -72,7 +72,7 @@ export function createAggregateReviewAttempt(
 		producerSessionId: input.producerSessionId,
 		producingRunId: input.producingRunId,
 		producerRunReceiptDigest: input.producerRunReceiptDigest,
-		projectMaterialGenerationDigest: input.projectMaterialGenerationDigest,
+		projectContextSnapshotDigest: input.projectContextSnapshotDigest,
 		checkPackSnapshotDigest: input.checkPackSnapshotDigest,
 		providerReceiptDigests: input.providerReceiptDigests,
 		evidenceRecordDigests: input.evidenceRecordDigests,
@@ -91,7 +91,7 @@ export function assertCurrentAggregateReviewAttempt(
 		producerSessionId: attempt.producerSessionId,
 		producingRunId: attempt.producingRunId,
 		producerRunReceiptDigest: attempt.producerRunReceiptDigest,
-		projectMaterialGenerationDigest: attempt.projectMaterialGenerationDigest,
+		projectContextSnapshotDigest: attempt.projectContextSnapshotDigest,
 		checkPackSnapshotDigest: attempt.checkPackSnapshotDigest,
 		providerReceiptDigests: attempt.providerReceiptDigests,
 		evidenceRecordDigests: attempt.evidenceRecordDigests,

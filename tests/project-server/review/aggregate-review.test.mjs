@@ -40,7 +40,7 @@ function attemptFor(context, snapshot) {
 		producerSessionId: `session:review:${context.changeId}`,
 		producingRunId: `run:review:${context.changeId}`,
 		producerRunReceiptDigest: canonicalJsonDigest("review-producer"),
-		projectMaterialGenerationDigest: canonicalJsonDigest("review-material"),
+		projectContextSnapshotDigest: canonicalJsonDigest("review-material"),
 		checkPackSnapshotDigest: snapshot.checkPackDigest,
 		providerReceiptDigests: [],
 		evidenceRecordDigests: [],

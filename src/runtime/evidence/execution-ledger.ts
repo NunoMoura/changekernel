@@ -7,11 +7,12 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const EXECUTION_LEDGER_SCHEMA_VERSION = "1.0.0" as const;
+export const EXECUTION_LEDGER_SCHEMA_VERSION = "2.0.0" as const;
 
 export type ExecutionLedgerEntryKind =
 	| "static-input"
 	| "stage-context-query"
+	| "project-context-query"
 	| "model-request"
 	| "model-output"
 	| "tool-call"
@@ -32,7 +33,7 @@ export interface ExecutionLedgerHeader {
 	readonly requestDigest: Sha256Digest;
 	readonly runtimeBuildDigest: Sha256Digest;
 	readonly sessionId: string;
-	readonly stageContextDigest: Sha256Digest;
+	readonly projectContextSnapshotDigest: Sha256Digest;
 	readonly staticInputManifestDigest: Sha256Digest;
 	readonly modelRouteDigest: Sha256Digest;
 	readonly toolSetDigest: Sha256Digest;
@@ -85,9 +86,9 @@ export function createExecutionLedgerHeader(
 			request.session.sessionId,
 			"Execution Ledger DSH Agent Session id",
 		),
-		stageContextDigest: assertSha256Digest(
-			request.inputs.stageContextDigest,
-			"Execution Ledger Stage Context digest",
+		projectContextSnapshotDigest: assertSha256Digest(
+			request.inputs.projectContextSnapshotDigest,
+			"Execution Ledger Project Context Snapshot digest",
 		),
 		staticInputManifestDigest: assertSha256Digest(
 			request.inputs.staticInputManifestDigest,
@@ -208,9 +209,9 @@ function normalizeHeader(value: unknown): Readonly<ExecutionLedgerHeader> {
 			header.sessionId,
 			"Execution Ledger DSH Agent Session id",
 		),
-		stageContextDigest: assertSha256Digest(
-			header.stageContextDigest,
-			"Execution Ledger Stage Context digest",
+		projectContextSnapshotDigest: assertSha256Digest(
+			header.projectContextSnapshotDigest,
+			"Execution Ledger Project Context Snapshot digest",
 		),
 		staticInputManifestDigest: assertSha256Digest(
 			header.staticInputManifestDigest,
@@ -295,6 +296,7 @@ function assertEntryKind(value: unknown): asserts value is ExecutionLedgerEntryK
 	if (!([
 		"static-input",
 		"stage-context-query",
+		"project-context-query",
 		"model-request",
 		"model-output",
 		"tool-call",

@@ -135,7 +135,7 @@ export function implementationRunInputs() {
 	const model = "test-model";
 	const optionsDigest = sha256Digest("implementation-route-options");
 	return {
-		stageContextDigest: sha256Digest("implementation-stage-context"),
+		projectContextSnapshotDigest: sha256Digest("implementation-stage-context"),
 		staticInputManifestDigest: sha256Digest("implementation-static-inputs"),
 		systemPromptDigest: sha256Digest("implementation-system-prompt"),
 		promptDigest: sha256Digest("implementation-prompt"),

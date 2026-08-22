@@ -13,7 +13,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const REVIEW_ATTEMPT_SCHEMA_VERSION = "3.0.0" as const;
+export const REVIEW_ATTEMPT_SCHEMA_VERSION = "4.0.0" as const;
 
 const REVIEW_ATTEMPT_FIELDS = [
 	"changeId",
@@ -40,7 +40,7 @@ const REVIEW_ATTEMPT_FIELDS = [
 	"producerSessionId",
 	"producingRunId",
 	"producerRunReceiptDigest",
-	"projectMaterialGenerationDigest",
+	"projectContextSnapshotDigest",
 	"checkPackSnapshotDigest",
 	"providerReceiptDigests",
 	"evidenceRecordDigests",
@@ -73,7 +73,7 @@ export interface CreateReviewAttemptInput {
 	readonly producerSessionId: string;
 	readonly producingRunId: string;
 	readonly producerRunReceiptDigest: Sha256Digest;
-	readonly projectMaterialGenerationDigest: Sha256Digest;
+	readonly projectContextSnapshotDigest: Sha256Digest;
 	readonly checkPackSnapshotDigest: Sha256Digest;
 	readonly providerReceiptDigests: readonly Sha256Digest[];
 	readonly evidenceRecordDigests: readonly Sha256Digest[];
@@ -182,9 +182,9 @@ export function createReviewAttempt(input: CreateReviewAttemptInput): ReviewAtte
 		producerSessionId: identity(input.producerSessionId, "producerSessionId"),
 		producingRunId: identity(input.producingRunId, "producingRunId"),
 		producerRunReceiptDigest: digest(input.producerRunReceiptDigest, "producerRunReceiptDigest"),
-		projectMaterialGenerationDigest: digest(
-			input.projectMaterialGenerationDigest,
-			"projectMaterialGenerationDigest",
+		projectContextSnapshotDigest: digest(
+			input.projectContextSnapshotDigest,
+			"projectContextSnapshotDigest",
 		),
 		checkPackSnapshotDigest: digest(input.checkPackSnapshotDigest, "checkPackSnapshotDigest"),
 		providerReceiptDigests: digests(input.providerReceiptDigests, "providerReceiptDigests", false),

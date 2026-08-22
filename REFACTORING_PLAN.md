@@ -65,7 +65,7 @@ A Change revision carries either an atomic reducible Knowledge transition or exp
 
 Decision evaluates one exact proposed Change against accepted Knowledge State and the accepted active Changes. The Stage Producer directly submits its irreducible disposition and rationale for the exact revision without repeating the revision's Knowledge Effects; Project Server materializes the complete Candidate. Model Checks judge the admitted Candidate and never author or mutate it. The required invariant is no unresolved semantic contradiction, not no overlap.
 
-Project Server expands any revision-authoring material handles before immutable revision identity. Before any Decision Check runs, it resolves the exact revision, derives machine-owned fields, validates stable Knowledge targets and prior-state preconditions, and deterministically compiles the complete Effect set. The immutable Candidate checkpoint binds base and projected Knowledge State digests, compiler identity, application-plan digest, exact Markdown or YAML projection identity, accepted active Changes, WorkState, producer Run, and receipt. Compilation failure rejects Candidate admission before model tokens are spent. Clients and Checks render or consume current state, desired state, and diff from these artifacts rather than model-authored repetition.
+Project Server expands any revision-authoring context handles before immutable revision identity. Before any Decision Check runs, it resolves the exact revision, derives machine-owned fields, validates stable Knowledge targets and prior-state preconditions, and deterministically compiles the complete Effect set. The immutable Candidate checkpoint binds base and projected Knowledge State digests, compiler identity, application-plan digest, exact Markdown or YAML projection identity, accepted active Changes, WorkState, producer Run, and receipt. Compilation failure rejects Candidate admission before model tokens are spent. Clients and Checks render or consume current state, desired state, and diff from these artifacts rather than model-authored repetition.
 
 The default Decision policy includes an `active_change_compatibility` Model Check over:
 
@@ -159,8 +159,8 @@ Only a fresh passed Review Gate plus separate current authority permits protecte
 - accepted active Changes and semantic relationships;
 - immutable Knowledge subject and facet identity, the initial seed, and accepted Knowledge State;
 - Change Trace, globally ordered Knowledge Effect reduction, and canonical WorkState;
-- producer material-handle expansion, deterministic Knowledge transition compilation, projected-state preview, and atomic confirmed application;
-- Project Material Generation construction and authorization;
+- producer context-handle expansion, deterministic Knowledge transition compilation, projected-state preview, and atomic confirmed application;
+- Project Context Snapshot construction and authorization;
 - Gate Evaluation Package construction;
 - canonical global Work Graph and Change-scoped delta application;
 - readiness, durable queueing, Worker Offers, Claims, Assignments, placement, custody, and policy;
@@ -174,7 +174,7 @@ Only a fresh passed Review Gate plus separate current authority permits protecte
 - exact Runtime Build resolution and admission;
 - authenticated Run Process launch and supervision;
 - bounded process lifetime, cancellation, quiescence, and exit observation;
-- authorized material mounts and private protocol transport;
+- authorized context snapshot mounts and private protocol transport;
 - Execution Ledger and raw-log capture;
 - Runtime-authored Run Receipt creation from validated terminal facts;
 - no project meaning, Work Graph, queue, Claim, Assignment, Gate, transition, or effect.
@@ -197,13 +197,13 @@ Only a fresh passed Review Gate plus separate current authority permits protecte
 - Gate Reports;
 - no production, route selection, lifecycle transition, or effect.
 
-## Material and evaluation boundary
+## Context and evaluation boundary
 
-### Project Material Generation
+### Project Context Snapshot
 
-A `ProjectMaterialGeneration` is an immutable content-addressed locally queryable producer substrate built by Project Server. It contains normalized OKF Knowledge State and projection identities, stable subject and facet IDs, bounded current-content handles, Alignment and provenance, active Changes and their Effect targets, accepted Work Graph and WorkState projections, prior Gate feedback, repository material, Evidence and Results, complete manifest and coverage, and exact query-engine identity. Semantic material identity excludes observation time and freshness metadata so identical bytes can reuse content-addressed caches; a separate observation envelope binds capture time, coverage, and staleness.
+A `ProjectContextSnapshot` is an immutable content-addressed locally queryable producer substrate built by Project Server. It contains normalized OKF Knowledge State and projection identities, stable subject and facet IDs, bounded current-content handles, Alignment and provenance, active Changes and their Effect targets, accepted Work Graph and WorkState projections, prior Gate feedback, repository content, Evidence and Results, complete manifest and coverage, and exact query-engine identity. Semantic context identity excludes observation time and freshness metadata so identical bytes can reuse content-addressed caches; a separate observation envelope binds capture time, coverage, and staleness.
 
-A producer Session may switch from generation M1 to M2 only at controlled idle turn boundaries. Every query records its generation digest. Old generations and chunks remain reproducible while referenced. Runs mount material read-only and receive no live Project Server storage handle, ambient working-tree fallback, environment, credentials, or unrestricted network.
+A producer Session may switch from snapshot C1 to C2 only at controlled idle turn boundaries. Every query records its snapshot digest. Old snapshots and chunks remain reproducible while referenced. Runs mount context read-only and receive no live Project Server storage handle, ambient working-tree fallback, environment, credentials, or unrestricted network.
 
 Typed local services should express CodeWiki semantics rather than arbitrary SQL or graph languages:
 
@@ -214,13 +214,13 @@ Typed local services should express CodeWiki semantics rather than arbitrary SQL
 - `project_query_batch`;
 - bounded high-level change-delta discovery.
 
-`knowledge_query` returns stable semantic identity, exact content and Knowledge State digests, and short generation-bound handles that revision-authoring submissions may reuse without echoing paths, old bytes, or full digests. Project Server expands handles before immutable revision identity. Direct and batch primitives remain available to trusted composition. DSH Code Mode may expose only generated typed SDK bindings once a secure Code Runtime qualifies.
+`knowledge_query` returns stable semantic identity, exact content and Knowledge State digests, and short snapshot-bound handles that revision-authoring submissions may reuse without echoing paths, old bytes, or full digests. Project Server expands handles before immutable revision identity. Direct and batch primitives remain available to trusted composition. DSH Code Mode may expose only generated typed SDK bindings once a secure Code Runtime qualifies.
 
 ### Gate Evaluation Package
 
 A `GateEvaluationPackage` is a separate immutable authoritative Check input package frozen only after Candidate checkpoint. For Decision it binds the exact Candidate, Change revision and Knowledge Effects, base and projected Knowledge State, compiler and application plan, exact current-to-projected view, accepted active Changes coverage, WorkState, Alignment, Evidence, Results, Check Pack files, configuration, routes, and declared inputs. Other stages bind their exact repository tree, base, accepted Knowledge targets, requirements, and realization lineage as applicable.
 
-Checks receive no producer material handle, producer Session, live Project Server handle, or undeclared input. Model Checks remain tool-free. The current `StageContextBundle`, `query_stage_context`, and batch replay path are qualification evidence, not the final production context contract.
+Checks receive no producer context handle, producer Session, live Project Server handle, or undeclared input. Model Checks remain tool-free. The current `StageContextBundle`, `query_stage_context`, and batch replay path are qualification evidence, not the final production context contract.
 
 ## Sessions, Runs, Candidates, and checks
 
@@ -239,7 +239,7 @@ review:<change-id>:<implementation-lineage>
 
 A producer Session may span several bounded Runs and Candidate attempts. Every Candidate has exactly one producing Run. The Stage Producer submits its Candidate directly; Check Runs are independent consumers and cannot create or amend it. A Run may instead terminate `blocked`, `cancelled`, or `failed` without a Candidate.
 
-Only one writer may execute against a DSH Agent Session. Project Server must issue an exclusive lease and expected Session head. Run Request and Receipt must bind logical continuity, Session ID, expected head, resulting head, exact Runtime Build and protocol, material generation, stage and subject, feedback, raw artifact digest, ledger head, usage, and terminal state.
+Only one writer may execute against a DSH Agent Session. Project Server must issue an exclusive lease and expected Session head. Run Request and Receipt must bind logical continuity, Session ID, expected head, resulting head, exact Runtime Build and protocol, context snapshot, stage and subject, feedback, raw artifact digest, ledger head, usage, and terminal state.
 
 Same-Session resume requires the original Runtime Build and protocol. Build or protocol change requires Session rollover with deterministic canonical rehydration.
 
@@ -294,7 +294,7 @@ DSH receives no provider credentials and ideally no raw network. Runtime supplie
 - [x] Ratify Work Unit-granular Implementation and same stage-wide Implementation policy.
 - [x] Ratify private Change integration lineage and aggregate Review.
 - [x] Ratify Change-scoped Planning and Work Unit-scoped Session continuity.
-- [x] Ratify Project Material Generation versus Gate Evaluation Package.
+- [x] Ratify Project Context Snapshot versus Gate Evaluation Package.
 - [x] Rename Knowledge terminology from `Work Item` to `Work Unit` without alias.
 - [x] Validate all Knowledge links, limits, diagrams, and source-pattern coverage.
 - [x] Commit documentation-only green checkpoint.
@@ -358,7 +358,7 @@ interface KnowledgeTargetRef {
 ```
 
 - [x] Define a strict versioned Knowledge post-state artifact inside `CanonicalInlineSemanticArtifact`: one declared `text/markdown`, `application/yaml`, or canonical JSON media type plus the complete bounded semantic-cell content. Project Server derives wrapper ID and digest; authoring input supplies only media type and irreducible content.
-- [x] Canonical revisions store stable IDs, expected-state digests, and exact post-state artifacts, never transient material handles. Initial authoring APIs accept those canonical references directly. Slice 9 may add generation-bound handles as input shorthand expanded before revision identity. Effect IDs, content digests, topic sets, propagation closure, byte spans, plans, and result identities remain derived.
+- [x] Canonical revisions store stable IDs, expected-state digests, and exact post-state artifacts, never transient context handles. Initial authoring APIs accept those canonical references directly. Slice 9 may add snapshot-bound handles as input shorthand expanded before revision identity. Effect IDs, content digests, topic sets, propagation closure, byte spans, plans, and result identities remain derived.
 - [x] Replace `ChangeRevisionIntent.currentState` and `desiredState` with bounded human `problem` and `objective` summaries. Retain rationale, non-goals, alternatives, outcomes, and acceptance requirements where irreducible, but prohibit these fields from copying current Knowledge bytes or substituting for complete post-state Effects.
 - [x] Delete authored `topicRefs` and `propagationRefs` from Effect transitions. Effect targets derive impacted topics and the compiler derives projection propagation. Keep stable Knowledge references only in the explicit unchanged variant.
 - [x] Advance Change Trace Protocol directly from `5.0.0` to the Slice 3B contract `6.0.0`, Decision Candidate schema from the executable Slice 3 baseline `4.0.0` to the Slice 3B contract `5.0.0`, and every affected revision, WorkState, Alignment, query, operation, fixture, and digest identity in one clean cut without parser aliases.
@@ -449,27 +449,27 @@ Success: Review proves the complete Change and no Work Unit Result is misreprese
 
 Success: model output contains zero current-state bytes and one copy of each irreducible new fragment; one semantic Effect may update any number of deterministic projections; complete active-Change compatibility remains fail-closed with bounded expanded context; generated views remain rich while canonical authored Knowledge and repeated model context shrink materially.
 
-### Slice 9 — Project Material Generation
+### Slice 9 — Project Context Snapshot
 
-- Specify normalized material manifest, chunking, digest, retention, authorization, and query-engine contracts.
-- Include exact Knowledge State and projection identities, stable subject/facet IDs, current semantic-cell content, accepted Effect targets, source/test realization refs, and short generation-bound material handles.
-- Separate reusable semantic material digest from observation envelope identity containing `capturedAt`, freshness, coverage, and staleness; identical material observed later must remain cache-addressable without weakening fresh admission.
-- Decide full read-only repository mount versus derived index plus bounded file material through benchmark evidence.
-- Build Project Server material construction and content-addressed reuse over Git blobs, lossless Knowledge parses, semantic cells, query results, and generated projections.
-- Mount authorized generations read-only in Run Processes.
-- Replace producer `StageContextBundle` transport and generic route lookup with typed local material services.
-- Preserve direct, batch, cursor, bounds, coverage, source refs, staleness, generation identity, and exact inner-result ledger capture.
-- Allow revision-authoring submissions to use short handles and expand them only against their exact generation before immutable revision identity; reject foreign or stale handles.
-- Add controlled idle-boundary generation refresh.
+- [x] Specify normalized context manifest, chunking, digest, retention, authorization, and query-engine contracts.
+- [x] Include exact Knowledge State and projection identities, stable subject/facet IDs, current semantic-cell content, accepted Effect targets, source/test realization refs, and short snapshot-bound context handles.
+- [x] Separate reusable semantic context digest from observation envelope identity containing `capturedAt`, freshness, coverage, and staleness; identical context observed later must remain cache-addressable without weakening fresh admission.
+- [x] Decide full read-only repository mount versus derived index plus bounded file content through benchmark evidence.
+- [x] Build Project Server snapshot construction and content-addressed reuse over Git blobs, lossless Knowledge parses, semantic cells, query results, and generated projections.
+- [x] Mount authorized snapshots read-only in Run Processes.
+- [x] Replace producer `StageContextBundle` transport and generic route lookup with typed local context services.
+- [x] Preserve direct, batch, cursor, bounds, coverage, source refs, staleness, snapshot identity, and exact inner-result ledger capture.
+- [x] Allow revision-authoring submissions to use short handles and expand them only against their exact snapshot before immutable revision identity; reject foreign or stale handles.
+- [x] Add controlled idle-boundary snapshot refresh.
 
-Success: producer queries are local, immutable, generation-bound, cache-efficient, and never proxy each read through Project Server; producer output can reference exact current material without repeating it.
+Success: producer queries are local, immutable, snapshot-bound, cache-efficient, and never proxy each read through Project Server; producer output can reference exact current context without repeating it.
 
 ### Slice 10 — Gate Evaluation Package
 
 - Define immutable Candidate-checkpoint package and declared Check-input projections.
 - For Decision, freeze exact Change revision and Effect set, base and projected Knowledge State, compiler and application plan, current-to-projected semantic view, accepted active Changes coverage, WorkState, Alignment, Evidence, Results, Check files, configuration, and routes.
 - For Planning, Implementation, and Review, freeze exact accepted Knowledge target and requirement lineage together with repository tree, base, WorkState, Evidence, and stage-specific realization inputs.
-- Resolve all producer material handles before package creation; prohibit handles and live Project Server access from Checks.
+- Resolve all producer context handles before package creation; prohibit handles and live Project Server access from Checks.
 - Bind Check cache and Gate identity to all package inputs, including compiler and projected-state identities where applicable.
 - Prove tamper, omission, staleness, compiler drift, target drift, and unknown-coverage failures.
 
@@ -557,7 +557,7 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 - Stable path-independent Knowledge identity, reducible Change Effects, deterministic materialization, and atomic confirmed Knowledge application are not implemented.
 - Top-down Effect-to-requirement-to-source/test-to-Git realization lineage is not implemented end to end.
-- Mounted Project Material Generation and separate Gate Evaluation Package are not implemented.
+- Mounted Project Context Snapshot and separate Gate Evaluation Package are not implemented.
 - Incremental Change-scoped Planning and Work Unit aggregate completion are not implemented.
 - Persistent Session lease/CAS and exact same-build resume are not implemented.
 - Durable ledger/raw-log/receipt completion is not wired end to end.

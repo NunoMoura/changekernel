@@ -244,7 +244,7 @@ describe("Review attempt identity", () => {
 		producerSessionId: "session:review-1",
 		producingRunId: "run:review-1",
 		producerRunReceiptDigest: digest("0"),
-		projectMaterialGenerationDigest: digest("e"),
+		projectContextSnapshotDigest: digest("e"),
 		checkPackSnapshotDigest: digest("c"),
 		providerReceiptDigests: [digest("e"), digest("d")],
 		evidenceRecordDigests: [digest("f")],
@@ -264,7 +264,7 @@ describe("Review attempt identity", () => {
 			providerReceiptDigests: [...input().providerReceiptDigests].reverse(),
 		});
 
-		assert.equal(attempt.schemaVersion, "3.0.0");
+		assert.equal(attempt.schemaVersion, "4.0.0");
 		assert.equal(attempt.changeId, "change:CHG-1");
 		assert.deepEqual(attempt.workUnitIds, ["WI-1", "WI-2"]);
 		assert.equal(attempt.attemptDigest, reordered.attemptDigest);

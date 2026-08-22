@@ -14,12 +14,12 @@ components:
   - { id: evidence, concept: cw:component:evidence, label: Evidence, zone: core }
   - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
-  - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: builds material or Gate packages and selects ready Work Units }
+  - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: builds Project Context Snapshots or Gate packages and selects ready Work Units }
   - id: project-server-reads-knowledge
     from: project-server
     to: knowledge
     type: reads
-    label: resolves accepted intent for immutable producer material or Gate package
+    label: resolves accepted intent for immutable Project Context Snapshot or Gate package
     boundary: { type: persistence, failure: Stop context creation when exact Knowledge is unavailable. }
   - id: knowledge-returns-project-server
     from: knowledge

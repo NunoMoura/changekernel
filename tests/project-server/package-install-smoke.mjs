@@ -448,6 +448,10 @@ assert.equal(typeof runtimeModule.createRuntime, "function");
 assert.equal(typeof runtimeModule.createStageContextSnapshot, "function");
 assert.equal(typeof runtimeModule.createStageContextBundle, "function");
 assert.equal(typeof runtimeModule.createStageContextFacade, "function");
+assert.equal(typeof runtimeModule.createProjectContextFacade, "function");
+assert.equal(typeof runtimeModule.mountProjectContextSnapshot, "function");
+assert.equal(typeof runtimeModule.registerDshProjectContextTools, "function");
+assert.match(runtimeModule.DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST, /^sha256:[0-9a-f]{64}$/);
 assert.match(runtimeModule.DSH_STAGE_CONTEXT_TOOL_SET_DIGEST, /^sha256:[0-9a-f]{64}$/);
 assert.equal(typeof runtimeModule.createExecutionLedgerHeader, "function");
 assert.equal(typeof runtimeModule.openStoredExecutionLedger, "function");
@@ -459,19 +463,36 @@ assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.commit.length, 40);
 const projectServerModule = await import("@nunomoura/codewiki/project-server");
 assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"CHANGE_INTAKE_RUNTIME_PROTOCOL",
+	"SCHEDULING_PLAN_PROTOCOL",
+	"assertCurrentAggregateReviewAttempt",
 	"buildProjectWikiState",
 	"buildWikiState",
+	"commitGuardedDelivery",
+	"commitImplementationAggregate",
+	"commitPrivateIntegrationAdmission",
+	"commitProjectSchedulingPlan",
 	"connectProjectServerApi",
+	"createAggregateReviewAttempt",
 	"createChangeIntakeProjectServer",
 	"createCodeWikiLoopExecutionPorts",
+	"createDeliveryAuthority",
+	"createGuardedDeliveryOperation",
+	"createImplementationAggregateFreeze",
+	"createImplementationOperationSequence",
+	"createImplementationRunRequest",
+	"createImplementationStageGate",
+	"createPrivateIntegrationAdmission",
+	"createProjectSchedulingPlan",
 	"createProjectServerApi",
+	"createSchedulingOperationSequence",
+	"deriveReadyWorkUnits",
+	"privateChangeIntegrationRef",
 	"runProjectServer",
 	"runProjectServerSemanticExecutor",
 	"runWikiArchive",
 	"runWikiChange",
 	"runWikiConfig",
 	"runWikiDecide",
-	"runWikiImplement",
 	"runWikiOkf",
 	"runWikiPlan",
 	"stopProjectServer",

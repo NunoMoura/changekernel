@@ -101,7 +101,7 @@ function aggregateReviewAttempt(context, packSnapshot, overrides = {}) {
 		producerSessionId: `review-session:${context.changeId}`,
 		producingRunId: `review-run:${context.changeId}`,
 		producerRunReceiptDigest: canonicalJsonDigest("review-producer"),
-		projectMaterialGenerationDigest: canonicalJsonDigest("review-material"),
+		projectContextSnapshotDigest: canonicalJsonDigest("review-material"),
 		checkPackSnapshotDigest: packSnapshot.checkPackDigest,
 		providerReceiptDigests: [],
 		evidenceRecordDigests: [],

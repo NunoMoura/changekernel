@@ -93,8 +93,8 @@ tags: [system, vocabulary]
 | Review Requirement | Policy-bound review class, scope, minimum approvals, and independence rule for one exact Change revision. | [Change Trace](system/components/change-trace.md) |
 | Review Submission | Immutable authenticated disposition and rationale for one exact Review Requirement and Change revision. | [Change Trace](system/components/change-trace.md) |
 | Source ownership | Component-declared intended boundary for source and test realization. | [Knowledge](system/components/knowledge.md) |
-| Project Material Generation | Immutable content-addressed locally queryable producer substrate built by Project Server from exact WorkState, Knowledge, Alignment, repository, Change, Evidence, and Result snapshots; it may refresh only at controlled boundaries. | [Runtime](system/components/runtime.md) |
-| Gate Evaluation Package | Immutable Candidate-checkpoint package containing only declared exact Check and Gate inputs; it is separate from producer material and provides no live Project Server handle. | [Checks](system/components/checks.md) |
+| Project Context Snapshot | Immutable content-addressed locally queryable producer substrate built by Project Server from exact WorkState, Knowledge, Alignment, repository, Change, Evidence, and Result snapshots; it may refresh only at controlled boundaries. | [Runtime](system/components/runtime.md) |
+| Gate Evaluation Package | Immutable Candidate-checkpoint package containing only declared exact Check and Gate inputs; it is separate from producer context and provides no live Project Server handle. | [Checks](system/components/checks.md) |
 | Stage Loop | One of Decision, Planning, Implementation, or Review and no other CodeWiki capability. | [Project Server](system/components/project-server.md) |
 | Stage Producer | Agent or deterministic service that proposes one Decision, Planning, Implementation, or Review Candidate without owning Gate judgment or lifecycle authority. | [Runtime](system/components/runtime.md) |
 | Stopped Gate | Gate attempt that produced no valid complete outcome because execution, capability, input, budget, cancellation, or freshness failed operationally. | [Checks](system/components/checks.md) |
@@ -107,4 +107,4 @@ tags: [system, vocabulary]
 | Workbench | Project Server-owned isolated repository and command environment for one exact Assignment. | [Project Server](system/components/project-server.md) |
 | Worker | Implementation Worker: Agent, process, or service executing one accepted Work Unit through one bounded Assignment in one Project Server-owned Workbench. | [Runtime](system/components/runtime.md) |
 | Worker Offer | Bounded Implementation Worker capabilities, tools, model-route labels, availability, concurrency, custody class, ownership, and allowed projects. | [Runtime](system/components/runtime.md) |
-| WorkState | Deterministic current-state projection used for guards, Work Graph readiness, material construction, integration completion, and state-aware rehydration. | [WorkState](system/components/work-state.md) |
+| WorkState | Deterministic current-state projection used for guards, Work Graph readiness, snapshot construction, integration completion, and state-aware rehydration. | [WorkState](system/components/work-state.md) |

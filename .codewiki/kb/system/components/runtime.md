@@ -20,7 +20,7 @@ codewiki_relationships:
     rationale: Runtime supplies immutable input and sandbox boundaries for authored Code Checks.
   - type: realizes
     target: cw:story:agent.retrieve-bounded-context
-    rationale: Runtime mounts exact Project Material Generations and receipts local queries, session continuity, and DSH compaction.
+    rationale: Runtime mounts exact Project Context Snapshots and receipts local queries, session continuity, and DSH compaction.
 ---
 # Runtime
 
@@ -42,7 +42,7 @@ Run Request and Run Receipt form the semantic boundary between Project Server an
 
 ## Run lifecycle
 
-A Run Request binds role, stage, subject, custody, Runtime Build, continuity key, DSH Session and expected head, exclusive lease, material mount, prompts, Skills, tools, route, repository or Workbench, and budgets. Runtime freezes it before acceptance; Project Server decides why the Run exists and what follows. A Session may span Runs, but has one writer and each Candidate one producing Run.
+Run Process Protocol `2.0.0` accepts only exact Project Context Snapshot mounts for admitted producer tools. A Run Request binds role, stage, subject, custody, Runtime Build, continuity key, DSH Session and expected head, exclusive lease, context snapshot mount, prompts, Skills, tools, route, repository or Workbench, and budgets. Runtime freezes it before acceptance; Project Server decides why the Run exists and what follows. A Session may span Runs, but has one writer and each Candidate one producing Run.
 
 Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, raw log, and final receipt. Internal process management uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
 
@@ -62,7 +62,7 @@ There is no user-facing build selector, Pi fallback, or permanent multi-engine m
 
 CodeWiki's in-process DSH Adapter constructs exact DSH Agents from Requests and translates DSH events and terminal output into Runtime facts. DSH remains unmodified upstream code.
 
-DSH owns AgentLoop request, streaming, tool pairing, continuation, cancellation, Session events, compaction mechanics, and delegated plumbing. CodeWiki owns prompts, Skills, local material bindings, provider-broker capability, routes, secrets, budgets, policy, observations, and receipts.
+DSH owns AgentLoop request, streaming, tool pairing, continuation, cancellation, Session events, compaction mechanics, and delegated plumbing. CodeWiki owns prompts, Skills, local context bindings, provider-broker capability, routes, secrets, budgets, policy, observations, and receipts.
 
 Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, creation mode, DSH UI/Host API, product MCP, and uncontrolled workflow/goal/task drivers. DSH never selects CodeWiki stages, retries, Results, Gates, or effects. Fixed replay proves the process path but is no user backend or fallback.
 
@@ -78,13 +78,13 @@ Only an Implementation Run may receive a writable Workbench. Project Server owns
 
 Delegated Runs use exact adapters. Runtime controls dispatch, admitted task/artifacts, lifecycle, cancellation, and granted Workbench capability. Receipts declare unobserved inner prompts, settings, tools, models, and continuation. External Agent Clients retain their pipelines.
 
-## Material, evaluation, ledger, and compaction
+## Context, evaluation, ledger, and compaction
 
-Producer Runs mount immutable content-addressed Project Material Generations built from exact WorkState, Knowledge, Alignment, active Changes, Work Graph, repository, Evidence, and Results. Material is a local query substrate, not canonical state or Gate package. Sessions switch generations only at idle boundaries. Typed queries bind generation, engine, arguments, bounds, order, sources, coverage, unknowns, truncation, cursor, and staleness, with no live round trip or ambient fallback.
+Producer Runs mount immutable content-addressed Project Context Snapshot Protocol `1.0.0` artifacts built from exact WorkState, Knowledge, Alignment, active Changes, Work Graph, repository, Evidence, and Results. Each snapshot is a local query substrate, not canonical state or Gate package. Its reusable semantic context digest excludes capture time; a separate observation digest binds coverage, freshness, and staleness. Sessions switch snapshots only at exact idle boundaries. Typed direct, batch, and cursor queries bind snapshot, engine, arguments, bounds, order, sources, coverage, unknowns, truncation, and staleness, with no live round trip or ambient fallback. Benchmark evidence selects a derived repository index plus explicitly bounded file content over mounting unrelated repository bytes.
 
-Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer material-query tools, producer Session, or memory. The current `StageContextBundle` and `query_stage_context` tools remain replay qualification evidence until replaced by mounted local material services; they are not the production producer-context contract.
+Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer context-query tools, producer Session, or memory. Production Run Processes require an exact unexpired authorization and read-only snapshot mount, then expose separate Knowledge, Alignment, Project State, repository, Evidence, Result, and Change-delta tools. `StageContextBundle` and `query_stage_context` remain isolated replay qualification evidence only.
 
-Every controlled model-visible input, material query, replacement, usage, output, and cancellation enters the append-only Execution Ledger. Its header binds Request, Build, continuity, Session/head, material or package input, route, tools, and Skills. Canonical entries form a digest chain; durable append uses expected-head CAS and recovery revalidates it.
+Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters the append-only Execution Ledger. Its header binds Request, Build, continuity, Session/head, snapshot or package input, route, tools, and Skills. Canonical entries form a digest chain; durable append uses expected-head CAS and recovery revalidates it.
 
 Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
 

@@ -34,11 +34,11 @@ export function runRequest(runId = "run-evidence", sessionId = "session-evidence
 		subject: {id: `subject-${runId}`, digest: digest("subject")},
 		runtimeBuild: {
 			buildDigest: digest("runtime-build"),
-			runProtocolVersion: "1.0.0",
+			runProtocolVersion: "2.0.0",
 		},
 		session: {mode: "create", sessionId, resumeLog: null},
 		inputs: {
-			stageContextDigest: digest("stage-context"),
+			projectContextSnapshotDigest: digest("stage-context"),
 			staticInputManifestDigest: digest("static-inputs"),
 			systemPromptDigest: canonicalJsonDigest("System prompt"),
 			promptDigest: canonicalJsonDigest("Run prompt"),

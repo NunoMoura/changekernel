@@ -8,15 +8,18 @@ import {
 	createRunEvent,
 	createRunProcessResult,
 	createRunQuiescence,
+	type ProjectContextAuthorization,
+	type ProjectContextMountBinding,
 	type RunCancellationRequest,
 	type RunEventKind,
 	type RunHandle,
 	type RunRequest,
 } from "../contracts.ts";
 import {
-	assertStageContextBundle,
-	type StageContextBundle,
-} from "../context/bundle.ts";
+	assertProjectContextAuthorization,
+	assertProjectContextMountBinding,
+	mountProjectContextSnapshot,
+} from "../context/project-context-mount.ts";
 import {runDshAgent} from "../dsh/adapter.ts";
 import {createDshReplayModelInstaller} from "../dsh/replay.ts";
 import {
@@ -29,10 +32,12 @@ import {
 	assertSha256Digest,
 	canonicalJson,
 	canonicalJsonDigest,
+	toCanonicalJsonValue,
+	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-const INPUT_MANIFEST_VERSION = "1.0.0" as const;
+const INPUT_MANIFEST_VERSION = "2.0.0" as const;
 const MAX_FRAME_BYTES = 1_048_576;
 const MAX_INPUT_MANIFEST_BYTES = 12 * 1_024 * 1_024;
 
@@ -44,7 +49,8 @@ interface DshRunProcessInputManifest {
 	readonly prompt: string;
 	readonly workspacePath: string;
 	readonly sessionRoot: string;
-	readonly stageContextBundle: StageContextBundle | null;
+	readonly projectContextMount: ProjectContextMountBinding | null;
+	readonly projectContextAuthorization: ProjectContextAuthorization | null;
 	readonly replayFixturePath: string;
 	readonly replayFixtureDigest: Sha256Digest;
 }
@@ -53,9 +59,7 @@ function createDshRunProcessInputManifest(
 	value: unknown,
 ): Readonly<DshRunProcessInputManifest> {
 	if (
-		value === null ||
-		typeof value !== "object" ||
-		Array.isArray(value) ||
+		!isRecord(value) ||
 		!hasExactKeys(value, [
 		"schemaVersion",
 		"runtimeBuildDigest",
@@ -64,13 +68,15 @@ function createDshRunProcessInputManifest(
 		"prompt",
 		"workspacePath",
 		"sessionRoot",
-			"stageContextBundle",
+			"projectContextMount",
+			"projectContextAuthorization",
 			"replayFixturePath",
 			"replayFixtureDigest",
 		])
 	) {
 		throw new Error("DSH Run Process input manifest shape is invalid.");
 	}
+	// SAFETY: exact top-level keys are established above; every field is validated below.
 	const input = value as unknown as DshRunProcessInputManifest;
 	if (input.schemaVersion !== INPUT_MANIFEST_VERSION) {
 		throw new Error("DSH Run Process input manifest version is invalid.");
@@ -88,15 +94,15 @@ function createDshRunProcessInputManifest(
 	assertText(input.prompt, "DSH prompt", 1_048_576);
 	assertAbsolute(input.workspacePath, "DSH workspace path");
 	assertAbsolute(input.sessionRoot, "DSH session root");
-	const stageContextBundle = input.stageContextBundle === null
+	const projectContextMount = input.projectContextMount === null
 		? null
-		: assertStageContextBundle(input.stageContextBundle);
+		: assertProjectContextMountBinding(input.projectContextMount);
 	assertAbsolute(input.replayFixturePath, "DSH replay fixture path");
 	return Object.freeze({
 		...input,
 		runtimeBuildDigest,
 		replayFixtureDigest,
-		stageContextBundle,
+		projectContextMount,
 	});
 }
 
@@ -266,6 +272,23 @@ async function executeDshProcessRun(input: {
 		runtimeBuildDigest: input.manifest.runtimeBuildDigest,
 		sessionId: input.request.session.sessionId,
 	}));
+	const projectContextSnapshot = input.manifest.projectContextMount
+		? await mountProjectContextSnapshot(input.manifest.projectContextMount)
+		: null;
+	if (projectContextSnapshot) {
+		assertProjectContextAuthorization(
+			input.manifest.projectContextAuthorization,
+			projectContextSnapshot,
+			{
+				runId: input.request.runId,
+				stage: input.request.stage,
+				subjectDigest: input.request.subject.digest,
+				observedAt: new Date().toISOString(),
+			},
+		);
+	} else if (input.manifest.projectContextAuthorization !== null) {
+		throw new Error("Project Context authorization cannot exist without a snapshot mount.");
+	}
 	const result = await runDshAgent({
 		request: input.request,
 		artifacts: {
@@ -274,7 +297,7 @@ async function executeDshProcessRun(input: {
 			workspacePath: input.manifest.workspacePath,
 			sessionRoot: input.manifest.sessionRoot,
 		},
-		stageContextBundle: input.manifest.stageContextBundle,
+		projectContextSnapshot,
 		installModelAdapter: createDshReplayModelInstaller({
 			fixturePath: input.manifest.replayFixturePath,
 			fixtureDigest: input.manifest.replayFixtureDigest,
@@ -421,9 +444,9 @@ async function endWriter(writer: Writable): Promise<void> {
 	await once(writer, "finish");
 }
 
-function parseJson(value: string, field: string): unknown {
+function parseJson(value: string, field: string): CanonicalJsonValue {
 	try {
-		return JSON.parse(value);
+		return toCanonicalJsonValue(JSON.parse(value));
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
 		throw new Error(`${field} is not valid JSON: ${reason}`);
@@ -443,13 +466,17 @@ function assertText(value: string, field: string, maximum: number): void {
 }
 
 function hasExactKeys(
-	value: object,
+	value: Record<string, unknown>,
 	expected: readonly string[],
 ): boolean {
 	const actual = Object.keys(value).sort(compareText);
 	const sortedExpected = [...expected].sort(compareText);
 	return actual.length === sortedExpected.length &&
 		actual.every((key, index) => key === sortedExpected[index]);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function compareText(left: string, right: string): number {

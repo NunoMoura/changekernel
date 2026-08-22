@@ -438,7 +438,7 @@ function runRequest() {
 		runtimeBuild: binding,
 		session: {mode: "create", sessionId: "session-001", resumeLog: null},
 		inputs: {
-			stageContextDigest: sha256Digest("context"),
+			projectContextSnapshotDigest: sha256Digest("context"),
 			staticInputManifestDigest: sha256Digest("input-manifest"),
 			systemPromptDigest: sha256Digest("system-prompt"),
 			promptDigest: sha256Digest("prompt"),

@@ -30,6 +30,7 @@ export const TARGET_PROJECT_SERVER_SUBDIRECTORIES = [
 	"effects",
 	"integration",
 	"lifecycle",
+	"project-context",
 	"pairing",
 	"persistence",
 	"queries",

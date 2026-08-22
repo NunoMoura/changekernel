@@ -53,7 +53,7 @@ CodeWiki
         `-- CodeWiki-authored Run Receipts
 ```
 
-Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The DSH path proves one exact-pinned replay Runtime Build from authenticated Run Process launch through isolated Agent Session JSONL and Runtime-authored Run Receipt. Current replay tooling still carries one immutable `StageContextBundle` with direct and batch queries; ratified production architecture replaces that transport with locally mounted content-addressed Project Material Generations and freezes separate Gate Evaluation Packages at Candidate checkpoint. Persistent multi-Run Session continuity, live provider transport, mounted material, Work Unit execution, compaction, secure Code Mode, cancellation/resume, and Pi parity remain implementation gates. Temporary Pi execution remains migration evidence.
+Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The DSH path proves one exact-pinned replay Runtime Build from authenticated Run Process launch through isolated Agent Session JSONL and Runtime-authored Run Receipt. Production producer Runs accept an authorized read-only content-addressed Project Context Snapshot mount and expose typed local Knowledge, Alignment, Project State, repository, Evidence, Result, batch, and Change-delta services; legacy `StageContextBundle` tools remain replay qualification evidence only. Project Server freezes separate Gate Evaluation Packages at Candidate checkpoint. Persistent multi-Run Session continuity, live provider transport, Work Unit execution, compaction, secure Code Mode, cancellation/resume, and Pi parity remain implementation gates. Temporary Pi execution remains migration evidence.
 
 ## Exactly four Stage Loops
 
@@ -75,7 +75,7 @@ A producer DSH Agent Session may span several separately bounded Runs, but every
 Every Candidate attempt follows one authority model:
 
 ```text
-refreshable producer Project Material Generation
+refreshable producer Project Context Snapshot
 -> exact Run Request and exclusive Session lease
 -> Runtime executes bounded Run
 -> Run Receipt
@@ -105,7 +105,7 @@ An optional Pack Skill guides only the work-producing Agent for its stage. Proje
 
 `check.json` uses the exported `CheckDefinitionSchema` at version `1.0.0`. It binds one atomic requirement, one Code or Model implementation, bounded input selectors, binary or finite quantitative measurement, execution limits, one stable failure code, and one remediation contract. It contains no lifecycle route, authority grant, enforcement tier, activation state, protected floor, arbitrary dependency, or repair subsystem.
 
-Code Checks use `CHECK.mjs`. Checks delegates them only to an admitted sandbox that declares hermetic, bounded, credential-free, network-denied execution. CodeWiki does not execute project JavaScript directly in the host process. Model Checks use `CHECK.md`; each Pack-selected route, profile, and token ceiling is independent from work-producing Worker routes. Every top-level Model Check invocation uses its own fresh isolated tool-free session, may run in bounded parallel, and receives no producer material query, memory, conversation, Worker state, or lifecycle authority.
+Code Checks use `CHECK.mjs`. Checks delegates them only to an admitted sandbox that declares hermetic, bounded, credential-free, network-denied execution. CodeWiki does not execute project JavaScript directly in the host process. Model Checks use `CHECK.md`; each Pack-selected route, profile, and token ceiling is independent from work-producing Worker routes. Every top-level Model Check invocation uses its own fresh isolated tool-free session, may run in bounded parallel, and receives no producer context query, memory, conversation, Worker state, or lifecycle authority.
 
 Code and Model implementations return the same strict structured output: exact Invocation digest, binary or quantitative measurement, bounded summary, and bounded factual details. Checks derives the verdict. Completed Results are only `passed | failed`; a failed Result receives the Check's authored failure code and feedback. Timeout, cancellation, unavailable execution, missing inputs, malformed output, exhausted retries, or stale identity creates no Result and stops only that Gate.
 
@@ -152,7 +152,7 @@ Project Server derives ready Work Units from canonical Work Graph and WorkState,
 
 Planning Candidate `2.0.0` creates immutable, independently judgeable worker-ready Work Units owned by exactly one Change, with exact Knowledge Effect, unchanged-Knowledge, and acceptance-requirement coverage; dependencies; scope; verification; aggregate Review obligations; and declarative resource requirements. Typed `planning.delta_accepted` applies only exact passed-Gate output under Change, Knowledge, WorkState, and Work Graph compare-and-swap. Canonical Work Graph `2.0.0` reduces accepted deltas, amendment lineage, dependencies, and current derived statuses without rewriting accepted Work Unit identity. Project Server selects current placement and any `routine`, `standard`, or `complex` execution tier from structured facts; callers and workers cannot self-label.
 
-Project Server resolves each Assignment into one private digest-bound Workbench containing exact source, owning Change and Work Unit obligations, dependency outputs, Project Material Generation, Skills/tools, model route, shared Implementation Check Pack policy, isolation, budgets, and Candidate contract. Only a matching canonical Claim activates it.
+Project Server resolves each Assignment into one private digest-bound Workbench containing exact source, owning Change and Work Unit obligations, dependency outputs, Project Context Snapshot, Skills/tools, model route, shared Implementation Check Pack policy, isolation, budgets, and Candidate contract. Only a matching canonical Claim activates it.
 
 Workers are isolated and non-authoritative. Work Unit Candidate `1.0.0` binds one exact accepted Work Unit obligation slice, Assignment, Workbench, source base, bounded Run receipts, changed paths, Evidence identities, and result tree. One persistent `implementation:<work-unit-id>` DSH Session spans at most eight attempts; exactly one final completed Run produces each Candidate. Implementation Stage Policy `1.0.0` binds one shared Check Pack snapshot, while Gate Evaluation Package `1.0.0` varies only Candidate and Evidence identities. Code Checks run before bounded parallel Model Checks; each Model Check receives a fresh isolated Session. `gate_failed`, `gate_passed`, `integration_pending`, `integrated`, `stale`, and `conflicted` remain separate.
 
@@ -317,7 +317,7 @@ After installing different packed runtime, fully restart Pi rather than relying 
 
 ## Review evidence configuration
 
-Review Attempt `3.0.0` binds one exact Change revision, Knowledge transition and resulting state, Planning deltas, Work Graph, frozen aggregate, private lineage, target base, every Work Unit, Candidate, Implementation Gate Report, Evidence and Result identity, Project Material Generation, fresh Review producer Session and Run receipt, provider receipts, and Review Check Pack. Project Server routes each failed Result to exact affected Implementation, explicit Planning amendment, or Decision through typed ownership. Only a current passed Review plus Delivery Authority `1.0.0` may target-head-CAS protected Git state and record `delivery.applied`; stopped Gates preserve state without fabricating Results. Legacy `.codewiki/config.json` `quality.review` evidence-pack settings remain only for older Implementation evidence collection and grant no Review authority.
+Review Attempt `4.0.0` binds one exact Change revision, Knowledge transition and resulting state, Planning deltas, Work Graph, frozen aggregate, private lineage, target base, every Work Unit, Candidate, Implementation Gate Report, Evidence and Result identity, Project Context Snapshot, fresh Review producer Session and Run receipt, provider receipts, and Review Check Pack. Project Server routes each failed Result to exact affected Implementation, explicit Planning amendment, or Decision through typed ownership. Only a current passed Review plus Delivery Authority `1.0.0` may target-head-CAS protected Git state and record `delivery.applied`; stopped Gates preserve state without fabricating Results. Legacy `.codewiki/config.json` `quality.review` evidence-pack settings remain only for older Implementation evidence collection and grant no Review authority.
 
 ```json
 {

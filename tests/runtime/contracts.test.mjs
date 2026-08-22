@@ -256,7 +256,7 @@ describe("execution ports", () => {
 			() =>
 				admitRunProcessHandshake(binding, {
 					runProtocolId: RUN_PROTOCOL.id,
-					runProtocolVersion: "2.0.0",
+					runProtocolVersion: "1.0.0",
 					runtimeBuildDigest: build.buildDigest,
 				}),
 			/Run Process protocol does not match the bound Run protocol/,
@@ -507,7 +507,7 @@ describe("execution ports", () => {
 			() =>
 				resolveRuntimeBuildForResume(registry, {
 					...firstRunBinding,
-					runProtocolVersion: "2.0.0",
+					runProtocolVersion: "1.0.0",
 				}),
 			/Run protocol version does not match the bound build/,
 		);
@@ -552,7 +552,7 @@ function runRequest(buildDigest, overrides = {}) {
 			overrides.session ||
 			({mode: "create", sessionId: "session-001", resumeLog: null}),
 		inputs: {
-			stageContextDigest: sha256Digest("stage-context"),
+			projectContextSnapshotDigest: sha256Digest("stage-context"),
 			staticInputManifestDigest: sha256Digest("static-inputs"),
 			systemPromptDigest: sha256Digest("system-prompt"),
 			promptDigest: overrides.promptDigest || sha256Digest("prompt"),

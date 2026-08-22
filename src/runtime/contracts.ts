@@ -7,6 +7,7 @@ import {
 	assertSha256Digest,
 	canonicalJson,
 	canonicalJsonDigest,
+	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
 
@@ -237,7 +238,7 @@ export interface SessionIsolationPort {
 
 export const RUN_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 
 export const RUNTIME_BUILD_SCHEMA_VERSION = "1.0.0" as const;
@@ -328,7 +329,7 @@ export function admitRunProcessHandshake(
 	});
 }
 
-export const RUN_REQUEST_SCHEMA_VERSION = "1.0.0" as const;
+export const RUN_REQUEST_SCHEMA_VERSION = "2.0.0" as const;
 
 export type RunCustody = "backend-owned" | "backend-delegated";
 export type RunRole =
@@ -369,8 +370,144 @@ export interface RunModelRouteBinding {
 	readonly routeDigest: Sha256Digest;
 }
 
+export const PROJECT_CONTEXT_SNAPSHOT_PROTOCOL = Object.freeze({
+	id: "codewiki.project-context-snapshot",
+	version: "1.0.0",
+	canonicalJson: "codewiki.canonical-json/1.0.0",
+} as const);
+
+export const PROJECT_CONTEXT_OBSERVATION_PROTOCOL = Object.freeze({
+	id: "codewiki.project-context-observation",
+	version: "1.0.0",
+} as const);
+
+export const PROJECT_CONTEXT_AUTHORIZATION_PROTOCOL = Object.freeze({
+	id: "codewiki.project-context-authorization",
+	version: "1.0.0",
+} as const);
+
+export type ProjectContextService =
+	| "knowledge"
+	| "alignment"
+	| "project_state"
+	| "repository"
+	| "evidence"
+	| "result"
+	| "change_delta";
+
+export interface ProjectContextSourceSnapshots {
+	readonly workState: Sha256Digest;
+	readonly knowledgeState: Sha256Digest;
+	readonly knowledgeProjection: Sha256Digest;
+	readonly alignment: Sha256Digest;
+	readonly repositoryTree: Sha256Digest;
+	readonly acceptedChanges: Sha256Digest;
+	readonly workGraph: Sha256Digest;
+	readonly evidence: Sha256Digest;
+	readonly results: Sha256Digest;
+}
+
+export interface ProjectContextSourceReference {
+	readonly kind: "knowledge" | "source" | "test" | "git" | "trace" | "evidence" | "result";
+	readonly ref: string;
+	readonly digest: Sha256Digest | null;
+}
+
+export type ProjectContextQueryRequest =
+	| {readonly service: "knowledge"; readonly operation: "subject" | "facet" | "search" | "list"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "alignment"; readonly operation: "neighbors" | "impact" | "delivery_chain" | "contradictions"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "project_state"; readonly operation: "change" | "work_unit" | "readiness" | "active_changes"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "repository"; readonly operation: "file" | "tree" | "search" | "ownership"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "evidence"; readonly operation: "by_subject" | "by_check" | "artifact"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "result"; readonly operation: "by_subject" | "by_gate" | "result"; readonly arguments: CanonicalJsonValue}
+	| {readonly service: "change_delta"; readonly operation: "discover"; readonly arguments: CanonicalJsonValue};
+
+export interface ProjectContextRoute {
+	readonly request: ProjectContextQueryRequest;
+	readonly requestDigest: Sha256Digest;
+	readonly chunkDigests: readonly Sha256Digest[];
+	readonly itemCount: number;
+	readonly sourceReferences: readonly ProjectContextSourceReference[];
+	readonly coverage: "complete" | "partial" | "unknown";
+	readonly unknowns: readonly string[];
+}
+
+export interface ProjectContextChunk {
+	readonly chunkDigest: Sha256Digest;
+	readonly items: readonly CanonicalJsonValue[];
+	readonly byteLength: number;
+}
+
+export interface ProjectContextManifest {
+	readonly protocol: typeof PROJECT_CONTEXT_SNAPSHOT_PROTOCOL;
+	readonly stage: CheckStage;
+	readonly subject: {readonly id: string; readonly digest: Sha256Digest};
+	readonly changeRevisionDigest: Sha256Digest;
+	readonly sources: ProjectContextSourceSnapshots;
+	readonly producerSkillSetDigest: Sha256Digest | null;
+	readonly gateFeedbackDigest: Sha256Digest | null;
+	readonly queryEngine: {readonly id: string; readonly version: string; readonly digest: Sha256Digest};
+	readonly routes: readonly ProjectContextRoute[];
+	readonly chunkDigests: readonly Sha256Digest[];
+	readonly semanticContextDigest: Sha256Digest;
+}
+
+export interface ProjectContextObservation {
+	readonly protocol: typeof PROJECT_CONTEXT_OBSERVATION_PROTOCOL;
+	readonly semanticContextDigest: Sha256Digest;
+	readonly capturedAt: string;
+	readonly stale: boolean;
+	readonly coverage: "complete" | "partial" | "unknown";
+	readonly unknowns: readonly string[];
+	readonly observationDigest: Sha256Digest;
+}
+
+export interface ProjectContextHandle {
+	readonly handle: string;
+	readonly snapshotDigest: Sha256Digest;
+	readonly targetKey: string;
+	readonly requestDigest: Sha256Digest;
+	readonly chunkDigest: Sha256Digest;
+	readonly itemIndex: number;
+}
+
+export interface ProjectContextSnapshot {
+	readonly schemaVersion: "1.0.0";
+	readonly manifest: ProjectContextManifest;
+	readonly observation: ProjectContextObservation;
+	readonly snapshotDigest: Sha256Digest;
+	readonly chunks: readonly ProjectContextChunk[];
+	readonly handles: readonly ProjectContextHandle[];
+}
+
+export interface ProjectContextAuthorization {
+	readonly protocol: typeof PROJECT_CONTEXT_AUTHORIZATION_PROTOCOL;
+	readonly snapshotDigest: Sha256Digest;
+	readonly semanticContextDigest: Sha256Digest;
+	readonly runId: string;
+	readonly stage: CheckStage;
+	readonly subjectDigest: Sha256Digest;
+	readonly actorDigest: Sha256Digest;
+	readonly authorizedAt: string;
+	readonly expiresAt: string;
+	readonly authorizationDigest: Sha256Digest;
+}
+
+export const PROJECT_CONTEXT_MOUNT_PROTOCOL = Object.freeze({
+	id: "codewiki.project-context-mount",
+	version: "1.0.0",
+} as const);
+
+export interface ProjectContextMountBinding {
+	readonly protocol: typeof PROJECT_CONTEXT_MOUNT_PROTOCOL;
+	readonly snapshotDigest: Sha256Digest;
+	readonly semanticContextDigest: Sha256Digest;
+	readonly snapshotPath: string;
+	readonly readOnly: true;
+}
+
 export interface RunInputBindings {
-	readonly stageContextDigest: Sha256Digest;
+	readonly projectContextSnapshotDigest: Sha256Digest;
 	readonly staticInputManifestDigest: Sha256Digest;
 	readonly systemPromptDigest: Sha256Digest;
 	readonly promptDigest: Sha256Digest;
@@ -1186,9 +1323,9 @@ function normalizeRunInputs(
 		throw new Error("Model Check Runs cannot receive producer Skills or tools.");
 	}
 	return Object.freeze({
-		stageContextDigest: assertSha256Digest(
-			value.stageContextDigest,
-			"Run Stage Context digest",
+		projectContextSnapshotDigest: assertSha256Digest(
+			value.projectContextSnapshotDigest,
+			"Run Project Context Snapshot digest",
 		),
 		staticInputManifestDigest: assertSha256Digest(
 			value.staticInputManifestDigest,
@@ -1384,7 +1521,7 @@ const RUN_REQUEST_INPUT_KEYS = [
 ] as const;
 
 const RUN_INPUT_KEYS = [
-	"stageContextDigest",
+	"projectContextSnapshotDigest",
 	"staticInputManifestDigest",
 	"systemPromptDigest",
 	"promptDigest",

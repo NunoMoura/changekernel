@@ -49,7 +49,7 @@ function reviewAttempt(snapshot, overrides = {}) {
 		producerSessionId: "session:review",
 		producingRunId: "run:review",
 		producerRunReceiptDigest: digest("c"),
-		projectMaterialGenerationDigest: digest("d"),
+		projectContextSnapshotDigest: digest("d"),
 		checkPackSnapshotDigest: snapshot.checkPackDigest,
 		providerReceiptDigests: [],
 		evidenceRecordDigests: [],

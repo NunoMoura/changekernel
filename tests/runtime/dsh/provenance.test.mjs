@@ -49,7 +49,7 @@ describe("DSH Runtime Build provenance", () => {
 
 		const manifest = createRuntimeBuildManifest({
 			schemaVersion: "1.0.0",
-			runProtocolVersion: "1.0.0",
+			runProtocolVersion: "2.0.0",
 			nodeVersion: process.version.slice(1),
 			dshSourceCommit: provenance.reviewedSource.commit,
 			dshPackageClosureDigest: provenance.dshPackageClosureDigest,
