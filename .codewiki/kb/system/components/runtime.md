@@ -86,6 +86,8 @@ Project Server freezes a distinct immutable Gate Evaluation Package only after C
 
 Every controlled model-visible input, material query, replacement, usage, output, and cancellation enters the append-only Execution Ledger. Its header binds Request, Build, continuity, Session/head, material or package input, route, tools, and Skills. Canonical entries form a digest chain; durable append uses expected-head CAS and recovery revalidates it.
 
+Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
+
 Raw DSH Agent Session bytes remain versioned evidence, not canonical project state. Runtime retains them by exact byte length and digest and revalidates stored bytes on every receipt read. A completed Run Receipt commits only after its exact Execution Ledger and raw log are durably present. Receipt commit is immutable, identity-keyed, atomic, and compare-and-swap guarded; recovery rejects missing, mismatched, corrupted, or misnamed evidence.
 
 Compaction changes model-visible surface only. Authority facts become canonical first. DSH owns pressure, pruning, replacement, and Session events; CodeWiki owns predictive stage policy, safe idle checkpoints, promotion, rehydration, and rollover. Checkpoints cite replaced ranges and retain exact history. Never compact during an open turn, unmatched tool pair, pending child work, or before Candidate freezing. Opaque heap is never canonical.

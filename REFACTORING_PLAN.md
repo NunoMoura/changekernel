@@ -440,12 +440,12 @@ Success: Review proves the complete Change and no Work Unit Result is misreprese
 
 ### Slice 8B — Top-down realization lineage and projection reduction
 
-- Project accepted Knowledge Effect and requirement IDs through WorkState, Planning coverage, Work Units, Implementation Candidates, source/test ownership, Evidence, aggregate Review, integrated trees, commits, delivery, and Alignment queries. Meaning changes return to Decision; later stages cannot amend accepted Effects.
-- Build an accepted-Effect target and invariant index. Mechanically account for every accepted active Change, expand full revisions only for overlaps, shared invariants, explicit relationships, and unknowns, and preserve complete coverage proof for the Decision Gate.
-- Classify every current `kb/**` fact as durable seed, accepted semantic cell, deterministic projection, or Git-derived realization. Keep compact Product/System/Design intent and contractual relationships in Knowledge; move repeated indexes, expanded dictionaries, expanded dossiers, status narration, migration notes, and drift reports to deterministic `views/**` projections.
-- Make retries, Review, and later stages reference immutable Candidate, Effect, requirement, and material digests instead of repeating prose.
-- Instrument source tokens, cached input tokens, model output tokens, tool-result tokens, repeated-byte ratio, new-byte ratio, Candidate-to-edit amplification, active-Change expansion, and cache hit rate per stage.
-- Benchmark full-document rewriting, unified diff, byte splice, structural section replacement, and semantic Effect encoding over representative terminology, architecture, and no-Knowledge-effect Changes.
+- [x] Project accepted Knowledge Effect and requirement IDs through WorkState, Planning coverage, Work Units, Implementation Candidates, source/test ownership, Evidence, aggregate Review, integrated trees, commits, delivery, and Alignment queries. Meaning changes return to Decision; later stages cannot amend accepted Effects.
+- [x] Build an accepted-Effect target and invariant index. Mechanically account for every accepted active Change, expand full revisions only for overlaps, shared invariants, explicit relationships, and unknowns, and preserve complete coverage proof for the Decision Gate.
+- [x] Classify every current `kb/**` fact as durable seed, accepted semantic cell, deterministic projection, or Git-derived realization. Keep compact Product/System/Design intent and contractual relationships in Knowledge; move repeated indexes, expanded dictionaries, expanded dossiers, status narration, migration notes, and drift reports to deterministic `views/**` projections.
+- [x] Make retries, Review, and later stages reference immutable Candidate, Effect, requirement, and material digests instead of repeating prose.
+- [x] Instrument source tokens, cached input tokens, model output tokens, tool-result tokens, repeated-byte ratio, new-byte ratio, Candidate-to-edit amplification, active-Change expansion, and cache hit rate per stage.
+- [x] Benchmark full-document rewriting, unified diff, byte splice, structural section replacement, and semantic Effect encoding over representative terminology, architecture, and no-Knowledge-effect Changes.
 
 Success: model output contains zero current-state bytes and one copy of each irreducible new fragment; one semantic Effect may update any number of deterministic projections; complete active-Change compatibility remains fail-closed with bounded expanded context; generated views remain rich while canonical authored Knowledge and repeated model context shrink materially.
 

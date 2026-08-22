@@ -3,10 +3,16 @@ import {describe, it} from "node:test";
 
 import {createNextChangeOperation} from "../../../src/changes/trace/index.ts";
 import {
+	acceptedActiveChangeBindings,
 	assertDecisionAcceptedActiveChangesBinding,
 } from "../../../src/loops/decision/accepted-active-changes.ts";
 import {createDecisionCandidate} from "../../../src/loops/decision/candidate.ts";
+import {
+	createAcceptedChangeCompatibilityContext,
+	createAcceptedEffectInvariantIndex,
+} from "../../../src/loops/decision/accepted-effect-index.ts";
 import {createKnowledgeCheckpoint} from "../../../src/knowledge/state.ts";
+import {canonicalJson} from "../../../src/utils/canonical-json.ts";
 import {createNativeDecisionOperationSequence} from "../../../src/project-server/effects/gate-operations.ts";
 import {createDecisionGate} from "../../../src/project-server/lifecycle/gates.ts";
 import {
@@ -145,14 +151,17 @@ describe("Decision accepted active Changes binding", () => {
 		const subjectRevision = nativeDecisionRevision({
 			changeId: "CHG-subject",
 			targetRefs: ["src/shared.ts"],
+			invariants: ["Shared invariant."],
 		});
 		const acceptedRevision = nativeDecisionRevision({
 			changeId: "CHG-accepted",
 			targetRefs: ["src/shared.ts"],
+			invariants: ["Shared invariant."],
 		});
 		const unrelatedRevision = nativeDecisionRevision({
 			changeId: "CHG-unrelated",
 			targetRefs: ["src/unrelated.ts"],
+			invariants: ["Unrelated invariant."],
 		});
 		const pendingRevision = nativeDecisionRevision({changeId: "CHG-pending"});
 		let state = nativeDecisionState([
@@ -165,9 +174,9 @@ describe("Decision accepted active Changes binding", () => {
 		state = await acceptDecision(state, "CHG-unrelated", 2);
 
 		const decisionCandidate = candidate(state, "CHG-subject");
-		assert.equal(decisionCandidate.schemaVersion, "6.0.0");
+		assert.equal(decisionCandidate.schemaVersion, "7.0.0");
 		const acceptedChanges = decisionCandidate.content.acceptedActiveChanges;
-		assert.equal(acceptedChanges.schemaVersion, "1.0.0");
+		assert.equal(acceptedChanges.schemaVersion, "2.0.0");
 		assert.equal(acceptedChanges.requiredCheckId, "active_change_compatibility");
 		assert.equal(acceptedChanges.coverage, "complete");
 		assert.deepEqual(acceptedChanges.expectedChangeIds, [
@@ -175,20 +184,38 @@ describe("Decision accepted active Changes binding", () => {
 			"CHG-unrelated",
 		]);
 		assert.deepEqual(acceptedChanges.comparedChangeIds, acceptedChanges.expectedChangeIds);
-		assert.equal(acceptedChanges.changes.length, 2);
+		assert.equal(acceptedChanges.effectIndex.changes.length, 2);
+		assert.equal(acceptedChanges.changes.length, 1);
 		assert.equal(acceptedChanges.changes[0].changeId, "CHG-accepted");
 		assert.equal(
 			acceptedChanges.changes[0].revision.revisionId,
 			acceptedRevision.revisionId,
 		);
 		assert.equal(
-			acceptedChanges.changes[1].revision.revisionId,
+			acceptedChanges.effectIndex.changes[1].revisionId,
 			unrelatedRevision.revisionId,
 		);
 		assert.deepEqual(
 			decisionCandidate.content.activeOverlaps.map((overlap) => overlap.changeId),
 			["CHG-accepted"],
 		);
+		const index = acceptedChanges.effectIndex;
+		assert.deepEqual(index.changes.map((change) => change.changeId), [
+			"CHG-accepted",
+			"CHG-unrelated",
+		]);
+		assert.match(index.changes[0].invariantIds[0], /^invariant:[0-9a-f]{64}$/u);
+		assert.deepEqual(
+			acceptedChanges.changeCoverage.map(({changeId, disposition}) => ({changeId, disposition})),
+			[
+				{changeId: "CHG-accepted", disposition: "expanded"},
+				{changeId: "CHG-unrelated", disposition: "index_only"},
+			],
+		);
+		assert.deepEqual(acceptedChanges.changes.map((change) => change.changeId), [
+			"CHG-accepted",
+		]);
+
 		assert.throws(
 			() =>
 				assertDecisionAcceptedActiveChangesBinding({
@@ -196,6 +223,40 @@ describe("Decision accepted active Changes binding", () => {
 					comparedChangeIds: ["CHG-accepted"],
 				}),
 			/incomplete/,
+		);
+	});
+
+	it("keeps complete disjoint compatibility context bounded", () => {
+		const subject = nativeDecisionRevision({
+			changeId: "CHG-subject-bounded",
+			invariants: ["Subject-only invariant."],
+		});
+		const template = nativeDecisionRevision({
+			changeId: "CHG-template",
+			invariants: ["Disjoint accepted invariant."],
+		});
+		const acceptedChanges = Array.from({length: 24}, (_, index) => ({
+			changeId: `CHG-disjoint-${String(index).padStart(2, "0")}`,
+			revision: {
+				ordinal: 1,
+				revisionId: digest(String((index % 9) + 1)),
+				...template.content,
+			},
+			relationships: [],
+		}));
+		const effectIndex = createAcceptedEffectInvariantIndex({acceptedChanges});
+		const compact = createAcceptedChangeCompatibilityContext({
+			acceptedChanges,
+			subjectChangeId: "CHG-subject-bounded",
+			subjectRevisionId: subject.revisionId,
+			subjectRevision: subject.content,
+			subjectRelationshipChangeIds: [],
+		});
+		assert.equal(compact.expandedRevisions.length, 0);
+		assert.equal(compact.coverage.length, acceptedChanges.length);
+		assert.ok(
+			Buffer.byteLength(canonicalJson({effectIndex, compact})) <
+				Buffer.byteLength(canonicalJson(acceptedChanges)),
 		);
 	});
 

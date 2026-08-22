@@ -3,6 +3,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { parse as parseYaml } from "yaml";
 import {validateCodeWikiKbBundle} from "../../src/knowledge/codewiki-kb-profile.ts";
+import {
+	assertKnowledgeFactInventory,
+	createKnowledgeFactInventory,
+} from "../../src/knowledge/fact-classification.ts";
+import {createKnowledgeCheckpoint} from "../../src/knowledge/state.ts";
 import { parseOkfDocument } from "../../src/knowledge/okf-frontmatter.ts";
 import { analyzeOkfV02Document } from "../../src/knowledge/okf-v02.ts";
 import { validateSystemDiagrams } from "../../src/knowledge/system-diagrams.ts";
@@ -32,6 +37,25 @@ function knowledgeState() {
 }
 
 describe("CodeWiki native Knowledge bundle", () => {
+	it("classifies every current Knowledge file and semantic cell as durable seed or derived view", () => {
+		const {files} = knowledgeState();
+		const checkpoint = createKnowledgeCheckpoint({
+			files: files.map((file) => ({
+				path: file.slice(root.length + 1),
+				mediaType: file.endsWith(".md") ? "text/markdown" : "application/yaml",
+				bytes: readFileSync(file, "utf8"),
+			})),
+		});
+		const inventory = createKnowledgeFactInventory({checkpoint});
+		assertKnowledgeFactInventory(inventory);
+		assert.equal(
+			inventory.entries.filter((entry) => entry.id.startsWith("knowledge-projection:")).length,
+			files.length,
+		);
+		assert.equal(inventory.counts.accepted_semantic_cell, 0);
+		assert.equal(inventory.coverage, "complete");
+	});
+
 	it("contains only canonical semantic documents and diagrams", () => {
 		const { files, documents } = knowledgeState();
 		assert.equal(

@@ -17,7 +17,9 @@ import {
 	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
-import { compareText, sameText } from "../changes/trace/order.ts";
+import {compareText, sameText} from "../changes/trace/order.ts";
+import {knowledgeEffectId} from "../knowledge/materialization.ts";
+import {knowledgeTargetKey} from "../knowledge/state.ts";
 import {
 	candidateOperationPayload as candidatePayload,
 	operationPayload as payloadOf,
@@ -25,7 +27,7 @@ import {
 
 export const ALIGNMENT_GRAPH_PROJECTOR = Object.freeze({
 	id: "codewiki.alignment-graph-projector",
-	version: "4.0.0",
+	version: "5.0.0",
 } as const);
 
 export type AlignmentGraphProvenanceClass =
@@ -338,6 +340,42 @@ function projectChangeRevision(
 		});
 		graph.edge("revision_has_requirement", revisionNode, requirementNode, provenance);
 	}
+	if (revision.content.knowledge.kind === "effects") {
+		for (const effect of revision.content.knowledge.effects) {
+			const effectId = knowledgeEffectId(effect);
+			const effectNode = effectId;
+			graph.node({
+				id: effectNode,
+				type: "knowledge_effect",
+				label: effectId,
+				attributes: {
+					action: effect.action,
+					targetKey: knowledgeTargetKey(effect.target),
+				},
+				provenance,
+			});
+			graph.edge("revision_has_knowledge_effect", revisionNode, effectNode, provenance);
+			graph.edge(
+				"knowledge_effect_targets_subject",
+				effectNode,
+				`knowledge-ref:${effect.target.subjectId}`,
+				provenance,
+				{...(effect.target.facetId ? {facetId: effect.target.facetId} : {})},
+			);
+		}
+	}
+	for (const invariant of revision.content.safety.invariants) {
+		const invariantId = canonicalJsonDigest({invariant: invariant.trim()});
+		const invariantNode = `invariant:${invariantId}`;
+		graph.node({
+			id: invariantNode,
+			type: "accepted_invariant",
+			label: "Accepted invariant",
+			attributes: {statementDigest: invariantId},
+			provenance,
+		});
+		graph.edge("revision_declares_invariant", revisionNode, invariantNode, provenance);
+	}
 	if (operation.body.kind === "change.revised") {
 		const revised = payloadOf(operation, "change.revised");
 		graph.edge(
@@ -578,6 +616,123 @@ function projectCandidate(
 			provenance,
 		);
 	}
+	projectCandidateRealizationLineage(graph, operation, payload.candidate, provenance);
+}
+
+function projectCandidateRealizationLineage(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+	candidate: CanonicalInlineSemanticArtifact,
+	provenance: AlignmentGraphFactProvenance,
+): void {
+	const content = candidateContentRecord(candidate);
+	if (!content) return;
+	const revisionId = typeof content.changeRevisionId === "string"
+		? content.changeRevisionId
+		: null;
+	if (operation.body.kind === "planning.candidate_recorded" && revisionId) {
+		const delta = objectRecord(content.delta);
+		const workUnits = Array.isArray(delta?.workUnits) ? delta.workUnits : [];
+		for (const value of workUnits) {
+			const workUnit = objectRecord(value);
+			if (!workUnit || typeof workUnit.id !== "string") continue;
+			const workUnitNode = workUnitNodeId(workUnit.id);
+			graph.node({
+				id: workUnitNode,
+				type: "work_unit",
+				label: typeof workUnit.title === "string" ? workUnit.title : workUnit.id,
+				attributes: {},
+				provenance,
+			});
+			for (const effectId of stringValues(workUnit.knowledgeEffectIds)) {
+				graph.edge(
+					"knowledge_effect_assigned_to_work_unit",
+					effectId,
+					workUnitNode,
+					provenance,
+				);
+			}
+			for (const requirementId of stringValues(workUnit.acceptanceRequirementIds)) {
+				graph.edge(
+					"requirement_assigned_to_work_unit",
+					`requirement:${revisionId}:${requirementId}`,
+					workUnitNode,
+					provenance,
+				);
+			}
+			for (const path of stringValues(workUnit.pathScopes)) {
+				graph.edge(
+					"work_unit_scopes_realization_path",
+					workUnitNode,
+					realizationPathNode(path),
+					provenance,
+				);
+			}
+		}
+	}
+	if (operation.body.kind !== "implementation.candidate_recorded" || !revisionId) return;
+	const candidateId = inlineArtifactAttribute(candidate, "id");
+	if (typeof candidateId !== "string") return;
+	const candidateNode = `candidate:${candidateId}`;
+	const acceptanceSlice = objectRecord(content.acceptanceSlice);
+	for (const effectId of stringValues(acceptanceSlice?.knowledgeEffectIds)) {
+		graph.edge(
+			"knowledge_effect_realized_by_candidate",
+			effectId,
+			candidateNode,
+			provenance,
+		);
+	}
+	for (const requirementId of stringValues(acceptanceSlice?.acceptanceRequirementIds)) {
+		graph.edge(
+			"requirement_realized_by_candidate",
+			`requirement:${revisionId}:${requirementId}`,
+			candidateNode,
+			provenance,
+		);
+	}
+	for (const path of stringValues(content.changedPaths)) {
+		const pathNode = realizationPathNode(path);
+		graph.node({
+			id: pathNode,
+			type: realizationPathType(path),
+			label: path,
+			attributes: {},
+			provenance,
+		});
+		graph.edge("candidate_realizes_path", candidateNode, pathNode, provenance);
+	}
+}
+
+function candidateContentRecord(
+	candidate: CanonicalInlineSemanticArtifact,
+): Readonly<Record<string, CanonicalJsonValue>> | null {
+	const artifact = objectRecord(candidate.artifact);
+	return objectRecord(artifact?.content);
+}
+
+function objectRecord(
+	value: unknown,
+): Readonly<Record<string, CanonicalJsonValue>> | null {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? value as Readonly<Record<string, CanonicalJsonValue>>
+		: null;
+}
+
+function stringValues(value: unknown): readonly string[] {
+	return Array.isArray(value)
+		? value.filter((entry): entry is string => typeof entry === "string")
+		: [];
+}
+
+function realizationPathNode(path: string): string {
+	return `${realizationPathType(path)}:${path}`;
+}
+
+function realizationPathType(path: string): "source_path" | "test_path" {
+	return /(^|\/)(tests?|__tests__)(\/|$)|\.(?:spec|test)\.[^.]+$/u.test(path)
+		? "test_path"
+		: "source_path";
 }
 
 function projectExitPolicy(
@@ -985,6 +1140,9 @@ function projectPrivateIntegrationAdmission(
 	const workUnitId = inlineArtifactAttribute(receipt, "workUnitId");
 	const candidateId = inlineArtifactAttribute(receipt, "candidateId");
 	const resultCommit = inlineArtifactAttribute(receipt, "resultCommit");
+	const resultTree = inlineArtifactAttribute(receipt, "resultTree");
+	const changeRevisionId = inlineArtifactAttribute(receipt, "changeRevisionId");
+	const acceptanceSlice = objectRecord(inlineArtifactAttribute(receipt, "acceptanceSlice"));
 	if (typeof workUnitId === "string") {
 		graph.edge(
 			"work_unit_admitted_to_private_lineage",
@@ -1009,6 +1167,31 @@ function projectPrivateIntegrationAdmission(
 			provenance,
 		);
 	}
+	if (typeof resultTree === "string") {
+		graph.edge(
+			"private_lineage_has_tree",
+			operationNodeId(operation.operationId),
+			`git-tree:${resultTree}`,
+			provenance,
+		);
+	}
+	for (const effectId of stringValues(acceptanceSlice?.knowledgeEffectIds)) {
+		graph.edge(
+			"knowledge_effect_admitted_to_private_lineage",
+			effectId,
+			operationNodeId(operation.operationId),
+			provenance,
+		);
+	}
+	for (const requirementId of stringValues(acceptanceSlice?.acceptanceRequirementIds)) {
+		if (typeof changeRevisionId !== "string") continue;
+		graph.edge(
+			"requirement_admitted_to_private_lineage",
+			`requirement:${changeRevisionId}:${requirementId}`,
+			operationNodeId(operation.operationId),
+			provenance,
+		);
+	}
 }
 
 function projectImplementationAggregate(
@@ -1020,13 +1203,57 @@ function projectImplementationAggregate(
 	const provenance = operationProvenance(operation);
 	const candidateIds = inlineArtifactAttribute(payload.aggregate, "contributingCandidateIds");
 	const workUnitIds = inlineArtifactAttribute(payload.aggregate, "requiredWorkUnitIds");
+	const aggregateDigest = inlineArtifactAttribute(payload.aggregate, "aggregateDigest");
+	const headCommit = inlineArtifactAttribute(payload.aggregate, "headCommit");
+	const headTreeDigest = inlineArtifactAttribute(payload.aggregate, "headTreeDigest");
+	const changeRevisionId = inlineArtifactAttribute(payload.aggregate, "changeRevisionId");
+	const aggregateNode = typeof aggregateDigest === "string"
+		? `implementation-aggregate:${aggregateDigest}`
+		: operationNodeId(operation.operationId);
+	if (typeof aggregateDigest === "string") {
+		graph.node({
+			id: aggregateNode,
+			type: "implementation_aggregate",
+			label: aggregateDigest,
+			attributes: {
+				aggregateDigest,
+				...(typeof headCommit === "string" ? {headCommit} : {}),
+				...(typeof headTreeDigest === "string" ? {headTreeDigest} : {}),
+			},
+			provenance,
+		});
+		graph.edge(
+			"aggregate_frozen_by_operation",
+			aggregateNode,
+			operationNodeId(operation.operationId),
+			provenance,
+		);
+	}
+	if (typeof headCommit === "string") {
+		graph.edge("aggregate_has_commit", aggregateNode, `git-commit:${headCommit}`, provenance);
+	}
+	if (typeof headTreeDigest === "string") {
+		graph.edge("aggregate_has_tree", aggregateNode, `git-tree:${headTreeDigest}`, provenance);
+	}
+	for (const effectId of stringValues(inlineArtifactAttribute(payload.aggregate, "knowledgeEffectIds"))) {
+		graph.edge("knowledge_effect_realized_by_aggregate", effectId, aggregateNode, provenance);
+	}
+	for (const requirementId of stringValues(inlineArtifactAttribute(payload.aggregate, "acceptanceRequirementIds"))) {
+		if (typeof changeRevisionId !== "string") continue;
+		graph.edge(
+			"requirement_realized_by_aggregate",
+			`requirement:${changeRevisionId}:${requirementId}`,
+			aggregateNode,
+			provenance,
+		);
+	}
 	if (Array.isArray(candidateIds)) {
 		for (const candidateId of candidateIds) {
 			if (typeof candidateId !== "string") continue;
 			graph.edge(
 				"candidate_contributes_to_implementation_aggregate",
 				`candidate:${candidateId}`,
-				operationNodeId(operation.operationId),
+				aggregateNode,
 				provenance,
 			);
 		}
@@ -1037,7 +1264,7 @@ function projectImplementationAggregate(
 			graph.edge(
 				"work_unit_contributes_to_implementation_aggregate",
 				workUnitNodeId(workUnitId),
-				operationNodeId(operation.operationId),
+				aggregateNode,
 				provenance,
 			);
 		}
@@ -1081,10 +1308,29 @@ function projectGuardedDelivery(
 		operationNodeId(operation.operationId),
 		provenance,
 	);
+	const aggregateNode = `implementation-aggregate:${payload.aggregateDigest}`;
 	graph.edge(
-		"delivery_realizes_aggregate",
+		"delivery_applies_aggregate",
+		operationNodeId(operation.operationId),
+		aggregateNode,
+		provenance,
+	);
+	graph.edge(
+		"delivery_realizes_commit",
 		operationNodeId(operation.operationId),
 		`git-commit:${payload.deliveredCommit}`,
+		provenance,
+	);
+	graph.edge(
+		"delivery_realizes_tree",
+		operationNodeId(operation.operationId),
+		`git-tree:${payload.deliveredTree}`,
+		provenance,
+	);
+	graph.edge(
+		"delivery_updates_ref",
+		operationNodeId(operation.operationId),
+		`git-ref:${payload.targetRef}`,
 		provenance,
 	);
 }

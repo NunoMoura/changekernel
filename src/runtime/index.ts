@@ -1,4 +1,5 @@
 export * from "./contracts.ts";
+export * from "./efficiency-metrics.ts";
 export * from "./builds/store.ts";
 export * from "./context/contracts.ts";
 export * from "./context/bundle.ts";

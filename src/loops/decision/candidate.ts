@@ -28,7 +28,7 @@ import {
 	type DecisionDisposition,
 } from "./candidate-proposal.ts";
 
-const DECISION_CANDIDATE_SCHEMA_VERSION = "6.0.0" as const;
+const DECISION_CANDIDATE_SCHEMA_VERSION = "7.0.0" as const;
 
 export interface DecisionOverlapBinding {
 	readonly changeId: string;
