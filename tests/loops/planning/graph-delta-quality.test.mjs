@@ -9,7 +9,9 @@ function workUnit(id, owningChangeId = "CHG-planned") {
 		title: id,
 		outcome: `${id} is complete.`,
 		technicalRequirements: ["Preserve graph authority."],
-		acceptanceRequirements: [`${id} passes.`],
+		knowledgeEffectIds: [],
+		unchangedKnowledgeTargets: [],
+		acceptanceRequirementIds: [`REQ-${id}`],
 		componentRefs: ["planning"],
 		pathScopes: [`src/${id}.ts`],
 		verification: ["npm test"],
@@ -18,6 +20,8 @@ function workUnit(id, owningChangeId = "CHG-planned") {
 			toolIds: ["node-test"],
 			skillIds: [],
 			custodyRequirements: ["private-workbench"],
+			consentRequirements: ["source-mutation"],
+			privacyClass: "internal",
 			budgetClass: "standard",
 		},
 	};
@@ -28,10 +32,18 @@ function quality(overrides = {}) {
 		changeId: "CHG-planned",
 		workUnits: [workUnit("WU-new")],
 		dependencyEdges: [],
+		knowledgeEffectCoverage: [],
+		unchangedKnowledgeCoverage: [],
 		acceptanceCoverage: [
-			{ acceptanceRequirement: "WU-new passes.", workUnitIds: ["WU-new"] },
+			{obligationId: "REQ-WU-new", workUnitIds: ["WU-new"]},
 		],
+		aggregateReviewRequirements: [
+			{id: "AGR-new", statement: "Review new work.", workUnitIds: ["WU-new"]},
+		],
+		uiPreviewTargets: [],
 		integrationRequirements: ["Integrate into private Change lineage."],
+		amendment: null,
+		rationale: "Map exact obligations.",
 		workState: {
 			workUnitIds: ["WU-foundation"],
 			workUnits: [

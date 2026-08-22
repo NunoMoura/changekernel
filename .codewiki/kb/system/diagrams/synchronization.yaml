@@ -1,11 +1,13 @@
+codewiki_id: cw:diagram:synchronization
 id: synchronization
-purpose: Show Project Server-owned provider-neutral Git synchronization with expected-head compare-and-swap, accepted Change history, and post-mutation alignment verification.
+purpose: Show Project Server-owned synchronization of exact Git refs, accepted Change history, reduced Knowledge State, and post-mutation Alignment under expected-head compare-and-swap.
 components:
-  - { id: project-server, concept: /system/components/project-server.md, label: Project Server, zone: core }
-  - { id: project, concept: /system/components/project.md, label: Project Configuration, zone: repository }
-  - { id: provider, concept: /system/components/provider-boundary.md, label: Trusted Git Host Boundary, zone: provider }
-  - { id: change-trace, concept: /system/components/change-trace.md, label: Change Trace, zone: repository }
-  - { id: alignment, concept: /system/components/alignment.md, label: Alignment, zone: core }
+  - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
+  - { id: project, concept: cw:component:project, label: Project Configuration, zone: repository }
+  - { id: provider, concept: cw:component:provider-boundary, label: Trusted Git Host Boundary, zone: provider }
+  - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge State, zone: repository }
+  - { id: alignment, concept: cw:component:alignment, label: Alignment, zone: core }
 connections:
   - id: project-server-reads-project
     from: project-server
@@ -41,10 +43,23 @@ connections:
     from: change-trace
     to: alignment
     type: produces
-    label: projects accepted identities and provenance
+    label: projects accepted transition and realization provenance
     boundary: { type: persistence, failure: Block projection when canonical history cannot be reduced. }
+  - id: project-server-writes-knowledge
+    from: project-server
+    to: knowledge
+    type: writes
+    label: commits the verified reduced Knowledge State checkpoint
+    boundary: { type: persistence, failure: Preserve prior Knowledge and Trace heads when reduction or checkpoint comparison fails. }
+  - id: knowledge-produces-alignment
+    from: knowledge
+    to: alignment
+    type: produces
+    label: projects stable desired-state identity
+    boundary: { type: persistence, failure: Block projection when accepted Knowledge cannot be verified. }
   - { id: alignment-returns-project-server, from: alignment, to: project-server, type: returns, label: confirms synchronized identities }
 flows:
-  - concept: /system/flows/remote-state-synchronization.md
+  - concept: cw:flow:remote-state-synchronization
     paths:
       - connections: [project-server-reads-project, project-returns-project-server, project-server-synchronizes-provider, provider-returns-project-server, project-server-writes-change-trace, change-trace-produces-alignment, alignment-returns-project-server]
+      - connections: [project-server-reads-project, project-returns-project-server, project-server-synchronizes-provider, provider-returns-project-server, project-server-writes-knowledge, knowledge-produces-alignment, alignment-returns-project-server]

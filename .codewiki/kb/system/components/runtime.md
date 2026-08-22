@@ -1,24 +1,25 @@
 ---
 type: System Component
+codewiki_id: cw:component:runtime
 title: Runtime
 description: Executes immutable Run Requests through exact Runtime Builds and controlled Run Processes, then creates bounded Run Receipts without project authority.
 status: stable
 tags: [system, component]
-codewiki_component: runtime
+codewiki_component: cw:component:runtime
 codewiki_source_patterns: ["src/runtime/**"]
 codewiki_test_patterns: ["tests/runtime/**"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: Runtime supplies isolated accountable execution for Project Server-issued Runs.
   - type: realizes
-    target: /product/stories/maintainer/enforce-project-standards.md
+    target: cw:story:maintainer.enforce-project-standards
     rationale: Runtime supplies isolated Code and Model Check execution without Result authority.
   - type: realizes
-    target: /product/stories/check-author/author-composable-checks.md
+    target: cw:story:check-author.author-composable-checks
     rationale: Runtime supplies immutable input and sandbox boundaries for authored Code Checks.
   - type: realizes
-    target: /product/stories/agent/retrieve-bounded-context.md
+    target: cw:story:agent.retrieve-bounded-context
     rationale: Runtime mounts exact Project Material Generations and receipts local queries, session continuity, and DSH compaction.
 ---
 # Runtime

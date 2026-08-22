@@ -43,8 +43,8 @@ async function archiveRecords(traceId = "TRACE-wiki-archive") {
 			changes: [
 				{
 					id: "CHG-archive",
-					currentState: "Retention stub built manually.",
-					desiredState: "wiki_archive previews retention refs.",
+					problem: "Retention stub built manually.",
+					objective: "wiki_archive previews retention refs.",
 					rationale: "Archive must preserve restore refs.",
 					...decisionQualityFields(),
 					approval: "approved",
@@ -167,8 +167,8 @@ describe("wiki_archive core facade", () => {
 				changes: [
 					{
 						id: "CHG-archive-incomplete",
-						currentState: "Trace close can happen too early.",
-						desiredState: "Trace close waits for goal coverage.",
+						problem: "Trace close can happen too early.",
+						objective: "Trace close waits for goal coverage.",
 						rationale: "Closed incomplete traces hide unfinished goals.",
 						...decisionQualityFields(),
 						approval: "approved",
@@ -356,8 +356,8 @@ describe("wiki_archive core facade", () => {
 				changes: [
 					{
 						id: "CHG-archive-compact-incomplete",
-						currentState: "Trace compact can happen too early.",
-						desiredState: "Trace compact waits for implementation exit.",
+						problem: "Trace compact can happen too early.",
+						objective: "Trace compact waits for implementation exit.",
 						rationale: "Compacting incomplete traces hides unfinished work.",
 						...decisionQualityFields(),
 						approval: "approved",

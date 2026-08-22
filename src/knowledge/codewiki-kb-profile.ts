@@ -1,4 +1,8 @@
-import { normalizeOkfPath } from "./okf.ts";
+import {
+	KNOWLEDGE_FACET_ID_PATTERN,
+	isKnowledgeSubjectId,
+	normalizeOkfPath,
+} from "./okf.ts";
 import type { OkfDocument, OkfFrontmatterValue } from "./okf-frontmatter.ts";
 
 export const CODEWIKI_KB_DOCUMENT_TYPES = Object.freeze([
@@ -26,9 +30,16 @@ export interface CodeWikiKbProfileIssue {
 	readonly code:
 		| "invalid_document_path"
 		| "invalid_document_type"
+		| "missing_knowledge_id"
+		| "invalid_knowledge_id"
+		| "duplicate_knowledge_id"
+		| "invalid_knowledge_facets"
+		| "invalid_knowledge_aliases"
 		| "missing_status"
 		| "invalid_story_owner"
 		| "unexpected_story_owner"
+		| "invalid_component_identity"
+		| "invalid_relationship_target"
 		| "realization_not_component_owned"
 		| "frontmatter_too_large"
 		| "document_body_too_large"
@@ -85,6 +96,30 @@ export function validateCodeWikiKbDocument(
 			),
 		];
 	}
+	const knowledgeId = frontmatter.codewiki_id;
+	if (knowledgeId === undefined) {
+		issues.push(
+			issue(
+				"missing_knowledge_id",
+				path,
+				"CodeWiki Knowledge documents require immutable codewiki_id identity.",
+			),
+		);
+	} else if (
+		!isKnowledgeSubjectId(knowledgeId) ||
+		!knowledgeId.startsWith(`cw:${knowledgeKind(type)}:`)
+	) {
+		issues.push(
+			issue(
+				"invalid_knowledge_id",
+				path,
+				`${type} codewiki_id must use cw:${knowledgeKind(type)}:<stable-key>.`,
+			),
+		);
+	}
+	issues.push(...validateKnowledgeFacets(frontmatter.codewiki_facets, document));
+	issues.push(...validateKnowledgeAliases(frontmatter.codewiki_aliases, path));
+	issues.push(...validateRelationshipTargets(frontmatter.codewiki_relationships, path));
 	if (!pathMatchesType(path, type)) {
 		issues.push(
 			issue(
@@ -105,7 +140,7 @@ export function validateCodeWikiKbDocument(
 	}
 	const expectedOwner = storyOwnerFromPath(path);
 	if (type === "User Story") {
-		if (frontmatter.codewiki_user !== `/product/users/${expectedOwner}.md`) {
+		if (frontmatter.codewiki_user !== `cw:user:${expectedOwner}`) {
 			issues.push(
 				issue(
 					"invalid_story_owner",
@@ -120,6 +155,19 @@ export function validateCodeWikiKbDocument(
 				"unexpected_story_owner",
 				path,
 				"Only User Story documents may declare codewiki_user.",
+			),
+		);
+	}
+	if (
+		type === "System Component" &&
+		frontmatter.codewiki_component !== undefined &&
+		frontmatter.codewiki_component !== knowledgeId
+	) {
+		issues.push(
+			issue(
+				"invalid_component_identity",
+				path,
+				"System Component codewiki_component must equal its stable codewiki_id.",
 			),
 		);
 	}
@@ -157,6 +205,258 @@ export function validateCodeWikiKbDocument(
 		);
 	}
 	return issues;
+}
+
+export function validateCodeWikiKbBundle(
+	documents: readonly OkfDocument[],
+): CodeWikiKbProfileIssue[] {
+	const issues = documents.flatMap(validateCodeWikiKbDocument);
+	const seen = new Map<string, string>();
+	for (const document of documents) {
+		const id = document.frontmatter?.codewiki_id;
+		if (!isKnowledgeSubjectId(id)) continue;
+		const previous = seen.get(id);
+		if (previous) {
+			issues.push(
+				issue(
+					"duplicate_knowledge_id",
+					document.path,
+					`codewiki_id ${id} is already owned by ${previous}.`,
+				),
+			);
+		} else {
+			seen.set(id, document.path);
+		}
+	}
+	return issues;
+}
+
+function knowledgeKind(type: CodeWikiKbDocumentType): string {
+	return {
+		Lexicon: "lexicon",
+		User: "user",
+		"User Story": "story",
+		"Design System": "design",
+		"System Component": "component",
+		"System Flow": "flow",
+	}[type];
+}
+
+function validateKnowledgeAliases(
+	value: unknown,
+	path: string,
+): CodeWikiKbProfileIssue[] {
+	if (value === undefined) return [];
+	if (
+		!Array.isArray(value) ||
+		value.length > 32 ||
+		value.some(
+			(alias) =>
+				typeof alias !== "string" ||
+				alias.trim() !== alias ||
+				alias.length === 0 ||
+				alias.length > 128,
+		) ||
+		new Set(value).size !== value.length
+	) {
+		return [
+			issue(
+				"invalid_knowledge_aliases",
+				path,
+				"codewiki_aliases must be a unique bounded list of presentation aliases.",
+			),
+		];
+	}
+	return [];
+}
+
+function validateRelationshipTargets(
+	value: unknown,
+	path: string,
+): CodeWikiKbProfileIssue[] {
+	if (value === undefined) return [];
+	if (!Array.isArray(value)) {
+		return [
+			issue(
+				"invalid_relationship_target",
+				path,
+				"codewiki_relationships must be a list with stable Knowledge targets.",
+			),
+		];
+	}
+	return value.flatMap((candidate, index) => {
+		const relationship = isPlainRecord(candidate) ? candidate : undefined;
+		return relationship && isKnowledgeSubjectId(relationship.target)
+			? []
+			: [
+					issue(
+						"invalid_relationship_target",
+						path,
+						`Relationship ${index} must target one stable Knowledge subject ID.`,
+					),
+				];
+	});
+}
+
+function validateKnowledgeFacets(
+	value: unknown,
+	document: OkfDocument,
+): CodeWikiKbProfileIssue[] {
+	const path = document.path;
+	if (value === undefined) return [];
+	if (!isPlainRecord(value)) {
+		return [
+			issue(
+				"invalid_knowledge_facets",
+				path,
+				"codewiki_facets must be a map from stable facet key to one structural locator.",
+			),
+		];
+	}
+	const issues: CodeWikiKbProfileIssue[] = [];
+	const locations: {readonly facetId: string; readonly key: string}[] = [];
+	for (const [facetId, candidate] of Object.entries(value)) {
+		if (!KNOWLEDGE_FACET_ID_PATTERN.test(facetId) || !isPlainRecord(candidate)) {
+			issues.push(
+				issue(
+					"invalid_knowledge_facets",
+					path,
+					`Facet ${facetId} must use a stable key and one strict locator object.`,
+				),
+			);
+			continue;
+		}
+		const kind = candidate.kind;
+		if (kind === "heading") {
+			if (
+				Object.keys(candidate).sort(compareText).join(",") !== "kind,path" ||
+				!Array.isArray(candidate.path) ||
+				candidate.path.length === 0 ||
+				!candidate.path.every(
+					(part) => typeof part === "string" && part.trim().length > 0,
+				)
+			) {
+				issues.push(
+					issue(
+						"invalid_knowledge_facets",
+						path,
+						`Heading facet ${facetId} requires one non-empty heading path.`,
+					),
+				);
+				continue;
+			}
+			const headingKey = candidate.path.join("\u0000");
+			if (!markdownHeadingPaths(document.body).has(headingKey)) {
+				issues.push(
+					issue(
+						"invalid_knowledge_facets",
+						path,
+						`Heading facet ${facetId} locator does not resolve in current content.`,
+					),
+				);
+				continue;
+			}
+			locations.push({facetId, key: `heading:${headingKey}`});
+			continue;
+		}
+		if (kind === "frontmatter" || kind === "yaml") {
+			if (
+				Object.keys(candidate).sort(compareText).join(",") !== "kind,pointer" ||
+				typeof candidate.pointer !== "string" ||
+				!/^\/(?:[^~/]|~[01])+(?:\/(?:[^~/]|~[01])+)*$/u.test(candidate.pointer)
+			) {
+				issues.push(
+					issue(
+						"invalid_knowledge_facets",
+						path,
+						`${String(kind)} facet ${facetId} requires one canonical JSON pointer.`,
+					),
+				);
+				continue;
+			}
+			if (
+				kind === "yaml" ||
+				!jsonPointerResolves(document.frontmatter, candidate.pointer)
+			) {
+				issues.push(
+					issue(
+						"invalid_knowledge_facets",
+						path,
+						`${String(kind)} facet ${facetId} locator does not resolve in current Markdown content.`,
+					),
+				);
+				continue;
+			}
+			locations.push({facetId, key: `${kind}:${candidate.pointer}`});
+			continue;
+		}
+		issues.push(
+			issue(
+				"invalid_knowledge_facets",
+				path,
+				`Facet ${facetId} locator kind must be heading, frontmatter, or yaml.`,
+			),
+		);
+	}
+	for (const [index, left] of locations.entries()) {
+		for (const right of locations.slice(index + 1)) {
+			if (locatorOverlaps(left.key, right.key)) {
+				issues.push(
+					issue(
+						"invalid_knowledge_facets",
+						path,
+						`Facets ${left.facetId} and ${right.facetId} overlap.`,
+					),
+				);
+			}
+		}
+	}
+	return issues;
+}
+
+function markdownHeadingPaths(body: string): ReadonlySet<string> {
+	const paths = new Set<string>();
+	const stack: string[] = [];
+	for (const line of body.split("\n")) {
+		const match = /^(#{1,6})\s+(.+?)\s*#*$/u.exec(line);
+		if (!match) continue;
+		const level = match[1]?.length ?? 0;
+		stack.length = level - 1;
+		stack[level - 1] = match[2] ?? "";
+		paths.add(stack.slice(0, level).join("\u0000"));
+	}
+	return paths;
+}
+
+function jsonPointerResolves(value: unknown, pointer: string): boolean {
+	let current = value;
+	for (const token of pointer
+		.slice(1)
+		.split("/")
+		.map((part) => part.replace(/~1/gu, "/").replace(/~0/gu, "~"))) {
+		if (!isPlainRecord(current) || !Object.hasOwn(current, token)) return false;
+		current = current[token];
+	}
+	return true;
+}
+
+function locatorOverlaps(left: string, right: string): boolean {
+	if (left === right) return true;
+	const separator = left.startsWith("heading:") ? "\u0000" : "/";
+	const leftKind = left.slice(0, left.indexOf(":"));
+	const rightKind = right.slice(0, right.indexOf(":"));
+	if (leftKind !== rightKind) return false;
+	return left.startsWith(`${right}${separator}`) || right.startsWith(`${left}${separator}`);
+}
+
+function compareText(left: string, right: string): number {
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function validateLexiconRows(

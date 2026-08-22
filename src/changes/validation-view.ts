@@ -50,11 +50,11 @@ export interface ChangeValidationCard {
 	identity: ChangeValidationCardIdentity;
 	question: string;
 	sections: {
-		currentState: {
+		problem: {
 			text: string;
 			currentPain?: string;
 		};
-		proposedChange: {
+		objective: {
 			text: string;
 			rationale: string;
 			desiredOutcome?: string;
@@ -165,17 +165,17 @@ export function buildChangeValidationCard(
 			context,
 		),
 		sections: {
-			currentState: {
+			problem: {
 				text: boundedText(
-					"Current state",
-					record.change.intent.currentState,
+					"Problem",
+					record.change.intent.problem,
 					context,
 				),
 			},
-			proposedChange: {
+			objective: {
 				text: boundedText(
-					"Proposed change",
-					record.change.intent.desiredState,
+					"Objective",
+					record.change.intent.objective,
 					context,
 				),
 				rationale: boundedText(

@@ -7,20 +7,29 @@ import type {
 	GitObjectId,
 	OperationId,
 } from "./contracts.ts";
+import type {
+	FrozenImplementationAggregate,
+	PrivateChangeIntegrationLineage,
+} from "./integration.ts";
+import {
+	createInitialWorkGraph,
+	type CanonicalWorkGraph,
+} from "../../loops/planning/work-graph.ts";
 import {
 	canonicalJsonDigest,
 	toCanonicalJsonValue,
+	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
 export const CHANGE_REDUCTION_PROTOCOL = Object.freeze({
 	id: "codewiki.change-reduction",
-	version: "2.0.0",
+	version: "8.0.0",
 } as const);
 
 export const WORK_STATE_REDUCER = Object.freeze({
 	id: "codewiki.work-state-reducer",
-	version: "2.0.0",
+	version: "8.0.0",
 } as const);
 
 export type TraceProjectionStatus = "open" | "closed";
@@ -87,6 +96,7 @@ export interface LoopAttemptProjection {
 	readonly evidenceOperationIds: readonly OperationId[];
 	readonly checkResultOperationIds: readonly OperationId[];
 	readonly exitReportOperationId: OperationId | null;
+	readonly confirmationOperationId: OperationId | null;
 	readonly routeOperationId: OperationId | null;
 	readonly terminalOperationId: OperationId | null;
 }
@@ -98,6 +108,14 @@ export interface WorkUnitClaimProjection {
 	readonly assignmentAttemptId: string;
 	readonly workerId: string;
 	readonly workbenchId: string;
+	readonly sourceBase: GitObjectId;
+	readonly scopeDigest: Sha256Digest;
+	readonly budgetDigest: Sha256Digest;
+	readonly obligationDigest: Sha256Digest;
+	readonly workerOfferId: string;
+	readonly workerOfferDigest: Sha256Digest;
+	readonly schedulingPolicyDigest: Sha256Digest;
+	readonly leaseExpiresAt: string;
 	readonly status: ClaimProjectionStatus;
 	readonly terminalOperationId: OperationId | null;
 }
@@ -110,6 +128,10 @@ export interface AssignmentProjection {
 	readonly assignmentAttemptId: string;
 	readonly workerId: string;
 	readonly workbenchId: string;
+	readonly workerOfferId: string;
+	readonly workerOfferDigest: Sha256Digest;
+	readonly workbenchDigest: Sha256Digest;
+	readonly assignmentDigest: Sha256Digest;
 	readonly status: AssignmentProjectionStatus;
 	readonly cancelRequestOperationIds: readonly OperationId[];
 	readonly workerReportOperationIds: readonly OperationId[];
@@ -142,6 +164,20 @@ export interface ContradictionProjection {
 	readonly values: readonly [string, string];
 }
 
+export interface DeliveryProjection {
+	readonly operationId: OperationId;
+	readonly reviewAttemptDigest: Sha256Digest;
+	readonly aggregateDigest: Sha256Digest;
+	readonly gateReportDigest: Sha256Digest;
+	readonly transitionDigest: Sha256Digest;
+	readonly authorityId: string;
+	readonly authorityDigest: Sha256Digest;
+	readonly targetRef: string;
+	readonly expectedTargetHead: GitObjectId;
+	readonly deliveredCommit: GitObjectId;
+	readonly deliveredTree: GitObjectId;
+}
+
 export interface ChangeWorkState {
 	readonly changeId: string;
 	readonly stateDigest: Sha256Digest;
@@ -156,14 +192,30 @@ export interface ChangeWorkState {
 	readonly workUnitClaims: readonly WorkUnitClaimProjection[];
 	readonly assignments: readonly AssignmentProjection[];
 	readonly integrationAttempts: readonly IntegrationAttemptProjection[];
+	readonly privateIntegrationLineage: PrivateChangeIntegrationLineage | null;
+	readonly implementationAggregate: FrozenImplementationAggregate | null;
+	readonly delivery: DeliveryProjection | null;
 	readonly contradictions: readonly ContradictionProjection[];
 	readonly operations: readonly CanonicalChangeOperation[];
+}
+
+export interface AcceptedKnowledgeHead {
+	readonly confirmationOperationId: OperationId;
+	readonly candidateId: string;
+	readonly checkpointDigest: Sha256Digest;
+	readonly baseStateDigest: Sha256Digest;
+	readonly stateDigest: Sha256Digest;
+	readonly applicationPlanDigest: Sha256Digest;
+	readonly projectionDigest: Sha256Digest;
+	readonly checkpoint: CanonicalJsonValue;
 }
 
 export interface ProjectWorkStateBody {
 	readonly reducer: typeof WORK_STATE_REDUCER;
 	readonly stateHead: GitObjectId | null;
 	readonly observedBase: BaseSnapshot | null;
+	readonly knowledgeHead: AcceptedKnowledgeHead | null;
+	readonly workGraph: CanonicalWorkGraph;
 	readonly changes: readonly ChangeWorkState[];
 	readonly acceptedOperationIds: readonly OperationId[];
 }
@@ -195,6 +247,8 @@ export function createInitialProjectWorkState(): ProjectWorkState {
 		reducer: WORK_STATE_REDUCER,
 		stateHead: null,
 		observedBase: null,
+		knowledgeHead: null,
+		workGraph: createInitialWorkGraph(),
 		changes: [],
 		acceptedOperationIds: [],
 	});
@@ -240,12 +294,16 @@ export function emptyChangeWorkState(
 		workUnitClaims: [],
 		assignments: [],
 		integrationAttempts: [],
+		privateIntegrationLineage: null,
+		implementationAggregate: null,
+		delivery: null,
 		contradictions: [],
 		operations: [],
 	});
 }
 
 export function canonicalStateValue<T>(value: unknown): T {
+	// SAFETY: reducers assemble state contract values; canonicalization preserves shape while freezing and ordering.
 	return toCanonicalJsonValue(value) as unknown as T;
 }
 
@@ -264,5 +322,6 @@ export function operationKindCount(
 }
 
 function canonicalObject<T>(value: unknown): T {
+	// SAFETY: callers provide contract-shaped values; canonicalization preserves their structure.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

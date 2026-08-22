@@ -26,9 +26,9 @@ import {
 	type ImplementationCandidateContent,
 } from "../../loops/implementation/candidate-content.ts";
 import {
-	parsePlanningCandidateContent,
-	planningCandidateContentSchema as planningCandidateSchema,
-	type PlanningCandidateContent,
+	parsePlanningCandidateProposal,
+	planningCandidateProposalSchema as planningCandidateSchema,
+	type PlanningCandidateProposal,
 } from "../../loops/planning/candidate-content.ts";
 import type {CheckStage} from "../../checks/contracts.ts";
 import {loadPackSkillSetSnapshot} from "../../checks/packs/loader.ts";
@@ -182,7 +182,7 @@ export function createPiSdkProjectServerSemanticAdapters(
 				invocationOptions,
 			),
 		planning: (input, invocationOptions) =>
-			runSemanticSession<ProjectServerPlanningInvocation, PlanningCandidateContent>(
+			runSemanticSession<ProjectServerPlanningInvocation, PlanningCandidateProposal>(
 				runner,
 				"planning",
 				input,
@@ -721,9 +721,9 @@ function semanticInvocationPrompt(
 function parseSemanticCandidate(
 	role: PiSdkSemanticRole,
 	value: unknown,
-): DecisionCandidateProposal | PlanningCandidateContent | ImplementationCandidateContent {
+): DecisionCandidateProposal | PlanningCandidateProposal | ImplementationCandidateContent {
 	if (role === "decision") return parseDecisionCandidateProposal(value);
-	if (role === "planning") return parsePlanningCandidateContent(value);
+	if (role === "planning") return parsePlanningCandidateProposal(value);
 	return parseImplementationCandidateContent(value);
 }
 

@@ -158,8 +158,8 @@ try {
 	const change = acceptedChangeFixture({
 		id: "CHG-external-package-lifecycle",
 		kind: "harden",
-		currentState: "Repo-local self-testing can hide package lifecycle drift.",
-		desiredState:
+		problem: "Repo-local self-testing can hide package lifecycle drift.",
+		objective:
 			"A packed install proves guarded lifecycle behavior in a fresh project.",
 		rationale:
 			"External lifecycle proof is required before broader package use.",

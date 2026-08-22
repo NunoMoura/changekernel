@@ -10,16 +10,21 @@ import {
 	reduceBatch,
 } from "./change-trace-replay-v1.mjs";
 import {gitObject} from "./change-trace-v1.mjs";
+import {createKnowledgeCheckpoint} from "../../src/knowledge/state.ts";
+import {knowledgeSetTransition} from "./knowledge-transition.mjs";
 
 export function nativeDecisionRevision(options = {}) {
 	const changeId = options.changeId ?? "CHG-native-decision";
-	const desiredState = options.desiredState ?? `Accepted behavior for ${changeId} is explicit.`;
+	const knowledgeSubjectId =
+		options.knowledgeSubjectId ??
+		`cw:component:${changeId.toLowerCase().replace(/[^a-z0-9]+/gu, "-")}`;
+	const objective = options.objective ?? `Accepted behavior for ${changeId} is explicit.`;
 	const targetRefs = options.targetRefs ?? ["src/project-server/native-decision.ts"];
 	return createChangeRevision({
 		title: options.title ?? `Decide ${changeId}`,
 		intent: {
-			currentState: options.currentState ?? `Current behavior for ${changeId} is incomplete.`,
-			desiredState,
+			problem: options.problem ?? `Current behavior for ${changeId} is incomplete.`,
+			objective,
 			rationale: options.rationale ?? `Resolve ${changeId} from exact project facts.`,
 			nonGoals: options.nonGoals ?? ["Do not grant Planning priority."],
 			alternatives: options.alternatives ?? ["Keep current behavior."],
@@ -32,19 +37,20 @@ export function nativeDecisionRevision(options = {}) {
 			targetRefs,
 		},
 		impact: {
-			user: options.userImpact ?? desiredState,
+			user: options.userImpact ?? objective,
 			maintainer: options.maintainerImpact ?? "Maintainers receive one exact Decision outcome.",
 			compatibility: options.compatibility ?? "No compatibility path is introduced.",
 		},
-		knowledge: {
-			topicRefs: options.topicRefs ?? ["kb:system/decision-loop"],
-			propagationRefs: options.propagationRefs ?? ["kb:system/runtime"],
-			...(options.noImpactRationale
-				? {noImpactRationale: options.noImpactRationale}
-				: {}),
-		},
+		knowledge:
+			options.knowledge ??
+			knowledgeSetTransition({
+				subjectId: knowledgeSubjectId,
+				content:
+					options.knowledgeContent ??
+					knowledgeMarkdown(knowledgeSubjectId, objective),
+			}),
 		outcome: {
-			successSignals: options.successSignals ?? [desiredState],
+			successSignals: options.successSignals ?? [objective],
 			evidenceExpectations: options.evidenceExpectations ?? [
 				"Exact Decision checks pass.",
 			],
@@ -73,7 +79,7 @@ export function nativeDecisionRevision(options = {}) {
 			regressionPlan: options.regressionPlan ?? "Replay native Decision tests.",
 		},
 		acceptanceRequirements: options.acceptanceRequirements ?? [
-			{id: "REQ-native-decision", statement: desiredState},
+			{id: "REQ-native-decision", statement: objective},
 		],
 		...(options.defectProfile ? {defectProfile: options.defectProfile} : {}),
 	});
@@ -115,5 +121,13 @@ export function nativeDecisionCandidate(input) {
 			rationale:
 				input.rationale ?? "Apply exact grounded semantic disposition.",
 		}),
+		knowledgeBase:
+			input.knowledgeBase ??
+			input.state.knowledgeHead?.checkpoint ??
+			createKnowledgeCheckpoint({files: []}),
 	});
+}
+
+function knowledgeMarkdown(subjectId, objective) {
+	return `---\ncodewiki_id: ${subjectId}\ntype: System Component\ntitle: Decision fixture\nstatus: stable\n---\n# Decision fixture\n\n${objective}\n`;
 }

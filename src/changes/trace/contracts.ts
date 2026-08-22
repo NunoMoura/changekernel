@@ -11,7 +11,7 @@ import {
 
 export const CHANGE_TRACE_PROTOCOL = Object.freeze({
 	id: "codewiki.change-trace",
-	version: "5.0.0",
+	version: "12.0.0",
 	canonicalJson: "codewiki.canonical-json/1.0.0",
 } as const);
 
@@ -45,7 +45,9 @@ export const CHANGE_OPERATION_KINDS = [
 	"loop.attempt_started",
 	"loop.attempt_ended",
 	"decision.candidate_recorded",
+	"decision.confirmed",
 	"planning.candidate_recorded",
+	"planning.delta_accepted",
 	"implementation.candidate_recorded",
 	"loop.exit_policy_recorded",
 	"evidence.recorded",
@@ -61,6 +63,9 @@ export const CHANGE_OPERATION_KINDS = [
 	"worker.report_recorded",
 	"integration.attempt_started",
 	"integration.result_recorded",
+	"integration.candidate_admitted",
+	"implementation.aggregate_frozen",
+	"delivery.applied",
 	"source.branch_merge_recorded",
 	"source.branch_push_recorded",
 	"review_projection.published",
@@ -86,6 +91,7 @@ export type AuthorityCapability =
 	| "change.feedback"
 	| "change_claim.manage"
 	| "loop.record"
+	| "planning.accept"
 	| "work_unit_claim.manage"
 	| "assignment.manage"
 	| "integration.record"
@@ -117,8 +123,8 @@ export interface ChangeRequirement {
 }
 
 export interface ChangeRevisionIntent {
-	readonly currentState: string;
-	readonly desiredState: string;
+	readonly problem: string;
+	readonly objective: string;
 	readonly rationale?: string;
 	readonly nonGoals: readonly string[];
 	readonly alternatives: readonly string[];
@@ -161,11 +167,47 @@ export interface ChangeRevisionImpact {
 	readonly compatibility?: string;
 }
 
-export interface ChangeRevisionKnowledgeImpact {
-	readonly topicRefs: readonly string[];
-	readonly propagationRefs: readonly string[];
-	readonly noImpactRationale?: string;
+export const KNOWLEDGE_POST_STATE_PROTOCOL = Object.freeze({
+	id: "codewiki.knowledge-post-state",
+	version: "1.0.0",
+} as const);
+
+export type KnowledgePostStateMediaType =
+	| "text/markdown"
+	| "application/yaml"
+	| "application/json";
+
+export interface KnowledgePostStateContent {
+	readonly schemaVersion: typeof KNOWLEDGE_POST_STATE_PROTOCOL.version;
+	readonly mediaType: KnowledgePostStateMediaType;
+	readonly content: string;
 }
+
+export interface KnowledgeTargetRef {
+	readonly subjectId: string;
+	readonly facetId?: string;
+}
+
+export type KnowledgeEffect =
+	| {
+			readonly action: "set";
+			readonly target: KnowledgeTargetRef;
+			readonly expected: Sha256Digest | "absent";
+			readonly postState: CanonicalInlineSemanticArtifact;
+	  }
+	| {
+			readonly action: "retire";
+			readonly target: KnowledgeTargetRef;
+			readonly expected: Sha256Digest;
+	  };
+
+export type KnowledgeTransition =
+	| {readonly kind: "effects"; readonly effects: readonly KnowledgeEffect[]}
+	| {
+			readonly kind: "unchanged";
+			readonly refs: readonly KnowledgeTargetRef[];
+			readonly rationale: string;
+	  };
 
 export interface ChangeRevisionOutcomeContract {
 	readonly successSignals: readonly string[];
@@ -201,7 +243,7 @@ export interface ChangeRevisionContent {
 	readonly intent: ChangeRevisionIntent;
 	readonly classification: ChangeRevisionClassification;
 	readonly impact: ChangeRevisionImpact;
-	readonly knowledge: ChangeRevisionKnowledgeImpact;
+	readonly knowledge: KnowledgeTransition;
 	readonly outcome: ChangeRevisionOutcomeContract;
 	readonly delivery: ChangeRevisionDeliveryConstraints;
 	readonly evidence: ChangeRevisionEvidence;
@@ -314,8 +356,8 @@ const changeRequirementSchema = Type.Object(
 const optionalTextSchema = Type.Optional(requiredTextSchema);
 const changeRevisionIntentSchema = Type.Object(
 	{
-		currentState: requiredTextSchema,
-		desiredState: requiredTextSchema,
+		problem: requiredTextSchema,
+		objective: requiredTextSchema,
 		rationale: optionalTextSchema,
 		nonGoals: textListSchema,
 		alternatives: textListSchema,
@@ -366,14 +408,82 @@ const changeRevisionImpactSchema = Type.Object(
 	},
 	{ additionalProperties: false },
 );
-const changeRevisionKnowledgeSchema = Type.Object(
+const knowledgeTargetRefSchema = Type.Object(
 	{
-		topicRefs: refListSchema,
-		propagationRefs: refListSchema,
-		noImpactRationale: optionalTextSchema,
+		subjectId: Type.String({
+			minLength: 7,
+			maxLength: 256,
+			pattern: "^cw:[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._-]*$",
+		}),
+		facetId: Type.Optional(
+			Type.String({
+				minLength: 1,
+				maxLength: 128,
+				pattern: "^[a-z][a-z0-9._-]*$",
+			}),
+		),
 	},
 	{ additionalProperties: false },
 );
+const knowledgePostStateContentSchema = Type.Object(
+	{
+		schemaVersion: Type.Literal(KNOWLEDGE_POST_STATE_PROTOCOL.version),
+		mediaType: Type.Union([
+			Type.Literal("text/markdown"),
+			Type.Literal("application/yaml"),
+			Type.Literal("application/json"),
+		]),
+		content: Type.String({minLength: 1, maxLength: 262_144, pattern: "\\S"}),
+	},
+	{additionalProperties: false},
+);
+const knowledgePostStateArtifactSchema = Type.Object(
+	{
+		id: Type.String({
+			pattern: "^knowledge-post-state:[0-9a-f]{64}$",
+		}),
+		digest: digestSchema,
+		schemaVersion: Type.Literal(KNOWLEDGE_POST_STATE_PROTOCOL.version),
+		artifact: knowledgePostStateContentSchema,
+	},
+	{additionalProperties: false},
+);
+const knowledgeEffectSchema = Type.Union([
+	Type.Object(
+		{
+			action: Type.Literal("set"),
+			target: knowledgeTargetRefSchema,
+			expected: Type.Union([digestSchema, Type.Literal("absent")]),
+			postState: knowledgePostStateArtifactSchema,
+		},
+		{additionalProperties: false},
+	),
+	Type.Object(
+		{
+			action: Type.Literal("retire"),
+			target: knowledgeTargetRefSchema,
+			expected: digestSchema,
+		},
+		{additionalProperties: false},
+	),
+]);
+const changeRevisionKnowledgeSchema = Type.Union([
+	Type.Object(
+		{
+			kind: Type.Literal("effects"),
+			effects: Type.Array(knowledgeEffectSchema, {minItems: 1, maxItems: 512}),
+		},
+		{additionalProperties: false},
+	),
+	Type.Object(
+		{
+			kind: Type.Literal("unchanged"),
+			refs: Type.Array(knowledgeTargetRefSchema, {maxItems: 512}),
+			rationale: requiredTextSchema,
+		},
+		{additionalProperties: false},
+	),
+]);
 const changeRevisionOutcomeSchema = Type.Object(
 	{
 		successSignals: textListSchema,
@@ -705,6 +815,57 @@ const loopExitReportRecordedPayloadSchema = Type.Object(
 	},
 	{ additionalProperties: false },
 );
+const decisionConfirmationBindingSchema = Type.Object(
+	{
+		attemptOperationId: digestSchema,
+		candidateId: idSchema,
+		candidateDigest: digestSchema,
+		gateReportId: idSchema,
+		gateReportDigest: digestSchema,
+		expectedWorkStateDigest: digestSchema,
+		expectedAcceptedActiveChangesDigest: digestSchema,
+	},
+	{additionalProperties: false},
+);
+const decisionConfirmedPayloadSchema = Type.Union([
+	Type.Object(
+		{
+			...decisionConfirmationBindingSchema.properties,
+			disposition: Type.Literal("approve"),
+			knowledgeCheckpointDigest: digestSchema,
+			baseKnowledgeStateDigest: digestSchema,
+			resultingKnowledgeStateDigest: digestSchema,
+			applicationPlanDigest: digestSchema,
+			resultingProjectionDigest: digestSchema,
+		},
+		{additionalProperties: false},
+	),
+	Type.Object(
+		{
+			...decisionConfirmationBindingSchema.properties,
+			disposition: Type.Union([
+				Type.Literal("reject"),
+				Type.Literal("defer"),
+				Type.Literal("withdraw"),
+			]),
+		},
+		{additionalProperties: false},
+	),
+]);
+const planningDeltaAcceptedPayloadSchema = Type.Object(
+	{
+		attemptOperationId: digestSchema,
+		candidateId: idSchema,
+		candidateDigest: digestSchema,
+		gateReportId: idSchema,
+		gateReportDigest: digestSchema,
+		expectedWorkStateDigest: digestSchema,
+		expectedKnowledgeStateDigest: digestSchema,
+		expectedWorkGraphDigest: digestSchema,
+		deltaId: digestSchema,
+	},
+	{additionalProperties: false},
+);
 const runtimeRouteRecordedPayloadSchema = Type.Object(
 	{
 		attemptOperationId: digestSchema,
@@ -736,6 +897,14 @@ const workUnitClaimAcquiredPayloadSchema = Type.Object(
 		scopeDigest: digestSchema,
 		budgetDigest: digestSchema,
 		obligationDigest: digestSchema,
+		expectedWorkStateDigest: digestSchema,
+		expectedWorkGraphDigest: digestSchema,
+		workerOfferId: idSchema,
+		workerOfferDigest: digestSchema,
+		workerOffer: inlineSemanticArtifactSchema,
+		schedulingPolicyDigest: digestSchema,
+		schedulingPolicy: inlineSemanticArtifactSchema,
+		leaseExpiresAt: timestampSchema,
 	},
 	{ additionalProperties: false },
 );
@@ -751,6 +920,14 @@ const workUnitClaimTakeoverPayloadSchema = Type.Object(
 		scopeDigest: digestSchema,
 		budgetDigest: digestSchema,
 		obligationDigest: digestSchema,
+		expectedWorkStateDigest: digestSchema,
+		expectedWorkGraphDigest: digestSchema,
+		workerOfferId: idSchema,
+		workerOfferDigest: digestSchema,
+		workerOffer: inlineSemanticArtifactSchema,
+		schedulingPolicyDigest: digestSchema,
+		schedulingPolicy: inlineSemanticArtifactSchema,
+		leaseExpiresAt: timestampSchema,
 		reason: requiredTextSchema,
 	},
 	{ additionalProperties: false },
@@ -767,6 +944,12 @@ const assignmentDispatchedPayloadSchema = Type.Object(
 		scopeDigest: digestSchema,
 		budgetDigest: digestSchema,
 		obligationDigest: digestSchema,
+		workerOfferId: idSchema,
+		workerOfferDigest: digestSchema,
+		workbenchDigest: digestSchema,
+		workbench: inlineSemanticArtifactSchema,
+		assignmentDigest: digestSchema,
+		assignment: inlineSemanticArtifactSchema,
 	},
 	{ additionalProperties: false },
 );
@@ -821,6 +1004,36 @@ const integrationResultRecordedPayloadSchema = Type.Object(
 		resultTreeDigest: Type.Optional(digestSchema),
 		integrationEvidenceId: Type.Optional(idSchema),
 		conflictRefs: refListSchema,
+	},
+	{ additionalProperties: false },
+);
+const integrationCandidateAdmittedPayloadSchema = Type.Object(
+	{
+		receipt: inlineSemanticArtifactSchema,
+		expectedLineageDigest: Type.Union([digestSchema, Type.Literal("absent")]),
+		resultLineageDigest: digestSchema,
+	},
+	{ additionalProperties: false },
+);
+const implementationAggregateFrozenPayloadSchema = Type.Object(
+	{
+		aggregate: inlineSemanticArtifactSchema,
+		lineageDigest: digestSchema,
+	},
+	{ additionalProperties: false },
+);
+const deliveryAppliedPayloadSchema = Type.Object(
+	{
+		reviewAttempt: inlineSemanticArtifactSchema,
+		reviewAttemptDigest: digestSchema,
+		aggregateDigest: digestSchema,
+		gateReportDigest: digestSchema,
+		transitionDigest: digestSchema,
+		authority: inlineSemanticArtifactSchema,
+		targetRef: idSchema,
+		expectedTargetHead: gitObjectIdSchema,
+		deliveredCommit: gitObjectIdSchema,
+		deliveredTree: gitObjectIdSchema,
 	},
 	{ additionalProperties: false },
 );
@@ -929,7 +1142,9 @@ export const changeOperationPayloadSchemas = Object.freeze({
 	"loop.attempt_started": loopAttemptStartedPayloadSchema,
 	"loop.attempt_ended": loopAttemptEndedPayloadSchema,
 	"decision.candidate_recorded": candidatePayloadSchema,
+	"decision.confirmed": decisionConfirmedPayloadSchema,
 	"planning.candidate_recorded": candidatePayloadSchema,
+	"planning.delta_accepted": planningDeltaAcceptedPayloadSchema,
 	"implementation.candidate_recorded": candidatePayloadSchema,
 	"loop.exit_policy_recorded": loopExitPolicyPayloadSchema,
 	"evidence.recorded": evidenceRecordedPayloadSchema,
@@ -945,6 +1160,9 @@ export const changeOperationPayloadSchemas = Object.freeze({
 	"worker.report_recorded": workerReportRecordedPayloadSchema,
 	"integration.attempt_started": integrationAttemptStartedPayloadSchema,
 	"integration.result_recorded": integrationResultRecordedPayloadSchema,
+	"integration.candidate_admitted": integrationCandidateAdmittedPayloadSchema,
+	"implementation.aggregate_frozen": implementationAggregateFrozenPayloadSchema,
+	"delivery.applied": deliveryAppliedPayloadSchema,
 	"source.branch_merge_recorded": sourceBranchMergeRecordedPayloadSchema,
 	"source.branch_push_recorded": sourceBranchPushRecordedPayloadSchema,
 	"review_projection.published": reviewProjectionPublishedPayloadSchema,

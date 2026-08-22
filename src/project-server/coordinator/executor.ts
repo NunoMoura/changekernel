@@ -27,8 +27,9 @@ import {
 } from "../../loops/implementation/candidate-content.ts";
 import type { ImplementationWorkerReportInput } from "../../loops/implementation/workers.ts";
 import {
-	parsePlanningCandidateContent,
-	type PlanningCandidateContent,
+	parsePlanningCandidateProposal,
+	planningContinuityKey,
+	type PlanningCandidateProposal,
 } from "../../loops/planning/candidate-content.ts";
 import type {
 	WorkStateAssignment,
@@ -73,6 +74,7 @@ export interface ProjectServerDecisionInvocation {
 
 export interface ProjectServerPlanningInvocation {
 	loop: "planning";
+	continuityKey: `planning:${string}`;
 	observedWorkStateDigest: string;
 	observedWorkGraphDigest: string;
 	change: WorkStateChange;
@@ -93,7 +95,7 @@ export interface ProjectServerSemanticAdapters {
 	>;
 	planning?: CandidateProducerPort<
 		ProjectServerPlanningInvocation,
-		PlanningCandidateContent
+		PlanningCandidateProposal
 	>;
 	implementation?: CandidateProducerPort<
 		ProjectServerImplementationInvocation,
@@ -436,9 +438,10 @@ async function executeSelectedSemanticWork(input: {
 		if (!executionPorts.planning) throw missingExecutionPort("planning");
 		if (!adapters.planning) throw missingAdapter("planning");
 		const change = requiredChange(observation, selection.change.changeId);
-		const candidate = parsePlanningCandidateContent(
+		const candidate = parsePlanningCandidateProposal(
 			await adapters.planning({
 				loop: "planning",
+				continuityKey: planningContinuityKey(selection.change.changeId),
 				observedWorkStateDigest: observation.workState.snapshotDigest,
 				observedWorkGraphDigest: observation.workState.workGraphDigest,
 				change,
@@ -450,6 +453,9 @@ async function executeSelectedSemanticWork(input: {
 			repoRoot,
 			expectedWorkStateDigest: observation.workState.snapshotDigest,
 			expectedChangeId: selection.change.changeId,
+			changeId: selection.change.changeId,
+			changeRevisionId: selection.change.changeDigest,
+			observedWorkGraphDigest: observation.workState.workGraphDigest,
 			runtimeJobId,
 			mode: "preview",
 		};
@@ -525,7 +531,7 @@ async function executeSelectedSemanticWork(input: {
 	};
 }
 
-function runtimePlanningContent(candidate: PlanningCandidateContent) {
+function runtimePlanningContent(candidate: PlanningCandidateProposal) {
 	return candidate;
 }
 

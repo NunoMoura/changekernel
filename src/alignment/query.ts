@@ -116,11 +116,7 @@ const FAMILY_EDGE_TYPES: Readonly<
 	Record<Exclude<AlignmentQueryFamily, "change_context">, ReadonlySet<string>>
 > = Object.freeze({
 	work_unit_readiness: new Set([
-		"epoch_contains_work_unit",
-		"work_unit_belongs_to_epoch",
-		"sprint_contains_work_unit",
 		"work_unit_depends_on_work_unit",
-		"epoch_safe_execution_frontier",
 		"work_unit_realizes_change",
 		"work_unit_has_stable_ref",
 		"work_unit_contributed_by_change",
@@ -435,6 +431,7 @@ function assertQueryRequest(request: AlignmentQueryRequest): void {
 	if (!request || typeof request !== "object" || Array.isArray(request)) {
 		throw new Error("Alignment query must be an object.");
 	}
+	// SAFETY: object guard above permits bounded field inspection before family-specific validation.
 	const values = request as unknown as Record<string, unknown>;
 	const family = validatedQueryFamily(values.family);
 	assertExactKeys(
@@ -507,5 +504,6 @@ function sortedUnique(values: readonly string[]): string[] {
 }
 
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: callers provide declared Alignment JSON-domain structures.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

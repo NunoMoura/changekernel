@@ -5,13 +5,14 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 
 import {
-	captureKnowledgeAlignmentBaseline,
-	knowledgeTopicRefsFromRecords,
+	captureKnowledgeSubjectAlignmentBaseline,
+	knowledgeSubjectIdsFromRecords,
 	projectKnowledgeAlignment,
-	readKnowledgeTopicDigests,
-} from "../../src/knowledge/topic-alignment.ts";
+	readKnowledgeSubjectDigests,
+} from "../../src/knowledge/subject-alignment.ts";
 
-const ref = ".codewiki/kb/product/overview.md";
+const ref = "cw:component:overview";
+const knowledgePath = ".codewiki/kb/system/components/overview.md";
 
 function decisionRecord(baseline) {
 	return {
@@ -29,7 +30,11 @@ function decisionRecord(baseline) {
 				changeRecord: {
 					change: {
 						id: "CHG-alignment",
-						knowledge: { topicRefs: [ref], propagationRefs: [ref] },
+						knowledge: {
+							kind: "unchanged",
+							refs: [{subjectId: ref}],
+							rationale: "Alignment-only fixture.",
+						},
 					},
 				},
 				decision: { disposition: "approve" },
@@ -43,33 +48,41 @@ describe("topic-scoped Knowledge alignment", () => {
 	it("captures Decision baselines and distinguishes aligned from review needed", async () => {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-topic-alignment-"));
 		try {
-			const path = join(root, ref);
-			await mkdir(join(root, ".codewiki", "kb", "product"), {
+			const path = join(root, knowledgePath);
+			await mkdir(join(root, ".codewiki", "kb", "system", "components"), {
 				recursive: true,
 			});
-			await writeFile(path, "# Product\n", "utf8");
-			const baseline = await captureKnowledgeAlignmentBaseline(
+			await writeFile(
+				path,
+				"---\ntype: System Component\ncodewiki_id: cw:component:overview\ntitle: Overview\n---\n# Overview\n",
+				"utf8",
+			);
+			const baseline = await captureKnowledgeSubjectAlignmentBaseline(
 				root,
 				[ref],
 				"2026-07-16T00:00:00.000Z",
 			);
-			assert.equal(baseline.topics.length, 1);
+			assert.equal(baseline.subjects.length, 1);
 			const records = [decisionRecord(baseline)];
-			assert.deepEqual(knowledgeTopicRefsFromRecords(records), [ref]);
-			const current = await readKnowledgeTopicDigests(root, [ref]);
+			assert.deepEqual(knowledgeSubjectIdsFromRecords(records), [ref]);
+			const current = await readKnowledgeSubjectDigests(root, [ref]);
 			assert.equal(
 				projectKnowledgeAlignment({
 					records,
-					topicRefs: [ref],
+					subjectIds: [ref],
 					currentDigests: current,
 				}).state,
 				"aligned",
 			);
-			await writeFile(path, "# Product\n\nChanged.\n", "utf8");
-			const changed = await readKnowledgeTopicDigests(root, [ref]);
+			await writeFile(
+				path,
+				"---\ntype: System Component\ncodewiki_id: cw:component:overview\ntitle: Overview\n---\n# Overview\n\nChanged.\n",
+				"utf8",
+			);
+			const changed = await readKnowledgeSubjectDigests(root, [ref]);
 			const projection = projectKnowledgeAlignment({
 				records,
-				topicRefs: [ref],
+				subjectIds: [ref],
 				currentDigests: changed,
 			});
 			assert.equal(projection.state, "review_needed");
@@ -84,13 +97,13 @@ describe("topic-scoped Knowledge alignment", () => {
 
 	it("uses Unknown for insufficient evidence and Misaligned only for grounded findings", () => {
 		assert.equal(
-			projectKnowledgeAlignment({ records: [], topicRefs: [ref] }).state,
+			projectKnowledgeAlignment({ records: [], subjectIds: [ref] }).state,
 			"unknown",
 		);
 		assert.equal(
 			projectKnowledgeAlignment({
 				records: [],
-				topicRefs: [],
+				subjectIds: [],
 				noKnowledgeImpactReason: "No Product or System Knowledge is affected.",
 			}).state,
 			"aligned",
@@ -117,7 +130,7 @@ describe("topic-scoped Knowledge alignment", () => {
 		};
 		const projection = projectKnowledgeAlignment({
 			records: [finding],
-			topicRefs: [ref],
+			subjectIds: [ref],
 		});
 		assert.equal(projection.state, "misaligned");
 		assert.equal(projection.findings.length, 1);

@@ -113,31 +113,31 @@ describe("bounded Alignment Graph queries", () => {
 				{path: "index.md", content: "---\nokf_version: '0.2'\n---\n\n# KB\n"},
 				{
 					path: "system/runtime.md",
-					content: "---\ntype: System Responsibility\ntitle: Runtime\ngenerated: { by: process:kb-import, at: 2026-07-01T00:00:00Z }\nverified: { by: human:reviewer, at: 2026-07-02T00:00:00Z }\n---\n\n# Runtime\n",
+					content: "---\ntype: System Responsibility\ncodewiki_id: cw:component:runtime\ntitle: Runtime\ngenerated: { by: process:kb-import, at: 2026-07-01T00:00:00Z }\nverified: { by: human:reviewer, at: 2026-07-02T00:00:00Z }\n---\n\n# Runtime\n",
 				},
 				{
 					path: "system/traces.md",
-					content: "---\ntype: System Responsibility\ntitle: Traces\nsources:\n  - { resource: https://example.invalid/protocol }\ncodewiki_source_patterns: [src/changes/trace/**]\ncodewiki_test_patterns: [tests/changes/trace/**]\ncodewiki_relationships:\n  - { type: constrains, target: system/runtime, rationale: Trace authority constrains Runtime mutation. }\n---\n\nSee [Runtime](./runtime.md).\n",
+					content: "---\ntype: System Responsibility\ncodewiki_id: cw:component:change-trace\ntitle: Traces\nsources:\n  - { resource: https://example.invalid/protocol }\ncodewiki_source_patterns: [src/changes/trace/**]\ncodewiki_test_patterns: [tests/changes/trace/**]\ncodewiki_relationships:\n  - { type: constrains, target: cw:component:runtime, rationale: Trace authority constrains Runtime mutation. }\n---\n\nSee [Runtime](./runtime.md).\n",
 				},
 			],
 		});
 		assert.deepEqual(
 			projection.concepts.map((concept) => concept.conceptId),
-			["kb:system/runtime", "kb:system/traces"],
+			["cw:component:change-trace", "cw:component:runtime"],
 		);
-		assert.deepEqual(projection.concepts[1].markdownReferences, [
-			"kb:system/runtime",
+		assert.deepEqual(projection.concepts[0].markdownReferences, [
+			"cw:component:runtime",
 		]);
-		assert.deepEqual(projection.concepts[1].sourcePatterns, [
+		assert.deepEqual(projection.concepts[0].sourcePatterns, [
 			"src/changes/trace/**",
 		]);
-		assert.equal(projection.concepts[1].relationships[0].target, "kb:system/runtime");
+		assert.equal(projection.concepts[0].relationships[0].target, "cw:component:runtime");
 		const graph = augmentAlignmentGraphWithKnowledge(
 			projectAlignmentGraph(state),
 			projection,
 		);
 		const concept = graph.nodes.find(
-			(node) => node.id === "knowledge-concept:kb:system/traces",
+			(node) => node.id === "knowledge-concept:cw:component:change-trace",
 		);
 		assert.equal(concept.provenance.class, "observed_binding");
 		assert.equal(

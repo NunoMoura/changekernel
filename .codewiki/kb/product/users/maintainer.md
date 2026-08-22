@@ -1,5 +1,6 @@
 ---
 type: User
+codewiki_id: cw:user:maintainer
 title: Maintainer
 description: Accountable human who accepts intent, grants protected authority, and evaluates whether CodeWiki preserves project alignment.
 status: stable

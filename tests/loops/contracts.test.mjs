@@ -2,14 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { parseDecisionCandidateProposal } from "../../src/loops/decision/candidate-proposal.ts";
 import { parseImplementationCandidateContent } from "../../src/loops/implementation/candidate-content.ts";
-import { parsePlanningCandidateContent } from "../../src/loops/planning/candidate-content.ts";
+import {
+	parsePlanningCandidateProposal,
+	planningContinuityKey,
+} from "../../src/loops/planning/candidate-content.ts";
 import { createReviewAttempt } from "../../src/loops/review/contracts.ts";
 
 function planningCandidate() {
 	return {
-		changeId: "CHG-1",
-		changeRevisionId: `sha256:${"a".repeat(64)}`,
-		observedWorkGraphDigest: `sha256:${"b".repeat(64)}`,
 		workUnits: [
 			{
 				id: "WU-1",
@@ -17,7 +17,9 @@ function planningCandidate() {
 				title: "Tighten admission",
 				outcome: "Nested content is exact.",
 				technicalRequirements: ["Reject unknown fields."],
-				acceptanceRequirements: ["Malformed content fails."],
+				knowledgeEffectIds: ["knowledge-effect:test"],
+				unchangedKnowledgeTargets: [],
+				acceptanceRequirementIds: ["REQ-malformed"],
 				componentRefs: ["component:planning-loop"],
 				pathScopes: ["src/loops/planning/**"],
 				verification: ["npm test"],
@@ -26,16 +28,26 @@ function planningCandidate() {
 					toolIds: ["node-test"],
 					skillIds: [],
 					custodyRequirements: ["private-workbench"],
+					consentRequirements: ["source-mutation"],
+					privacyClass: "internal",
 					budgetClass: "standard",
 				},
 			},
 		],
 		dependencyEdges: [],
+		knowledgeEffectCoverage: [
+			{obligationId: "knowledge-effect:test", workUnitIds: ["WU-1"]},
+		],
+		unchangedKnowledgeCoverage: [],
 		acceptanceCoverage: [
-			{ acceptanceRequirement: "Malformed content fails.", workUnitIds: ["WU-1"] },
+			{obligationId: "REQ-malformed", workUnitIds: ["WU-1"]},
+		],
+		aggregateReviewRequirements: [
+			{id: "AGR-contract", statement: "Review exact nested content.", workUnitIds: ["WU-1"]},
 		],
 		uiPreviewTargets: [],
 		integrationRequirements: ["Integrate into private Change lineage."],
+		amendment: null,
 		rationale: "Exact Change-scoped Work Graph delta.",
 	};
 }
@@ -70,40 +82,41 @@ describe("Loop-owned candidate content admission", () => {
 
 	it("keeps Planning provenance outside candidate content", () => {
 		const candidate = planningCandidate();
-		assert.deepEqual(parsePlanningCandidateContent(candidate), candidate);
+		assert.equal(planningContinuityKey("CHG-1"), "planning:CHG-1");
+		assert.deepEqual(parsePlanningCandidateProposal(candidate), candidate);
 		assert.throws(
 			() =>
-				parsePlanningCandidateContent({
+				parsePlanningCandidateProposal({
 					...candidate,
 					actor: "model:planner",
 					createdAt: "2026-08-11T00:00:00.000Z",
 				}),
-			/Project Server planning candidate cannot supply Project Server-owned fields: actor, createdAt/,
+			/Project Server Planning Candidate proposal received unsupported field actor/,
 		);
 	});
 
 	it("admits exact nested Planning content and rejects nested drift", () => {
 		const candidate = planningCandidate();
-		assert.deepEqual(parsePlanningCandidateContent(candidate), candidate);
+		assert.deepEqual(parsePlanningCandidateProposal(candidate), candidate);
 		assert.throws(
 			() =>
-				parsePlanningCandidateContent({
+				parsePlanningCandidateProposal({
 					...candidate,
 					workUnits: [
 						{ ...candidate.workUnits[0], planning_refs: ["forged"] },
 					],
 				}),
-			/Project Server planning candidate received unsupported field planning_refs at \/workUnits\/0\./,
+			/Project Server Planning Candidate proposal received unsupported field planning_refs at \/workUnits\/0\./,
 		);
 		assert.throws(
 			() =>
-				parsePlanningCandidateContent({
+				parsePlanningCandidateProposal({
 					...candidate,
 					workUnits: [
 						{ ...candidate.workUnits[0], acceptanceCriteria: ["legacy"] },
 					],
 				}),
-			/Project Server planning candidate received unsupported field acceptanceCriteria/,
+			/Project Server Planning Candidate proposal received unsupported field acceptanceCriteria/,
 		);
 	});
 
@@ -207,11 +220,31 @@ describe("Loop-owned candidate content admission", () => {
 describe("Review attempt identity", () => {
 	const digest = (value) => `sha256:${value.repeat(64)}`;
 	const input = () => ({
+		changeId: "change:CHG-1",
+		changeRevisionId: digest("1"),
+		knowledgeTransitionDigest: digest("2"),
+		knowledgeStateDigest: digest("3"),
+		knowledgeProjectionDigest: digest("4"),
+		planningDeltaIds: [digest("5")],
+		workGraphDigest: digest("6"),
+		aggregateDigest: digest("7"),
+		lineageDigest: digest("8"),
+		targetBaseCommit: "0".repeat(40),
 		integratedHead: "a".repeat(40),
 		integratedTree: "b".repeat(40),
-		targetBranch: "main",
-		changeIds: ["change:CHG-2", "change:CHG-1"],
+		integratedTreeDigest: digest("9"),
+		targetBranch: "refs/heads/main",
 		workUnitIds: ["WI-2", "WI-1"],
+		candidateIds: ["candidate-2", "candidate-1"],
+		candidateDigests: [digest("b"), digest("a")],
+		implementationGateReportDigests: [digest("d"), digest("c")],
+		implementationEvidenceRecordIds: ["evidence-2", "evidence-1"],
+		implementationResultDigests: [digest("f")],
+		continuityKey: `review:change:CHG-1:${digest("8")}`,
+		producerSessionId: "session:review-1",
+		producingRunId: "run:review-1",
+		producerRunReceiptDigest: digest("0"),
+		projectMaterialGenerationDigest: digest("e"),
 		checkPackSnapshotDigest: digest("c"),
 		providerReceiptDigests: [digest("e"), digest("d")],
 		evidenceRecordDigests: [digest("f")],
@@ -221,17 +254,22 @@ describe("Review attempt identity", () => {
 		const attempt = createReviewAttempt(input());
 		const reordered = createReviewAttempt({
 			...input(),
-			changeIds: [...input().changeIds].reverse(),
+			planningDeltaIds: [...input().planningDeltaIds].reverse(),
 			workUnitIds: [...input().workUnitIds].reverse(),
+			candidateIds: [...input().candidateIds].reverse(),
+			candidateDigests: [...input().candidateDigests].reverse(),
+			implementationGateReportDigests: [
+				...input().implementationGateReportDigests,
+			].reverse(),
 			providerReceiptDigests: [...input().providerReceiptDigests].reverse(),
 		});
 
-		assert.equal(attempt.schemaVersion, "2.0.0");
-		assert.deepEqual(attempt.changeIds, ["change:CHG-1", "change:CHG-2"]);
+		assert.equal(attempt.schemaVersion, "3.0.0");
+		assert.equal(attempt.changeId, "change:CHG-1");
 		assert.deepEqual(attempt.workUnitIds, ["WI-1", "WI-2"]);
 		assert.equal(attempt.attemptDigest, reordered.attemptDigest);
 		assert.equal(Object.isFrozen(attempt), true);
-		assert.equal(Object.isFrozen(attempt.changeIds), true);
+		assert.equal(Object.isFrozen(attempt.candidateIds), true);
 		assert.notEqual(
 			attempt.attemptDigest,
 			createReviewAttempt({...input(), integratedHead: "9".repeat(40)})
@@ -245,11 +283,15 @@ describe("Review attempt identity", () => {
 			/lowercase full Git object id/,
 		);
 		assert.throws(
+			() => createReviewAttempt({...input(), targetBranch: "refs/heads/review//unsafe"}),
+			/exact safe local branch ref/,
+		);
+		assert.throws(
 			() => createReviewAttempt({...input(), deliveryAuthority: true}),
 			/unsupported=deliveryAuthority/,
 		);
 		assert.throws(
-			() => createReviewAttempt({...input(), changeIds: ["change:CHG-1", "change:CHG-1"]}),
+			() => createReviewAttempt({...input(), candidateIds: ["candidate-1", "candidate-1"]}),
 			/must not contain duplicates/,
 		);
 	});

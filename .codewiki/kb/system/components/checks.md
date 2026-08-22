@@ -1,18 +1,19 @@
 ---
 type: System Component
+codewiki_id: cw:component:checks
 title: Checks
 description: Owns Check, Check Pack, Pack Skill snapshot, Check SDK, bounded execution, Result, Gate Report, caching, and fail-fast contracts.
 status: stable
 tags: [system, component]
-codewiki_component: checks
+codewiki_component: cw:component:checks
 codewiki_source_patterns: ["src/checks/**"]
 codewiki_test_patterns: ["tests/checks/**"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/enforce-project-standards.md
+    target: cw:story:maintainer.enforce-project-standards
     rationale: Checks supplies the System responsibility required by this Story.
   - type: realizes
-    target: /product/stories/check-author/author-composable-checks.md
+    target: cw:story:check-author.author-composable-checks
     rationale: Checks supplies the portable authoring, composition, input, output, and sandbox contracts required by this Story.
 ---
 # Checks
@@ -39,7 +40,7 @@ Bootstrap creates one empty editable `default/` Pack per stage once. Users may r
 
 After bootstrap, only direct file edits or authenticated App actions change Packs. Folder presence defines active policy; no protected floor, tier, activation ceremony, or hidden catalog exists.
 
-Project Server resolves every active Pack in one stage into one deterministic stage-wide Check Pack policy snapshot. Implementation uses the same resolved policy for every Work Unit Candidate. Planning, Work Units, workers, routes, and models cannot select bespoke Pack subsets or variants. Only exact Gate Evaluation Package inputs vary by Work Unit. Deterministic Check applicability may return `not_applicable`; it does not create another policy. Editing an Implementation Pack creates a new stage-wide snapshot and stales affected remaining Results uniformly.
+Project Server resolves every active Pack in one stage into one deterministic stage-wide Check Pack policy snapshot. Implementation Stage Policy `1.0.0` binds that snapshot once, and every Work Unit-specific Gate Evaluation Package `1.0.0` references its exact policy and Check Pack digests. Implementation uses the same resolved policy for every Work Unit Candidate. Planning, Work Units, workers, routes, and models cannot select bespoke Pack subsets or variants. Only exact Gate Evaluation Package inputs vary by Work Unit. Deterministic Check applicability may return `not_applicable`; it does not create another policy. Editing an Implementation Pack creates a new stage-wide snapshot and stales affected remaining Results uniformly.
 
 ## Pack Skills
 
@@ -62,7 +63,7 @@ measurement:    binary | quantitative
 
 A binary Check returns one boolean. A quantitative Check returns one finite number, while `check.json` defines its minimum, maximum, or both. Checks derives pass or fail and rejects contradictory verdicts. Each completed Result retains exact measurement, threshold, Check and configuration digests, input digest, execution identity, and either no feedback or one failure.
 
-Model `CHECK.md` defines ordered Requirement, Pass, Fail, and Feedback sections. Checks supplies the fixed bounded structured-output protocol. Every top-level Model Check invocation runs in its own fresh isolated tool-free DSH Agent Session over exact declared Gate Evaluation Package input; independent Checks may run in bounded parallel. Lack of proof follows the authored fail condition. Its route is independent from producer and Implementation Worker routes, with no inherited tools, Skill, memory, material query, programmatic runtime, compaction continuation, other Check result, or fallback.
+Model `CHECK.md` defines ordered Requirement, Pass, Fail, and Feedback sections. Checks supplies the fixed bounded structured-output protocol. Every top-level Model Check invocation runs in its own fresh isolated tool-free DSH Agent Session over exact declared Gate Evaluation Package input; independent Checks may run in bounded parallel. A Decision Model Check receives the already-materialized Candidate, exact current and projected Knowledge, and complete declared compatibility coverage. It judges and returns only bounded Check Output; it never authors Knowledge Effects, replacement bytes, Candidate amendments, or transitions. Lack of proof follows the authored fail condition. Its route is independent from producer and Implementation Worker routes, with no inherited tools, Skill, memory, material query, programmatic runtime, compaction continuation, other Check result, or fallback.
 
 Code `CHECK.mjs` consumes language-neutral Check Input and returns bounded Check Output through an admitted sandbox. It is deterministic and hermetic over declared snapshot-bound input. Project Server enforces time, resource, output, filesystem, and process bounds plus network denial. No host credentials, canonical-write authority, package installation, or host fallback enters the sandbox. Marketplace Code Checks arrive self-contained and prebundled.
 
@@ -78,7 +79,7 @@ The reserved read-only `codewiki` binding queries only declared Gate Evaluation 
 
 ## Execution and Gate outcomes
 
-Project Server freezes one immutable Gate Evaluation Package at Candidate checkpoint; Checks receives only its declared exact subject, Check files, inputs, Evidence, configuration, and execution identities. Producer Project Material Generations remain separate and cannot become implicit Check input. Mid-run change makes the attempt stale. Pack parsing compiles once per content digest. Cache keys bind Candidate subject, Check, configuration, selected input, Evidence, execution identity, and model route; only completed pass or fail Results are cacheable.
+Project Server freezes one immutable Gate Evaluation Package at Candidate checkpoint; Checks receives only its declared exact subject, Check files, inputs, Evidence, configuration, and execution identities. A Decision package binds the Change revision and Effects, base and projected Knowledge State, compiler and application plan, exact projection, and accepted active Changes coverage. Producer Project Material Generations remain separate and cannot become implicit Check input. Mid-run change makes the attempt stale. Pack parsing compiles once per content digest. Cache keys bind Candidate subject, Check, configuration, selected input, Evidence, execution identity, and model route; only completed pass or fail Results are cacheable.
 
 Installed Checks declare no runtime dependencies. Pack order cannot create prerequisites. Source-level composition is permitted because the complete closure is bundled before installation. Execution resolves exact cache hits, runs uncached Code Checks in bounded parallel, stops before Model Checks after Code failure or stop, otherwise runs Model Checks in bounded parallel, and stops launching queued work after a conclusive outcome. Running work receives best-effort cancellation; stable registered Check identity orders persisted output.
 

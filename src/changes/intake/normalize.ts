@@ -1,3 +1,4 @@
+import {isKnowledgeSubjectId} from "../../knowledge/okf.ts";
 import {isCanonicalTraceRef} from "../trace/refs.ts";
 import {
 	normalizeChangeSecurityProfile,
@@ -99,7 +100,7 @@ const BINDING_FIELDS = Object.freeze({
 		"observationId",
 		"previousSnapshotDigest",
 		"currentSnapshotDigest",
-		"topicRefs",
+		"subjectIds",
 	],
 } satisfies Record<ChangeIntakeMaterialType, readonly string[]>);
 
@@ -400,11 +401,11 @@ function knowledgeDriftBinding(
 			value.currentSnapshotDigest,
 			"binding.currentSnapshotDigest",
 		),
-		topicRefs: refList(
-			value.topicRefs,
-			"binding.topicRefs",
+		subjectIds: refList(
+			value.subjectIds,
+			"binding.subjectIds",
 			1,
-			CHANGE_INTAKE_MATERIAL_PROTOCOL.maxTopicRefs,
+			CHANGE_INTAKE_MATERIAL_PROTOCOL.maxSubjectIds,
 		),
 	});
 }
@@ -507,7 +508,7 @@ function refList(
 
 function canonicalRef(value: unknown, field: string): string {
 	const ref = text(value, field, 500);
-	if (!isCanonicalTraceRef(ref)) {
+	if (!isCanonicalTraceRef(ref) && !isKnowledgeSubjectId(ref)) {
 		throw new Error(`${field} must be a canonical CodeWiki ref.`);
 	}
 	if (ref.startsWith("trace:intake:")) {

@@ -3,32 +3,36 @@ import { describe, it } from "node:test";
 import { validateSystemDiagrams } from "../../src/knowledge/system-diagrams.ts";
 
 const components = [
-	"/system/components/project-server.md",
-	"/system/components/checks.md",
-	"/system/components/change-trace.md",
+	"cw:component:project-server",
+	"cw:component:checks",
+	"cw:component:change-trace",
 ];
-const flows = ["/system/flows/change-lifecycle.md"];
+const flows = ["cw:flow:change-lifecycle"];
 
 function validDiagram() {
 	return {
+		codewiki_id: "cw:diagram:architecture",
+		codewiki_facets: {
+			topology: {kind: "yaml", pointer: "/components"},
+		},
 		id: "architecture",
 		purpose: "Show the authoritative Checks and persistence path.",
 		components: [
 			{
 				id: "project-server",
-				concept: "/system/components/project-server.md",
+				concept: "cw:component:project-server",
 				label: "Project Server",
 				zone: "core",
 			},
 			{
 				id: "checks",
-				concept: "/system/components/checks.md",
+				concept: "cw:component:checks",
 				label: "Checks",
 				zone: "core",
 			},
 			{
 				id: "trace",
-				concept: "/system/components/change-trace.md",
+				concept: "cw:component:change-trace",
 				label: "Change Trace",
 				zone: "repository",
 			},
@@ -62,7 +66,7 @@ function validDiagram() {
 		],
 		flows: [
 			{
-				concept: "/system/flows/change-lifecycle.md",
+				concept: "cw:flow:change-lifecycle",
 				paths: [
 					{
 						connections: [
@@ -86,6 +90,22 @@ describe("System diagram contract", () => {
 				flowConcepts: flows,
 			}),
 			[],
+		);
+	});
+
+	it("rejects overlapping or unresolved YAML facet locators", () => {
+		const diagram = validDiagram();
+		diagram.codewiki_facets = {
+			topology: {kind: "yaml", pointer: "/components"},
+			firstComponent: {kind: "yaml", pointer: "/components/0"},
+		};
+		assert.equal(
+			validateSystemDiagrams({
+				diagrams: [diagram],
+				componentConcepts: components,
+				flowConcepts: flows,
+			}).some((entry) => entry.code === "invalid_diagram_facets"),
+			true,
 		);
 	});
 

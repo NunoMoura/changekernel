@@ -1,5 +1,6 @@
 ---
 type: User
+codewiki_id: cw:user:agent
 title: Agent
 description: Tool-using participant acting as a Stage Producer, Implementation Worker, Check executor, delegated harness, or External Agent Client without owning acceptance, lifecycle, or effects.
 status: stable

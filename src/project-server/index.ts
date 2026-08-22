@@ -30,14 +30,6 @@ export type {
 	RunWikiDecideResult,
 	WikiDecideMode,
 } from "../loops/decision/command.ts";
-export { runWikiImplement } from "./commands/implementation.ts";
-export type {
-	ImplementationEvidenceSubmission,
-	RunWikiImplementInput,
-	RunWikiImplementResult,
-	WikiImplementMode,
-	WikiImplementReviewEvidenceResult,
-} from "./commands/implementation.ts";
 export { runWikiOkf } from "../knowledge/okf-export.ts";
 export type {
 	RunWikiOkfInput,
@@ -51,6 +43,72 @@ export type {
 	RunWikiPlanResult,
 	WikiPlanMode,
 } from "./commands/planning.ts";
+export {
+	createImplementationOperationSequence,
+	type CreateImplementationOperationsInput,
+	type ImplementationOperationSequence,
+} from "./effects/implementation-operations.ts";
+export {
+	commitImplementationAggregate,
+	commitPrivateIntegrationAdmission,
+	type CommitImplementationAggregateInput,
+	type CommitPrivateIntegrationAdmissionInput,
+	type ImplementationAggregateCommitReceipt,
+	type PrivateIntegrationCommitReceipt,
+} from "./integration/commit.ts";
+export {
+	createImplementationAggregateFreeze,
+	createPrivateIntegrationAdmission,
+	privateChangeIntegrationRef,
+	type CreateImplementationAggregateInput,
+	type CreatePrivateIntegrationAdmissionInput,
+	type ImplementationAggregateFreeze,
+	type PrivateIntegrationAdmission,
+	type PrivateIntegrationObservation,
+} from "./integration/private-lineage.ts";
+export {
+	assertCurrentAggregateReviewAttempt,
+	createAggregateReviewAttempt,
+	type CreateAggregateReviewAttemptInput,
+} from "./review/aggregate-review.ts";
+export {
+	commitGuardedDelivery,
+	createDeliveryAuthority,
+	createGuardedDeliveryOperation,
+	type CommitGuardedDeliveryInput,
+	type CreateGuardedDeliveryOperationInput,
+	type DeliveryAuthority,
+	type DeliveryAuthorityInput,
+	type GuardedDeliveryPlan,
+	type GuardedDeliveryReceipt,
+} from "./delivery/guarded-delivery.ts";
+export {
+	createImplementationRunRequest,
+	type CreateImplementationRunRequestInput,
+} from "./workers/implementation-run.ts";
+export {
+	createImplementationStageGate,
+	type CreateImplementationGateInput,
+	type ImplementationGateRun,
+	type ImplementationStageGate,
+	type RunImplementationGateInput,
+} from "./lifecycle/implementation-gate.ts";
+export {
+	commitProjectSchedulingPlan,
+	type CommitProjectSchedulingPlanInput,
+	type ProjectSchedulingCommitReceipt,
+} from "./scheduling/commit.ts";
+export {
+	SCHEDULING_PLAN_PROTOCOL,
+	createProjectSchedulingPlan,
+	createSchedulingOperationSequence,
+	deriveReadyWorkUnits,
+	type ReadyWorkUnit,
+	type SchedulingAdmission,
+	type SchedulingHold,
+	type SchedulingOperationSequence,
+	type SchedulingPlan,
+} from "./scheduling/scheduler.ts";
 export {
 	runWikiConfig,
 	type RunWikiConfigInput,

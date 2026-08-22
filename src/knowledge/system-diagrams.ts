@@ -1,3 +1,8 @@
+import {
+	KNOWLEDGE_FACET_ID_PATTERN,
+	isKnowledgeSubjectId,
+} from "./okf.ts";
+
 export const SYSTEM_CONNECTION_TYPES = Object.freeze([
 	"authorizes",
 	"consumes",
@@ -63,6 +68,10 @@ export interface SystemDiagramFlow {
 }
 
 export interface SystemDiagram {
+	readonly codewiki_id: string;
+	readonly codewiki_facets?: Readonly<
+		Record<string, {readonly kind: "yaml"; readonly pointer: string}>
+	>;
 	readonly id: string;
 	readonly purpose: string;
 	readonly components: readonly SystemDiagramComponent[];
@@ -72,6 +81,9 @@ export interface SystemDiagram {
 
 export interface SystemDiagramIssue {
 	readonly code:
+		| "invalid_diagram_identity"
+		| "duplicate_diagram_identity"
+		| "invalid_diagram_facets"
 		| "diagram_purpose_too_large"
 		| "too_many_components"
 		| "duplicate_component_id"
@@ -115,6 +127,30 @@ export function validateSystemDiagrams(input: {
 	const issues = input.diagrams.flatMap((diagram) =>
 		validateSystemDiagram(diagram, input.componentConcepts, input.flowConcepts),
 	);
+	const diagramIdentities = new Set<string>();
+	for (const diagram of input.diagrams) {
+		if (!isKnowledgeSubjectId(diagram.codewiki_id) || !diagram.codewiki_id.startsWith("cw:diagram:")) {
+			issues.push(
+				issue(
+					"invalid_diagram_identity",
+					diagram,
+					{},
+					"System diagram codewiki_id must use cw:diagram:<stable-key>.",
+				),
+			);
+		} else if (diagramIdentities.has(diagram.codewiki_id)) {
+			issues.push(
+				issue(
+					"duplicate_diagram_identity",
+					diagram,
+					{},
+					`System diagram identity ${diagram.codewiki_id} is duplicated.`,
+				),
+			);
+		}
+		diagramIdentities.add(diagram.codewiki_id);
+		issues.push(...validateDiagramFacets(diagram));
+	}
 	const diagrammedComponents = new Set(
 		input.diagrams.flatMap((diagram) =>
 			diagram.components.map((component) => component.concept),
@@ -140,6 +176,104 @@ export function validateSystemDiagrams(input: {
 		});
 	}
 	return issues;
+}
+
+function validateDiagramFacets(diagram: SystemDiagram): SystemDiagramIssue[] {
+	if (diagram.codewiki_facets === undefined) return [];
+	if (
+		!diagram.codewiki_facets ||
+		typeof diagram.codewiki_facets !== "object" ||
+		Array.isArray(diagram.codewiki_facets)
+	) {
+		return [
+			issue(
+				"invalid_diagram_facets",
+				diagram,
+				{},
+				"Diagram codewiki_facets must map stable keys to YAML pointers.",
+			),
+		];
+	}
+	const issues: SystemDiagramIssue[] = [];
+	const pointers: {readonly facetId: string; readonly pointer: string}[] = [];
+	for (const [facetId, locator] of Object.entries(diagram.codewiki_facets)) {
+		const pointer = validDiagramFacetPointer(diagram, facetId, locator);
+		if (pointer) {
+			pointers.push({facetId, pointer});
+			continue;
+		}
+		issues.push(
+			issue(
+				"invalid_diagram_facets",
+				diagram,
+				{},
+				`Diagram facet ${facetId} requires one current YAML pointer.`,
+			),
+		);
+	}
+	for (const [index, left] of pointers.entries()) {
+		for (const right of pointers.slice(index + 1)) {
+			if (
+				left.pointer === right.pointer ||
+				left.pointer.startsWith(`${right.pointer}/`) ||
+				right.pointer.startsWith(`${left.pointer}/`)
+			) {
+				issues.push(
+					issue(
+						"invalid_diagram_facets",
+						diagram,
+						{},
+						`Diagram facets ${left.facetId} and ${right.facetId} overlap.`,
+					),
+				);
+			}
+		}
+	}
+	return issues;
+}
+
+function validDiagramFacetPointer(
+	diagram: SystemDiagram,
+	facetId: string,
+	locator: unknown,
+): string | undefined {
+	if (!KNOWLEDGE_FACET_ID_PATTERN.test(facetId)) return undefined;
+	if (!locator || typeof locator !== "object" || Array.isArray(locator)) {
+		return undefined;
+	}
+	// SAFETY: runtime object guards above establish a string-keyed locator record.
+	const record = locator as Record<string, unknown>;
+	if (Object.keys(record).sort(compareText).join(",") !== "kind,pointer") {
+		return undefined;
+	}
+	if (record.kind !== "yaml" || typeof record.pointer !== "string") {
+		return undefined;
+	}
+	if (!/^\/(?:[^~/]|~[01])+(?:\/(?:[^~/]|~[01])+)*$/u.test(record.pointer)) {
+		return undefined;
+	}
+	if (!diagramPointerResolves(diagram, record.pointer)) return undefined;
+	return record.pointer;
+}
+
+function diagramPointerResolves(diagram: SystemDiagram, pointer: string): boolean {
+	let current: unknown = diagram;
+	for (const token of pointer
+		.slice(1)
+		.split("/")
+		.map((part) => part.replace(/~1/gu, "/").replace(/~0/gu, "~"))) {
+		if (!current || typeof current !== "object" || Array.isArray(current)) return false;
+		const record = current as Record<string, unknown>;
+		if (!Object.hasOwn(record, token)) return false;
+		current = record[token];
+	}
+	return true;
+}
+
+function compareText(left: string, right: string): number {
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
 }
 
 function validateSystemDiagram(

@@ -104,6 +104,37 @@ test("Pi Model Check transport runs one tool-free isolated structured-output ses
 	assert.equal(disposed, true);
 });
 
+test("Pi Model Check transport creates one fresh isolated Session per Check", async () => {
+	const prepared = request();
+	const sessions = [];
+	const transport = createPiModelCheckTransport({
+		repoRoot: process.cwd(),
+		resolveRoute: () => route(),
+		sessionFactory: async (input) => {
+			const session = {
+				id: `model-check-session-${sessions.length + 1}`,
+				disposed: false,
+				async prompt() {},
+				readResponse: () => response(input.request),
+				dispose() {
+					this.disposed = true;
+				},
+			};
+			sessions.push(session);
+			return session;
+		},
+	});
+	await Promise.all([
+		transport(prepared, new AbortController().signal),
+		transport(prepared, new AbortController().signal),
+	]);
+	assert.deepEqual(
+		sessions.map((session) => session.id),
+		["model-check-session-1", "model-check-session-2"],
+	);
+	assert.equal(sessions.every((session) => session.disposed), true);
+});
+
 test("Pi Model Check transport surfaces timeout and cancellation as operational stops", async () => {
 	const prepared = request();
 	let aborted = false;

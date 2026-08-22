@@ -6,11 +6,7 @@ import {
 	createInitialProjectWorkState,
 } from "../../../src/changes/trace/index.ts";
 import {authorityBinding, digest} from "../../helpers/change-trace-v1.mjs";
-import {
-	allowAllReplayPolicy,
-	buildPassingPlanningExit,
-	planningArtifacts,
-} from "../../helpers/change-trace-replay-v1.mjs";
+import {allowAllReplayPolicy} from "../../helpers/change-trace-replay-v1.mjs";
 import {
 	buildOpenChangeRecords,
 	createGitProposal,
@@ -86,49 +82,11 @@ async function seedChanges(fixture, changeIds) {
 	return proposal.projected;
 }
 
-async function seedPlanning(fixture, changeId) {
-	let state = await seedChanges(fixture, [changeId]);
-	const artifacts = planningArtifacts("distributed-claim");
-	const exit = buildPassingPlanningExit(state, changeId, artifacts);
-	const planning = await createGitProposal(fixture.cloneA, state, exit.operations);
-	assert.equal((await pushGitProposal(fixture.cloneA, planning.proposal)).status, "accepted");
-	state = planning.projected;
-	return {
-		state,
-		graphDelta: {
-			workGraphDeltaId: digest("4"),
-			workUnitId: "work-distributed-claim",
-		},
-	};
-}
-
 function activeChangeClaim(observation, changeId) {
 	const change = observation.workState.changes.find(
 		(candidate) => candidate.changeId === changeId,
 	);
 	return change.changeClaims.find((claim) => claim.status === "active");
-}
-
-function activeWorkUnitClaim(observation, changeId) {
-	const change = observation.workState.changes.find(
-		(candidate) => candidate.changeId === changeId,
-	);
-	return change.workUnitClaims.find((claim) => claim.status === "active");
-}
-
-function workUnitRequest(state, graphDelta, changeId, actorId) {
-	return {
-		changeId,
-		workGraphDeltaId: graphDelta.workGraphDeltaId,
-		workUnitId: graphDelta.workUnitId,
-		assignmentAttemptId: `attempt-${actorId}`,
-		workerId: actorId,
-		workbenchId: `workbench-${actorId}`,
-		sourceBase: state.observedBase.sourceHead,
-		scopeDigest: digest("1"),
-		budgetDigest: digest("2"),
-		obligationDigest: digest("3"),
-	};
 }
 
 describe("guarded distributed mutation", () => {
@@ -257,71 +215,19 @@ describe("guarded distributed mutation", () => {
 		}
 	});
 
-	it("serializes Work Unit Claim acquire, release, retry, and takeover", async () => {
+	it("keeps Work Unit Claim and Assignment authority out of generic mutation runtime", async () => {
 		const fixture = await createTwoCloneFixture();
 		try {
-			const changeId = "CHG-work-unit-claim-runtime";
-			const {state, graphDelta} = await seedPlanning(fixture, changeId);
-			const runtimes = [
-				mutationRuntime(fixture, fixture.cloneA, state, "worker-a"),
-				mutationRuntime(fixture, fixture.cloneB, state, "worker-b"),
-			];
-			const requests = [
-				workUnitRequest(state, graphDelta, changeId, "worker-a"),
-				workUnitRequest(state, graphDelta, changeId, "worker-b"),
-			];
-			const raced = await Promise.allSettled([
-				runtimes[0].acquireWorkUnitClaim(requests[0]),
-				runtimes[1].acquireWorkUnitClaim(requests[1]),
-			]);
-			assert.equal(raced.filter((result) => result.status === "fulfilled").length, 1);
-			const rejected = raced.find((result) => result.status === "rejected");
-			assert.equal(rejected.reason.code, "ACTIVE_AUTHORITY");
-			const winnerIndex = raced.findIndex((result) => result.status === "fulfilled");
-			const winner = raced[winnerIndex].value;
-			const repeated = await runtimes[winnerIndex].acquireWorkUnitClaim(
-				requests[winnerIndex],
-			);
-			assert.equal(repeated.status, "already_accepted");
-			assert.equal(repeated.operationId, winner.operationId);
-			await runtimes[winnerIndex].releaseWorkUnitClaim({
-				changeId,
-				claimOperationId: winner.operationId,
-				reason: "completed",
-			});
-
-			const nextIndex = winnerIndex === 0 ? 1 : 0;
-			const next = await runtimes[nextIndex].acquireWorkUnitClaim(requests[nextIndex]);
-			const unauthenticated = mutationRuntime(
+			const state = await seedChanges(fixture, ["CHG-scheduler-owned"]);
+			const runtime = mutationRuntime(
 				fixture,
 				fixture.cloneA,
 				state,
-				"worker-unauthenticated",
+				"worker-a",
 			);
-			await assert.rejects(
-				() =>
-					unauthenticated.takeoverWorkUnitClaim({
-						...workUnitRequest(state, graphDelta, changeId, "worker-unauthenticated"),
-						priorClaimOperationId: next.operationId,
-						reason: "Maintainer-directed recovery.",
-					}),
-				/authenticated authority evidence/,
-			);
-			const takeoverRuntime = mutationRuntime(
-				fixture,
-				fixture.cloneA,
-				state,
-				"worker-takeover",
-				true,
-			);
-			const takeover = await takeoverRuntime.takeoverWorkUnitClaim({
-				...workUnitRequest(state, graphDelta, changeId, "worker-takeover"),
-				priorClaimOperationId: next.operationId,
-				reason: "Maintainer-directed recovery.",
-			});
-			assert.equal(takeover.status, "accepted");
-			const final = await takeoverRuntime.synchronize();
-			assert.equal(activeWorkUnitClaim(final, changeId).operationId, takeover.operationId);
+			assert.equal(runtime.acquireWorkUnitClaim, undefined);
+			assert.equal(runtime.releaseWorkUnitClaim, undefined);
+			assert.equal(runtime.takeoverWorkUnitClaim, undefined);
 		} finally {
 			await fixture.cleanup();
 		}

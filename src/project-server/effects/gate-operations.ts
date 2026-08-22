@@ -50,11 +50,19 @@ import {
 	reviewSubjectFromAttempt,
 	type ReviewAttempt,
 } from "../../loops/review/contracts.ts";
+import {assertCurrentAggregateReviewAttempt} from "../review/aggregate-review.ts";
 import {
 	deriveReviewLifecycleTransition,
 	type DecisionLifecycleTransition,
 	type ReviewLifecycleTransition,
 } from "../lifecycle/gates.ts";
+
+export interface NativeDecisionConfirmation {
+	readonly candidateDigest: Sha256Digest;
+	readonly gateReportDigest: Sha256Digest;
+	readonly knowledgeCheckpointDigest: Sha256Digest;
+	readonly authorityBinding: AuthorityBinding;
+}
 
 export interface CreateNativeDecisionOperationsInput {
 	readonly state: ProjectWorkState;
@@ -68,6 +76,7 @@ export interface CreateNativeDecisionOperationsInput {
 	readonly evidenceRecords: readonly EvidenceRecord[];
 	readonly report: GateReport;
 	readonly transition: DecisionLifecycleTransition;
+	readonly confirmation?: NativeDecisionConfirmation;
 }
 
 export interface NativeDecisionOperationSequence {
@@ -77,6 +86,7 @@ export interface NativeDecisionOperationSequence {
 	readonly candidateId: string;
 	readonly packSnapshotId: string;
 	readonly gateReportId: string;
+	readonly confirmationOperationId: Sha256Digest | null;
 	readonly transitionOperationId: Sha256Digest;
 }
 
@@ -152,14 +162,15 @@ export function createNativeDecisionOperationSequence(
 		...values: [
 			K,
 			Parameters<typeof createNextChangeOperation<K>>[1]["payload"],
+			AuthorityBinding?,
 		]
 	): CanonicalChangeOperation<K> => {
-		const [kind, payload] = values;
+		const [kind, payload, authorityBinding = input.authorityBinding] = values;
 		const operation = createNextChangeOperation(projected, {
 			changeId: projected.changeId,
 			kind,
 			baseSnapshot: input.baseSnapshot,
-			authorityBinding: input.authorityBinding,
+			authorityBinding,
 			recordedAt: operationTimestamp(input.recordedAt, operations.length),
 			payload,
 		});
@@ -217,6 +228,41 @@ export function createNativeDecisionOperationSequence(
 			).id,
 		),
 	});
+	let confirmationOperation: CanonicalChangeOperation<"decision.confirmed"> | null = null;
+	if (input.report.status === "passed") {
+		assertDecisionConfirmation(input);
+		const common = {
+			attemptOperationId: attempt.operationId,
+			candidateId: candidateBinding.id,
+			candidateDigest: input.candidate.digest,
+			gateReportId: reportBinding.id,
+			gateReportDigest: input.report.reportDigest,
+			expectedWorkStateDigest: input.state.workStateDigest,
+			expectedAcceptedActiveChangesDigest:
+				input.candidate.content.acceptedActiveChanges.digest,
+		};
+		const payload = input.candidate.content.disposition === "approve"
+			? {
+					...common,
+					disposition: "approve" as const,
+					knowledgeCheckpointDigest:
+						input.candidate.content.knowledgeCheckpoint.checkpointDigest,
+					baseKnowledgeStateDigest:
+						input.candidate.content.knowledgeCheckpoint.applicationPlan.baseStateDigest,
+					resultingKnowledgeStateDigest:
+						input.candidate.content.knowledgeCheckpoint.applicationPlan.resultingStateDigest,
+					applicationPlanDigest:
+						input.candidate.content.knowledgeCheckpoint.applicationPlan.planDigest,
+					resultingProjectionDigest:
+						input.candidate.content.knowledgeCheckpoint.applicationPlan.resultingProjectionDigest,
+				}
+			: {...common, disposition: input.candidate.content.disposition};
+		confirmationOperation = append(
+			"decision.confirmed",
+			payload,
+			input.confirmation?.authorityBinding,
+		);
+	}
 	const transitionOperation = append("runtime.route_recorded", {
 		attemptOperationId: attempt.operationId,
 		exitReportId: reportBinding.id,
@@ -231,6 +277,7 @@ export function createNativeDecisionOperationSequence(
 		exitReportId: reportBinding.id,
 		routeOperationId: transitionOperation.operationId,
 	});
+	// SAFETY: sequence fields are canonical JSON and satisfy NativeDecisionOperationSequence.
 	return toCanonicalJsonValue({
 		operations,
 		state: projected,
@@ -238,6 +285,7 @@ export function createNativeDecisionOperationSequence(
 		candidateId: candidateBinding.id,
 		packSnapshotId: packSnapshotBinding.id,
 		gateReportId: reportBinding.id,
+		confirmationOperationId: confirmationOperation?.operationId ?? null,
 		transitionOperationId: transitionOperation.operationId,
 	}) as unknown as NativeDecisionOperationSequence;
 }
@@ -249,7 +297,9 @@ export function createReviewOperationSequence(
 	assertValidGateReport(input.report, input.packSnapshot);
 	const change = changeById(input.state, input.changeId);
 	if (!change) throw new Error(`Review Change ${input.changeId} is absent.`);
+	assertCurrentAggregateReviewAttempt(input.state, input.attempt);
 	if (
+		input.attempt.changeId !== input.changeId ||
 		input.packSnapshot.stage !== "review" ||
 		input.packSnapshot.checkPackDigest !==
 			input.attempt.checkPackSnapshotDigest ||
@@ -264,6 +314,7 @@ export function createReviewOperationSequence(
 	const expectedTransition = deriveReviewLifecycleTransition(
 		input.attempt,
 		input.report,
+		input.transition.failureOwnership,
 	);
 	if (canonicalJson(input.transition) !== canonicalJson(expectedTransition)) {
 		throw new Error("Review Project Server transition is not the fixed Gate transition.");
@@ -389,6 +440,7 @@ export function createReviewOperationSequence(
 		exitReportId: reportBinding.id,
 		routeOperationId: transitionOperation.operationId,
 	});
+	// SAFETY: sequence fields are canonical JSON and satisfy ReviewOperationSequence.
 	return toCanonicalJsonValue({
 		operations,
 		state: projected,
@@ -402,10 +454,31 @@ export function createReviewOperationSequence(
 
 function serializedReviewRoute(
 	transition: ReviewLifecycleTransition,
-): "complete" | "implementation" | "waiting" {
+): "complete" | "implementation" | "planning" | "decision" | "waiting" {
 	if (transition.target === "guarded_delivery") return "complete";
 	if (transition.target === "implementation") return "implementation";
+	if (transition.target === "planning_amendment") return "planning";
+	if (transition.target === "decision") return "decision";
 	return "waiting";
+}
+
+function assertDecisionConfirmation(
+	input: CreateNativeDecisionOperationsInput,
+): asserts input is CreateNativeDecisionOperationsInput & {
+	readonly confirmation: NativeDecisionConfirmation;
+} {
+	const confirmation = input.confirmation;
+	if (
+		!confirmation ||
+		confirmation.candidateDigest !== input.candidate.digest ||
+		confirmation.gateReportDigest !== input.report.reportDigest ||
+		confirmation.knowledgeCheckpointDigest !==
+			input.candidate.content.knowledgeCheckpoint.checkpointDigest
+	) {
+		throw new Error(
+			"Passing Decision requires exact authorized Candidate and Gate confirmation.",
+		);
+	}
 }
 
 function assertInput(input: CreateNativeDecisionOperationsInput): {
@@ -438,6 +511,9 @@ function assertInput(input: CreateNativeDecisionOperationsInput): {
 	}
 	assertDecisionArtifactIdentity(input, changeRevisionId);
 	assertResultEvidenceAvailable(input.report, input.evidenceRecords);
+	if (input.report.status !== "passed" && input.confirmation) {
+		throw new Error("Only a passed Decision Gate may carry confirmation.");
+	}
 	return {attempt, change};
 }
 
@@ -467,6 +543,7 @@ function assertDecisionArtifactIdentity(
 			disposition: input.candidate.content.disposition,
 			rationale: input.candidate.content.rationale,
 		},
+		knowledgeBase: input.candidate.content.knowledgeCheckpoint.base,
 	});
 	if (expectedCandidate.digest !== input.candidate.digest) {
 		throw new Error(
@@ -508,7 +585,7 @@ function assertResultEvidenceAvailable(
 	}
 }
 
-function requiredResultBinding(
+export function requiredResultBinding(
 	...values: [ReadonlyMap<string, CanonicalInlineSemanticArtifact>, string]
 ): CanonicalInlineSemanticArtifact {
 	const [bindings, checkId] = values;
@@ -517,11 +594,12 @@ function requiredResultBinding(
 	return binding;
 }
 
-function inlineSemanticArtifact(
+export function inlineSemanticArtifact(
 	...values: [string, string, unknown]
 ): CanonicalInlineSemanticArtifact {
 	const [id, schemaVersion, artifact] = values;
 	const normalized = toCanonicalJsonValue(artifact);
+	// SAFETY: canonical wrapper fields satisfy CanonicalInlineSemanticArtifact identity shape.
 	return toCanonicalJsonValue({
 		id,
 		digest: canonicalJsonDigest(normalized),
@@ -571,19 +649,19 @@ function assertNever(value: never): never {
 	throw new Error(`Unsupported Decision transition target ${String(value)}.`);
 }
 
-function idFromDigest(...values: [string, string]): string {
+export function idFromDigest(...values: [string, string]): string {
 	const [prefix, digest] = values;
 	return `${prefix}:${digest.slice("sha256:".length)}`;
 }
 
-function operationTimestamp(...values: [string, number]): string {
+export function operationTimestamp(...values: [string, number]): string {
 	const [base, offset] = values;
 	const epoch = Date.parse(base);
 	if (!Number.isFinite(epoch)) throw new Error("Native Decision recordedAt is invalid.");
 	return new Date(epoch + offset).toISOString();
 }
 
-function sortedEvidence(values: readonly EvidenceRecord[]): EvidenceRecord[] {
+export function sortedEvidence(values: readonly EvidenceRecord[]): EvidenceRecord[] {
 	const byId = new Map<string, EvidenceRecord>();
 	for (const value of values) {
 		if (byId.has(value.evidenceId)) {
@@ -594,7 +672,7 @@ function sortedEvidence(values: readonly EvidenceRecord[]): EvidenceRecord[] {
 	return [...byId.values()].sort(compareEvidence);
 }
 
-function sortedResults(values: readonly CheckResult[]): CheckResult[] {
+export function sortedResults(values: readonly CheckResult[]): CheckResult[] {
 	return [...values].sort(compareResults);
 }
 
@@ -608,13 +686,13 @@ function compareResults(...values: [CheckResult, CheckResult]): number {
 	return left.checkId.localeCompare(right.checkId);
 }
 
-function operationResultStatus(
+export function operationResultStatus(
 	status: CheckResult["status"],
 ): "passed" | "failed" {
 	return status;
 }
 
-function operationReportStatus(
+export function operationReportStatus(
 	status: GateReport["status"],
 ): "passed" | "failed" | "indeterminate" {
 	return status === "stopped" ? "indeterminate" : status;
@@ -640,6 +718,7 @@ export interface CommitNativeDecisionOperationSequenceInput {
 	readonly evidenceRecords: readonly EvidenceRecord[];
 	readonly report: GateReport;
 	readonly transition: DecisionLifecycleTransition;
+	readonly confirmation?: NativeDecisionConfirmation;
 	readonly runner?: GitCommandRunner;
 	readonly materializationRoot?: string;
 	readonly signal?: AbortSignal;
@@ -720,10 +799,11 @@ export async function commitReviewOperationSequence(
 		throw new Error("Review snapshot is stale and must be rerun.");
 	}
 	if (
-		observation.teamSnapshot.protectedSourceHead !== input.attempt.integratedHead
+		observation.teamSnapshot.protectedSourceHead !== input.attempt.targetBaseCommit
 	) {
-		throw new Error("Review integrated head is stale and must be rerun.");
+		throw new Error("Review target base is stale and must be rerun.");
 	}
+	assertCurrentAggregateReviewAttempt(observation.workState, input.attempt);
 	const tree = await runner({
 		repoRoot: input.repoRoot,
 		args: ["rev-parse", `${input.attempt.integratedHead}^{tree}`],
@@ -855,6 +935,7 @@ export async function commitNativeDecisionOperationSequence(
 		evidenceRecords: input.evidenceRecords,
 		report: input.report,
 		transition: input.transition,
+		confirmation: input.confirmation,
 	});
 	const {pushResult} = await pushSynchronizedStateBatch({
 		repoRoot: input.repoRoot,

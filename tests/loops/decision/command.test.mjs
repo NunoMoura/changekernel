@@ -135,12 +135,7 @@ describe("wiki_decide Change-revision facade", () => {
 	});
 
 	it("fails closed when Decision quality is incomplete", async () => {
-		const { root, record } = await setup({
-			knowledgeTopicRefs: [],
-			knowledgePropagationRefs: [],
-			knowledgeNoImpactRationale: undefined,
-			recommendations: [],
-		});
+		const { root, record } = await setup({recommendations: []});
 		const input = await decisionInput(root, record);
 		const preview = await runWikiDecide({ ...input, mode: "preview" });
 
@@ -149,7 +144,7 @@ describe("wiki_decide Change-revision facade", () => {
 			preview.report.qualityStandards
 				.filter((standard) => standard.status !== "met")
 				.map((standard) => standard.id),
-			["recommendation_justified", "knowledge_impact_accounted"],
+			["recommendation_justified"],
 		);
 		await assert.rejects(
 			runWikiDecide({ ...input, mode: "append" }),

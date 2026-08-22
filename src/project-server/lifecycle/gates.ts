@@ -2,13 +2,8 @@ import {
 	createGateRunner,
 	type CheckExecutor,
 	type CheckInputResolver,
-	type CheckInputResolverContext,
 	type GateRunnerLimits,
 } from "../../checks/runner.ts";
-import {
-	createCheckInputSelection,
-	type CreateCheckInputSelectionInput,
-} from "../../checks/protocol.ts";
 import {
 	createCheckPackSnapshot,
 	packagedChecks,
@@ -16,8 +11,7 @@ import {
 } from "../../checks/packs/contracts.ts";
 import {checkSubjectFromCandidate} from "../../checks/identity.ts";
 import type {
-	CheckInputItem,
-	CheckInputSelection,
+	CheckResult,
 	GateReport,
 	GateStopReason,
 } from "../../checks/contracts.ts";
@@ -26,13 +20,17 @@ import type {CheckResultCache} from "../../checks/cache.ts";
 import type {EvidenceRecord} from "../../evidence/contracts.ts";
 import {ACTIVE_CHANGE_COMPATIBILITY_CHECK_ID} from "../../loops/decision/accepted-active-changes.ts";
 import type {DecisionCandidate} from "../../loops/decision/candidate.ts";
+import type {PlanningCandidate} from "../../loops/planning/candidate.ts";
 import {
 	admitReviewEvidence,
+	normalizeReviewFailureOwnership,
 	reviewFeedbackFromGate,
 	reviewSubjectFromAttempt,
 	type ReviewAttempt,
 	type ReviewEvidenceSubmission,
+	type ReviewFailureOwnership,
 	type ReviewFeedbackItem,
+	type ReviewLifecycleTransition,
 	type ReviewProviderReceiptBinding,
 } from "../../loops/review/contracts.ts";
 import {
@@ -40,6 +38,7 @@ import {
 	toCanonicalJsonValue,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
+import {evidenceInputResolver} from "./evidence-input.ts";
 
 export interface DecisionGateEvidenceCollector {
 	collect(input: {
@@ -89,6 +88,37 @@ export interface DecisionGateRun {
 	readonly collectedEvidenceRecords: readonly EvidenceRecord[];
 }
 
+export interface CreatePlanningGateInput {
+	readonly packSnapshot?: CheckPackSnapshot;
+	readonly executors?: readonly CheckExecutor[];
+	readonly inputResolver?: CheckInputResolver;
+	readonly stoppedReason?: GateStopReason;
+	readonly cache?: CheckResultCache;
+	readonly limits?: Partial<GateRunnerLimits>;
+}
+
+export interface RunPlanningGateInput {
+	readonly candidate: PlanningCandidate;
+	readonly evidenceRecords?: readonly EvidenceRecord[];
+	readonly signal?: AbortSignal;
+}
+
+export type PlanningLifecycleTransition = Readonly<{
+	readonly schemaVersion: "1.0.0";
+	readonly candidateDigest: Sha256Digest;
+	readonly gateReportDigest: Sha256Digest;
+	readonly target: "implementation" | "planning" | "preserve_state";
+	readonly reasonCode: string;
+	readonly transitionDigest: Sha256Digest;
+}>;
+
+export interface PlanningGateRun {
+	readonly candidate: PlanningCandidate;
+	readonly packSnapshot: CheckPackSnapshot;
+	readonly report: GateReport;
+	readonly transition: PlanningLifecycleTransition;
+}
+
 export interface CreateReviewGateInput {
 	readonly packSnapshot: CheckPackSnapshot;
 	readonly executors?: readonly CheckExecutor[];
@@ -96,6 +126,10 @@ export interface CreateReviewGateInput {
 	readonly stoppedReason?: GateStopReason;
 	readonly cache?: CheckResultCache;
 	readonly limits?: Partial<GateRunnerLimits>;
+	readonly classifyFailure?: (
+		attempt: ReviewAttempt,
+		result: CheckResult,
+	) => Omit<ReviewFailureOwnership, "resultDigest">;
 }
 
 export interface RunReviewGateInput {
@@ -105,14 +139,7 @@ export interface RunReviewGateInput {
 	readonly signal?: AbortSignal;
 }
 
-export type ReviewLifecycleTransition = Readonly<{
-	readonly schemaVersion: "1.0.0";
-	readonly reviewAttemptDigest: Sha256Digest;
-	readonly gateReportDigest: Sha256Digest;
-	readonly target: "guarded_delivery" | "implementation" | "preserve_state";
-	readonly reasonCode: string;
-	readonly transitionDigest: Sha256Digest;
-}>;
+export type {ReviewLifecycleTransition} from "../../loops/review/contracts.ts";
 
 export interface ReviewGateRun {
 	readonly attempt: ReviewAttempt;
@@ -208,6 +235,46 @@ export function createDecisionGate(input: CreateDecisionGateInput = {}): Readonl
 	});
 }
 
+export function createPlanningGate(input: CreatePlanningGateInput = {}): Readonly<{
+	run(runInput: RunPlanningGateInput): Promise<PlanningGateRun>;
+}> {
+	const packSnapshot = input.packSnapshot ?? createCheckPackSnapshot({stage: "planning", packs: []});
+	if (packSnapshot.stage !== "planning") {
+		throw new Error("Planning Gate requires Planning Check Pack snapshot.");
+	}
+	return Object.freeze({
+		async run(runInput: RunPlanningGateInput): Promise<PlanningGateRun> {
+			if (runInput.candidate.loop !== "planning") {
+				throw new Error("Planning Gate requires Planning Candidate.");
+			}
+			const subject = checkSubjectFromCandidate(runInput.candidate);
+			const report = input.stoppedReason
+				? createGateReport({
+						snapshot: packSnapshot,
+						subjectDigest: subject.digest,
+						results: [],
+						executions: [],
+						stoppedReason: input.stoppedReason,
+					})
+				: await createGateRunner({
+						executors: input.executors,
+						inputResolver: evidenceInputResolver({
+							evidenceRecords: runInput.evidenceRecords ?? [],
+							fallback: input.inputResolver,
+						}),
+						cache: input.cache,
+						limits: input.limits,
+					}).run({subject, snapshot: packSnapshot, signal: runInput.signal});
+			return Object.freeze({
+				candidate: runInput.candidate,
+				packSnapshot,
+				report,
+				transition: derivePlanningLifecycleTransition(runInput.candidate, report),
+			});
+		},
+	});
+}
+
 export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 	run(runInput: RunReviewGateInput): Promise<ReviewGateRun>;
 }> {
@@ -250,13 +317,29 @@ export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 						snapshot: input.packSnapshot,
 						signal: runInput.signal,
 					});
+			const failureOwnership = normalizeReviewFailureOwnership({
+				attempt: runInput.attempt,
+				report,
+				ownership: input.classifyFailure
+					? report.results
+							.filter((result) => result.status === "failed")
+							.map((result) => ({
+								resultDigest: result.resultDigest,
+								...input.classifyFailure!(runInput.attempt, result),
+							}))
+					: undefined,
+			});
 			return Object.freeze({
 				attempt: runInput.attempt,
 				packSnapshot: input.packSnapshot,
 				evidenceRecords,
 				report,
 				feedback: reviewFeedbackFromGate({attempt: runInput.attempt, report}),
-				transition: deriveReviewLifecycleTransition(runInput.attempt, report),
+				transition: deriveReviewLifecycleTransition(
+					runInput.attempt,
+					report,
+					failureOwnership,
+				),
 			});
 		},
 	});
@@ -276,21 +359,21 @@ function assertReviewGateRunInput(input: RunReviewGateInput): void {
 	}
 }
 
-export function deriveReviewLifecycleTransition(
-	attempt: ReviewAttempt,
+export function derivePlanningLifecycleTransition(
+	candidate: PlanningCandidate,
 	report: GateReport,
-): ReviewLifecycleTransition {
-	if (
-		report.stage !== "review" ||
-		report.subjectDigest !== reviewSubjectFromAttempt(attempt).digest
-	) {
-		throw new Error("Review Gate Report identity does not match Review attempt.");
+): PlanningLifecycleTransition {
+	if (report.stage !== "planning" || report.subjectDigest !== candidate.digest) {
+		throw new Error("Planning Gate Report identity does not match Candidate.");
 	}
-	let selection: Pick<ReviewLifecycleTransition, "target" | "reasonCode">;
+	let selection: {
+		target: PlanningLifecycleTransition["target"];
+		reasonCode: string;
+	};
 	if (report.status === "passed") {
-		selection = {target: "guarded_delivery", reasonCode: "review_passed"};
+		selection = {target: "implementation", reasonCode: "planning_accepted"};
 	} else if (report.status === "failed") {
-		selection = {target: "implementation", reasonCode: "review_checks_failed"};
+		selection = {target: "planning", reasonCode: "planning_checks_failed"};
 	} else {
 		selection = {
 			target: "preserve_state",
@@ -299,10 +382,64 @@ export function deriveReviewLifecycleTransition(
 	}
 	const body = {
 		schemaVersion: "1.0.0" as const,
-		reviewAttemptDigest: attempt.attemptDigest,
+		candidateDigest: candidate.digest,
 		gateReportDigest: report.reportDigest,
 		...selection,
 	};
+	// SAFETY: body contains exact Planning transition fields plus its canonical digest.
+	return toCanonicalJsonValue({
+		...body,
+		transitionDigest: canonicalJsonDigest(body),
+	}) as unknown as PlanningLifecycleTransition;
+}
+
+export function deriveReviewLifecycleTransition(
+	attempt: ReviewAttempt,
+	report: GateReport,
+	ownership?: readonly ReviewFailureOwnership[],
+): ReviewLifecycleTransition {
+	if (
+		report.stage !== "review" ||
+		report.subjectDigest !== reviewSubjectFromAttempt(attempt).digest
+	) {
+		throw new Error("Review Gate Report identity does not match Review attempt.");
+	}
+	const failureOwnership = normalizeReviewFailureOwnership({
+		attempt,
+		report,
+		ownership,
+	});
+	let selection: Pick<ReviewLifecycleTransition, "target" | "reasonCode">;
+	if (report.status === "passed") {
+		selection = {target: "guarded_delivery", reasonCode: "review_passed"};
+	} else if (report.status === "stopped") {
+		selection = {
+			target: "preserve_state",
+			reasonCode: report.stoppedReason?.code ?? "gate_stopped",
+		};
+	} else if (failureOwnership.some((entry) => entry.owner === "decision")) {
+		selection = {target: "decision", reasonCode: "review_meaning_defect"};
+	} else if (failureOwnership.some((entry) => entry.owner === "planning")) {
+		selection = {
+			target: "planning_amendment",
+			reasonCode: "review_decomposition_defect",
+		};
+	} else {
+		selection = {target: "implementation", reasonCode: "review_unit_defect"};
+	}
+	const affectedWorkUnitIds = [
+		...new Set(failureOwnership.flatMap((entry) => entry.affectedWorkUnitIds)),
+	].sort(compareText);
+	const body = {
+		schemaVersion: "2.0.0" as const,
+		reviewAttemptDigest: attempt.attemptDigest,
+		aggregateDigest: attempt.aggregateDigest,
+		gateReportDigest: report.reportDigest,
+		...selection,
+		failureOwnership,
+		affectedWorkUnitIds,
+	};
+	// SAFETY: normalized ownership and fixed routing produce exact transition fields.
 	return toCanonicalJsonValue({
 		...body,
 		transitionDigest: canonicalJsonDigest(body),
@@ -325,6 +462,7 @@ export function deriveDecisionLifecycleTransition(
 		reasonCode: selection.reasonCode,
 		requestedDisposition: candidate.content.disposition,
 	};
+	// SAFETY: body contains exact Decision transition fields plus its canonical digest.
 	return toCanonicalJsonValue({
 		...body,
 		transitionDigest: canonicalJsonDigest(body),
@@ -355,61 +493,14 @@ function decisionLifecycleSelection(
 	}
 }
 
+function compareText(left: string, right: string): number {
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
+}
+
 function assertNever(value: never): never {
 	throw new Error(`Unsupported Decision disposition ${String(value)}.`);
-}
-
-function evidenceInputResolver(input: {
-	readonly evidenceRecords: readonly EvidenceRecord[];
-	readonly fallback?: CheckInputResolver;
-}): CheckInputResolver {
-	return Object.freeze({
-		async resolve(
-			context: CheckInputResolverContext,
-		): Promise<CheckInputSelection | CreateCheckInputSelectionInput> {
-			const source = context.selector.source;
-			if (source !== "evidence" && source !== "provider_receipts") {
-				if (input.fallback) return input.fallback.resolve(context);
-				return createCheckInputSelection({
-					selector: context.selector,
-					status: "unavailable",
-				});
-			}
-			const records = input.evidenceRecords.filter((record) =>
-				evidenceMatchesSelector(record, source, context.selector.refs),
-			);
-			const items: CheckInputItem[] = records.map((record) => ({
-				source,
-				ref: record.evidenceId,
-				digest: canonicalJsonDigest(record),
-				content: toCanonicalJsonValue(record),
-			}));
-			return createCheckInputSelection({
-				selector: context.selector,
-				status: items.length > 0 || !context.selector.required ? "ready" : "unavailable",
-				items,
-			});
-		},
-	});
-}
-
-function evidenceMatchesSelector(
-	record: EvidenceRecord,
-	source: "evidence" | "provider_receipts",
-	refs: readonly string[],
-): boolean {
-	if (
-		source === "provider_receipts" &&
-		!record.evidenceId.includes("provider_check_receipt")
-	) {
-		return false;
-	}
-	if (refs.length === 0) return true;
-	return refs.some((ref) =>
-		ref.endsWith("/**")
-			? record.evidenceId.startsWith(ref.slice(0, -2))
-			: record.evidenceId === ref,
-	);
 }
 
 function assertRunInput(input: RunDecisionGateInput): void {

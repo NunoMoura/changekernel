@@ -10,6 +10,7 @@ import {
 import {createPackSkillSetSnapshot} from "../../../src/checks/packs/contracts.ts";
 import {bindProducerSkills} from "../../../src/runtime/contracts.ts";
 import {createDecisionGate} from "../../../src/project-server/lifecycle/gates.ts";
+import {createKnowledgeCheckpoint} from "../../../src/knowledge/state.ts";
 import {
 	DECISION_CANDIDATE_PRODUCTION_PROTOCOL,
 	createNativeDecisionAttemptExecutor,
@@ -100,7 +101,9 @@ it("executes and recovers one authenticated native Decision attempt without rein
 			policy: allowAllReplayPolicy,
 		});
 		const selectedChange = selected.workState.changes[0];
+		const knowledgeBase = createKnowledgeCheckpoint({files: []});
 		let producerCalls = 0;
+		let confirmationCalls = 0;
 		let producerRequest;
 		const executor = createNativeDecisionAttemptExecutor({
 			repoRoot: fixture.cloneB,
@@ -109,6 +112,7 @@ it("executes and recovers one authenticated native Decision attempt without rein
 			currentProject: () => project,
 			replayPolicy: allowAllReplayPolicy,
 			authorityBinding: authorityBinding(),
+			loadKnowledgeBase: () => knowledgeBase,
 			createDecisionGate({teamSnapshot}) {
 				return {
 					protectedSourceHead: teamSnapshot.protectedSourceHead,
@@ -116,6 +120,16 @@ it("executes and recovers one authenticated native Decision attempt without rein
 					producerSkills: decisionProducerSkills(),
 					decisionGate: createDecisionGate(),
 				};
+			},
+			confirmDecision(request) {
+				confirmationCalls += 1;
+				assert.equal(producerCalls, 1);
+				assert.equal(
+					request.expectedKnowledgeStateDigest,
+					request.candidate.content.knowledgeCheckpoint.applicationPlan.baseStateDigest,
+				);
+				assert.equal(request.gateReportDigest.startsWith("sha256:"), true);
+				return authorityBinding({actorId: "decision-confirmer"});
 			},
 			producer: {
 				produce({request, producerSkills, signal}) {
@@ -153,6 +167,7 @@ it("executes and recovers one authenticated native Decision attempt without rein
 			currentProject: () => project,
 			replayPolicy: allowAllReplayPolicy,
 			authorityBinding: authorityBinding(),
+			loadKnowledgeBase: () => knowledgeBase,
 			createDecisionGate({teamSnapshot}) {
 				return {
 					protectedSourceHead: teamSnapshot.protectedSourceHead,
@@ -191,6 +206,7 @@ it("executes and recovers one authenticated native Decision attempt without rein
 		});
 
 		assert.equal(producerCalls, 1);
+		assert.equal(confirmationCalls, 1);
 		assert.deepEqual(Object.keys(producerRequest).sort(), [
 			"acceptedActiveChanges",
 			"attemptOperationId",
@@ -226,6 +242,7 @@ it("executes and recovers one authenticated native Decision attempt without rein
 		assert.equal(result.status, "passed");
 		assert.match(result.candidateId, /^candidate:decision:/);
 		assert.match(result.gateReportOperationId, /^sha256:/);
+		assert.match(result.confirmationOperationId, /^sha256:/);
 		assert.match(result.transitionOperationId, /^sha256:/);
 		assert.match(result.terminalOperationId, /^sha256:/);
 
@@ -236,6 +253,7 @@ it("executes and recovers one authenticated native Decision attempt without rein
 			currentProject: () => project,
 			replayPolicy: allowAllReplayPolicy,
 			authorityBinding: authorityBinding(),
+			loadKnowledgeBase: () => knowledgeBase,
 			createDecisionGate() {
 				throw new Error("completed Decision must not recreate Decision Gate");
 			},

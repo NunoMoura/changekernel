@@ -1,18 +1,19 @@
+codewiki_id: cw:diagram:lifecycle
 id: lifecycle
 purpose: Show one proposed transition moving from a Client through one Project Server, four Stage Loops, Runtime Runs, exact Gates, Decision confirmation, Knowledge, and Change Trace.
 components:
-  - { id: clients, concept: /system/components/clients.md, label: Clients, zone: client }
-  - { id: project-server, concept: /system/components/project-server.md, label: Project Server, zone: core }
-  - { id: protocol, concept: /system/components/protocol.md, label: Client-Project Server Protocol, zone: core }
-  - { id: runtime, concept: /system/components/runtime.md, label: Runtime, zone: execution }
-  - { id: intake, concept: /system/components/change-intake.md, label: Change Intake, zone: core }
-  - { id: decision, concept: /system/components/decision.md, label: Decision, zone: core }
-  - { id: planning, concept: /system/components/planning.md, label: Planning, zone: core }
-  - { id: implementation, concept: /system/components/implementation.md, label: Implementation, zone: core }
-  - { id: review, concept: /system/components/review.md, label: Review, zone: core }
-  - { id: checks, concept: /system/components/checks.md, label: Checks, zone: core }
-  - { id: knowledge, concept: /system/components/knowledge.md, label: Knowledge, zone: repository }
-  - { id: change-trace, concept: /system/components/change-trace.md, label: Change Trace, zone: repository }
+  - { id: clients, concept: cw:component:clients, label: Clients, zone: client }
+  - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
+  - { id: protocol, concept: cw:component:protocol, label: Client-Project Server Protocol, zone: core }
+  - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
+  - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
+  - { id: decision, concept: cw:component:decision, label: Decision, zone: core }
+  - { id: planning, concept: cw:component:planning, label: Planning, zone: core }
+  - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
+  - { id: review, concept: cw:component:review, label: Review, zone: core }
+  - { id: checks, concept: cw:component:checks, label: Checks, zone: core }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
+  - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
   - id: clients-request-project-server
     from: clients
@@ -37,8 +38,8 @@ connections:
     type: returns
     label: returns producer output and Run Receipt
     boundary: { type: authority, failure: Reject incomplete or mismatched receipt. }
-  - { id: decision-returns-project-server, from: decision, to: project-server, type: returns, label: returns immutable Decision Candidate }
-  - { id: project-server-runs-decision-gate, from: project-server, to: checks, type: invokes, label: runs exact Decision policy including active-Change compatibility }
+  - { id: decision-returns-project-server, from: decision, to: project-server, type: returns, label: returns immutable Decision Candidate with exact Knowledge Effects }
+  - { id: project-server-runs-decision-gate, from: project-server, to: checks, type: invokes, label: runs policy over precompiled exact projected Knowledge State }
   - { id: checks-return-decision-gate, from: checks, to: project-server, type: returns, label: returns exact Decision Gate Report }
   - id: project-server-offers-decision-confirmation
     from: project-server
@@ -56,8 +57,8 @@ connections:
     from: project-server
     to: knowledge
     type: writes
-    label: accepts authorized confirmed desired state
-    boundary: { type: persistence, failure: Preserve prior accepted Knowledge on failed append. }
+    label: atomically applies confirmed Knowledge Effects and commits resulting state
+    boundary: { type: persistence, failure: Preserve prior accepted Knowledge and Trace heads on failed compilation or commit. }
   - id: knowledge-returns-project-server
     from: knowledge
     to: project-server
@@ -116,20 +117,20 @@ connections:
     from: project-server
     to: change-trace
     type: writes
-    label: appends accepted operation and Gate outcome
+    label: appends accepted transition, realization lineage, and Gate outcome
     boundary: { type: persistence, failure: Reject append and retain prior accepted head. }
 flows:
-  - concept: /system/flows/change-lifecycle.md
+  - concept: cw:flow:change-lifecycle
     paths:
       - connections: [clients-request-project-server, project-server-uses-protocol, protocol-returns-project-server, project-server-invokes-intake, intake-returns-project-server, project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server]
       - connections: [implementation-returns-project-server, project-server-runs-implementation-gate, checks-return-implementation-gate, project-server-invokes-review, review-invokes-runtime, runtime-returns-review, review-returns-project-server, project-server-runs-review-gate, checks-return-review-gate, project-server-writes-change-trace]
-  - concept: /system/flows/decision-to-planning.md
+  - concept: cw:flow:decision-to-planning
     paths:
       - connections: [project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server, project-server-invokes-planning]
-  - concept: /system/flows/planning-to-implementation.md
+  - concept: cw:flow:planning-to-implementation
     paths:
       - connections: [project-server-invokes-planning, planning-invokes-runtime, runtime-returns-planning, planning-returns-project-server, project-server-runs-planning-gate, checks-return-planning-gate, project-server-invokes-implementation]
-  - concept: /system/flows/implementation-to-review.md
+  - concept: cw:flow:implementation-to-review
     paths:
       - connections: [project-server-invokes-implementation, implementation-invokes-runtime, runtime-returns-implementation, implementation-returns-project-server, project-server-runs-implementation-gate, checks-return-implementation-gate, project-server-invokes-review, review-invokes-runtime, runtime-returns-review, review-returns-project-server, project-server-runs-review-gate, checks-return-review-gate]
       - connections: [checks-return-review-gate, project-server-invokes-implementation]

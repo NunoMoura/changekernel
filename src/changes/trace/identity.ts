@@ -15,6 +15,7 @@ import {
 	type AuthorityBinding,
 	type BaseSnapshot,
 	type CanonicalChangeOperation,
+	KNOWLEDGE_POST_STATE_PROTOCOL,
 	type CanonicalInlineSemanticArtifact,
 	type ChangeOperationBody,
 	type ChangeOperationKind,
@@ -22,6 +23,9 @@ import {
 	type ChangeRevision,
 	type ChangeRevisionContent,
 	type ChangedTraceTail,
+	type KnowledgePostStateContent,
+	type KnowledgePostStateMediaType,
+	type KnowledgeTargetRef,
 	type StateCommitManifest,
 } from "./contracts.ts";
 import { OPERATION_DEFINITIONS } from "./catalog.ts";
@@ -54,6 +58,25 @@ export type CreateArchiveManifestInput = Omit<
 	"protocol"
 >;
 
+export function createKnowledgePostStateArtifact(input: {
+	readonly mediaType: KnowledgePostStateMediaType;
+	readonly content: string;
+}): CanonicalInlineSemanticArtifact {
+	const artifact = canonicalObject<KnowledgePostStateContent>({
+		schemaVersion: KNOWLEDGE_POST_STATE_PROTOCOL.version,
+		mediaType: input.mediaType,
+		content: input.content,
+	});
+	assertCanonicalKnowledgePostStateContent(artifact);
+	const digest = canonicalJsonDigest(artifact);
+	return canonicalObject({
+		id: `knowledge-post-state:${digest.slice("sha256:".length)}`,
+		digest,
+		schemaVersion: KNOWLEDGE_POST_STATE_PROTOCOL.version,
+		artifact,
+	});
+}
+
 export function createChangeRevision(
 	content: ChangeRevisionContent,
 ): ChangeRevision {
@@ -62,12 +85,14 @@ export function createChangeRevision(
 		content,
 		"Change revision content",
 	);
+	assertValidKnowledgeTransition(content);
 	const normalized = normalizeChangeRevisionContent(content);
 	assertTypeboxSchema(
 		changeRevisionContentSchema,
 		normalized,
 		"Change revision content",
 	);
+	assertValidKnowledgeTransition(normalized);
 	return canonicalObject({
 		revisionId: canonicalJsonDigest(normalized),
 		content: normalized,
@@ -702,14 +727,80 @@ function assertPayloadSetOrder(body: ChangeOperationBody): void {
 }
 
 
+function assertValidKnowledgeTransition(content: ChangeRevisionContent): void {
+	const transition = content.knowledge;
+	const targets =
+		transition.kind === "effects"
+			? transition.effects.map((effect) => effect.target)
+			: transition.refs;
+	assertUnique(
+		targets.map(knowledgeTargetKey),
+		"Knowledge transition targets",
+	);
+	if (transition.kind === "unchanged") return;
+	for (const effect of transition.effects) {
+		if (effect.action !== "set") continue;
+		const postState = effect.postState;
+		// SAFETY: TypeBox validates this embedded artifact against KnowledgePostStateContent before semantic checks run.
+		const artifact = postState.artifact as unknown as KnowledgePostStateContent;
+		assertCanonicalKnowledgePostStateContent(artifact);
+		const expectedDigest = canonicalJsonDigest(artifact);
+		if (postState.digest !== expectedDigest) {
+			throw new Error("Knowledge post-state artifact digest mismatch.");
+		}
+		if (
+			postState.id !==
+			`knowledge-post-state:${expectedDigest.slice("sha256:".length)}`
+		) {
+			throw new Error("Knowledge post-state artifact identity mismatch.");
+		}
+		if (postState.schemaVersion !== KNOWLEDGE_POST_STATE_PROTOCOL.version) {
+			throw new Error("Knowledge post-state artifact schemaVersion mismatch.");
+		}
+		if (effect.expected === postState.digest) {
+			throw new Error("Knowledge set Effect must change semantic state.");
+		}
+	}
+}
+
+function assertCanonicalKnowledgePostStateContent(
+	artifact: KnowledgePostStateContent,
+): void {
+	if (
+		artifact.schemaVersion !== KNOWLEDGE_POST_STATE_PROTOCOL.version ||
+		!["text/markdown", "application/yaml", "application/json"].includes(
+			artifact.mediaType,
+		) ||
+		typeof artifact.content !== "string" ||
+		!artifact.content.trim() ||
+		Buffer.byteLength(artifact.content, "utf8") > 262_144
+	) {
+		throw new Error("Knowledge post-state content is invalid or exceeds 262144 bytes.");
+	}
+	if (artifact.mediaType !== "application/json") return;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(artifact.content);
+	} catch {
+		throw new Error("Knowledge JSON post-state content must be valid JSON.");
+	}
+	if (canonicalJson(parsed) !== artifact.content) {
+		throw new Error("Knowledge JSON post-state content must be canonical JSON.");
+	}
+}
+
+function knowledgeTargetKey(target: KnowledgeTargetRef): string {
+	return `${target.subjectId}\u0000${target.facetId ?? ""}`;
+}
+
 function normalizeChangeRevisionContent(
 	content: ChangeRevisionContent,
 ): ChangeRevisionContent {
 	return canonicalObject({
 		title: content.title,
 		intent: {
-			currentState: content.intent.currentState,
-			desiredState: content.intent.desiredState,
+			problem: content.intent.problem,
+			objective: content.intent.objective,
 			...(content.intent.rationale
 				? {rationale: content.intent.rationale}
 				: {}),
@@ -732,13 +823,23 @@ function normalizeChangeRevisionContent(
 				? {compatibility: content.impact.compatibility}
 				: {}),
 		},
-		knowledge: {
-			topicRefs: sortedUnique(content.knowledge.topicRefs),
-			propagationRefs: sortedUnique(content.knowledge.propagationRefs),
-			...(content.knowledge.noImpactRationale
-				? {noImpactRationale: content.knowledge.noImpactRationale}
-				: {}),
-		},
+		knowledge:
+			content.knowledge.kind === "effects"
+				? {
+						kind: "effects",
+						effects: sortedObjects(
+							content.knowledge.effects,
+							(effect) => knowledgeTargetKey(effect.target),
+						),
+					}
+				: {
+						kind: "unchanged",
+						refs: sortedObjects(
+							content.knowledge.refs,
+							knowledgeTargetKey,
+						),
+						rationale: content.knowledge.rationale,
+					},
 		outcome: {
 			successSignals: sortedUnique(content.outcome.successSignals),
 			evidenceExpectations: sortedUnique(
@@ -876,6 +977,7 @@ function compareText(left: string, right: string): number {
 }
 
 function canonicalObject<T>(value: unknown): T {
+	// SAFETY: callers provide contract-shaped values; canonicalization preserves their structure while freezing and ordering it.
 	return toCanonicalJsonValue(value) as unknown as T;
 }
 

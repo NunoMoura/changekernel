@@ -1,15 +1,16 @@
 ---
 type: System Component
+codewiki_id: cw:component:preview
 title: Preview
 description: Produces Candidate-bound local preview observations without granting semantic acceptance or publication authority.
 status: stable
 tags: [system, component]
-codewiki_component: preview
+codewiki_component: cw:component:preview
 codewiki_source_patterns: ["src/preview/**"]
 codewiki_test_patterns: ["tests/project-server/preview-*.test.mjs"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/enforce-project-standards.md
+    target: cw:story:maintainer.enforce-project-standards
     rationale: Preview supplies the System responsibility required by this Story.
 ---
 # Preview

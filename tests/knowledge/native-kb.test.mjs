@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { parse as parseYaml } from "yaml";
-import { validateCodeWikiKbDocument } from "../../src/knowledge/codewiki-kb-profile.ts";
+import {validateCodeWikiKbBundle} from "../../src/knowledge/codewiki-kb-profile.ts";
 import { parseOkfDocument } from "../../src/knowledge/okf-frontmatter.ts";
 import { analyzeOkfV02Document } from "../../src/knowledge/okf-v02.ts";
 import { validateSystemDiagrams } from "../../src/knowledge/system-diagrams.ts";
@@ -42,7 +42,7 @@ describe("CodeWiki native Knowledge bundle", () => {
 			),
 			true,
 		);
-		assert.deepEqual(documents.flatMap(validateCodeWikiKbDocument), []);
+		assert.deepEqual(validateCodeWikiKbBundle(documents), []);
 		const concepts = new Set(documents.map((document) => `/${document.path}`));
 		const lexicon = documents.find((document) => document.path === "lexicon.md");
 		assert.ok(lexicon);
@@ -59,7 +59,7 @@ describe("CodeWiki native Knowledge bundle", () => {
 
 	it("resolves every authored relationship to one canonical concept", () => {
 		const { documents } = knowledgeState();
-		const concepts = new Set(documents.map((document) => `/${document.path}`));
+		const concepts = new Set(documents.map((document) => document.conceptId));
 		const unresolved = documents.flatMap((document) =>
 			(document.frontmatter?.codewiki_relationships ?? []).flatMap(
 				(relationship) =>
@@ -82,8 +82,8 @@ describe("CodeWiki native Knowledge bundle", () => {
 		assert.deepEqual(
 			validateSystemDiagrams({
 				diagrams,
-				componentConcepts: components.map((document) => `/${document.path}`),
-				flowConcepts: flows.map((document) => `/${document.path}`),
+				componentConcepts: components.map((document) => document.conceptId),
+				flowConcepts: flows.map((document) => document.conceptId),
 			}),
 			[],
 		);
@@ -93,7 +93,7 @@ describe("CodeWiki native Knowledge bundle", () => {
 			for (const relationship of relationships) {
 				if (
 					relationship.type === "realizes" &&
-					relationship.target.startsWith("/product/stories/")
+					relationship.target.startsWith("cw:story:")
 				) {
 					realizedStories.add(relationship.target);
 				}
@@ -102,7 +102,7 @@ describe("CodeWiki native Knowledge bundle", () => {
 				relationships.some(
 					(relationship) =>
 						relationship.type === "realizes" &&
-						relationship.target.startsWith("/product/stories/"),
+						relationship.target.startsWith("cw:story:"),
 				),
 				true,
 				`${document.path} must realize a Product Story`,
@@ -114,7 +114,7 @@ describe("CodeWiki native Knowledge bundle", () => {
 				document.frontmatter.status === "stable",
 		)) {
 			assert.equal(
-				realizedStories.has(`/${story.path}`),
+				realizedStories.has(story.conceptId),
 				true,
 				`${story.path} must be realized by a Component or Flow`,
 			);

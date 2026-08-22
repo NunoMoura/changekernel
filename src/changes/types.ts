@@ -1,4 +1,6 @@
-export const CHANGE_SCHEMA_VERSION = 2;
+import type {KnowledgeTransition} from "./trace/contracts.ts";
+
+export const CHANGE_SCHEMA_VERSION = 3;
 
 export const CHANGE_STATUS_VALUES = [
 	"pending",
@@ -93,8 +95,8 @@ export type ChangeRecommendationValue =
 
 export interface ChangeIntent {
 	question: string;
-	currentState: string;
-	desiredState: string;
+	problem: string;
+	objective: string;
 	rationale: string;
 	nonGoals: string[];
 	alternatives: string[];
@@ -123,11 +125,7 @@ export interface ChangeEvidence {
 	targetBehavior?: string;
 }
 
-export interface ChangeKnowledgeImpact {
-	topicRefs: string[];
-	propagationRefs: string[];
-	noImpactRationale?: string;
-}
+export type ChangeKnowledgeTransition = KnowledgeTransition;
 
 export interface ChangeOutcomeContract {
 	successSignals: string[];
@@ -221,7 +219,7 @@ export interface Change {
 	intent: ChangeIntent;
 	classification: ChangeClassification;
 	impact: ChangeImpact;
-	knowledge: ChangeKnowledgeImpact;
+	knowledge: ChangeKnowledgeTransition;
 	outcome: ChangeOutcomeContract;
 	delivery: ChangeDeliveryConstraints;
 	evidence: ChangeEvidence;

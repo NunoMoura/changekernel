@@ -6,6 +6,7 @@ import {
 	assertDecisionAcceptedActiveChangesBinding,
 } from "../../../src/loops/decision/accepted-active-changes.ts";
 import {createDecisionCandidate} from "../../../src/loops/decision/candidate.ts";
+import {createKnowledgeCheckpoint} from "../../../src/knowledge/state.ts";
 import {createNativeDecisionOperationSequence} from "../../../src/project-server/effects/gate-operations.ts";
 import {createDecisionGate} from "../../../src/project-server/lifecycle/gates.ts";
 import {
@@ -111,6 +112,13 @@ async function acceptDecision(state, changeId, marker) {
 		evidenceRecords: [],
 		report: gate.report,
 		transition: gate.transition,
+		confirmation: {
+			candidateDigest: decisionCandidate.digest,
+			gateReportDigest: gate.report.reportDigest,
+			knowledgeCheckpointDigest:
+				decisionCandidate.content.knowledgeCheckpoint.checkpointDigest,
+			authorityBinding: authorityBinding(),
+		},
 	});
 	return reduceBatch(
 		started.state,
@@ -127,6 +135,8 @@ function candidate(state, changeId) {
 			disposition: "approve",
 			rationale: "Compare every accepted nonterminal Change revision.",
 		},
+		knowledgeBase:
+			state.knowledgeHead?.checkpoint ?? createKnowledgeCheckpoint({files: []}),
 	});
 }
 
@@ -155,6 +165,7 @@ describe("Decision accepted active Changes binding", () => {
 		state = await acceptDecision(state, "CHG-unrelated", 2);
 
 		const decisionCandidate = candidate(state, "CHG-subject");
+		assert.equal(decisionCandidate.schemaVersion, "6.0.0");
 		const acceptedChanges = decisionCandidate.content.acceptedActiveChanges;
 		assert.equal(acceptedChanges.schemaVersion, "1.0.0");
 		assert.equal(acceptedChanges.requiredCheckId, "active_change_compatibility");

@@ -352,7 +352,7 @@ function approvedChangeProjections(
 					{
 						id,
 						traceId: event.traceId,
-						title: text(intent.desiredState) || text(intent.question) || id,
+						title: text(intent.objective) || text(intent.question) || id,
 						traceRefs: unique([sourceEventId, event.id, ...event.refs]),
 						sourceEventId,
 					},

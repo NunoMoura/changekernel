@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:maintainer.automate-safe-work
 title: Automate Safe Work
 description: A maintainer wants compatible work to continue across Clients while authority, provenance, Checks, Evidence, and effect boundaries remain explicit.
 status: stable
-codewiki_user: /product/users/maintainer.md
+codewiki_user: cw:user:maintainer
 tags: [product, story, automation]
 ---
 # Automate Safe Work

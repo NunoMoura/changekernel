@@ -101,7 +101,7 @@ export type {
 	ChangeDeliveryConstraints,
 	ChangeEvidence,
 	ChangeIntent,
-	ChangeKnowledgeImpact,
+	ChangeKnowledgeTransition,
 	ChangeOutcomeContract,
 	ChangeRecommendation,
 	ChangeStatus,
@@ -229,24 +229,52 @@ export type {
 	ImplementationEvidenceCandidate,
 	ImplementationSensitiveSurfaceCandidate,
 } from "./loops/implementation/candidate-content.ts";
-export type {
-	PlanningCandidateContent,
-	PlanningAcceptanceCoverage,
-	PlanningDependencyEdge,
-	PlanningResourceRequirements,
-	PlanningWorkUnitCandidate,
+export {
+	planningCandidateProposalSchema,
+	parsePlanningCandidateProposal,
+	planningContinuityKey,
+	type PlanningAggregateReviewRequirement,
+	type PlanningAmendment,
+	type PlanningCandidateProposal,
+	type PlanningDependencyEdge,
+	type PlanningObligationCoverage,
+	type PlanningResourceRequirements,
+	type PlanningUnchangedKnowledgeCoverage,
+	type PlanningWorkUnitCandidate,
 } from "./loops/planning/candidate-content.ts";
+export {
+	PLANNING_CANDIDATE_SCHEMA_VERSION,
+	assertPlanningCandidate,
+	createPlanningCandidate,
+	type CreatePlanningCandidateInput,
+	type PlanningCandidate,
+	type PlanningCandidateContent,
+} from "./loops/planning/candidate.ts";
+export {
+	WORK_GRAPH_PROTOCOL,
+	applyAcceptedPlanningDelta,
+	createInitialWorkGraph,
+	type AcceptedPlanningDelta,
+	type CanonicalWorkGraph,
+	type PlanningGraphDelta,
+	type WorkGraphUnit,
+	type WorkGraphUnitStatus,
+} from "./loops/planning/work-graph.ts";
 export {
 	REVIEW_ATTEMPT_SCHEMA_VERSION,
 	admitReviewEvidence,
 	assertReviewEvidenceRecords,
 	createReviewAttempt,
+	normalizeReviewFailureOwnership,
+	reviewContinuityKey,
 	reviewFeedbackFromGate,
 	reviewSubjectFromAttempt,
 	type CreateReviewAttemptInput,
 	type ReviewAttempt,
 	type ReviewEvidenceSubmission,
+	type ReviewFailureOwnership,
 	type ReviewFeedbackItem,
+	type ReviewFeedbackOwner,
 	type ReviewProviderReceiptBinding,
 } from "./loops/review/contracts.ts";
 export type { ProjectSnapshot } from "./project/snapshot.ts";
@@ -392,6 +420,137 @@ export {
 	type ReviewOperationSequence,
 } from "./project-server/effects/gate-operations.ts";
 export {
+	createImplementationOperationSequence,
+	type CreateImplementationOperationsInput,
+	type ImplementationOperationSequence,
+} from "./project-server/effects/implementation-operations.ts";
+export {
+	commitPlanningOperationSequence,
+	createPlanningOperationSequence,
+	type CommitPlanningOperationSequenceInput,
+	type CreatePlanningOperationsInput,
+	type PlanningCommitReceipt,
+	type PlanningOperationSequence,
+} from "./project-server/effects/planning-operations.ts";
+export {
+	WORK_UNIT_CANDIDATE_SCHEMA_VERSION,
+	MAXIMUM_IMPLEMENTATION_ATTEMPTS,
+	assertCurrentWorkUnitCandidate,
+	assertWorkUnitCandidate,
+	createWorkUnitCandidate,
+	implementationContinuityKey,
+	implementationWorkUnitSubjectId,
+	type CreateWorkUnitCandidateInput,
+	type WorkUnitAcceptanceSlice,
+	type WorkUnitCandidate,
+	type WorkUnitCandidateContent,
+	type WorkUnitCandidateRun,
+	type WorkUnitRunAttemptBinding,
+} from "./loops/implementation/work-unit-candidate.ts";
+export {
+	IMPLEMENTATION_GATE_PACKAGE_PROTOCOL,
+	IMPLEMENTATION_STAGE_POLICY_PROTOCOL,
+	assertImplementationStagePolicy,
+	createImplementationGateEvaluationPackage,
+	createImplementationStagePolicy,
+	type ImplementationGateEvaluationPackage,
+	type ImplementationStagePolicy,
+} from "./loops/implementation/policy.ts";
+export {
+	deriveWorkUnitCandidateLifecycle,
+	type WorkUnitCandidateLifecycle,
+	type WorkUnitCandidateStatus,
+} from "./loops/implementation/status.ts";
+export {
+	IMPLEMENTATION_AGGREGATE_SCHEMA_VERSION,
+	PRIVATE_CHANGE_INTEGRATION_LINEAGE_SCHEMA_VERSION,
+	PRIVATE_INTEGRATION_RECEIPT_SCHEMA_VERSION,
+	applyPrivateIntegrationReceipt,
+	assertFrozenImplementationAggregate,
+	assertPrivateIntegrationLineage,
+	assertPrivateIntegrationReceipt,
+	createPrivateIntegrationReceipt,
+	materializeFrozenImplementationAggregate,
+	materializePrivateIntegrationLineage,
+	privateChangeIntegrationRef,
+	type CreatePrivateIntegrationReceiptInput,
+	type ExpectedIntegrationLineage,
+	type FrozenImplementationAggregate,
+	type FrozenImplementationAggregateBody,
+	type PrivateChangeIntegrationLineage,
+	type PrivateChangeIntegrationLineageBody,
+	type PrivateIntegratedWorkUnit,
+	type PrivateIntegrationAcceptanceSlice,
+	type PrivateIntegrationReceipt,
+	type PrivateIntegrationStatus,
+} from "./changes/trace/integration.ts";
+export {
+	commitImplementationAggregate,
+	commitPrivateIntegrationAdmission,
+	type CommitImplementationAggregateInput,
+	type CommitPrivateIntegrationAdmissionInput,
+	type ImplementationAggregateCommitReceipt,
+	type PrivateIntegrationCommitReceipt,
+} from "./project-server/integration/commit.ts";
+export {
+	createImplementationAggregateFreeze,
+	createPrivateIntegrationAdmission,
+	type CreateImplementationAggregateInput,
+	type CreatePrivateIntegrationAdmissionInput,
+	type ImplementationAggregateFreeze,
+	type PrivateIntegrationAdmission,
+	type PrivateIntegrationObservation,
+} from "./project-server/integration/private-lineage.ts";
+export {
+	assertCurrentAggregateReviewAttempt,
+	createAggregateReviewAttempt,
+	type CreateAggregateReviewAttemptInput,
+} from "./project-server/review/aggregate-review.ts";
+export {
+	commitGuardedDelivery,
+	createDeliveryAuthority,
+	createGuardedDeliveryOperation,
+	type CommitGuardedDeliveryInput,
+	type CreateGuardedDeliveryOperationInput,
+	type DeliveryAuthority,
+	type DeliveryAuthorityInput,
+	type GuardedDeliveryPlan,
+	type GuardedDeliveryReceipt,
+} from "./project-server/delivery/guarded-delivery.ts";
+export {
+	createImplementationRunRequest,
+	type CreateImplementationRunRequestInput,
+} from "./project-server/workers/implementation-run.ts";
+export {
+	createImplementationStageGate,
+	type CreateImplementationGateInput,
+	type ImplementationGateRun,
+	type ImplementationStageGate,
+	type RunImplementationGateInput,
+} from "./project-server/lifecycle/implementation-gate.ts";
+export {
+	commitProjectSchedulingPlan,
+	type CommitProjectSchedulingPlanInput,
+	type ProjectSchedulingCommitReceipt,
+} from "./project-server/scheduling/commit.ts";
+export {
+	SCHEDULING_PLAN_PROTOCOL,
+	createProjectSchedulingPlan,
+	createSchedulingOperationSequence,
+	deriveReadyWorkUnits,
+	type ReadyWorkUnit,
+	type SchedulingAdmission,
+	type SchedulingHold,
+	type SchedulingOperationSequence,
+	type SchedulingPlan,
+} from "./project-server/scheduling/scheduler.ts";
+export {
+	createPlanningGate,
+	derivePlanningLifecycleTransition,
+	type CreatePlanningGateInput,
+	type PlanningGateRun,
+	type PlanningLifecycleTransition,
+	type RunPlanningGateInput,
 	createReviewGate,
 	deriveReviewLifecycleTransition,
 	type CreateReviewGateInput,

@@ -47,11 +47,20 @@ export function okfDocumentKind(path: string): OkfDocumentKind {
 	return "concept";
 }
 
-export function okfConceptId(path: string): string | undefined {
-	const normalized = normalizeOkfPath(path);
-	if (!normalized.endsWith(".md") || isOkfReservedPath(normalized))
+export const KNOWLEDGE_SUBJECT_ID_PATTERN =
+	/^cw:[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._-]*$/u;
+export const KNOWLEDGE_FACET_ID_PATTERN = /^[a-z][a-z0-9._-]*$/u;
+
+export function isKnowledgeSubjectId(value: unknown): value is string {
+	return typeof value === "string" && KNOWLEDGE_SUBJECT_ID_PATTERN.test(value);
+}
+
+export function okfConceptId(frontmatter: unknown): string | undefined {
+	if (!frontmatter || typeof frontmatter !== "object" || Array.isArray(frontmatter)) {
 		return undefined;
-	return normalized.slice(0, -".md".length);
+	}
+	const value = (frontmatter as Record<string, unknown>).codewiki_id;
+	return isKnowledgeSubjectId(value) ? value : undefined;
 }
 
 export function isOkfRootIndexPath(path: string): boolean {

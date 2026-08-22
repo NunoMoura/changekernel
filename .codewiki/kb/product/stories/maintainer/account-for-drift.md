@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:maintainer.account-for-drift
 title: Account for Drift
 description: A maintainer wants every relevant discrepancy and Git change classified, routed, or explicitly unknown before unsafe progression.
 status: stable
-codewiki_user: /product/users/maintainer.md
+codewiki_user: cw:user:maintainer
 tags: [product, story, alignment]
 ---
 # Account for Drift

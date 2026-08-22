@@ -43,12 +43,13 @@ function readFullPathKbBundle() {
 
 const validConcept = `---
 type: Playbook
+codewiki_id: cw:playbook:incident-response
 title: Incident response
 description: Triage production incidents.
 resource: https://example.com/runbook
 tags: [incident, oncall]
 timestamp: 2026-06-28T09:00:00Z
-codewiki_component: runtime
+codewiki_component: cw:component:runtime
 codewiki_source_patterns:
   - src/runtime/**
 ---
@@ -62,16 +63,26 @@ describe("Open Knowledge Format v0.1", () => {
 		const document = parseOkfDocument("system/runbook.md", validConcept);
 
 		assert.equal(document.kind, "concept");
-		assert.equal(document.conceptId, "system/runbook");
+		assert.equal(document.conceptId, "cw:playbook:incident-response");
 		assert.equal(document.frontmatter?.type, "Playbook");
-		assert.equal(document.frontmatter?.codewiki_component, "runtime");
+		assert.equal(document.frontmatter?.codewiki_component, "cw:component:runtime");
 		assert.match(document.body, /^# Steps/);
 		assert.deepEqual(
 			extractOkfMarkdownLinks(document.body).map((link) => link.target),
 			["./runtime.md", "/system/components/traces.md"],
 		);
-		assert.equal(okfConceptId("index.md"), undefined);
+		assert.equal(okfConceptId({codewiki_id: "cw:component:index"}), "cw:component:index");
 		assert.equal(okfDocumentKind("product/index.md"), "index");
+	});
+
+	it("preserves semantic identity across path moves and relabeling", () => {
+		const first = parseOkfDocument("system/runbook.md", validConcept);
+		const moved = parseOkfDocument(
+			"archive/renamed.md",
+			validConcept.replace("title: Incident response", "title: Incident playbook"),
+		);
+		assert.equal(first.conceptId, "cw:playbook:incident-response");
+		assert.equal(moved.conceptId, first.conceptId);
 	});
 
 	it("round-trips producer extension fields", () => {
@@ -165,7 +176,7 @@ describe("Open Knowledge Format v0.1", () => {
 				{ path: "index.md", content: "# Root\n" },
 				{ path: "system/runbook.md", content: validConcept },
 			]).map((document) => document.conceptId),
-			["system/runbook"],
+			["cw:playbook:incident-response"],
 		);
 	});
 

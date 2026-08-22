@@ -1,5 +1,6 @@
 ---
 type: User
+codewiki_id: cw:user:external-user
 title: External User
 description: Future supported project participant who consumes bounded project state through an approved client surface.
 status: draft

@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:agent.retrieve-bounded-context
 title: Retrieve Bounded Context
 description: An agent wants content-addressed local project material that refreshes coherently without live authority or hidden ambient state.
 status: stable
-codewiki_user: /product/users/agent.md
+codewiki_user: cw:user:agent
 tags: [product, story, query]
 ---
 # Retrieve Bounded Context

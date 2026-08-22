@@ -164,7 +164,18 @@ describe("project bootstrap", () => {
 					await readdir(
 						join(root, ".codewiki", "check-packs", stage, "default"),
 					),
-					stage === "decision" ? ["active_change_compatibility"] : [],
+					stage === "decision"
+						? ["active_change_compatibility"]
+						: stage === "review"
+							? [
+									"aggregate_acceptance",
+									"cross_unit_behavior",
+									"full_build",
+									"integration_behavior",
+									"provenance_integrity",
+									"scope_discipline",
+								]
+							: [],
 				);
 			}
 			const decisionPack = await loadCheckPackSnapshot({
@@ -179,6 +190,22 @@ describe("project bootstrap", () => {
 			assert.equal(
 				decisionPack.packs[0].checks[0].definition.implementation.kind,
 				"model",
+			);
+			const reviewPack = await loadCheckPackSnapshot({
+				repoRoot: root,
+				stage: "review",
+			});
+			assert.equal(reviewPack.checkCount, 6);
+			assert.deepEqual(
+				reviewPack.packs[0].checks.map((check) => check.checkId),
+				[
+					"aggregate_acceptance",
+					"cross_unit_behavior",
+					"full_build",
+					"integration_behavior",
+					"provenance_integrity",
+					"scope_discipline",
+				],
 			);
 
 			const files = await collectFiles(root);
@@ -203,7 +230,7 @@ describe("project bootstrap", () => {
 			);
 			assert.equal(
 				sourceMapOwnerForPath(sourceMap, "src/index.ts")?.id,
-				"source",
+				"cw:component:source",
 			);
 			const issues = validateSourceMap(sourceMap, {
 				artifactPaths: files,
@@ -238,7 +265,7 @@ describe("project bootstrap", () => {
 				okf.documents.find(
 					(document) => document.path === "system/components/knowledge.md",
 				)?.frontmatter?.codewiki_component,
-				"knowledge",
+				"cw:component:knowledge",
 			);
 
 			const second = await bootstrapCodewiki(root);

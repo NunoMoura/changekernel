@@ -7,6 +7,7 @@ import type {
 	ChangeWorkState,
 	ProjectWorkState,
 } from "../trace/state.ts";
+import {knowledgeTransitionSubjectIds} from "../trace/knowledge-transition.ts";
 import {
 	assertSha256Digest,
 	canonicalJsonDigest,
@@ -20,7 +21,7 @@ import {assertBacklogTriageProjection} from "./query.ts";
 
 export const DECISION_ATTENTION_SELECTION_PROTOCOL = Object.freeze({
 	id: "codewiki.decision-attention-selection",
-	version: "2.0.0",
+	version: "3.0.0",
 	maxConflictRefs: 512,
 } as const);
 
@@ -126,6 +127,7 @@ export function parseDecisionAttentionSelectionCommand(
 			throw badRequest(errorMessage(error));
 		}
 	}
+	// SAFETY: exact-key, protocol, identifier, and digest checks establish DecisionAttentionSelectionCommand shape.
 	return deepFreeze(
 		toCanonicalJsonValue(command),
 	) as unknown as DecisionAttentionSelectionCommand;
@@ -142,6 +144,7 @@ export function normalizeDecisionSelectionAuthority(
 	} catch (error) {
 		throw badRequest(errorMessage(error));
 	}
+	// SAFETY: authorityBindingSchema validates every AuthenticatedDecisionSelectionAuthority field before canonicalization.
 	return deepFreeze(
 		toCanonicalJsonValue(value),
 	) as unknown as AuthenticatedDecisionSelectionAuthority;
@@ -247,10 +250,7 @@ export function decisionSelectionConflictRefs(input: {
 }): readonly string[] {
 	return normalizeConflictRefs([
 		`change:${input.change.changeId}`,
-		...input.revision.content.knowledge.topicRefs.map(
-			(ref) => `knowledge:${ref}`,
-		),
-		...input.revision.content.knowledge.propagationRefs.map(
+		...knowledgeTransitionSubjectIds(input.revision.content.knowledge).map(
 			(ref) => `knowledge:${ref}`,
 		),
 		...input.revision.content.evidence.sourceRefs.map(

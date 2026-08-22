@@ -1006,7 +1006,7 @@ describe("Pi extension adapter", () => {
 								changeRecord: {
 									change: {
 										id: "CHG-live-dashboard",
-										intent: { desiredState: "Refresh dashboard state." },
+										intent: { objective: "Refresh dashboard state." },
 									},
 								},
 								decision: { disposition: "approve" },

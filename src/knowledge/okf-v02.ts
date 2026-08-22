@@ -69,7 +69,7 @@ interface OkfAttestedComputationProfile {
 }
 
 interface OkfV02Profile {
-	readonly conceptId: string;
+	readonly conceptId: string | null;
 	readonly formatVersion: "0.2" | "0.1-fallback";
 	readonly type: string;
 	readonly title: string | null;
@@ -96,11 +96,7 @@ export function analyzeOkfV02Document(
 	document: OkfDocument,
 	options: AnalyzeOkfV02Options = {},
 ): OkfV02Profile {
-	if (
-		document.kind !== "concept" ||
-		!document.frontmatter ||
-		!document.conceptId
-	) {
+	if (document.kind !== "concept" || !document.frontmatter) {
 		throw new Error("OKF v0.2 profile analysis requires a concept document.");
 	}
 	const issues: OkfProfileIssue[] = [];
@@ -128,7 +124,7 @@ export function analyzeOkfV02Document(
 		throw new Error("OKF v0.2 analysis today must be an ISO date.");
 	}
 	return canonicalValue({
-		conceptId: document.conceptId,
+		conceptId: document.conceptId ?? null,
 		formatVersion: targetsOkfV02(frontmatter) ? "0.2" : "0.1-fallback",
 		type: typeof frontmatter.type === "string" ? frontmatter.type : "",
 		title: typeof frontmatter.title === "string" ? frontmatter.title : null,
@@ -783,5 +779,6 @@ function profileIssue(
 }
 
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: callers assemble profile contract values; canonicalization preserves shape while freezing and ordering.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

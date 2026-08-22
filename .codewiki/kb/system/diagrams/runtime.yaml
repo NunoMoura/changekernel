@@ -1,17 +1,18 @@
+codewiki_id: cw:diagram:runtime
 id: runtime
 purpose: Show Project Server ownership around Runtime Runs, exact context, Implementation Workbenches, Checks, Gates, and recovery.
 components:
-  - { id: project-server, concept: /system/components/project-server.md, label: Project Server, zone: core }
-  - { id: runtime, concept: /system/components/runtime.md, label: Runtime, zone: execution }
-  - { id: work-state, concept: /system/components/work-state.md, label: WorkState, zone: core }
-  - { id: alignment, concept: /system/components/alignment.md, label: Alignment, zone: core }
-  - { id: knowledge, concept: /system/components/knowledge.md, label: Knowledge, zone: repository }
-  - { id: implementation, concept: /system/components/implementation.md, label: Implementation, zone: core }
-  - { id: checks, concept: /system/components/checks.md, label: Checks, zone: core }
-  - { id: intake, concept: /system/components/change-intake.md, label: Change Intake, zone: core }
-  - { id: preview, concept: /system/components/preview.md, label: Preview, zone: execution }
-  - { id: evidence, concept: /system/components/evidence.md, label: Evidence, zone: core }
-  - { id: change-trace, concept: /system/components/change-trace.md, label: Change Trace, zone: repository }
+  - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
+  - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
+  - { id: work-state, concept: cw:component:work-state, label: WorkState, zone: core }
+  - { id: alignment, concept: cw:component:alignment, label: Alignment, zone: core }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
+  - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
+  - { id: checks, concept: cw:component:checks, label: Checks, zone: core }
+  - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
+  - { id: preview, concept: cw:component:preview, label: Preview, zone: execution }
+  - { id: evidence, concept: cw:component:evidence, label: Evidence, zone: core }
+  - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
   - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: builds material or Gate packages and selects ready Work Units }
   - id: project-server-reads-knowledge
@@ -96,16 +97,16 @@ connections:
   - { id: project-server-invokes-intake, from: project-server, to: intake, type: invokes, label: sends unmatched external capture to accountable intent }
   - { id: intake-returns-project-server, from: intake, to: project-server, type: returns, label: returns admitted intake state }
 flows:
-  - concept: /system/flows/change-lifecycle.md
+  - concept: cw:flow:change-lifecycle
     paths:
       - connections: [project-server-reads-knowledge, knowledge-returns-project-server, project-server-invokes-runtime, runtime-returns-project-server]
-  - concept: /system/flows/work-unit-execution.md
+  - concept: cw:flow:work-unit-execution
     paths:
       - connections: [project-server-invokes-runtime, runtime-returns-project-server, project-server-invokes-implementation, implementation-returns-project-server, project-server-invokes-preview, preview-produces-evidence]
       - connections: [project-server-invokes-checks, checks-read-knowledge, knowledge-returns-checks, checks-invoke-runtime, runtime-returns-checks, checks-return-project-server, project-server-writes-change-trace]
-  - concept: /system/flows/external-candidate-admission.md
+  - concept: cw:flow:external-candidate-admission
     paths:
       - connections: [change-trace-returns-project-server, project-server-invokes-intake, intake-returns-project-server, project-server-invokes-checks]
-  - concept: /system/flows/recovery.md
+  - concept: cw:flow:recovery
     paths:
       - connections: [change-trace-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]

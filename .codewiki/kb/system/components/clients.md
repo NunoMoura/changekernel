@@ -1,21 +1,22 @@
 ---
 type: System Component
+codewiki_id: cw:component:clients
 title: Clients
 description: Owns software endpoints and deterministic User Interfaces without Project Server or CodeWiki execution authority.
 status: stable
 tags: [system, component]
-codewiki_component: clients
+codewiki_component: cw:component:clients
 codewiki_source_patterns: ["src/clients/**"]
 codewiki_test_patterns: ["tests/clients/**"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/agent/retrieve-bounded-context.md
+    target: cw:story:agent.retrieve-bounded-context
     rationale: Clients present bounded project truth and exact Project Server operations.
   - type: realizes
-    target: /product/stories/maintainer/enforce-project-standards.md
+    target: cw:story:maintainer.enforce-project-standards
     rationale: Clients provide direct user-controlled Check Pack editing, npm, Git, and local installation, preview, and inspection.
   - type: realizes
-    target: /product/stories/check-author/author-composable-checks.md
+    target: cw:story:check-author.author-composable-checks
     rationale: Clients expose Skill, Check SDK, bundle, snapshot, preview, and replay diagnostics without granting execution authority.
 ---
 # Clients
@@ -28,7 +29,7 @@ Each Client Integration declares the commands, queries, events, attachments, con
 
 Clients render persisted Project Server truth and never infer readiness, provenance, activity, causality, completion, impact, next action, or authority. Browser and channel Clients call neither models nor Git directly. High-authority Candidate confirmation, Integration, publication, and deployment actions require a User Interface capable of exact digest-bound confirmation, normally the App or CLI. Submitting Change Intake Material never accepts a Change or grants protected authority.
 
-The App organizes work by Decision, Planning, Implementation, and Review. Each stage workspace derives from one WorkState snapshot and presents subject, proposed transition, producer route, execution custody, exact context and Skills, Checks, attempt history, Gate feedback, pending authority, and permitted fixed transition. It distinguishes Runs, Delegated Runs, and External Agent Client activity without converting partial custody into complete provenance. This organization is a projection, not a configurable workflow graph or activation manifest.
+The App organizes work by Decision, Planning, Implementation, and Review. Each stage workspace derives from one WorkState snapshot and presents subject, proposed transition, producer route, execution custody, exact context and Skills, Checks, attempt history, Gate feedback, pending authority, and permitted fixed transition. Decision renders current Knowledge from the bound base, desired Knowledge from the compiled target, and their diff from Project Server artifacts; it does not ask a model to repeat those bytes. Confirmation binds the exact Candidate, Gate, compiler, plan, and projected-state identities shown. The App distinguishes Runs, Delegated Runs, and External Agent Client activity without converting partial custody into complete provenance. This organization is a projection, not a configurable workflow graph or activation manifest.
 
 External Agent Clients receive typed bounded views over authorized Project Material Generations plus submission, status, and confirmation operations through the reserved CodeWiki MCP namespace. They may use direct, batch, and optional fresh bounded programmatic queries when supported, but receive no canonical storage handle or Gate Evaluation Package authority. CodeWiki receipts cover only authenticated CodeWiki calls and admitted Candidates or Workbench operations; Clients must not display them as proof of complete external prompts, tools, Skills, local reads, subagents, models, code runtime, or memory.
 

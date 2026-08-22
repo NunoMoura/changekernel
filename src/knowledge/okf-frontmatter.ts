@@ -56,10 +56,11 @@ export function parseOkfFrontmatter(source: string): OkfFrontmatterValue {
 export function parseOkfDocument(path: string, source: string): OkfDocument {
 	const normalizedPath = normalizeOkfPath(path);
 	const block = splitOkfFrontmatter(source);
+	const kind = okfDocumentKind(normalizedPath);
 	return {
 		path: normalizedPath,
-		kind: okfDocumentKind(normalizedPath),
-		conceptId: okfConceptId(normalizedPath),
+		kind,
+		conceptId: kind === "concept" ? okfConceptId(block?.frontmatter) : undefined,
 		frontmatter: block?.frontmatter,
 		frontmatterText: block?.frontmatterText,
 		body: block?.body ?? source,

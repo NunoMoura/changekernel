@@ -12,6 +12,11 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 import {
+	compileKnowledgeTransition,
+	type KnowledgeCandidateCheckpoint,
+} from "../../knowledge/materialization.ts";
+import type {KnowledgeCheckpoint} from "../../knowledge/state.ts";
+import {
 	bindDecisionAcceptedActiveChanges,
 	type DecisionAcceptedActiveChangesBinding,
 	type DecisionRelationshipBinding,
@@ -23,7 +28,7 @@ import {
 	type DecisionDisposition,
 } from "./candidate-proposal.ts";
 
-const DECISION_CANDIDATE_SCHEMA_VERSION = "4.0.0" as const;
+const DECISION_CANDIDATE_SCHEMA_VERSION = "6.0.0" as const;
 
 export interface DecisionOverlapBinding {
 	readonly changeId: string;
@@ -41,6 +46,7 @@ export type DecisionCandidateContent = CanonicalJsonValue & {
 	readonly relationships: readonly DecisionRelationshipBinding[];
 	readonly activeOverlaps: readonly DecisionOverlapBinding[];
 	readonly acceptedActiveChanges: DecisionAcceptedActiveChangesBinding;
+	readonly knowledgeCheckpoint: KnowledgeCandidateCheckpoint;
 };
 
 export type DecisionCandidate = LoopCandidate<
@@ -52,6 +58,7 @@ export interface CreateDecisionCandidateInput {
 	readonly state: ProjectWorkState;
 	readonly changeId: string;
 	readonly proposal: DecisionCandidateProposal;
+	readonly knowledgeBase: KnowledgeCheckpoint;
 }
 
 export function createDecisionCandidate(
@@ -70,6 +77,7 @@ export function createDecisionCandidate(
 		state: input.state,
 		change,
 		proposal,
+		knowledgeBase: input.knowledgeBase,
 	});
 	return createLoopCandidate<"decision", DecisionCandidateContent>({
 		loop: "decision",
@@ -83,6 +91,7 @@ function materializeDecisionCandidateContent(input: {
 	readonly state: ProjectWorkState;
 	readonly change: ChangeWorkState;
 	readonly proposal: DecisionCandidateProposal;
+	readonly knowledgeBase: KnowledgeCheckpoint;
 }): DecisionCandidateContent {
 	const revision = input.change.currentRevision;
 	if (!revision) {
@@ -92,10 +101,15 @@ function materializeDecisionCandidateContent(input: {
 	if (ordinal < 1) {
 		throw new Error("Decision Candidate current revision is absent from revision history.");
 	}
+	const knowledgeCheckpoint = compileKnowledgeTransition({
+		base: input.knowledgeBase,
+		transition: revision.content.knowledge,
+	});
 	const acceptedActiveChanges = bindDecisionAcceptedActiveChanges({
 		state: input.state,
 		subjectChangeId: input.change.changeId,
 	});
+	// SAFETY: materialized fields satisfy DecisionCandidateContent; canonicalization only freezes and orders JSON values.
 	return toCanonicalJsonValue({
 		changeId: input.change.changeId,
 		disposition: input.proposal.disposition,
@@ -112,6 +126,7 @@ function materializeDecisionCandidateContent(input: {
 			acceptedActiveChanges,
 		}),
 		acceptedActiveChanges,
+		knowledgeCheckpoint,
 	}) as unknown as DecisionCandidateContent;
 }
 

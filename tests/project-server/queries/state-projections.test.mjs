@@ -30,8 +30,8 @@ function decisionEvents(traceId = "TRACE-views") {
 			{
 				id: `CHG-${traceId.replace(/^TRACE-/, "")}`,
 				question: "How should views represent trace state?",
-				currentState: "Old graph/roadmap state owns generated status.",
-				desiredState: "Generated views project trace records.",
+				problem: "Old graph/roadmap state owns generated status.",
+				objective: "Generated views project trace records.",
 				rationale: "Views are disposable caches.",
 				...decisionQualityFields(),
 				approval: "approved",

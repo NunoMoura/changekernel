@@ -11,17 +11,14 @@ import {
 	deriveDecisionLifecycleTransition,
 	deriveReviewLifecycleTransition,
 } from "../../../src/project-server/lifecycle/gates.ts";
-import {
-	createReviewAttempt,
-	reviewSubjectFromAttempt,
-} from "../../../src/loops/review/contracts.ts";
+import {reviewSubjectFromAttempt} from "../../../src/loops/review/contracts.ts";
+import {createAggregateReviewAttempt} from "../../../src/project-server/review/aggregate-review.ts";
 import {EVIDENCE_SCHEMA_VERSION} from "../../../src/evidence/contracts.ts";
 import {materializeEvidenceRecord} from "../../../src/evidence/materialize.ts";
 import {canonicalJsonDigest} from "../../../src/utils/canonical-json.ts";
 import {projectChecksState} from "../../../src/work-state/checks.ts";
 import {
 	commitNativeDecisionOperationSequence,
-	commitReviewOperationSequence,
 	createNativeDecisionOperationSequence,
 	createReviewOperationSequence,
 } from "../../../src/project-server/effects/gate-operations.ts";
@@ -38,6 +35,7 @@ import {
 	digest,
 	gitObject,
 } from "../../helpers/change-trace-v1.mjs";
+import {frozenImplementationContext} from "../../helpers/frozen-implementation.mjs";
 import {nativeDecisionCandidate} from "../../helpers/native-decision.mjs";
 import {
 	checkOutput,
@@ -94,7 +92,24 @@ function sourceEvidence(change, candidate) {
 	);
 }
 
-function failedReviewArtifacts(changeId) {
+function aggregateReviewAttempt(context, packSnapshot, overrides = {}) {
+	return createAggregateReviewAttempt({
+		state: context.state,
+		changeId: context.changeId,
+		integratedTree: gitObject("e"),
+		targetBranch: "refs/heads/main",
+		producerSessionId: `review-session:${context.changeId}`,
+		producingRunId: `review-run:${context.changeId}`,
+		producerRunReceiptDigest: canonicalJsonDigest("review-producer"),
+		projectMaterialGenerationDigest: canonicalJsonDigest("review-material"),
+		checkPackSnapshotDigest: packSnapshot.checkPackDigest,
+		providerReceiptDigests: [],
+		evidenceRecordDigests: [],
+		...overrides,
+	});
+}
+
+function failedReviewArtifacts(context) {
 	const check = packagedCheck({
 		stage: "review",
 		definition: {
@@ -115,16 +130,7 @@ function failedReviewArtifacts(changeId) {
 		},
 	});
 	const packSnapshot = checkSnapshot([check], {stage: "review"});
-	const attempt = createReviewAttempt({
-		integratedHead: "f".repeat(40),
-		integratedTree: "e".repeat(40),
-		targetBranch: "main",
-		changeIds: [`change:${changeId}`],
-		workUnitIds: ["work-unit:WI-feedback"],
-		checkPackSnapshotDigest: packSnapshot.checkPackDigest,
-		providerReceiptDigests: [],
-		evidenceRecordDigests: [],
-	});
+	const attempt = aggregateReviewAttempt(context, packSnapshot);
 	const subject = reviewSubjectFromAttempt(attempt);
 	const invocation = assembleCheckInvocation({
 		subject,
@@ -221,7 +227,13 @@ function nativeDecisionArtifacts(
 		],
 	});
 	const transition = deriveDecisionLifecycleTransition(candidate, report);
-	return {candidate, packSnapshot, report, transition};
+	const confirmation = {
+		candidateDigest: candidate.digest,
+		gateReportDigest: report.reportDigest,
+		knowledgeCheckpointDigest: candidate.content.knowledgeCheckpoint.checkpointDigest,
+		authorityBinding: authorityBinding(),
+	};
+	return {candidate, packSnapshot, report, transition, confirmation};
 }
 
 const repositoryIdentity = digest("a");
@@ -300,6 +312,7 @@ describe("native Decision canonical operation continuation", () => {
 				"loop.exit_policy_recorded",
 				"check.result_recorded",
 				"loop.exit_report_recorded",
+				"decision.confirmed",
 				"runtime.route_recorded",
 				"loop.attempt_ended",
 			],
@@ -318,6 +331,21 @@ describe("native Decision canonical operation continuation", () => {
 			accepted.changes[0].stateDigest,
 			sequence.state.stateDigest,
 		);
+		assert.equal(
+			accepted.knowledgeHead.stateDigest,
+			artifacts.candidate.content.knowledgeCheckpoint.projected.state.stateDigest,
+		);
+		assert.deepEqual(
+			structuredClone(accepted.knowledgeHead.checkpoint),
+			structuredClone(artifacts.candidate.content.knowledgeCheckpoint.projected),
+		);
+		const confirmationOperation = sequence.operations.find(
+			(operation) => operation.body.kind === "decision.confirmed",
+		);
+		assert.equal(
+			confirmationOperation.body.authorityBinding.actorId,
+			artifacts.confirmation.authorityBinding.actorId,
+		);
 		const routeOperation = sequence.operations.find(
 			(operation) => operation.body.kind === "runtime.route_recorded",
 		);
@@ -328,7 +356,7 @@ describe("native Decision canonical operation continuation", () => {
 			[sequence.operations[1], "policy", artifacts.packSnapshot],
 			[sequence.operations[2], "result", artifacts.report.results[0]],
 			[sequence.operations[3], "report", artifacts.report],
-			[sequence.operations[4], "runtimeRoute", artifacts.transition],
+			[sequence.operations[5], "runtimeRoute", artifacts.transition],
 		];
 		for (const [operation, field, expected] of artifactOperations) {
 			const canonicalOperation = /** @type {(typeof sequence.operations)[number]} */ (
@@ -518,6 +546,7 @@ describe("native Decision canonical operation continuation", () => {
 					evidenceRecords: [],
 					report: artifacts.report,
 					transition: artifacts.transition,
+					confirmation: artifacts.confirmation,
 				}),
 				/compatibility Checks must be rerun/,
 			);
@@ -540,6 +569,7 @@ describe("native Decision canonical operation continuation", () => {
 				evidenceRecords: [],
 				report: artifacts.report,
 				transition: artifacts.transition,
+				confirmation: artifacts.confirmation,
 			});
 			assert.equal(receipt.observation.status, "fresh");
 			assert.equal(receipt.observation.workState.stateHead, receipt.stateHead);
@@ -575,6 +605,7 @@ describe("native Decision canonical operation continuation", () => {
 					evidenceRecords: [],
 					report: artifacts.report,
 					transition: artifacts.transition,
+					confirmation: artifacts.confirmation,
 				}),
 				/must be rerun/,
 			);
@@ -639,23 +670,11 @@ describe("native Decision canonical operation continuation", () => {
 });
 
 describe("Review canonical Gate persistence", () => {
-	it("persists exact Review attempt, Gate, transition, and terminal state", () => {
-		const changeId = "CHG-review-operations";
-		const opened = openProposedChange(
-			createInitialProjectWorkState(),
-			changeId,
-		);
+	it("persists exact aggregate Review, Gate, transition, and terminal state", async () => {
+		const context = await frozenImplementationContext();
+		const {changeId} = context;
 		const packSnapshot = checkSnapshot([], {stage: "review", packs: []});
-		const attempt = createReviewAttempt({
-			integratedHead: "a".repeat(40),
-			integratedTree: "b".repeat(40),
-			targetBranch: "main",
-			changeIds: [`change:${changeId}`],
-			workUnitIds: ["work-unit:WI-review"],
-			checkPackSnapshotDigest: packSnapshot.checkPackDigest,
-			providerReceiptDigests: [],
-			evidenceRecordDigests: [],
-		});
+		const attempt = aggregateReviewAttempt(context, packSnapshot);
 		const subject = reviewSubjectFromAttempt(attempt);
 		const report = createGateReport({
 			snapshot: packSnapshot,
@@ -665,9 +684,9 @@ describe("Review canonical Gate persistence", () => {
 		});
 		const transition = deriveReviewLifecycleTransition(attempt, report);
 		const sequence = createReviewOperationSequence({
-			state: opened.state,
+			state: context.state,
 			changeId,
-			baseSnapshot: baseSnapshotFor(opened.state),
+			baseSnapshot: baseSnapshotFor(context.state),
 			authorityBinding: authorityBinding(),
 			recordedAt: "2026-08-15T10:00:00.000Z",
 			attempt,
@@ -686,30 +705,35 @@ describe("Review canonical Gate persistence", () => {
 				"loop.attempt_ended",
 			],
 		);
-		const projected = sequence.state.loopAttempts[0];
+		const projected = sequence.state.loopAttempts.find(
+			(entry) => entry.loop === "review",
+		);
 		assert.equal(projected.loop, "review");
 		assert.equal(projected.privateAttemptDigest, attempt.attemptDigest);
 		assert.equal(projected.currentCandidateId, subject.id);
 		assert.equal(projected.status, "passed");
 		assert.equal(sequence.operations.at(-2).body.payload.route, "complete");
 		const accepted = reduceBatch(
-			opened.state,
+			context.state,
 			sequence.operations,
 			gitObject("d"),
 		);
 		const projection = projectChecksState(accepted);
-		assert.equal(projection.attempts[0].stage, "review");
-		assert.equal(projection.attempts[0].status, "passed");
+		const reviewProjection = projection.attempts.find(
+			(entry) => entry.stage === "review",
+		);
+		assert.equal(reviewProjection.stage, "review");
+		assert.equal(reviewProjection.status, "passed");
 		assert.equal(
-			projection.attempts[0].report.reportDigest,
+			reviewProjection.report.reportDigest,
 			report.reportDigest,
 		);
 		assert.throws(
 			() =>
 				createReviewOperationSequence({
-					state: opened.state,
+					state: context.state,
 					changeId,
-					baseSnapshot: baseSnapshotFor(opened.state),
+					baseSnapshot: baseSnapshotFor(context.state),
 					authorityBinding: authorityBinding(),
 					recordedAt: "2026-08-15T10:00:00.000Z",
 					attempt,
@@ -720,42 +744,16 @@ describe("Review canonical Gate persistence", () => {
 				}),
 			/fixed Gate transition/,
 		);
-		const unrelatedCandidate = nativeDecisionCandidate({
-			state: opened.state,
-			changeId,
-			rationale: "Unrelated Evidence identity.",
-		});
-		assert.throws(
-			() =>
-				createReviewOperationSequence({
-					state: opened.state,
-					changeId,
-					baseSnapshot: baseSnapshotFor(opened.state),
-					authorityBinding: authorityBinding(),
-					recordedAt: "2026-08-15T10:00:00.000Z",
-					attempt,
-					packSnapshot,
-					evidenceRecords: [
-						sourceEvidence(opened.state.changes[0], unrelatedCandidate),
-					],
-					report,
-					transition,
-				}),
-			/Evidence digests do not match/,
-		);
 	});
 
-	it("projects persisted failed-Review feedback for Implementation and UI", () => {
-		const changeId = "CHG-review-feedback";
-		const opened = openProposedChange(
-			createInitialProjectWorkState(),
-			changeId,
-		);
-		const artifacts = failedReviewArtifacts(changeId);
+	it("projects persisted failed-Review feedback for affected Implementation", async () => {
+		const context = await frozenImplementationContext();
+		const {changeId} = context;
+		const artifacts = failedReviewArtifacts(context);
 		const sequence = createReviewOperationSequence({
-			state: opened.state,
+			state: context.state,
 			changeId,
-			baseSnapshot: baseSnapshotFor(opened.state),
+			baseSnapshot: baseSnapshotFor(context.state),
 			authorityBinding: authorityBinding(),
 			recordedAt: "2026-08-15T10:30:00.000Z",
 			...artifacts,
@@ -766,11 +764,13 @@ describe("Review canonical Gate persistence", () => {
 			),
 		});
 		const accepted = reduceBatch(
-			opened.state,
+			context.state,
 			sequence.operations,
 			gitObject("f"),
 		);
-		const projected = projectChecksState(accepted).attempts[0];
+		const projected = projectChecksState(accepted).attempts.find(
+			(entry) => entry.stage === "review",
+		);
 		assert.equal(projected.stage, "review");
 		assert.equal(projected.status, "failed");
 		assert.equal(projected.results[0].failureCode, "delivery_not_ready");
@@ -780,122 +780,12 @@ describe("Review canonical Gate persistence", () => {
 		);
 	});
 
-	it("commits and verifies Review through expected-head synchronization", async () => {
-		const fixture = await createTwoCloneFixture();
-		try {
-			const changeId = "CHG-review-git";
-			await git(fixture.cloneB, ["config", "user.name", "Review Test"]);
-			await git(fixture.cloneB, ["config", "user.email", "review@example.invalid"]);
-			await git(fixture.cloneB, ["checkout", "--orphan", "main"]);
-			await git(fixture.cloneB, ["commit", "--allow-empty", "-m", "source"]);
-			const sourceHead = (
-				await git(fixture.cloneB, ["rev-parse", "HEAD"])
-			).stdout.trim();
-			const initial = createInitialProjectWorkState();
-			const records = buildOperationSequence({
-				changeId,
-				baseSnapshot: {...baseSnapshotFor(initial), sourceHead},
-				specifications: [
-					{
-						kind: "trace.opened",
-						recordedAt: "2026-08-15T11:58:00.000Z",
-						payload: {origin: "user", provenanceRefs: [`request:${changeId}`]},
-					},
-					{
-						kind: "change.proposed",
-						recordedAt: "2026-08-15T11:59:00.000Z",
-						payload: {
-							revision: revisionFor(changeId),
-							provenance: {kind: "user", refs: [`request:${changeId}`]},
-						},
-					},
-				],
-			}).operations;
-			const opened = await createGitProposal(fixture.cloneA, initial, records);
-			assert.equal(
-				(await pushGitProposal(fixture.cloneA, opened.proposal)).status,
-				"accepted",
-			);
-			const project = projectSnapshotFor(opened.projected);
-			const selected = await synchronizeGitState({
-				repoRoot: fixture.cloneB,
-				remote: "origin",
-				repositoryIdentity,
-				currentProject: project,
-				policy: allowAllReplayPolicy,
-			});
-			assert.equal(selected.status, "fresh");
-			const integratedHead = selected.teamSnapshot.protectedSourceHead;
-			const integratedTree = (
-				await git(fixture.cloneB, ["rev-parse", `${integratedHead}^{tree}`])
-			).stdout.trim();
-			const packSnapshot = checkSnapshot([], {stage: "review", packs: []});
-			const attempt = createReviewAttempt({
-				integratedHead,
-				integratedTree,
-				targetBranch: "main",
-				changeIds: [`change:${changeId}`],
-				workUnitIds: ["work-unit:WI-review-git"],
-				checkPackSnapshotDigest: packSnapshot.checkPackDigest,
-				providerReceiptDigests: [],
-				evidenceRecordDigests: [],
-			});
-			const report = createGateReport({
-				snapshot: packSnapshot,
-				subjectDigest: reviewSubjectFromAttempt(attempt).digest,
-				results: [],
-				executions: [],
-			});
-			const commitInput = {
-				repoRoot: fixture.cloneB,
-				remote: "origin",
-				repositoryIdentity,
-				currentProject: () => project,
-				replayPolicy: allowAllReplayPolicy,
-				authorityBinding: authorityBinding(),
-				changeId,
-				expectedTeamSnapshotDigest: selected.teamSnapshot.snapshotDigest,
-				expectedWorkStateDigest: selected.workState.workStateDigest,
-				recordedAt: "2026-08-15T12:00:00.000Z",
-				attempt,
-				packSnapshot,
-				evidenceRecords: [],
-				report,
-				transition: deriveReviewLifecycleTransition(attempt, report),
-			};
-			const receipt = await commitReviewOperationSequence(commitInput);
-			assert.equal(receipt.observation.status, "fresh");
-			assert.equal(
-				receipt.observation.workState.changes[0].loopAttempts[0].loop,
-				"review",
-			);
-			await assert.rejects(
-				commitReviewOperationSequence(commitInput),
-				/must be rerun/,
-			);
-		} finally {
-			await fixture.cleanup();
-		}
-	});
-
-	it("projects an operationally stopped Review without a fabricated Result", () => {
-		const changeId = "CHG-review-stopped";
-		const opened = openProposedChange(
-			createInitialProjectWorkState(),
-			changeId,
-		);
+	it("projects an operationally stopped Review without a fabricated Result", async () => {
+		const context = await frozenImplementationContext();
+		const {changeId} = context;
 		const check = packagedCheck({stage: "review"});
 		const packSnapshot = checkSnapshot([check], {stage: "review"});
-		const attempt = createReviewAttempt({
-			integratedHead: "c".repeat(40),
-			integratedTree: "d".repeat(40),
-			targetBranch: "main",
-			changeIds: [`change:${changeId}`],
-			workUnitIds: ["work-unit:WI-stopped"],
-			checkPackSnapshotDigest: packSnapshot.checkPackDigest,
-			providerReceiptDigests: [],
-			evidenceRecordDigests: [],
-		});
+		const attempt = aggregateReviewAttempt(context, packSnapshot);
 		const report = createGateReport({
 			snapshot: packSnapshot,
 			subjectDigest: reviewSubjectFromAttempt(attempt).digest,
@@ -907,9 +797,9 @@ describe("Review canonical Gate persistence", () => {
 			},
 		});
 		const sequence = createReviewOperationSequence({
-			state: opened.state,
+			state: context.state,
 			changeId,
-			baseSnapshot: baseSnapshotFor(opened.state),
+			baseSnapshot: baseSnapshotFor(context.state),
 			authorityBinding: authorityBinding(),
 			recordedAt: "2026-08-15T11:00:00.000Z",
 			attempt,
@@ -925,11 +815,17 @@ describe("Review canonical Gate persistence", () => {
 			false,
 		);
 		const accepted = reduceBatch(
-			opened.state,
+			context.state,
 			sequence.operations,
 			gitObject("e"),
 		);
-		assert.equal(accepted.changes[0].loopAttempts[0].status, "indeterminate");
-		assert.equal(projectChecksState(accepted).attempts[0].status, "stopped");
+		assert.equal(
+			accepted.changes[0].loopAttempts.find((entry) => entry.loop === "review").status,
+			"indeterminate",
+		);
+		assert.equal(
+			projectChecksState(accepted).attempts.find((entry) => entry.stage === "review").status,
+			"stopped",
+		);
 	});
 });

@@ -1,12 +1,13 @@
 ---
 type: System Component
+codewiki_id: cw:component:provider-boundary
 title: Provider Boundary
 description: Represents external Git, delivery, model, package, and collaboration services outside CodeWiki authority.
 status: stable
 tags: [system, component, external]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: Provider Boundary preserves explicit authentication and failure behavior for remote coordination and effects.
 ---
 # Provider Boundary

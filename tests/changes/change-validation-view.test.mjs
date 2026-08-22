@@ -9,11 +9,11 @@ import { acceptedChangeFixture } from "../helpers/accepted-change.mjs";
 function validationRecord(overrides = {}) {
 	const change = acceptedChangeFixture({
 		id: "CHG-validation-card",
-		currentState:
-			overrides.currentState ||
+		problem:
+			overrides.problem ||
 			"Operators cannot compare exact Change revisions.",
-		desiredState:
-			overrides.desiredState ||
+		objective:
+			overrides.objective ||
 			"Operators see one bounded card for an exact Change revision.",
 		rationale: "Shared projections prevent Pi and dashboard drift.",
 	});
@@ -62,11 +62,11 @@ describe("Change validation card projection", () => {
 			validationState: "valid",
 		});
 		assert.equal(
-			card.sections.currentState.text,
+			card.sections.problem.text,
 			"Operators cannot compare exact Change revisions.",
 		);
 		assert.equal(
-			card.sections.proposedChange.text,
+			card.sections.objective.text,
 			"Operators see one bounded card for an exact Change revision.",
 		);
 		assert.equal(card.sections.agentOpinion.assessments[0].stance, "aligned");
@@ -90,7 +90,7 @@ describe("Change validation card projection", () => {
 				}),
 			/stale Change content digest/,
 		);
-		const oversized = validationRecord({ currentState: "x".repeat(4_001) });
+		const oversized = validationRecord({ problem: "x".repeat(4_001) });
 		assert.throws(
 			() => buildChangeValidationCard(oversized),
 			/exceeds 4000 characters/,
@@ -98,7 +98,7 @@ describe("Change validation card projection", () => {
 		assert.throws(
 			() =>
 				buildChangeValidationCard(
-					validationRecord({ currentState: "unsafe\u0000text" }),
+					validationRecord({ problem: "unsafe\u0000text" }),
 				),
 			/unsafe control characters/,
 		);
@@ -108,12 +108,12 @@ describe("Change validation card projection", () => {
 		const secret = "sk-live-secret-value-123456789";
 		const card = buildChangeValidationCard(
 			validationRecord({
-				desiredState: `Call service with api_key=${secret} and continue.`,
+				objective: `Call service with api_key=${secret} and continue.`,
 			}),
 		);
 		const serialized = JSON.stringify(card);
 		assert.equal(serialized.includes(secret), false);
-		assert.match(card.sections.proposedChange.text, /api_key=\[REDACTED\]/);
+		assert.match(card.sections.objective.text, /api_key=\[REDACTED\]/);
 		assert.deepEqual(card.redactions, ["secret-like value"]);
 	});
 });

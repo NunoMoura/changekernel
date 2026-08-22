@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:maintainer.recover-history
 title: Recover History
 description: A maintainer wants hot coordination state to remain compact while immutable accountable history stays recoverable and auditable.
 status: stable
-codewiki_user: /product/users/maintainer.md
+codewiki_user: cw:user:maintainer
 tags: [product, story, recovery]
 ---
 # Recover History

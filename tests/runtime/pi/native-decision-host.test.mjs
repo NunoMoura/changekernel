@@ -18,6 +18,7 @@ import {startPiProjectCoordinatorDaemon} from "../../../src/runtime/pi/coordinat
 import {resolveWikiConfig} from "../../../src/project/config.ts";
 import {wikiConfigDigest} from "../../../src/project/config-file.ts";
 import {createDecisionGitAdmission} from "../../../src/project-server/admission/git.ts";
+import {createKnowledgeCheckpoint} from "../../../src/knowledge/state.ts";
 import {connectProjectCoordinatorClient} from "../../../src/project-server/coordinator/service.ts";
 import {
 	allowAllReplayPolicy,
@@ -195,11 +196,13 @@ it("runs and recovers selected native Decision work through the default Pi host 
 		};
 
 		let producerRuns = 0;
+		const knowledgeBase = createKnowledgeCheckpoint({files: []});
 		const nativeDecision = {
 			remote: "origin",
 			repositoryIdentity,
 			currentProject: () => project,
 			replayPolicy: allowAllReplayPolicy,
+			loadKnowledgeBase: () => knowledgeBase,
 			runtimeAuthorityBinding: authorityBinding({
 				actorId: "runtime-native-decision-host",
 			}),

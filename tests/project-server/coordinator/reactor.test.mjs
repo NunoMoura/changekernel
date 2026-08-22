@@ -14,7 +14,7 @@ function record(id, targetRefs = []) {
 			id,
 			revision: 1,
 			status: "accepted",
-			intent: { question: id, currentState: "before", desiredState: "after", rationale: "needed", nonGoals: [] },
+			intent: { question: id, problem: "before", objective: "after", rationale: "needed", nonGoals: [] },
 			classification: { kind: "improve", type: "architecture_change", scope: "system", affectedLayers: ["runtime"], targetRefs },
 			impact: { user: "faster", maintainer: "simpler" },
 			evidence: { sourceRefs: [], proofRefs: [] },
@@ -65,7 +65,7 @@ function workUnit(id, owningChangeId, overrides = {}) {
 
 function state(overrides = {}) {
 	return {
-		schemaVersion: 3,
+		schemaVersion: 4,
 		snapshotDigest: "sha256:work-state",
 		workGraphDigest: `sha256:${"a".repeat(64)}`,
 		changeIds: [],

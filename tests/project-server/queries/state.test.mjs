@@ -48,8 +48,8 @@ function traceRecords(traceId = "TRACE-state") {
 			{
 				id: "CHG-state",
 				question: "How should state be read?",
-				currentState: "State reads could depend on stored view files.",
-				desiredState: "State reads active project traces.",
+				problem: "State reads could depend on stored view files.",
+				objective: "State reads active project traces.",
 				rationale: "Views are disposable projections, not truth.",
 				...decisionQualityFields(),
 				approval: "approved",
@@ -101,7 +101,7 @@ describe("wiki_state core facade", () => {
 			"Implement planned work unit WU-state.",
 		);
 		assert.equal(state.workPlan?.cards[0].id, "WU-state");
-		assert.equal(state.quality?.summary.planning.met, 7);
+		assert.equal(state.quality?.summary.planning.met, 9);
 		assert.equal(state.workQueue.summary.ready, 1);
 		assert.equal(state.traceBoard.summary.needs_implementation, 1);
 		assert.equal(state.traceBoard.traces[0].status, "needs_implementation");

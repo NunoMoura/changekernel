@@ -133,9 +133,9 @@ describe("loop quality judge provider", () => {
 				const root = await mkdtemp(join(tmpdir(), "codewiki-judge-provider-"));
 				const { record } = await seedChangeAcceptance(root, {
 					id: "CHG-judge-provider",
-					currentState:
+					problem:
 						"Decision approval could require a redundant judge call.",
-					desiredState:
+					objective:
 						"Exact Change evidence drives deterministic approval quality.",
 					rationale:
 						"Avoiding redundant judge calls reduces latency and token use.",

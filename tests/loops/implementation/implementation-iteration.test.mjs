@@ -27,8 +27,8 @@ function planningEvents() {
 			{
 				id: "CHG-001",
 				question: "How should implementation evidence be represented?",
-				currentState: "Implementation iteration files own evidence.",
-				desiredState: "Implementation trace events own evidence refs.",
+				problem: "Implementation iteration files own evidence.",
+				objective: "Implementation trace events own evidence refs.",
 				rationale: "Matches traces-first model.",
 				...decisionQualityFields(),
 				approval: "approved",

@@ -29,8 +29,8 @@ describe("Pi Change validation card", () => {
 		const record = createChangeRecord(
 			acceptedChangeFixture({
 				id: "CHG-pi-validation-card",
-				currentState: "Pi shows only a mutation receipt.",
-				desiredState: "Pi shows a bounded validation card.",
+				problem: "Pi shows only a mutation receipt.",
+				objective: "Pi shows a bounded validation card.",
 			}),
 		);
 		const lines = renderPiChangeValidationCard(
@@ -38,11 +38,11 @@ describe("Pi Change validation card", () => {
 		);
 		assert.match(
 			lines.join("\n"),
-			/Current state\nPi shows only a mutation receipt\./,
+			/Problem\nPi shows only a mutation receipt\./,
 		);
 		assert.match(
 			lines.join("\n"),
-			/Proposed change\nPi shows a bounded validation card\./,
+			/Objective\nPi shows a bounded validation card\./,
 		);
 		assert.match(lines.join("\n"), /Agent opinion/);
 		assert.match(
@@ -58,8 +58,8 @@ describe("Pi Change validation card", () => {
 			execFileSync("git", ["init", "-q"], { cwd: root });
 			const seeded = await seedChangeAcceptance(root, {
 				id: "CHG-pi-tool-card",
-				currentState: "The model sees only a completion message.",
-				desiredState: "The model sees the exact safe Change card.",
+				problem: "The model sees only a completion message.",
+				objective: "The model sees the exact safe Change card.",
 			});
 			const tool = registeredTools().find(
 				(candidate) => candidate.name === "wiki_change",
@@ -75,8 +75,8 @@ describe("Pi Change validation card", () => {
 			const modelText = result.content
 				.map((item) => item.text || "")
 				.join("\n");
-			assert.match(modelText, /Current state/);
-			assert.match(modelText, /Proposed change/);
+			assert.match(modelText, /Problem/);
+			assert.match(modelText, /Objective/);
 			assert.match(modelText, /Agent opinion/);
 			assert.match(modelText, /CHG-pi-tool-card/);
 			assert.equal(result.details.result.record.change.status, "pending");

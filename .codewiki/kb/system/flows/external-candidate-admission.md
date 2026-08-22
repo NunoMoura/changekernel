@@ -1,15 +1,16 @@
 ---
 type: System Flow
+codewiki_id: cw:flow:external-candidate-admission
 title: External Candidate Admission
 description: Captures unmatched Git state, binds honest provenance, and sends it through exact Change admission or accountable intake before stage Gates.
 status: stable
 tags: [system, flow]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/account-for-drift.md
+    target: cw:story:maintainer.account-for-drift
     rationale: External Candidate Admission prevents unaccounted Git divergence from inheriting CodeWiki certification.
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: External Candidate Admission provides a safe path for useful work created outside controlled execution.
 ---
 # External Candidate Admission

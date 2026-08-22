@@ -1,35 +1,34 @@
-import { createHash } from "node:crypto";
-import type { LoopQualityStandardResult } from "../../changes/trace/types.ts";
-import type { WorkState } from "../../work-state/types.ts";
+import {createHash} from "node:crypto";
+import type {LoopQualityStandardResult} from "../../changes/trace/types.ts";
+import type {WorkState} from "../../work-state/types.ts";
+import {planningDependencyGraphHasCycle} from "./work-graph.ts";
+import {planningPathsOverlap} from "./candidate-content.ts";
 import type {
-	PlanningAcceptanceCoverage,
-	PlanningDependencyEdge,
+	PlanningCandidateProposal,
 	PlanningWorkUnitCandidate,
 } from "./candidate-content.ts";
 
-export interface EvaluateGraphDeltaPlanningInput {
+interface EvaluateGraphDeltaPlanningInput extends PlanningCandidateProposal {
 	changeId: string;
-	workUnits: PlanningWorkUnitCandidate[];
-	dependencyEdges: PlanningDependencyEdge[];
-	acceptanceCoverage: PlanningAcceptanceCoverage[];
-	integrationRequirements: string[];
 	workState: WorkState;
 }
 
-export interface GraphDeltaPlanningQualityResult {
+interface GraphDeltaPlanningQualityResult {
 	passed: boolean;
 	qualityRef: string;
 	standards: LoopQualityStandardResult[];
 }
 
 export const PLANNING_GRAPH_DELTA_QUALITY_STANDARDS = Object.freeze([
-	{ id: "single_change_ownership", description: "Every Work Unit belongs to the planned Change.", mode: "deterministic" as const },
-	{ id: "work_unit_identity", description: "Work Unit identities are unique graph additions.", mode: "deterministic" as const },
-	{ id: "work_unit_obligations", description: "Work Unit obligations are explicit.", mode: "deterministic" as const },
-	{ id: "dependency_graph", description: "Dependency edges are known and acyclic.", mode: "deterministic" as const },
-	{ id: "acceptance_coverage", description: "Change acceptance is covered by Work Units.", mode: "deterministic" as const },
-	{ id: "path_ordering", description: "Overlapping path scopes are ordered.", mode: "deterministic" as const },
-	{ id: "integration_requirements", description: "Change integration requirements are explicit.", mode: "deterministic" as const },
+	{id: "single_change_ownership", description: "Every Work Unit belongs to planned Change.", mode: "deterministic" as const},
+	{id: "work_unit_identity", description: "Work Unit identities are unique graph additions.", mode: "deterministic" as const},
+	{id: "work_unit_obligations", description: "Work Unit obligations and resources are explicit.", mode: "deterministic" as const},
+	{id: "dependency_graph", description: "Dependency edges are known and acyclic.", mode: "deterministic" as const},
+	{id: "knowledge_coverage", description: "Accepted Knowledge obligations are mapped exactly.", mode: "deterministic" as const},
+	{id: "acceptance_coverage", description: "Acceptance requirement IDs map to Work Units.", mode: "deterministic" as const},
+	{id: "path_ordering", description: "Overlapping path scopes are ordered.", mode: "deterministic" as const},
+	{id: "aggregate_review", description: "Aggregate Review requirements are explicit.", mode: "deterministic" as const},
+	{id: "integration_requirements", description: "Change integration requirements are explicit.", mode: "deterministic" as const},
 ]);
 
 export function evaluateGraphDeltaPlanning(
@@ -52,46 +51,52 @@ export function evaluateGraphDeltaPlanning(
 		standard(
 			"single_change_ownership",
 			input.workUnits.every((unit) => unit.owningChangeId === input.changeId),
-			"Every Work Unit must be owned by the planned Change.",
+			"Every Work Unit must be owned by planned Change.",
 		),
 		standard(
 			"work_unit_identity",
 			workUnitIds.size === input.workUnits.length &&
 				input.workUnits.every((unit) => !existingIds.has(unit.id)),
-			"Work Unit ids must be unique additions to the global Work Graph.",
+			"Work Unit IDs must be unique additions to global Work Graph.",
 		),
 		standard(
 			"work_unit_obligations",
-			input.workUnits.every(
-				(unit) =>
-					unit.acceptanceRequirements.length > 0 &&
-					unit.verification.length > 0 &&
-					unit.pathScopes.length > 0,
-			),
-			"Every Work Unit needs acceptance, verification, and path obligations.",
+			input.workUnits.every(hasCompleteObligations),
+			"Every Work Unit needs acceptance, verification, path, and resource obligations.",
 		),
 		standard(
 			"dependency_graph",
 			dependencies.every(
-				([from, to]) =>
-					from !== to && workUnitIds.has(from) && knownIds.has(to),
-			) && !hasCycle(completeDependencies),
+				([from, to]) => from !== to && workUnitIds.has(from) && knownIds.has(to),
+			) && !planningDependencyGraphHasCycle(completeDependencies),
 			"Dependency edges must originate in this delta, target known Work Units, and remain acyclic.",
+		),
+		standard(
+			"knowledge_coverage",
+			coverageReferencesKnown(input.knowledgeEffectCoverage, workUnitIds) &&
+				input.unchangedKnowledgeCoverage.every(
+					(entry) => entry.workUnitIds.every((id) => workUnitIds.has(id)),
+				),
+			"Knowledge coverage must map accepted obligations to known Work Units.",
 		),
 		standard(
 			"acceptance_coverage",
 			input.acceptanceCoverage.length > 0 &&
-				input.acceptanceCoverage.every(
-					(entry) =>
-						entry.workUnitIds.length > 0 &&
-						entry.workUnitIds.every((id: string) => workUnitIds.has(id)),
-				),
-			"Every acceptance requirement must map to known Work Units.",
+				coverageReferencesKnown(input.acceptanceCoverage, workUnitIds),
+			"Every acceptance requirement ID must map to known Work Units.",
 		),
 		standard(
 			"path_ordering",
 			pathOrderingIsSafe(input.workUnits, dependencies),
-			"Overlapping Work Unit path scopes require an explicit dependency edge.",
+			"Overlapping Work Unit path scopes require explicit dependency edge.",
+		),
+		standard(
+			"aggregate_review",
+			input.aggregateReviewRequirements.length > 0 &&
+				input.aggregateReviewRequirements.every(
+					(entry) => entry.workUnitIds.every((id) => workUnitIds.has(id)),
+				),
+			"Aggregate Review requirements must map to known Work Units.",
 		),
 		standard(
 			"integration_requirements",
@@ -109,13 +114,33 @@ export function evaluateGraphDeltaPlanning(
 	};
 }
 
+function hasCompleteObligations(unit: PlanningWorkUnitCandidate): boolean {
+	return unit.acceptanceRequirementIds.length > 0 &&
+		unit.verification.length > 0 &&
+		unit.pathScopes.length > 0 &&
+		unit.resourceRequirements.capabilityIds.length > 0 &&
+		unit.resourceRequirements.toolIds.length > 0 &&
+		unit.resourceRequirements.custodyRequirements.length > 0 &&
+		Boolean(unit.resourceRequirements.privacyClass) &&
+		Boolean(unit.resourceRequirements.budgetClass);
+}
+
+function coverageReferencesKnown(
+	coverage: readonly {readonly workUnitIds: readonly string[]}[],
+	workUnitIds: ReadonlySet<string>,
+): boolean {
+	return coverage.every(
+		(entry) => entry.workUnitIds.length > 0 && entry.workUnitIds.every((id) => workUnitIds.has(id)),
+	);
+}
+
 function standard(
 	id: string,
 	passed: boolean,
 	message: string,
 ): LoopQualityStandardResult {
 	return passed
-		? { id, status: "met", mode: "deterministic", description: message, refs: [] }
+		? {id, status: "met", mode: "deterministic", description: message, refs: []}
 		: {
 				id,
 				status: "unmet",
@@ -137,40 +162,12 @@ function pathOrderingIsSafe(
 			const right = workUnits[rightIndex];
 			if (!left || !right) continue;
 			if (
-				pathsOverlap(left.pathScopes, right.pathScopes) &&
+				planningPathsOverlap(left.pathScopes, right.pathScopes) &&
 				!ordered.has(`${left.id}:${right.id}`)
-			) return false;
+			) {
+				return false;
+			}
 		}
 	}
 	return true;
-}
-
-function pathsOverlap(left: string[], right: string[]): boolean {
-	return left.some((leftPath) =>
-		right.some(
-			(rightPath) =>
-				leftPath === rightPath ||
-				leftPath.startsWith(`${rightPath}/`) ||
-				rightPath.startsWith(`${leftPath}/`),
-		),
-	);
-}
-
-function hasCycle(edges: readonly (readonly [string, string])[]): boolean {
-	const dependencies = new Map<string, string[]>();
-	for (const [from, to] of edges) {
-		dependencies.set(from, [...(dependencies.get(from) || []), to]);
-	}
-	const visiting = new Set<string>();
-	const visited = new Set<string>();
-	const visit = (id: string): boolean => {
-		if (visiting.has(id)) return true;
-		if (visited.has(id)) return false;
-		visiting.add(id);
-		if ((dependencies.get(id) || []).some(visit)) return true;
-		visiting.delete(id);
-		visited.add(id);
-		return false;
-	};
-	return [...dependencies.keys()].some(visit);
 }

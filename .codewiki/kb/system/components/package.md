@@ -1,10 +1,11 @@
 ---
 type: System Component
+codewiki_id: cw:component:package
 title: Package
 description: Owns CodeWiki composition, shared error contracts, public entrypoints, Runtime Build closure, and passive Check Pack transport.
 status: stable
 tags: [system, component]
-codewiki_component: package
+codewiki_component: cw:component:package
 codewiki_source_patterns:
   - "src/index.ts"
   - "src/main.ts"
@@ -14,13 +15,13 @@ codewiki_source_patterns:
 codewiki_test_patterns: ["tests/project-server/package-*.mjs", "tests/scaffold*.test.mjs"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: Package supplies CodeWiki, Project Servers, Runtime, first-party Clients, and isolated Run Process entry contracts.
   - type: realizes
-    target: /product/stories/maintainer/enforce-project-standards.md
+    target: cw:story:maintainer.enforce-project-standards
     rationale: Package transports inspectable npm, Git, and local Check Packs into ordinary project files.
   - type: realizes
-    target: /product/stories/check-author/author-composable-checks.md
+    target: cw:story:check-author.author-composable-checks
     rationale: Package transports self-contained authored Checks and optional Pack Skills without making installation an execution environment.
 ---
 # Package

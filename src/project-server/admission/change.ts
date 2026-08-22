@@ -503,12 +503,17 @@ function intakeRevision(
 		material,
 		authenticationEvidenceId,
 	});
-	const knowledgeRefs = material.content.affectedRefs.filter(isKnowledgeRef);
+	const knowledgeRefs = [
+		...material.content.affectedRefs,
+		...(material.materialType === "knowledge_drift"
+			? material.binding.subjectIds
+			: []),
+	].filter(isKnowledgeRef);
 	return createChangeRevision({
 		title: material.content.summary.split("\n", 1)[0],
 		intent: {
-			currentState: material.content.observedBehavior,
-			desiredState: desiredOutcome,
+			problem: material.content.observedBehavior,
+			objective: desiredOutcome,
 			rationale: material.content.summary,
 			nonGoals: [],
 			alternatives: [],
@@ -520,11 +525,12 @@ function intakeRevision(
 				? {user: desiredOutcome}
 				: {},
 		knowledge: {
-			topicRefs: knowledgeRefs,
-			propagationRefs:
-				material.materialType === "knowledge_drift"
-					? material.binding.topicRefs
-					: [],
+			kind: "unchanged",
+			refs: [...new Set(knowledgeRefs)]
+				.sort(compareText)
+				.map((subjectId) => ({subjectId})),
+			rationale:
+				"Intake records proposed work and Evidence without authoring accepted desired Knowledge; exact Knowledge Effects require an explicit revised Change.",
 		},
 		outcome: {
 			successSignals: [desiredOutcome],
@@ -896,6 +902,7 @@ function normalizeCommand(value: unknown): ChangeIntakeCommand {
 	);
 	return Object.freeze({
 		material: command.material,
+		// SAFETY: executeIntake authenticates and schema-validates this authority before any operation admission.
 		authorityBinding: command.authorityBinding as unknown as AuthorityBinding,
 		expectedStateHead: command.expectedStateHead as string | null,
 	});
@@ -906,6 +913,7 @@ function normalizeAuthorityBinding(value: AuthorityBinding): AuthorityBinding {
 	if (!value.authenticationEvidenceId) {
 		throw new Error("Change intake authority requires authentication Evidence.");
 	}
+	// SAFETY: authorityBindingSchema validates every field before canonicalization.
 	return toCanonicalJsonValue(value) as unknown as AuthorityBinding;
 }
 
@@ -1172,7 +1180,7 @@ function compareText(left: string, right: string): number {
 }
 
 function isKnowledgeRef(ref: string): boolean {
-	return ref.startsWith("kb:") || ref.startsWith(".codewiki/kb/");
+	return /^cw:[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._-]*$/.test(ref);
 }
 
 function isSourceLocation(ref: string): boolean {

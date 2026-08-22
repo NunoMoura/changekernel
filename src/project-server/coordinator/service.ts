@@ -99,7 +99,7 @@ import {
 } from "./reactions.ts";
 import { parseDecisionCandidateProposal } from "../../loops/decision/candidate-proposal.ts";
 import { parseImplementationCandidateContent } from "../../loops/implementation/candidate-content.ts";
-import { parsePlanningCandidateContent } from "../../loops/planning/candidate-content.ts";
+import { parsePlanningCandidateProposal } from "../../loops/planning/candidate-content.ts";
 import type {
 	RunProjectServerSelectedSemanticReactionResult,
 	ProjectServerLoopExecutionPorts,
@@ -302,8 +302,6 @@ export async function startProjectCoordinatorService(
 					reactor,
 					adapter: options.workerAdapter,
 					worktreeRunner: options.workerWorktreeRunner,
-					mergeAuthority: options.mergeAuthority,
-					pushAuthority: options.pushAuthority,
 					publicationPlan: options.publicationPlan,
 					publicationAdapter: options.publicationAdapter,
 					releasePlan: options.releasePlan,
@@ -1151,7 +1149,7 @@ function candidateAdapters(
 			return { decision: () => parsed };
 		}
 		if (loop === "planning") {
-			const parsed = parsePlanningCandidateContent(candidate);
+			const parsed = parsePlanningCandidateProposal(candidate);
 			return { planning: () => parsed };
 		}
 		const parsed = parseImplementationCandidateContent(candidate);

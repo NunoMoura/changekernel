@@ -218,10 +218,12 @@ function starterFiles(
 			activeChangeCompatibilityDefinition(),
 		".codewiki/check-packs/decision/default/active_change_compatibility/CHECK.md":
 			activeChangeCompatibilityInstructions(),
+		...defaultReviewCheckFiles(),
 		".codewiki/kb/lexicon.md": nativeDocument(
 			{
 				okf_version: "0.2",
 				type: "Lexicon",
+				codewiki_id: "cw:lexicon:project",
 				title: `${project} Lexicon`,
 				description: `Active vocabulary for ${project}.`,
 				status: "stable",
@@ -233,6 +235,7 @@ function starterFiles(
 		".codewiki/kb/product/users/maintainer.md": nativeDocument(
 			{
 				type: "User",
+				codewiki_id: "cw:user:maintainer",
 				title: "Maintainer",
 				description: `Accountable human who maintains ${project} intent.`,
 				status: "stable",
@@ -243,10 +246,11 @@ function starterFiles(
 		".codewiki/kb/product/stories/maintainer/maintain-intent.md": nativeDocument(
 			{
 				type: "User Story",
+				codewiki_id: "cw:story:maintainer.maintain-intent",
 				title: "Maintain Intent",
 				description: `A maintainer wants ${project} desired state kept close to its realization.`,
 				status: "stable",
-				codewiki_user: "/product/users/maintainer.md",
+				codewiki_user: "cw:user:maintainer",
 				tags: ["product", "story"],
 			},
 			`# Maintain Intent\n\nAs a maintainer, I want accepted Product and System intent recorded as desired Knowledge so implementation can be checked against an explicit target.\n`,
@@ -270,6 +274,7 @@ function starterFiles(
 		".codewiki/kb/system/flows/project-realization.md": nativeDocument(
 			{
 				type: "System Flow",
+				codewiki_id: "cw:flow:project-realization",
 				title: "Project Realization",
 				description: `Relates ${project} desired Knowledge to source and test realization.`,
 				status: "stable",
@@ -284,6 +289,82 @@ function starterFiles(
 
 function configJson(project: string): string {
 	return `${JSON.stringify(resolveWikiConfig({ project }), null, "\t")}\n`;
+}
+
+function defaultReviewCheckFiles(): Record<string, string> {
+	const checks = [
+		[
+			"aggregate_acceptance",
+			"Complete aggregate acceptance",
+			"The integrated aggregate must realize every ratified Knowledge Effect, unchanged-Knowledge target, and acceptance requirement.",
+		],
+		[
+			"cross_unit_behavior",
+			"Cross-unit behavior",
+			"Interactions among all contributing Work Units must preserve the accepted behavior and invariants.",
+		],
+		[
+			"full_build",
+			"Full build",
+			"Current Evidence must prove the complete project build and test policy against the exact aggregate tree.",
+		],
+		[
+			"integration_behavior",
+			"Integration behavior",
+			"The exact private lineage and resulting aggregate tree must integrate without unresolved conflicts or stale dependencies.",
+		],
+		[
+			"provenance_integrity",
+			"Provenance integrity",
+			"Every Candidate, Result, Evidence record, Run receipt, integration receipt, and aggregate binding must have complete controlled provenance.",
+		],
+		[
+			"scope_discipline",
+			"Scope discipline",
+			"The aggregate must contain only changes required by the ratified Change and accepted Planning obligations.",
+		],
+	] as const;
+	const files: Record<string, string> = {};
+	for (const [id, title, requirement] of checks) {
+		const root = `.codewiki/check-packs/review/default/${id}`;
+		files[`${root}/check.json`] = `${JSON.stringify(
+			{
+				schemaVersion: "1.0.0",
+				id,
+				version: "1.0.0",
+				description: `Checks ${title.toLowerCase()} over one exact frozen Implementation aggregate.`,
+				requirement,
+				implementation: {
+					kind: "model",
+					route: `review-${id.replaceAll("_", "-")}`,
+					profile: "aggregate-review",
+					maximumTokens: 4096,
+				},
+				inputs: [
+					{source: "subject", refs: [], required: true, maximumBytes: 1_048_576},
+					{source: "evidence", refs: [], required: true, maximumBytes: 1_048_576},
+				],
+				measurement: {kind: "binary"},
+				failure: {
+					code: `review_${id}_failed`,
+					message: `${title} failed for the exact aggregate Review subject.`,
+					remediation: [
+						"Return evidence-linked feedback through the Project Server-owned Review route.",
+					],
+				},
+				limits: {
+					timeoutMs: 120_000,
+					maximumAttempts: 1,
+					maximumInputBytes: 4_194_304,
+					maximumOutputBytes: 65_536,
+				},
+			},
+			null,
+			2,
+		)}\n`;
+		files[`${root}/CHECK.md`] = `# ${title}\n\n## Requirement\n\n${requirement}\n\n## Pass\n\nPass only when the supplied aggregate subject and admitted Evidence prove the requirement completely.\n\n## Fail\n\nFail when proof is missing, stale, contradictory, or shows a violation.\n\n## Feedback\n\nIdentify exact Evidence and affected aggregate obligations. Do not choose lifecycle authority; Project Server owns typed routing.\n`;
+	}
+	return files;
 }
 
 function activeChangeCompatibilityDefinition(): string {
@@ -352,11 +433,12 @@ function starterComponent(input: {
 	return nativeDocument(
 		{
 			type: "System Component",
+			codewiki_id: `cw:component:${input.id}`,
 			title: input.title,
 			description: input.description,
 			status: "stable",
 			tags: ["system", "component"],
-			codewiki_component: input.id,
+			codewiki_component: `cw:component:${input.id}`,
 			codewiki_source_patterns: input.sourcePatterns,
 			codewiki_test_patterns: input.testPatterns,
 			...(input.testPatterns.length === 0
@@ -377,7 +459,7 @@ function starterComponent(input: {
 function realizesMaintainerStory(rationale: string): Record<string, string> {
 	return {
 		type: "realizes",
-		target: "/product/stories/maintainer/maintain-intent.md",
+		target: "cw:story:maintainer.maintain-intent",
 		rationale,
 	};
 }
@@ -387,6 +469,7 @@ function starterDesignDoc(project: string): string {
 		{
 			version: "alpha",
 			name: project,
+			codewiki_id: "cw:design:product",
 			colors: {
 				canvas: "#F8FAFC",
 				surface: "#FFFFFF",
@@ -416,16 +499,17 @@ function starterDesignDoc(project: string): string {
 }
 
 function starterArchitectureDiagram(): string {
-	return `id: architecture
+	return `codewiki_id: cw:diagram:architecture
+id: architecture
 purpose: Show desired Knowledge and executable source as separately owned Components connected by one stable realization Flow.
 components:
-  - { id: source, concept: /system/components/source.md, label: Source, zone: repository }
-  - { id: knowledge, concept: /system/components/knowledge.md, label: Knowledge, zone: repository }
+  - { id: source, concept: cw:component:source, label: Source, zone: repository }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
 connections:
   - { id: source-reads-knowledge, from: source, to: knowledge, type: reads, label: reads accepted desired state }
   - { id: knowledge-returns-source, from: knowledge, to: source, type: returns, label: returns validated intent and ownership }
 flows:
-  - concept: /system/flows/project-realization.md
+  - concept: cw:flow:project-realization
     paths:
       - connections: [source-reads-knowledge, knowledge-returns-source]
 `;

@@ -5,6 +5,7 @@ import {
 } from "../../alignment/graph.ts";
 import type {ChangeRevision} from "../trace/contracts.ts";
 import {operationPayload} from "../trace/identity.ts";
+import {knowledgeTransitionSubjectIds} from "../trace/knowledge-transition.ts";
 import {compareText, sameText} from "../trace/order.ts";
 import type {
 	ChangeWorkState,
@@ -109,6 +110,7 @@ export function buildBacklogTriageProjection(
 		candidates: projected,
 		coverage: projectionCoverage(input, prepared, projected, candidates.length),
 	};
+	// SAFETY: body is assembled from BacklogTriageProjection contract fields; canonicalization preserves shape.
 	return toCanonicalJsonValue({
 		...body,
 		projectionDigest: canonicalJsonDigest(body),
@@ -243,10 +245,7 @@ function projectCandidateDraft(input: {
 		...input.context.relevantOperations.map((operation) => operation.operationId),
 	]);
 	const affectedScope = {
-		knowledgeRefs: sortedUnique([
-			...revision.content.knowledge.topicRefs,
-			...revision.content.knowledge.propagationRefs,
-		]),
+		knowledgeRefs: knowledgeTransitionSubjectIds(revision.content.knowledge),
 		sourceRefs: sortedUnique([
 			...revision.content.evidence.sourceRefs,
 			...revision.content.classification.targetRefs,
@@ -291,8 +290,8 @@ function projectCandidateDraft(input: {
 		changeId: change.changeId,
 		changeRevisionId: revision.revisionId,
 		title: revision.content.title,
-		summary: revision.content.intent.currentState,
-		desiredOutcome: revision.content.intent.desiredState,
+		summary: revision.content.intent.problem,
+		desiredOutcome: revision.content.intent.objective,
 		decisionQuestion: `Should revision ${revision.revisionId} be approved, deferred, rejected, or withdrawn?`,
 		status: input.context.status,
 		declaredChangeRisk: revision.content.safety.risk,
@@ -549,13 +548,6 @@ function projectReadiness(input: {
 	if (revision.content.acceptanceRequirements.length === 0) {
 		missingInformation.push("acceptance_requirements");
 	}
-	if (
-		revision.content.knowledge.topicRefs.length === 0 &&
-		revision.content.knowledge.propagationRefs.length === 0 &&
-		revision.content.evidence.sourceRefs.length === 0
-	) {
-		missingInformation.push("grounding_refs");
-	}
 	const conflictFacts = input.relationFacts.filter(
 		(relation) =>
 			relation.relationship.type === "blocks" ||
@@ -619,8 +611,7 @@ function projectOverlap(
 		if (peer.change.changeId === context.change.changeId) continue;
 		const {revision} = peer;
 		const refs = [
-			...revision.content.knowledge.topicRefs,
-			...revision.content.knowledge.propagationRefs,
+			...knowledgeTransitionSubjectIds(revision.content.knowledge),
 			...revision.content.evidence.sourceRefs,
 			...revision.content.classification.targetRefs,
 			...(revision.content.defectProfile?.affectedComponents ?? []),
@@ -1011,5 +1002,6 @@ function sortedUnique<T extends string>(values: readonly T[]): T[] {
 }
 
 function canonicalCandidate(candidate: BacklogTriageCandidate): BacklogTriageCandidate {
+	// SAFETY: input already satisfies BacklogTriageCandidate; canonicalization preserves shape.
 	return toCanonicalJsonValue(candidate) as unknown as BacklogTriageCandidate;
 }

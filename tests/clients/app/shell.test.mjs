@@ -103,8 +103,8 @@ describe("CodeWiki App browser shell", () => {
 			CODEWIKI_APP_HTML,
 			/Paste a bounded execution configuration patch JSON/,
 		);
-		assert.match(CODEWIKI_APP_HTML, /Current state/);
-		assert.match(CODEWIKI_APP_HTML, /Proposed change/);
+		assert.match(CODEWIKI_APP_HTML, /Problem/);
+		assert.match(CODEWIKI_APP_HTML, /Objective/);
 		assert.match(CODEWIKI_APP_HTML, /Agent opinion/);
 		assert.match(CODEWIKI_APP_HTML, /integration and exit review/);
 		assert.match(

@@ -5,6 +5,7 @@ import {
 } from "../checks/packs/contracts.ts";
 import {
 	assertSha256Digest,
+	canonicalJson,
 	canonicalJsonDigest,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
@@ -871,7 +872,36 @@ export function createRunReceipt(
 	return Object.freeze({...body, receiptDigest: canonicalJsonDigest(body)});
 }
 
-function assertRunRequest(
+export function assertRunReceipt(receipt: RunReceipt): void {
+	const handle: RunHandle = {
+		runId: receipt.runId,
+		requestDigest: receipt.requestDigest,
+		custody: receipt.custody,
+		runtimeBuild: receipt.runtimeBuild,
+		sessionId: receipt.sessionId,
+		acceptedAt: receipt.acceptedAt,
+	};
+	const expected = createRunReceipt({
+		handle,
+		outcome: receipt.outcome,
+		finalEventSequence: receipt.finalEventSequence,
+		startedAt: receipt.startedAt,
+		finishedAt: receipt.finishedAt,
+		executionLedgerDigest: receipt.executionLedgerDigest,
+		rawLog: receipt.rawLog,
+		outputDigest: receipt.outputDigest,
+		usageDigest: receipt.usageDigest,
+		cancellationDigest: receipt.cancellationDigest,
+		quiescenceDigest: receipt.quiescenceDigest,
+		custodyGaps: receipt.custodyGaps,
+		operationalGaps: receipt.operationalGaps,
+	});
+	if (canonicalJson(receipt) !== canonicalJson(expected)) {
+		throw new Error("Run Receipt identity is invalid.");
+	}
+}
+
+export function assertRunRequest(
 	value: RunRequest,
 ): void {
 	if (!hasExactKeys(value, RUN_REQUEST_KEYS)) {
@@ -1787,8 +1817,8 @@ function normalizedDeclaration(
 		: Object.freeze(normalized);
 }
 
-function hasExactKeys(
-	value: object,
+function hasExactKeys<T extends object>(
+	value: T,
 	expected: readonly string[],
 ): boolean {
 	const keys = Object.keys(value);

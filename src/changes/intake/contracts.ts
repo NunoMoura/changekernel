@@ -8,11 +8,11 @@ import {
 
 export const CHANGE_INTAKE_MATERIAL_PROTOCOL = Object.freeze({
 	id: "codewiki.change-intake-material",
-	version: "2.0.0",
+	version: "3.0.0",
 	maxCanonicalBytes: 16_384,
 	maxAffectedRefs: 16,
 	maxSourceRefs: 16,
-	maxTopicRefs: 8,
+	maxSubjectIds: 8,
 } as const);
 
 export const CHANGE_INTAKE_MATERIAL_TYPES = [
@@ -152,7 +152,7 @@ export interface KnowledgeDriftBinding {
 	readonly observationId: string;
 	readonly previousSnapshotDigest: Sha256Digest;
 	readonly currentSnapshotDigest: Sha256Digest;
-	readonly topicRefs: readonly string[];
+	readonly subjectIds: readonly string[];
 }
 
 export interface KnowledgeDriftMaterial

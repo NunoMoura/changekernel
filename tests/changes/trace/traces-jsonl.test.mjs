@@ -302,8 +302,8 @@ describe("trace JSONL core", () => {
 				changes: [
 					{
 						id: "CHG-loop-append",
-						currentState: "Loop writes are assembled before append.",
-						desiredState:
+						problem: "Loop writes are assembled before append.",
+						objective:
 							"Runtime appends semantic loop reports as one checked batch.",
 						rationale: "Avoid partial durable semantic state.",
 						...decisionQualityFields(),

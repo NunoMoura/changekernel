@@ -17,8 +17,8 @@ export function normalizeChange(change: Change): Change {
 			: undefined,
 		intent: {
 			question: text(change.intent.question),
-			currentState: text(change.intent.currentState),
-			desiredState: text(change.intent.desiredState),
+			problem: text(change.intent.problem),
+			objective: text(change.intent.objective),
 			rationale: text(change.intent.rationale),
 			nonGoals: stringList(change.intent.nonGoals),
 			alternatives: stringList(change.intent.alternatives),
@@ -35,11 +35,7 @@ export function normalizeChange(change: Change): Change {
 			maintainer: text(change.impact.maintainer),
 			compatibility: optionalText(change.impact.compatibility),
 		},
-		knowledge: {
-			topicRefs: stringList(change.knowledge.topicRefs),
-			propagationRefs: stringList(change.knowledge.propagationRefs),
-			noImpactRationale: optionalText(change.knowledge.noImpactRationale),
-		},
+		knowledge: normalizeKnowledgeTransition(change.knowledge),
 		outcome: {
 			successSignals: stringList(change.outcome.successSignals),
 			evidenceExpectations: stringList(change.outcome.evidenceExpectations),
@@ -151,6 +147,41 @@ function stringList(values: string[]): string[] {
 function optionalText(value: string | undefined): string | undefined {
 	const normalized = text(value);
 	return normalized || undefined;
+}
+
+function normalizeKnowledgeTransition(
+	knowledge: Change["knowledge"],
+): Change["knowledge"] {
+	if (knowledge.kind === "unchanged") {
+		return {
+			kind: "unchanged",
+			refs: knowledge.refs.map((ref) => ({...ref})),
+			rationale: text(knowledge.rationale),
+		};
+	}
+	return {
+		kind: "effects",
+		effects: knowledge.effects.map((effect) => {
+			if (effect.action === "retire") {
+				return {
+					action: "retire",
+					target: {...effect.target},
+					expected: effect.expected,
+				};
+			}
+			return {
+				action: "set",
+				target: {...effect.target},
+				expected: effect.expected,
+				postState: {
+					id: effect.postState.id,
+					digest: effect.postState.digest,
+					schemaVersion: effect.postState.schemaVersion,
+					artifact: structuredClone(effect.postState.artifact),
+				},
+			};
+		}),
+	};
 }
 
 function text(value: unknown): string {

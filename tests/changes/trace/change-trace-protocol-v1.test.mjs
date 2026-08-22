@@ -10,6 +10,7 @@ import {
 	assertValidStateCommitManifest,
 	createCanonicalChangeOperation,
 	createChangeRevision,
+	createKnowledgePostStateArtifact,
 	parseArchiveManifest,
 	parseCanonicalChangeOperation,
 	parseStateCommitManifest,
@@ -44,11 +45,11 @@ function replaceDigest(value) {
 }
 
 describe("Change Trace Protocol catalog", () => {
-	it("closes exactly 40 Change-scoped operation kinds", () => {
-		assert.equal(CHANGE_TRACE_OPERATION_CATALOG.length, 40);
-		assert.equal(CHANGE_OPERATION_KINDS.length, 40);
-		assert.equal(new Set(CHANGE_TRACE_OPERATION_CATALOG).size, 40);
-		assert.equal(Object.keys(OPERATION_DEFINITIONS).length, 40);
+	it("closes exactly 45 Change-scoped operation kinds", () => {
+		assert.equal(CHANGE_TRACE_OPERATION_CATALOG.length, 45);
+		assert.equal(CHANGE_OPERATION_KINDS.length, 45);
+		assert.equal(new Set(CHANGE_TRACE_OPERATION_CATALOG).size, 45);
+		assert.equal(Object.keys(OPERATION_DEFINITIONS).length, 45);
 		for (const kind of CHANGE_OPERATION_KINDS) {
 			const definition = OPERATION_DEFINITIONS[kind];
 			assert.equal(definition.kind, kind);
@@ -94,10 +95,11 @@ describe("content-addressed Change operations", () => {
 			"No compatibility parser.",
 			"No mutable status operation.",
 		]);
-		assert.deepEqual(revision.content.knowledge.topicRefs, [
-			"kb:system/alignment-model",
-			"kb:system/traces",
-		]);
+		assert.equal(revision.content.knowledge.kind, "effects");
+		assert.equal(
+			revision.content.knowledge.effects[0].target.subjectId,
+			"cw:component:change-trace",
+		);
 		assert.equal(revision.revisionId, sha256Digest(canonicalJson(revision.content)));
 		assert.equal(Object.isFrozen(revision), true);
 		assert.equal(Object.isFrozen(revision.content), true);
@@ -115,6 +117,89 @@ describe("content-addressed Change operations", () => {
 				sourceRefs: [],
 				risk: "unknown",
 			}),
+			/Change revision content/,
+		);
+	});
+
+	it("rejects invalid, duplicate, transform-dependent, and no-op Knowledge Effects", () => {
+		assert.throws(
+			() =>
+				createKnowledgePostStateArtifact({
+					mediaType: "application/json",
+					content: '{ "value": 1 }',
+				}),
+			/canonical JSON/i,
+		);
+		assert.throws(
+			() =>
+				createKnowledgePostStateArtifact({
+					mediaType: "text/markdown",
+					content: "😀".repeat(70_000),
+				}),
+			/exceeds 262144 bytes/i,
+		);
+		const base = changeRevision().content;
+		const postState = createKnowledgePostStateArtifact({
+			mediaType: "text/markdown",
+			content: "Complete post-state.",
+		});
+		assert.throws(
+			() =>
+				createChangeRevision({
+					...base,
+					knowledge: {
+						kind: "effects",
+						effects: [
+							{
+								action: "set",
+								target: {subjectId: "cw:component:runtime"},
+								expected: "absent",
+								postState,
+							},
+							{
+								action: "retire",
+								target: {subjectId: "cw:component:runtime"},
+								expected: digest("1"),
+							},
+						],
+					},
+				}),
+			/must be unique/i,
+		);
+		assert.throws(
+			() =>
+				createChangeRevision({
+					...base,
+					knowledge: {
+						kind: "effects",
+						effects: [
+							{
+								action: "set",
+								target: {subjectId: "cw:component:runtime"},
+								expected: postState.digest,
+								postState,
+							},
+						],
+					},
+				}),
+			/must change semantic state/i,
+		);
+		assert.throws(
+			() =>
+				createChangeRevision({
+					...base,
+					knowledge: {
+						kind: "effects",
+						effects: [
+							{
+								action: "retire",
+								target: {subjectId: "system/runtime.md"},
+								expected: digest("1"),
+								postState,
+							},
+						],
+					},
+				}),
 			/Change revision content/,
 		);
 	});
@@ -223,9 +308,9 @@ describe("frozen protocol fixtures", () => {
 		const archive = archiveManifest(operation);
 		const documents = {operation, state, archive};
 		const expectedIds = {
-			operation: "sha256:728bbaad498d900e885a56b098b6ed0dc029eacffaf01c86334cc0ebff5a561f",
-			state: "sha256:1704d59ce0ddd248561b8db741761681af32b9cbc482fcb59e80424c083a3278",
-			archive: "sha256:6ed74f19bfe1604beca56b6cbcfddbd0aa4e471825c9b54c7d8581e89813ce02",
+			operation: "sha256:69eb0d1815a42ad2738951e54ab9bb3f0140546e8081d6866e5e73d07ec46640",
+			state: "sha256:d5a311658fc41b4548683df0425ed22611f692027322666868b93bc256b84d17",
+			archive: "sha256:576f57dbe209168146e231ea03cdc580d169c8d0c93ed6dd6c8790880a76cb22",
 		};
 		for (const [name, document] of Object.entries(documents)) {
 			const bytes = await readFile(new URL(`${name}.json`, fixtureDirectory), "utf8");

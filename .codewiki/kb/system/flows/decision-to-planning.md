@@ -1,12 +1,13 @@
 ---
 type: System Flow
+codewiki_id: cw:flow:decision-to-planning
 title: Decision to Planning
 description: Ratifies semantically compatible Change meaning and transfers it into one Change-scoped Work Graph delta without global replanning.
 status: stable
 tags: [system, flow]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/maintain-intent.md
+    target: cw:story:maintainer.maintain-intent
     rationale: Decision to Planning preserves accepted meaning and active-Change compatibility before decomposition.
 ---
 # Decision to Planning

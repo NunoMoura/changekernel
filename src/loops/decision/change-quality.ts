@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ChangeRecord } from "../../changes/records.ts";
 import { changeContentDigest } from "../../changes/digest.ts";
+import {knowledgeTransitionSubjectIds} from "../../changes/trace/knowledge-transition.ts";
 import type { DecisionDisposition } from "./candidate-proposal.ts";
 import type { LoopQualityStandardResult } from "../../changes/trace/types.ts";
 import type { WorkState } from "../../work-state/types.ts";
@@ -67,8 +68,8 @@ const STANDARD_DEFINITIONS: StandardDefinition[] = [
 			const intent = input.record.change.intent;
 			return [
 				intent.question,
-				intent.currentState,
-				intent.desiredState,
+				intent.problem,
+				intent.objective,
 				intent.rationale,
 			].every(hasText)
 				? met()
@@ -173,19 +174,7 @@ const STANDARD_DEFINITIONS: StandardDefinition[] = [
 	standard(
 		"knowledge_impact_accounted",
 		"Knowledge changes or no-impact rationale are complete.",
-		(input) => {
-			const knowledge = input.record.change.knowledge;
-			if (knowledge.topicRefs.length > 0) {
-				return knowledge.propagationRefs.length > 0
-					? met([...knowledge.topicRefs, ...knowledge.propagationRefs])
-					: unmet("Affected Knowledge topics need accepted propagation refs.");
-			}
-			return hasText(knowledge.noImpactRationale)
-				? met()
-				: unmet(
-						"Change needs Knowledge topics or explicit no-impact rationale.",
-					);
-		},
+		(input) => met([...knowledgeTransitionSubjectIds(input.record.change.knowledge)]),
 	),
 	standard(
 		"change_kind_classified",

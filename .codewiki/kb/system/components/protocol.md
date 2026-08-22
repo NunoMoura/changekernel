@@ -1,18 +1,19 @@
 ---
 type: System Component
+codewiki_id: cw:component:protocol
 title: Client-Project Server Protocol
 description: Defines transport-neutral Client and Project Server commands, queries, operations, events, pairing messages, bounds, and normalization.
 status: stable
 tags: [system, component]
-codewiki_component: protocol
+codewiki_component: cw:component:protocol
 codewiki_source_patterns: ["src/protocol/**"]
 codewiki_test_patterns: ["tests/protocol/**"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/agent/retrieve-bounded-context.md
+    target: cw:story:agent.retrieve-bounded-context
     rationale: Protocol supplies bounded snapshot-bound project queries.
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: Protocol supplies typed idempotent access to authoritative Project Server operations.
 ---
 # Client-Project Server Protocol

@@ -54,10 +54,11 @@ describe("Project Server App state query", () => {
 						changeRecord: {
 							change: {
 								knowledge: {
-									topicRefs: [
-										".codewiki/kb/product/overview.md",
-										".codewiki/kb/product/DESIGN.md",
-										".codewiki/kb/system/components/traces.md",
+									kind: "effects",
+									effects: [
+										{target: {subjectId: "cw:component:overview"}},
+										{target: {subjectId: "cw:component:traces"}},
+										{target: {subjectId: "cw:design:product"}},
 									],
 								},
 							},
@@ -104,19 +105,19 @@ describe("Project Server App state query", () => {
 			accountableGoal: "Make Work Graph Knowledge scope visible.",
 			knowledgeTopics: [
 				{
-					ref: ".codewiki/kb/product/overview.md",
-					category: "product",
+					ref: "cw:component:overview",
+					category: "system",
 					label: "Overview",
 				},
 				{
-					ref: ".codewiki/kb/product/DESIGN.md",
-					category: "product",
-					label: "DESIGN",
+					ref: "cw:component:traces",
+					category: "system",
+					label: "Traces",
 				},
 				{
-					ref: ".codewiki/kb/system/components/traces.md",
-					category: "system",
-					label: "Components / Traces",
+					ref: "cw:design:product",
+					category: "product",
+					label: "Product",
 				},
 			],
 			uiPreviewTargets: [

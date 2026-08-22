@@ -59,6 +59,7 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.full}"
 type: Design System
+codewiki_id: cw:design:product
 title: CodeWiki Design System
 description: Visual and interaction rules for truthful, calm, inspectable project coordination surfaces.
 status: stable

@@ -24,8 +24,26 @@ import {
 	type RelationshipProjection,
 	type WorkUnitClaimProjection,
 } from "./state.ts";
-import { canonicalJsonDigest } from "../../utils/canonical-json.ts";
+import { canonicalJson, canonicalJsonDigest } from "../../utils/canonical-json.ts";
+import {
+	createReviewAttempt,
+	type ReviewAttempt,
+	type ReviewLifecycleTransition,
+} from "../../loops/review/contracts.ts";
+import {
+	applyPrivateIntegrationReceipt,
+	assertFrozenImplementationAggregate,
+	assertPrivateIntegrationReceipt,
+	type FrozenImplementationAggregate,
+	type PrivateIntegrationReceipt,
+} from "./integration.ts";
 import { throwProtocolFailure } from "./errors.ts";
+import {
+	assertReviewTransitionIdentity,
+	assertReviewTransitionMatchesAggregate,
+	currentPassedReviewTransition,
+	reviewReworkAllowsWorkUnit,
+} from "./review.ts";
 import { compareText } from "./order.ts";
 
 export type ReductionErrorCode =
@@ -41,7 +59,7 @@ export type ReductionErrorCode =
 	| "REFERENCE_NOT_FOUND"
 	| "BINDING_MISMATCH";
 
-export interface ChangeOperationReductionContext {}
+export type ChangeOperationReductionContext = {}
 
 type OperationReducer = (
 	state: ChangeWorkState,
@@ -70,7 +88,9 @@ const OPERATION_REDUCERS: Readonly<Record<ChangeOperationKind, OperationReducer>
 		"loop.attempt_started": reduceLoopAttemptStarted,
 		"loop.attempt_ended": reduceLoopAttemptEnded,
 		"decision.candidate_recorded": reduceCandidateRecorded,
+		"decision.confirmed": reduceDecisionConfirmed,
 		"planning.candidate_recorded": reduceCandidateRecorded,
+		"planning.delta_accepted": reducePlanningDeltaAccepted,
 		"implementation.candidate_recorded": reduceCandidateRecorded,
 		"loop.exit_policy_recorded": reduceExitPolicyRecorded,
 		"evidence.recorded": reduceEvidenceRecorded,
@@ -86,6 +106,9 @@ const OPERATION_REDUCERS: Readonly<Record<ChangeOperationKind, OperationReducer>
 		"worker.report_recorded": reduceWorkerReportRecorded,
 		"integration.attempt_started": reduceIntegrationAttemptStarted,
 		"integration.result_recorded": reduceIntegrationResultRecorded,
+		"integration.candidate_admitted": reduceIntegrationCandidateAdmitted,
+		"implementation.aggregate_frozen": reduceImplementationAggregateFrozen,
+		"delivery.applied": reduceDeliveryApplied,
 		"source.branch_merge_recorded": reduceSourceBranchMergeRecorded,
 		"source.branch_push_recorded": reduceSourceBranchPushRecorded,
 		"review_projection.published": KEEP_PROJECTION,
@@ -466,6 +489,7 @@ function reduceLoopAttemptStarted(
 		evidenceOperationIds: [],
 		checkResultOperationIds: [],
 		exitReportOperationId: null,
+		confirmationOperationId: null,
 		routeOperationId: null,
 		terminalOperationId: null,
 	};
@@ -494,6 +518,7 @@ function reduceCandidateRecorded(
 			exitPolicyOperationId: null,
 			checkResultOperationIds: [],
 			exitReportOperationId: null,
+			confirmationOperationId: null,
 			routeOperationId: null,
 		};
 	});
@@ -573,23 +598,128 @@ function reduceExitReportRecorded(
 	return canonicalStateValue({...state, loopAttempts});
 }
 
+function reducePlanningDeltaAccepted(
+	state: ChangeWorkState,
+	operation: CanonicalChangeOperation,
+): ChangeWorkState {
+	const payload = payloadOf(operation, "planning.delta_accepted");
+	const loopAttempts = updateAttempt(state, payload.attemptOperationId, operation, (attempt) => {
+		requireActive(attempt.status, operation, "Loop attempt");
+		if (attempt.loop !== "planning") {
+			invalid("INVALID_PRECONDITION", operation, "Only Planning attempts can accept graph deltas.");
+		}
+		requireCandidate(attempt, payload.candidateId, operation);
+		if (attempt.confirmationOperationId) {
+			invalid("INVALID_PRECONDITION", operation, "Planning attempt already accepted a graph delta.");
+		}
+		const exitReport = operationById(state, attempt.exitReportOperationId, operation);
+		const reportPayload = payloadOf(exitReport, "loop.exit_report_recorded");
+		if (reportPayload.status !== "passed" || reportPayload.report.id !== payload.gateReportId) {
+			invalid(
+				"BINDING_MISMATCH",
+				operation,
+				"Planning delta acceptance requires exact passed Gate Report.",
+			);
+		}
+		return {...attempt, confirmationOperationId: operation.operationId};
+	});
+	return canonicalStateValue({...state, loopAttempts});
+}
+
+function reduceDecisionConfirmed(
+	state: ChangeWorkState,
+	operation: CanonicalChangeOperation,
+): ChangeWorkState {
+	const payload = payloadOf(operation, "decision.confirmed");
+	const loopAttempts = updateAttempt(state, payload.attemptOperationId, operation, (attempt) => {
+		requireActive(attempt.status, operation, "Loop attempt");
+		if (attempt.loop !== "decision") {
+			invalid("INVALID_PRECONDITION", operation, "Only Decision attempts can be confirmed.");
+		}
+		requireCandidate(attempt, payload.candidateId, operation);
+		if (attempt.confirmationOperationId) {
+			invalid("INVALID_PRECONDITION", operation, "Decision attempt is already confirmed.");
+		}
+		const exitReport = operationById(state, attempt.exitReportOperationId, operation);
+		const reportPayload = payloadOf(exitReport, "loop.exit_report_recorded");
+		if (reportPayload.status !== "passed" || reportPayload.report.id !== payload.gateReportId) {
+			invalid("BINDING_MISMATCH", operation, "Decision confirmation requires its exact passed Gate Report.");
+		}
+		return {...attempt, confirmationOperationId: operation.operationId};
+	});
+	return canonicalStateValue({...state, loopAttempts});
+}
+
 function reduceRuntimeRouteRecorded(
 	state: ChangeWorkState,
 	operation: CanonicalChangeOperation,
 ): ChangeWorkState {
 	const payload = payloadOf(operation, "runtime.route_recorded");
+	let clearImplementationAggregate = false;
 	const loopAttempts = updateAttempt(state, payload.attemptOperationId, operation, (attempt) => {
 		requireActive(attempt.status, operation, "Loop attempt");
 		const exitReport = operationById(state, attempt.exitReportOperationId, operation);
-		if (
-			payloadOf(exitReport, "loop.exit_report_recorded").report.id !==
-			payload.exitReportId
-		) {
+		const exitReportPayload = payloadOf(exitReport, "loop.exit_report_recorded");
+		if (exitReportPayload.report.id !== payload.exitReportId) {
 			invalid("BINDING_MISMATCH", operation, "Runtime Route Exit Report does not match.");
+		}
+		if (
+			attempt.loop === "decision" &&
+			exitReportPayload.status === "passed" &&
+			!attempt.confirmationOperationId
+		) {
+			invalid("INVALID_PRECONDITION", operation, "Passing Decision route requires confirmation.");
+		}
+		if (attempt.loop === "review") {
+			const transition = assertReviewTransitionMatchesAggregate(state, attempt, operation);
+			assertReviewTransitionIdentity(transition);
+			// SAFETY: exit-report schema requires one inline canonical Gate Report artifact.
+			const reviewReport = exitReportPayload.report.artifact as unknown as Record<
+				string,
+				unknown
+			>;
+			const reviewResults = Array.isArray(reviewReport.results)
+				? reviewReport.results
+				: [];
+			const failedResultDigests = reviewResults
+				.flatMap((result) => {
+					if (!result || typeof result !== "object" || Array.isArray(result)) return [];
+					const record = result as Record<string, unknown>;
+					return record.status === "failed" && typeof record.resultDigest === "string"
+						? [record.resultDigest]
+						: [];
+				})
+				.sort(compareText);
+			const ownershipDigests = transition.failureOwnership
+				.map((entry) => entry.resultDigest)
+				.sort(compareText);
+			if (
+				reviewReport.reportDigest !== transition.gateReportDigest ||
+				!sameValues(failedResultDigests, ownershipDigests)
+			) {
+				invalid(
+					"BINDING_MISMATCH",
+					operation,
+					"Review typed route does not bind its exact Gate Report and failed Results.",
+				);
+			}
+			if (
+				(exitReportPayload.status === "passed") !==
+				(transition.target === "guarded_delivery")
+			) {
+				invalid("BINDING_MISMATCH", operation, "Review Gate status and typed route disagree.");
+			}
+			clearImplementationAggregate = exitReportPayload.status === "failed";
 		}
 		return {...attempt, routeOperationId: operation.operationId};
 	});
-	return canonicalStateValue({...state, loopAttempts});
+	return canonicalStateValue({
+		...state,
+		loopAttempts,
+		implementationAggregate: clearImplementationAggregate
+			? null
+			: state.implementationAggregate,
+	});
 }
 
 function reduceLoopAttemptEnded(
@@ -691,6 +821,14 @@ function activeWorkUnitClaimProjection(
 		| "assignmentAttemptId"
 		| "workerId"
 		| "workbenchId"
+		| "sourceBase"
+		| "scopeDigest"
+		| "budgetDigest"
+		| "obligationDigest"
+		| "workerOfferId"
+		| "workerOfferDigest"
+		| "schedulingPolicyDigest"
+		| "leaseExpiresAt"
 	>,
 ): WorkUnitClaimProjection {
 	return {
@@ -700,6 +838,14 @@ function activeWorkUnitClaimProjection(
 		assignmentAttemptId: payload.assignmentAttemptId,
 		workerId: payload.workerId,
 		workbenchId: payload.workbenchId,
+		sourceBase: payload.sourceBase,
+		scopeDigest: payload.scopeDigest,
+		budgetDigest: payload.budgetDigest,
+		obligationDigest: payload.obligationDigest,
+		workerOfferId: payload.workerOfferId,
+		workerOfferDigest: payload.workerOfferDigest,
+		schedulingPolicyDigest: payload.schedulingPolicyDigest,
+		leaseExpiresAt: payload.leaseExpiresAt,
 		status: "active",
 		terminalOperationId: null,
 	};
@@ -732,6 +878,12 @@ function reduceAssignmentDispatched(
 		"assignmentAttemptId",
 		"workerId",
 		"workbenchId",
+		"sourceBase",
+		"scopeDigest",
+		"budgetDigest",
+		"obligationDigest",
+		"workerOfferId",
+		"workerOfferDigest",
 	] as const) {
 		if (claim[field] !== payload[field]) {
 			invalid("BINDING_MISMATCH", operation, `Assignment ${field} does not match Claim.`);
@@ -745,6 +897,10 @@ function reduceAssignmentDispatched(
 		assignmentAttemptId: payload.assignmentAttemptId,
 		workerId: payload.workerId,
 		workbenchId: payload.workbenchId,
+		workerOfferId: payload.workerOfferId,
+		workerOfferDigest: payload.workerOfferDigest,
+		workbenchDigest: payload.workbenchDigest,
+		assignmentDigest: payload.assignmentDigest,
 		status: "active",
 		cancelRequestOperationIds: [],
 		workerReportOperationIds: [],
@@ -885,6 +1041,194 @@ function reduceIntegrationResultRecorded(
 		label: "Integration attempt",
 	});
 	return canonicalStateValue({...state, integrationAttempts});
+}
+
+function reduceIntegrationCandidateAdmitted(
+	state: ChangeWorkState,
+	operation: CanonicalChangeOperation,
+): ChangeWorkState {
+	if (state.implementationAggregate) {
+		invalid("INVALID_PRECONDITION", operation, "Frozen Implementation aggregate forbids further integration.");
+	}
+	const payload = payloadOf(operation, "integration.candidate_admitted");
+	// SAFETY: operation schema requires an inline canonical artifact; protocol assertion validates exact receipt shape.
+	const receipt = payload.receipt.artifact as unknown as PrivateIntegrationReceipt;
+	assertPrivateIntegrationReceipt(receipt);
+	if (
+		receipt.changeId !== state.changeId ||
+		receipt.changeRevisionId !== state.currentRevision?.revisionId ||
+		payload.expectedLineageDigest !== receipt.expectedLineageDigest
+	) {
+		invalid("BINDING_MISMATCH", operation, "Private integration receipt Change binding is stale.");
+	}
+	const lineage = applyPrivateIntegrationReceipt(
+		state.privateIntegrationLineage,
+		receipt,
+		{
+			allowWorkUnitReplacement: reviewReworkAllowsWorkUnit(
+				state,
+				receipt.workUnitId,
+			),
+		},
+	);
+	if (lineage.lineageDigest !== payload.resultLineageDigest) {
+		invalid("BINDING_MISMATCH", operation, "Private integration result lineage digest is invalid.");
+	}
+	return canonicalStateValue({...state, privateIntegrationLineage: lineage});
+}
+
+function reduceImplementationAggregateFrozen(
+	state: ChangeWorkState,
+	operation: CanonicalChangeOperation,
+): ChangeWorkState {
+	if (state.implementationAggregate) {
+		invalid("INVALID_PRECONDITION", operation, "Implementation aggregate is already frozen.");
+	}
+	const payload = payloadOf(operation, "implementation.aggregate_frozen");
+	// SAFETY: operation schema requires an inline canonical artifact; protocol assertion validates exact aggregate shape.
+	const aggregate = payload.aggregate.artifact as unknown as FrozenImplementationAggregate;
+	assertFrozenImplementationAggregate(aggregate);
+	if (
+		!state.privateIntegrationLineage ||
+		payload.lineageDigest !== state.privateIntegrationLineage.lineageDigest ||
+		aggregate.lineageDigest !== state.privateIntegrationLineage.lineageDigest ||
+		aggregate.changeId !== state.changeId ||
+		aggregate.changeRevisionId !== state.currentRevision?.revisionId
+	) {
+		invalid("BINDING_MISMATCH", operation, "Frozen aggregate does not bind current private integration lineage.");
+	}
+	const integratedIds = state.privateIntegrationLineage.integratedWorkUnits
+		.map((entry) => entry.workUnitId)
+		.sort(compareText);
+	if (!sameValues(integratedIds, [...aggregate.requiredWorkUnitIds].sort(compareText))) {
+		invalid("BINDING_MISMATCH", operation, "Frozen aggregate does not contain every integrated Work Unit exactly once.");
+	}
+	return canonicalStateValue({...state, implementationAggregate: aggregate});
+}
+
+function reduceDeliveryApplied(
+	state: ChangeWorkState,
+	operation: CanonicalChangeOperation,
+): ChangeWorkState {
+	if (state.delivery) {
+		invalid("INVALID_PRECONDITION", operation, "Change delivery is already recorded.");
+	}
+	const aggregate = state.implementationAggregate;
+	const transition = currentPassedReviewTransition(state);
+	if (!aggregate || !transition) {
+		invalid("INVALID_PRECONDITION", operation, "Delivery requires current passed aggregate Review.");
+	}
+	const payload = payloadOf(operation, "delivery.applied");
+	// SAFETY: delivery schema requires an inline canonical Review attempt artifact.
+	const attempt = payload.reviewAttempt.artifact as unknown as ReviewAttempt;
+	const {attemptDigest: _attemptDigest, schemaVersion: _schemaVersion, ...attemptInput} =
+		attempt;
+	const expectedAttempt = createReviewAttempt(attemptInput);
+	assertCanonicalDeliveryAttempt(operation, payload, attempt, expectedAttempt);
+	assertDeliveryAuthorityBinding(operation, payload, attempt, transition);
+	assertDeliveryAggregateBinding(operation, state, aggregate, attempt);
+	assertDeliveryReviewBinding(operation, payload, attempt, transition);
+	return canonicalStateValue({
+		...state,
+		delivery: {
+			operationId: operation.operationId,
+			reviewAttemptDigest: attempt.attemptDigest,
+			aggregateDigest: aggregate.aggregateDigest,
+			gateReportDigest: transition.gateReportDigest,
+			transitionDigest: transition.transitionDigest,
+			authorityId: payload.authority.id,
+			authorityDigest: payload.authority.digest,
+			targetRef: payload.targetRef,
+			expectedTargetHead: payload.expectedTargetHead,
+			deliveredCommit: payload.deliveredCommit,
+			deliveredTree: payload.deliveredTree,
+		},
+	});
+}
+
+function assertCanonicalDeliveryAttempt(
+	operation: CanonicalChangeOperation,
+	payload: ChangeOperationPayload<"delivery.applied">,
+	attempt: ReviewAttempt,
+	expected: ReviewAttempt,
+): void {
+	if (
+		canonicalJson(attempt) !== canonicalJson(expected) ||
+		payload.reviewAttemptDigest !== attempt.attemptDigest ||
+		payload.reviewAttempt.digest !== canonicalJsonDigest(attempt)
+	) {
+		invalid("BINDING_MISMATCH", operation, "Delivery Review attempt identity is invalid.");
+	}
+}
+
+function assertDeliveryAuthorityBinding(
+	operation: CanonicalChangeOperation,
+	payload: ChangeOperationPayload<"delivery.applied">,
+	attempt: ReviewAttempt,
+	transition: ReviewLifecycleTransition,
+): void {
+	// SAFETY: operation schema requires a bounded inline canonical authority artifact.
+	const authority = payload.authority.artifact as unknown as Record<string, unknown>;
+	const authorityDigest = authority.authorityDigest;
+	const {authorityDigest: _authorityDigest, ...authorityBody} = authority;
+	if (
+		authority.schemaVersion !== "1.0.0" ||
+		authorityDigest !== canonicalJsonDigest(authorityBody) ||
+		authority.actor !== operation.body.authorityBinding.actorId ||
+		authority.reviewAttemptDigest !== attempt.attemptDigest ||
+		authority.gateReportDigest !== transition.gateReportDigest ||
+		authority.targetRef !== payload.targetRef ||
+		authority.expectedTargetHead !== payload.expectedTargetHead
+	) {
+		invalid("BINDING_MISMATCH", operation, "Delivery authority identity is invalid.");
+	}
+}
+
+function assertDeliveryAggregateBinding(
+	operation: CanonicalChangeOperation,
+	state: ChangeWorkState,
+	aggregate: FrozenImplementationAggregate,
+	attempt: ReviewAttempt,
+): void {
+	if (
+		attempt.aggregateDigest !== aggregate.aggregateDigest ||
+		attempt.changeId !== state.changeId ||
+		attempt.changeRevisionId !== aggregate.changeRevisionId ||
+		attempt.lineageDigest !== aggregate.lineageDigest ||
+		attempt.workGraphDigest !== aggregate.workGraphDigest ||
+		attempt.targetBaseCommit !== aggregate.baseCommit ||
+		attempt.integratedHead !== aggregate.headCommit ||
+		attempt.integratedTreeDigest !== aggregate.headTreeDigest
+	) {
+		invalid("BINDING_MISMATCH", operation, "Delivery aggregate identity is stale.");
+	}
+	if (
+		!sameValues(attempt.workUnitIds, aggregate.requiredWorkUnitIds) ||
+		!sameValues(attempt.candidateIds, aggregate.contributingCandidateIds) ||
+		!sameValues(attempt.candidateDigests, aggregate.contributingCandidateDigests) ||
+		!sameValues(attempt.implementationGateReportDigests, aggregate.gateReportDigests)
+	) {
+		invalid("BINDING_MISMATCH", operation, "Delivery aggregate coverage is incomplete.");
+	}
+}
+
+function assertDeliveryReviewBinding(
+	operation: CanonicalChangeOperation,
+	payload: ChangeOperationPayload<"delivery.applied">,
+	attempt: ReviewAttempt,
+	transition: ReviewLifecycleTransition,
+): void {
+	if (
+		payload.aggregateDigest !== attempt.aggregateDigest ||
+		payload.gateReportDigest !== transition.gateReportDigest ||
+		payload.transitionDigest !== transition.transitionDigest ||
+		payload.targetRef !== attempt.targetBranch ||
+		payload.expectedTargetHead !== attempt.targetBaseCommit ||
+		payload.deliveredCommit !== attempt.integratedHead ||
+		payload.deliveredTree !== attempt.integratedTree
+	) {
+		invalid("BINDING_MISMATCH", operation, "Delivery does not match current Review.");
+	}
 }
 
 function reduceSourceBranchMergeRecorded(
@@ -1167,6 +1511,10 @@ function workUnitClaimPayload(
 		throw new Error(`Expected Work Unit Claim operation, received ${operation.body.kind}.`);
 	}
 	return operation.body.payload as ChangeOperationPayload<"work_unit_claim.acquired">;
+}
+
+function sameValues(left: readonly string[], right: readonly string[]): boolean {
+	return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function invalid(

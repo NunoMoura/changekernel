@@ -1,5 +1,6 @@
 ---
 type: User
+codewiki_id: cw:user:adapter-author
 title: Adapter Author
 description: Integrator who connects a Client Integration, Core Adapter, or first-party Runtime Plugin through typed CodeWiki boundaries.
 status: stable

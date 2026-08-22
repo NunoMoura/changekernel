@@ -189,7 +189,7 @@ function decisionChanges(records: TraceRecord[]): DecisionProjection[] {
 					{
 						id,
 						ref: `change:${id}`,
-						title: text(intent.desiredState) || text(intent.question) || id,
+						title: text(intent.objective) || text(intent.question) || id,
 						sourceRefs: unique([
 							...stringList(classification.targetRefs),
 							...stringList(evidence.sourceRefs),

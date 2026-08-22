@@ -34,12 +34,15 @@ import {
 	type DecisionCandidate,
 } from "../../loops/decision/candidate.ts";
 import type {createDecisionGate} from "../lifecycle/gates.ts";
+import {loadKnowledgeCheckpoint} from "../../knowledge/checkpoint-store.ts";
+import type {KnowledgeCheckpoint} from "../../knowledge/state.ts";
 import type {EvidenceRecord} from "../../evidence/contracts.ts";
 import type {ProjectCoordinatorRecovery} from "./project.ts";
 import type {DecisionAttemptExecutor} from "../admission/start.ts";
 import {
 	commitNativeDecisionOperationSequence,
 	type NativeDecisionCommitReceipt,
+	type NativeDecisionConfirmation,
 } from "../effects/gate-operations.ts";
 import {
 	assertSha256Digest,
@@ -144,6 +147,15 @@ export interface NativeDecisionGateBinding {
 	readonly decisionGate: ReturnType<typeof createDecisionGate>;
 }
 
+export interface NativeDecisionConfirmationRequest {
+	readonly candidate: DecisionCandidate;
+	readonly gateReportDigest: Sha256Digest;
+	readonly expectedWorkStateDigest: Sha256Digest;
+	readonly expectedKnowledgeStateDigest: Sha256Digest;
+	readonly expectedAcceptedActiveChangesDigest: Sha256Digest;
+	readonly signal: AbortSignal;
+}
+
 export interface NativeDecisionAttemptResult {
 	readonly attemptOperationId: OperationId;
 	readonly changeId: string;
@@ -151,6 +163,7 @@ export interface NativeDecisionAttemptResult {
 	readonly status: "passed" | "failed" | "stopped";
 	readonly candidateId: string | null;
 	readonly gateReportOperationId: OperationId | null;
+	readonly confirmationOperationId: OperationId | null;
 	readonly transitionOperationId: OperationId | null;
 	readonly terminalOperationId: OperationId | null;
 	readonly stateHead: string;
@@ -173,6 +186,14 @@ export interface NativeDecisionAttemptExecutorOptions {
 	}) =>
 		| NativeDecisionGateBinding
 		| Promise<NativeDecisionGateBinding>;
+	readonly loadKnowledgeBase?: (input: {
+		readonly state: ProjectWorkState;
+		readonly teamSnapshot: TeamSnapshot;
+		readonly signal: AbortSignal;
+	}) => KnowledgeCheckpoint | Promise<KnowledgeCheckpoint>;
+	readonly confirmDecision?: (
+		input: NativeDecisionConfirmationRequest,
+	) => AuthorityBinding | Promise<AuthorityBinding>;
 	readonly loadEvaluationInput?: (input: {
 		readonly candidate: DecisionCandidate;
 		readonly state: ProjectWorkState;
@@ -211,6 +232,11 @@ export function createNativeDecisionAttemptExecutor(
 			if (current.attempt.status !== "active") {
 				return attemptResult(current);
 			}
+			const knowledgeBase = await loadDecisionKnowledgeBase({
+				options,
+				current,
+				signal: input.signal,
+			});
 			const gateBinding = await boundDecisionGate({
 				options,
 				current,
@@ -232,6 +258,7 @@ export function createNativeDecisionAttemptExecutor(
 				state: current.state,
 				changeId: input.changeId,
 				proposal,
+				knowledgeBase,
 			});
 			const evaluationInput = normalizeEvaluationInput(
 				(await options.loadEvaluationInput?.({
@@ -252,6 +279,14 @@ export function createNativeDecisionAttemptExecutor(
 				...evaluationInput.evidenceRecords,
 				...gateRun.collectedEvidenceRecords,
 			];
+			const confirmation = await authorizeDecisionConfirmation({
+				options,
+				current,
+				candidate,
+				gateReportDigest: gateRun.report.reportDigest,
+				reportStatus: gateRun.report.status,
+				signal: input.signal,
+			});
 			const receipt = await commitNativeDecisionOperationSequence({
 				repoRoot: options.repoRoot,
 				remote: options.remote,
@@ -270,6 +305,7 @@ export function createNativeDecisionAttemptExecutor(
 				evidenceRecords,
 				report: gateRun.report,
 				transition: gateRun.transition,
+				confirmation,
 				runner: options.runner,
 				materializationRoot: options.materializationRoot,
 				signal: input.signal,
@@ -287,6 +323,52 @@ export function createNativeDecisionAttemptExecutor(
 				: {status: "completed", result: attemptResult(current)};
 		},
 	});
+}
+
+async function authorizeDecisionConfirmation(input: {
+	readonly options: NativeDecisionAttemptExecutorOptions;
+	readonly current: CurrentAttempt;
+	readonly candidate: DecisionCandidate;
+	readonly gateReportDigest: Sha256Digest;
+	readonly reportStatus: "passed" | "failed" | "stopped";
+	readonly signal: AbortSignal;
+}): Promise<NativeDecisionConfirmation | undefined> {
+	if (input.reportStatus !== "passed") return undefined;
+	input.signal.throwIfAborted();
+	const knowledgeCheckpoint = input.candidate.content.knowledgeCheckpoint;
+	const authorityBinding = input.options.confirmDecision
+		? await input.options.confirmDecision({
+				candidate: input.candidate,
+				gateReportDigest: input.gateReportDigest,
+				expectedWorkStateDigest: input.current.state.workStateDigest,
+				expectedKnowledgeStateDigest:
+					knowledgeCheckpoint.applicationPlan.baseStateDigest,
+				expectedAcceptedActiveChangesDigest:
+					input.candidate.content.acceptedActiveChanges.digest,
+				signal: input.signal,
+			})
+		: input.options.authorityBinding;
+	return {
+		candidateDigest: input.candidate.digest,
+		gateReportDigest: input.gateReportDigest,
+		knowledgeCheckpointDigest: knowledgeCheckpoint.checkpointDigest,
+		authorityBinding,
+	};
+}
+
+async function loadDecisionKnowledgeBase(input: {
+	readonly options: NativeDecisionAttemptExecutorOptions;
+	readonly current: CurrentAttempt;
+	readonly signal: AbortSignal;
+}): Promise<KnowledgeCheckpoint> {
+	input.signal.throwIfAborted();
+	return input.options.loadKnowledgeBase
+		? input.options.loadKnowledgeBase({
+				state: input.current.state,
+				teamSnapshot: input.current.teamSnapshot,
+				signal: input.signal,
+			})
+		: loadKnowledgeCheckpoint({repoRoot: input.options.repoRoot});
 }
 
 async function boundDecisionGate(input: {
@@ -508,6 +590,7 @@ function attemptResult(current: CurrentAttempt): NativeDecisionAttemptResult {
 				: "stopped",
 		candidateId: current.attempt.currentCandidateId,
 		gateReportOperationId: current.attempt.exitReportOperationId,
+		confirmationOperationId: current.attempt.confirmationOperationId,
 		transitionOperationId: current.attempt.routeOperationId,
 		terminalOperationId: current.attempt.terminalOperationId,
 		stateHead: current.state.stateHead,

@@ -4,11 +4,11 @@ import {
 	type WikiStateSnapshot,
 } from "./state.ts";
 import {
-	knowledgeTopicRefsFromRecords,
+	knowledgeSubjectIdsFromRecords,
 	projectKnowledgeAlignment,
-	readKnowledgeTopicDigests,
+	readKnowledgeSubjectDigests,
 	type KnowledgeAlignmentProjection,
-} from "../../knowledge/topic-alignment.ts";
+} from "../../knowledge/subject-alignment.ts";
 import { readProjectTraceFiles } from "../../project/state-file.ts";
 import {
 	normalizeUiPreviewTargetBinding,
@@ -274,7 +274,7 @@ interface CodewikiAppStateQueryContext {
 	changes?: ProjectServerChangesState;
 	configuration?: ProjectServerConfigurationState;
 	previews?: PreviewRuntimeStatus[];
-	knowledgeTopicDigests?: ReadonlyMap<string, string>;
+	knowledgeSubjectDigests?: ReadonlyMap<string, string>;
 }
 
 export async function loadProjectServerAppState(
@@ -282,7 +282,7 @@ export async function loadProjectServerAppState(
 ): Promise<CodewikiAppState> {
 	const traceFiles = await readProjectTraceFiles(repoRoot);
 	const snapshot = await buildProjectWikiState({ repoRoot, traceFiles });
-	const [devLogEntries, knowledgeTopicDigests, changes, configuration] =
+	const [devLogEntries, knowledgeSubjectDigests, changes, configuration] =
 		await Promise.all([
 			Promise.all(
 				snapshot.traceBoard.traces
@@ -292,16 +292,16 @@ export async function loadProjectServerAppState(
 							[trace.traceId, await readDevLog(repoRoot, trace.traceId)] as const,
 					),
 			),
-			readKnowledgeTopicDigests(
+			readKnowledgeSubjectDigests(
 				repoRoot,
-				knowledgeTopicRefsFromRecords(traceFiles.records),
+				knowledgeSubjectIdsFromRecords(traceFiles.records),
 			),
 			loadProjectServerChangesState(repoRoot),
 			loadProjectServerConfigurationState(repoRoot),
 		]);
 	return buildCodewikiAppState(snapshot, repoRoot, traceFiles.records, {
 		devLogByTrace: new Map(devLogEntries),
-		knowledgeTopicDigests,
+		knowledgeSubjectDigests,
 		changes,
 		configuration,
 	});
@@ -411,9 +411,9 @@ function buildPipelineTrace(
 	);
 	const knowledgeAlignment = projectKnowledgeAlignment({
 		records,
-		topicRefs: workGraphPlan?.knowledgeTopics.map((topic) => topic.ref) || [],
+		subjectIds: workGraphPlan?.knowledgeTopics.map((topic) => topic.ref) || [],
 		noKnowledgeImpactReason: workGraphPlan?.noKnowledgeImpactReason,
-		currentDigests: context.knowledgeTopicDigests,
+		currentDigests: context.knowledgeSubjectDigests,
 	});
 	const projection: CodewikiPipelineTrace = {
 		traceId: card.traceId,
@@ -1206,7 +1206,7 @@ function approvedChangeObjects(
 function decisionChangeSummary(change: Record<string, unknown>): string {
 	const title =
 		stringValue(change.question) ||
-		stringValue(change.desiredState) ||
+		stringValue(change.objective) ||
 		stringValue(change.id);
 	const type = stringValue(change.policyProfileId || change.kind);
 	const route = stringValue(change.routeTarget || change.nextLoop);
@@ -1488,7 +1488,14 @@ export function projectWorkGraphPlan(
 			const changeRecord = objectRecord(output?.changeRecord);
 			const change = objectRecord(changeRecord?.change);
 			const knowledge = objectRecord(change?.knowledge);
-			return stringValues(knowledge?.topicRefs);
+			return knowledge?.kind === "effects"
+				? objectList(knowledge.effects)
+						.map((effect) => objectRecord(effect.target))
+						.map((target) => stringValue(target?.subjectId))
+						.filter(Boolean)
+				: objectList(knowledge?.refs)
+						.map((target) => stringValue(target.subjectId))
+						.filter(Boolean);
 		});
 	for (let index = events.length - 1; index >= 0; index -= 1) {
 		const event = events[index];
@@ -1533,13 +1540,17 @@ export function projectWorkGraphPlan(
 function projectWorkGraphKnowledgeTopic(
 	ref: string,
 ): CodewikiPipelineKnowledgeTopic[] {
-	const match = /^(?:\.codewiki\/kb\/|kb:)(product|system)\/(.+)\.md$/.exec(
-		ref,
-	);
+	const match = /^cw:([a-z][a-z0-9-]*):([a-z0-9][a-z0-9._-]*)$/u.exec(ref);
 	if (!match) return [];
-	const category = match[1] as CodewikiPipelineKnowledgeTopic["category"];
+	const category: CodewikiPipelineKnowledgeTopic["category"] = [
+		"design",
+		"story",
+		"user",
+	].includes(match[1] ?? "")
+		? "product"
+		: "system";
 	const label = (match[2] || "")
-		.split("/")
+		.split(".")
 		.map((part) => titleCase(part.replace(/[-_]/g, " ")))
 		.join(" / ");
 	return [{ ref, category, label }];

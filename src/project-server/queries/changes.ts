@@ -107,9 +107,9 @@ function searchableCardText(record: ChangeValidationCard): string {
 	return [
 		record.identity.changeId,
 		record.question,
-		record.sections.currentState.text,
-		record.sections.proposedChange.text,
-		record.sections.proposedChange.rationale,
+		record.sections.problem.text,
+		record.sections.objective.text,
+		record.sections.objective.rationale,
 		...record.sections.agentOpinion.concerns,
 	]
 		.join(" ")

@@ -1,12 +1,13 @@
 ---
 type: System Flow
+codewiki_id: cw:flow:recovery
 title: Recovery
 description: Reconstructs authority and execution continuity from canonical state, retained DSH Sessions, and durable evidence without trusting private memory.
 status: stable
 tags: [system, flow]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/recover-history.md
+    target: cw:story:maintainer.recover-history
     rationale: Recovery provides the stable cross-component behavior required by this Story.
 ---
 # Recovery

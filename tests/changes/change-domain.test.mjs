@@ -5,6 +5,7 @@ import { changeContentDigest } from "../../src/changes/digest.ts";
 import { normalizeChange } from "../../src/changes/normalize.ts";
 import { parseChange } from "../../src/changes/schema.ts";
 import { CHANGE_SCHEMA_VERSION } from "../../src/changes/types.ts";
+import {knowledgeSetTransition} from "../helpers/knowledge-transition.mjs";
 
 const NOW = "2026-07-13T01:30:00.000Z";
 
@@ -16,8 +17,8 @@ function draftChange() {
 		status: "pending",
 		intent: {
 			question: "Should the Change domain be canonical?",
-			currentState: "Change intent is mixed with Decision fields.",
-			desiredState: "Change intent has its own lifecycle schema.",
+			problem: "Change intent is mixed with Decision fields.",
+			objective: "Change intent has its own lifecycle schema.",
 			rationale: "Loop boundaries become explicit.",
 			nonGoals: ["Do not add a fourth semantic loop."],
 			alternatives: ["Keep Decision-shaped proposal state."],
@@ -34,10 +35,10 @@ function draftChange() {
 			maintainer: "Maintainers get one canonical schema.",
 			compatibility: "Active proposal APIs intentionally break.",
 		},
-		knowledge: {
-			topicRefs: ["kb:system/components/decision-loop.md"],
-			propagationRefs: ["kb:system/components/decision-loop.md"],
-		},
+		knowledge: knowledgeSetTransition({
+			subjectId: "cw:component:decision",
+			content: "Change intent has its own lifecycle schema.",
+		}),
 		outcome: {
 			successSignals: ["The lifecycle is deterministic."],
 			evidenceExpectations: ["Change domain tests pass."],

@@ -93,7 +93,7 @@ export interface KnowledgeDriftIssueProducerInput {
 	readonly observationId: string;
 	readonly previousSnapshotDigest: string;
 	readonly currentSnapshotDigest: string;
-	readonly topicRefs: readonly string[];
+	readonly subjectIds: readonly string[];
 	readonly sourceRef: string;
 }
 
@@ -101,7 +101,7 @@ export interface KnowledgeDriftProducerInput {
 	readonly observationId: string;
 	readonly previousSnapshotDigest: string;
 	readonly currentSnapshotDigest: string;
-	readonly topicRefs: readonly string[];
+	readonly subjectIds: readonly string[];
 	readonly content: ChangeIntakeContent;
 }
 
@@ -349,7 +349,7 @@ export function createKnowledgeDriftMaterial(
 			"observationId",
 			"previousSnapshotDigest",
 			"currentSnapshotDigest",
-			"topicRefs",
+			"subjectIds",
 			"content",
 		],
 		"Knowledge-drift producer",
@@ -358,7 +358,7 @@ export function createKnowledgeDriftMaterial(
 		observationId: input.observationId,
 		previousSnapshotDigest: input.previousSnapshotDigest,
 		currentSnapshotDigest: input.currentSnapshotDigest,
-		topicRefs: [...input.topicRefs],
+		subjectIds: [...input.subjectIds],
 	}, input.content);
 }
 
@@ -372,7 +372,7 @@ export function createKnowledgeDriftMaterialFromIssue(
 			"observationId",
 			"previousSnapshotDigest",
 			"currentSnapshotDigest",
-			"topicRefs",
+			"subjectIds",
 			"sourceRef",
 		],
 		"Knowledge-drift issue producer",
@@ -381,7 +381,7 @@ export function createKnowledgeDriftMaterialFromIssue(
 		observationId: input.observationId,
 		previousSnapshotDigest: input.previousSnapshotDigest,
 		currentSnapshotDigest: input.currentSnapshotDigest,
-		topicRefs: input.topicRefs,
+		subjectIds: input.subjectIds,
 		content: {
 			summary: input.issue.message,
 			observedBehavior: `Knowledge drift rule ${input.issue.ruleId} matched ${JSON.stringify(input.issue.match)}.`,

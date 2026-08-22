@@ -85,6 +85,7 @@ export interface PiNativeDecisionHostOptions {
 	) =>
 		| ReturnType<typeof createDecisionGate>
 		| Promise<ReturnType<typeof createDecisionGate>>;
+	readonly loadKnowledgeBase?: NativeDecisionAttemptExecutorOptions["loadKnowledgeBase"];
 	readonly loadEvaluationInput?: NativeDecisionAttemptExecutorOptions["loadEvaluationInput"];
 	readonly runner?: GitCommandRunner;
 	readonly materializationRoot?: string;
@@ -107,6 +108,7 @@ export function createPiNativeDecisionStartOptions(
 		options.runtimeAuthorityBinding,
 		"Pi native Decision Runtime authority",
 	);
+	// SAFETY: TypeBox validation above establishes AuthorityBinding before canonical freezing.
 	const runtimeAuthorityBinding = toCanonicalJsonValue(
 		options.runtimeAuthorityBinding,
 	) as unknown as AuthorityBinding;
@@ -135,6 +137,9 @@ export function createPiNativeDecisionStartOptions(
 		producer,
 		createDecisionGate: (input) =>
 			loadPiNativeDecisionGate({repoRoot, options, input}),
+		...(options.loadKnowledgeBase
+			? {loadKnowledgeBase: options.loadKnowledgeBase}
+			: {}),
 		...(options.loadEvaluationInput
 			? {loadEvaluationInput: options.loadEvaluationInput}
 			: {}),

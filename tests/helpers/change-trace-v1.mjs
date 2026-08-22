@@ -6,6 +6,7 @@ import {
 	serializeCanonicalChangeOperation,
 } from "../../src/changes/trace/index.ts";
 import { sha256Digest } from "../../src/utils/canonical-json.ts";
+import {knowledgeSetTransition} from "./knowledge-transition.mjs";
 
 export const digest = (character) => `sha256:${character.repeat(64)}`;
 export const gitObject = (character) => character.repeat(40);
@@ -35,8 +36,8 @@ export function changeRevision() {
 	return createChangeRevision({
 		title: "Execute Change Trace Protocol",
 		intent: {
-			currentState: "Mutable Trace assumptions prevent exact coordination.",
-			desiredState: "Canonical replay converges across independent clones.",
+			problem: "Mutable Trace assumptions prevent exact coordination.",
+			objective: "Canonical replay converges across independent clones.",
 			rationale: "Replace mutable Trace assumptions with exact accepted operations.",
 			nonGoals: ["No hosted relay."],
 			alternatives: ["Keep local mutable Trace state."],
@@ -53,10 +54,10 @@ export function changeRevision() {
 			maintainer: "Canonical operations replace mutable coordination state.",
 			compatibility: "No compatibility parser.",
 		},
-		knowledge: {
-			topicRefs: ["kb:system/traces", "kb:system/alignment-model"],
-			propagationRefs: ["kb:system/change-trace-v1"],
-		},
+		knowledge: knowledgeSetTransition({
+			subjectId: "cw:component:change-trace",
+			content: "Canonical replay converges across independent clones.",
+		}),
 		outcome: {
 			successSignals: ["Canonical replay converges across independent clones."],
 			evidenceExpectations: ["Full and incremental replay produce one state digest."],

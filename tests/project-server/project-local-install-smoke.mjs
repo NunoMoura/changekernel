@@ -170,8 +170,8 @@ try {
 	const change = acceptedChangeFixture({
 		id: "CHG-project-local-install-smoke",
 		kind: "harden",
-		currentState: "Mutation guards require project-local package installs.",
-		desiredState:
+		problem: "Mutation guards require project-local package installs.",
+		objective:
 			"A package under the project's .pi/npm tree can bootstrap and append without override.",
 		rationale:
 			"This proves normal local installation works without controlled-test bypasses.",

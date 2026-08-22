@@ -25,11 +25,31 @@ const digest = (value) => `sha256:${value.repeat(64)}`;
 
 function reviewAttempt(snapshot, overrides = {}) {
 	return createReviewAttempt({
+		changeId: "change:CHG-review",
+		changeRevisionId: digest("1"),
+		knowledgeTransitionDigest: digest("2"),
+		knowledgeStateDigest: digest("3"),
+		knowledgeProjectionDigest: digest("4"),
+		planningDeltaIds: [digest("5")],
+		workGraphDigest: digest("6"),
+		aggregateDigest: digest("7"),
+		lineageDigest: digest("8"),
+		targetBaseCommit: "0".repeat(40),
 		integratedHead: "a".repeat(40),
 		integratedTree: "b".repeat(40),
-		targetBranch: "main",
-		changeIds: ["change:CHG-review"],
+		integratedTreeDigest: digest("9"),
+		targetBranch: "refs/heads/main",
 		workUnitIds: ["work-unit:WI-review"],
+		candidateIds: ["candidate:WI-review"],
+		candidateDigests: [digest("a")],
+		implementationGateReportDigests: [digest("b")],
+		implementationEvidenceRecordIds: [],
+		implementationResultDigests: [],
+		continuityKey: `review:change:CHG-review:${digest("8")}`,
+		producerSessionId: "session:review",
+		producingRunId: "run:review",
+		producerRunReceiptDigest: digest("c"),
+		projectMaterialGenerationDigest: digest("d"),
 		checkPackSnapshotDigest: snapshot.checkPackDigest,
 		providerReceiptDigests: [],
 		evidenceRecordDigests: [],
@@ -199,12 +219,38 @@ test("failed Review Check returns atomic feedback to Implementation", async () =
 	}).run({attempt, evidence: [], providerReceipts: []});
 	assert.equal(run.report.status, "failed");
 	assert.equal(run.transition.target, "implementation");
+	assert.deepEqual(run.transition.affectedWorkUnitIds, attempt.workUnitIds);
 	assert.equal(run.feedback.length, 1);
 	assert.equal(run.feedback[0].checkId, "review-standard");
 	assert.equal(
 		run.feedback[0].failure.details[0].message,
 		"Expected exact release proof.",
 	);
+});
+
+test("Review decomposition failures route only to explicit Planning amendment", async () => {
+	const check = packagedCheck({
+		stage: "review",
+		definition: {id: "decomposition-integrity"},
+	});
+	const snapshot = checkSnapshot([check], {stage: "review"});
+	const run = await createReviewGate({
+		packSnapshot: snapshot,
+		executors: [
+			checkExecutor({
+				execute: (context) =>
+					checkOutput(context.invocation, {
+						measurement: {kind: "binary", value: false},
+						summary: "Planning decomposition is incomplete.",
+						details: [{message: "Amend Planning explicitly."}],
+					}),
+			}),
+		],
+		classifyFailure: () => ({owner: "planning", affectedWorkUnitIds: []}),
+	}).run({attempt: reviewAttempt(snapshot), evidence: [], providerReceipts: []});
+	assert.equal(run.transition.target, "planning_amendment");
+	assert.equal(run.transition.reasonCode, "review_decomposition_defect");
+	assert.deepEqual(run.transition.affectedWorkUnitIds, []);
 });
 
 test("stopped Review Gate preserves state and creates no Result", async () => {

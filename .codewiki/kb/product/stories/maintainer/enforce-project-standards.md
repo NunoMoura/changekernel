@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:maintainer.enforce-project-standards
 title: Enforce Project Standards
 description: A maintainer wants open project-owned Checks to gate each development stage with exact outcomes and actionable feedback.
 status: stable
-codewiki_user: /product/users/maintainer.md
+codewiki_user: cw:user:maintainer
 tags: [product, story, checks]
 ---
 # Enforce Project Standards

@@ -19,11 +19,9 @@ import { changeTraceId } from "../../changes/trace/change-record.ts";
 import {
 	evaluateGraphDeltaPlanning,
 } from "../../loops/planning/graph-delta-quality.ts";
-import type {
-	PlanningAcceptanceCoverage,
-	PlanningDependencyEdge,
-	PlanningUiPreviewTarget,
-	PlanningWorkUnitCandidate,
+import {
+	parsePlanningCandidateProposal,
+	type PlanningCandidateProposal,
 } from "../../loops/planning/candidate-content.ts";
 import { selectProjectServerReaction } from "../coordinator/reactor.ts";
 import { buildProjectWorkState } from "../../work-state/project.ts";
@@ -31,17 +29,12 @@ import type { WorkState } from "../../work-state/types.ts";
 
 export type WikiPlanMode = "preview" | "append";
 
-export interface RunWikiPlanInput {
+export interface RunWikiPlanInput extends PlanningCandidateProposal {
 	expectedWorkStateDigest: string;
 	expectedChangeId: string;
 	changeId: string;
 	changeRevisionId: string;
 	observedWorkGraphDigest: string;
-	workUnits: PlanningWorkUnitCandidate[];
-	dependencyEdges: PlanningDependencyEdge[];
-	acceptanceCoverage: PlanningAcceptanceCoverage[];
-	uiPreviewTargets: PlanningUiPreviewTarget[];
-	integrationRequirements: string[];
 	actor: string;
 	rationale: string;
 	createdAt?: string;
@@ -51,7 +44,7 @@ export interface RunWikiPlanInput {
 	runtimeJobId?: string;
 }
 
-export interface WorkGraphDeltaReport {
+export interface WorkGraphDeltaReport extends PlanningCandidateProposal {
 	schemaVersion: 1;
 	workGraphDeltaId: string;
 	digest: string;
@@ -63,11 +56,6 @@ export interface WorkGraphDeltaReport {
 		changeRevision: number;
 		changeRevisionId: string;
 	};
-	workUnits: PlanningWorkUnitCandidate[];
-	dependencyEdges: PlanningDependencyEdge[];
-	acceptanceCoverage: PlanningAcceptanceCoverage[];
-	uiPreviewTargets: PlanningUiPreviewTarget[];
-	integrationRequirements: string[];
 	qualityRef: string;
 	qualityStandards: LoopQualityStandardResult[];
 	exit: { status: "continue" | "exit" };
@@ -88,9 +76,13 @@ const INPUT_KEYS = [
 	"observedWorkGraphDigest",
 	"workUnits",
 	"dependencyEdges",
+	"knowledgeEffectCoverage",
+	"unchangedKnowledgeCoverage",
 	"acceptanceCoverage",
+	"aggregateReviewRequirements",
 	"uiPreviewTargets",
 	"integrationRequirements",
+	"amendment",
 	"actor",
 	"rationale",
 	"createdAt",
@@ -142,12 +134,21 @@ async function runWikiPlanForSelectedChange(
 	if (input.changeRevisionId !== revisionId) {
 		throw new Error("Planning Candidate Change revision is stale.");
 	}
-	const quality = evaluateGraphDeltaPlanning({
-		changeId: selectedChangeId,
+	const proposal = parsePlanningCandidateProposal({
 		workUnits: input.workUnits,
 		dependencyEdges: input.dependencyEdges,
+		knowledgeEffectCoverage: input.knowledgeEffectCoverage,
+		unchangedKnowledgeCoverage: input.unchangedKnowledgeCoverage,
 		acceptanceCoverage: input.acceptanceCoverage,
+		aggregateReviewRequirements: input.aggregateReviewRequirements,
+		uiPreviewTargets: input.uiPreviewTargets,
 		integrationRequirements: input.integrationRequirements,
+		amendment: input.amendment,
+		rationale: input.rationale,
+	});
+	const quality = evaluateGraphDeltaPlanning({
+		changeId: selectedChangeId,
+		...proposal,
 		workState,
 	});
 	const unsigned = {
@@ -160,16 +161,7 @@ async function runWikiPlanForSelectedChange(
 			changeRevision: change.record.change.revision,
 			changeRevisionId: revisionId,
 		},
-		workUnits: normalizedWorkUnits(input.workUnits),
-		dependencyEdges: normalizedDependencyEdges(input.dependencyEdges),
-		acceptanceCoverage: normalizedAcceptanceCoverage(input.acceptanceCoverage),
-		uiPreviewTargets: [...input.uiPreviewTargets].sort((left, right) =>
-			compareText(left.targetId, right.targetId),
-		),
-		integrationRequirements: stringArray(
-			input.integrationRequirements,
-			"integrationRequirements",
-		),
+		...proposal,
 		qualityRef: quality.qualityRef,
 		qualityStandards: quality.standards,
 		exit: { status: quality.passed ? ("exit" as const) : ("continue" as const) },
@@ -238,13 +230,18 @@ function planningEvent(
 		workUnits: report.workUnits.map((item) => ({
 			...item,
 			dependsOn: dependenciesByUnit.get(item.id) || [],
-			acceptanceCriteria: item.acceptanceRequirements.map((text, index) => ({
+			acceptanceCriteria: item.acceptanceRequirementIds.map((requirementId, index) => ({
 				id: `AC-${item.id}-${index + 1}`,
-				text,
+				text: requirementId,
+				sourceRequirementId: requirementId,
 			})),
 		})),
 		dependencyEdges: report.dependencyEdges,
+		knowledgeEffectCoverage: report.knowledgeEffectCoverage,
+		unchangedKnowledgeCoverage: report.unchangedKnowledgeCoverage,
 		acceptanceCoverage: report.acceptanceCoverage,
+		aggregateReviewRequirements: report.aggregateReviewRequirements,
+		amendment: report.amendment,
 		uiPreviewTargets: report.uiPreviewTargets,
 		integrationRequirements: report.integrationRequirements,
 		actor,
@@ -310,52 +307,6 @@ function selectedPlanningChangeId(workState: WorkState): string {
 	return reaction.selection.change.changeId;
 }
 
-function normalizedWorkUnits(
-	values: PlanningWorkUnitCandidate[],
-): PlanningWorkUnitCandidate[] {
-	const items = values.map((value) => ({
-		...value,
-		id: requiredText(value.id, "workUnits.id"),
-		owningChangeId: requiredText(value.owningChangeId, "workUnits.owningChangeId"),
-		title: requiredText(value.title, "workUnits.title"),
-		outcome: requiredText(value.outcome, "workUnits.outcome"),
-		technicalRequirements: stringArray(value.technicalRequirements, "workUnits.technicalRequirements"),
-		acceptanceRequirements: stringArray(value.acceptanceRequirements, "workUnits.acceptanceRequirements"),
-		componentRefs: stringArray(value.componentRefs, "workUnits.componentRefs"),
-		pathScopes: stringArray(value.pathScopes, "workUnits.pathScopes"),
-		verification: stringArray(value.verification, "workUnits.verification"),
-		resourceRequirements: {
-			capabilityIds: stringArray(value.resourceRequirements.capabilityIds, "workUnits.resourceRequirements.capabilityIds"),
-			toolIds: stringArray(value.resourceRequirements.toolIds, "workUnits.resourceRequirements.toolIds"),
-			skillIds: stringArray(value.resourceRequirements.skillIds, "workUnits.resourceRequirements.skillIds"),
-			custodyRequirements: stringArray(value.resourceRequirements.custodyRequirements, "workUnits.resourceRequirements.custodyRequirements"),
-			budgetClass: requiredText(value.resourceRequirements.budgetClass, "workUnits.resourceRequirements.budgetClass"),
-		},
-	}));
-	assertUnique(items.map((item) => item.id), "Work Unit ids");
-	return items.sort((left, right) => compareText(left.id, right.id));
-}
-
-function normalizedDependencyEdges(values: PlanningDependencyEdge[]) {
-	return values
-		.map((edge) => ({ ...edge }))
-		.sort((left, right) =>
-			compareText(
-				`${left.fromWorkUnitId}:${left.toWorkUnitId}:${left.kind}`,
-				`${right.fromWorkUnitId}:${right.toWorkUnitId}:${right.kind}`,
-			),
-		);
-}
-
-function normalizedAcceptanceCoverage(values: PlanningAcceptanceCoverage[]) {
-	return values
-		.map((entry) => ({
-			acceptanceRequirement: requiredText(entry.acceptanceRequirement, "acceptanceCoverage.acceptanceRequirement"),
-			workUnitIds: stringArray(entry.workUnitIds, "acceptanceCoverage.workUnitIds"),
-		}))
-		.sort((left, right) => compareText(left.acceptanceRequirement, right.acceptanceRequirement));
-}
-
 function assertInput(input: RunWikiPlanInput): void {
 	if (!input || typeof input !== "object") throw new Error("wiki_plan requires input object.");
 	for (const key of Object.keys(input)) {
@@ -370,7 +321,16 @@ function assertInput(input: RunWikiPlanInput): void {
 	] as const) {
 		if (!/^sha256:[a-f0-9]{64}$/.test(value)) throw new Error(`wiki_plan ${field} must be a sha256 digest.`);
 	}
-	for (const value of [input.workUnits, input.dependencyEdges, input.acceptanceCoverage, input.uiPreviewTargets, input.integrationRequirements]) {
+	for (const value of [
+		input.workUnits,
+		input.dependencyEdges,
+		input.knowledgeEffectCoverage,
+		input.unchangedKnowledgeCoverage,
+		input.acceptanceCoverage,
+		input.aggregateReviewRequirements,
+		input.uiPreviewTargets,
+		input.integrationRequirements,
+	]) {
 		if (!Array.isArray(value)) throw new Error("wiki_plan graph delta collections must be arrays.");
 	}
 	requiredText(input.expectedChangeId, "expectedChangeId");
@@ -394,17 +354,4 @@ function timestamp(value: string | undefined): string {
 function requiredText(value: string | undefined, field: string): string {
 	if (!value?.trim()) throw new Error(`wiki_plan ${field} is required.`);
 	return value.trim();
-}
-
-function stringArray(value: unknown, field: string): string[] {
-	if (!Array.isArray(value)) throw new Error(`wiki_plan ${field} must be an array.`);
-	return [...new Set(value.map((entry) => requiredText(typeof entry === "string" ? entry : undefined, field)))].sort(compareText);
-}
-
-function assertUnique(values: string[], field: string): void {
-	if (new Set(values).size !== values.length) throw new Error(`wiki_plan ${field} must be unique.`);
-}
-
-function compareText(left: string, right: string): number {
-	return left.localeCompare(right);
 }

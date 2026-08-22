@@ -11,6 +11,7 @@ import {
 } from "../../src/changes/trace/index.ts";
 import {normalizeChangeDefectProfile} from "../../src/changes/defect-profile.ts";
 import {createUserSuggestionMaterial} from "../../src/changes/intake/producers.ts";
+import {knowledgeSetTransition} from "../helpers/knowledge-transition.mjs";
 import {BACKLOG_TRIAGE_QUERY_PROTOCOL} from "../../src/changes/triage/contracts.ts";
 import {compareTriageCandidates} from "../../src/changes/triage/ordering.ts";
 import {
@@ -168,13 +169,13 @@ function criticalSecurityProfile() {
 }
 
 function revision(changeId, options = {}) {
-	const topicRefs = options.topicRefs ?? [`kb:product/${changeId.toLowerCase()}`];
+	const subjectIds = options.subjectIds ?? [`cw:component:${changeId.toLowerCase()}`];
 	const targetRefs = options.targetRefs ?? [`src/${changeId.toLowerCase()}.ts`];
 	return createChangeRevision({
 		title: `Decide ${changeId}`,
 		intent: {
-			currentState: `Determine exact intent for ${changeId}.`,
-			desiredState: `Accepted behavior for ${changeId} is explicit.`,
+			problem: `Determine exact intent for ${changeId}.`,
+			objective: `Accepted behavior for ${changeId} is explicit.`,
 			rationale: `Decision must preserve ${changeId} meaning.`,
 			nonGoals: ["No mutable backlog."],
 			alternatives: ["Leave intent unresolved."],
@@ -187,7 +188,10 @@ function revision(changeId, options = {}) {
 			targetRefs,
 		},
 		impact: {user: `Accepted ${changeId} behavior is explicit.`},
-		knowledge: {topicRefs, propagationRefs: []},
+		knowledge: knowledgeSetTransition({
+			subjectId: subjectIds[0],
+			content: `Accepted behavior for ${changeId} is explicit.`,
+		}),
 		outcome: {
 			successSignals: [`Accepted behavior for ${changeId} is explicit.`],
 			evidenceExpectations: ["Accepted meaning is explicit and testable."],
@@ -287,18 +291,18 @@ function supported(value, revisionId, suffix) {
 function fixture() {
 	const initial = createInitialProjectWorkState();
 	const security = revision("CHG-security", {
-		topicRefs: ["kb:system/identity"],
+		subjectIds: ["cw:component:identity"],
 		targetRefs: ["src/shared.ts", "src/auth/verify.ts"],
 		defectProfile: criticalSecurityProfile(),
 		risk: "critical",
 	});
 	const feature = revision("CHG-feature", {
-		topicRefs: ["kb:product/feature"],
+		subjectIds: ["cw:component:feature"],
 		targetRefs: ["src/shared.ts"],
 		risk: "low",
 	});
 	const cleanup = revision("CHG-cleanup", {
-		topicRefs: ["kb:system/cleanup"],
+		subjectIds: ["cw:component:cleanup"],
 		targetRefs: ["src/cleanup.ts"],
 		risk: "high",
 	});
@@ -523,7 +527,7 @@ describe("snapshot-bound Backlog Triage Projection", () => {
 	it("binds exact graph relationships and elevates pending Changes blocking active work", () => {
 		const journey = createThreeBatchJourney("CHG-active-target");
 		const blockerRevision = revision("CHG-pending-blocker", {
-			topicRefs: ["kb:system/traces"],
+			subjectIds: ["cw:component:change-trace"],
 			targetRefs: ["src/changes/trace"],
 		});
 		let state = openChange(journey.states[1], {

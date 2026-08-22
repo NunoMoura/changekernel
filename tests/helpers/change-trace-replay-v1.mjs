@@ -8,6 +8,7 @@ import {
 } from "../../src/changes/trace/index.ts";
 import {canonicalJsonDigest} from "../../src/utils/canonical-json.ts";
 import {authorityBinding, digest, gitObject} from "./change-trace-v1.mjs";
+import {knowledgeSetTransition} from "./knowledge-transition.mjs";
 
 export const allowAllReplayPolicy = Object.freeze({
 	authorize: () => true,
@@ -28,8 +29,8 @@ export function revisionFor(changeId) {
 	return createChangeRevision({
 		title: `Execute ${changeId}`,
 		intent: {
-			currentState: `Accepted intent for ${changeId} is not yet applied.`,
-			desiredState: `Produce deterministic accepted state for ${changeId}.`,
+			problem: `Accepted intent for ${changeId} is not yet applied.`,
+			objective: `Produce deterministic accepted state for ${changeId}.`,
 			rationale: `Apply accepted intent for ${changeId}.`,
 			nonGoals: ["No mutable status setter."],
 			alternatives: ["Keep mutable state."],
@@ -42,7 +43,10 @@ export function revisionFor(changeId) {
 			targetRefs: ["src/change-trace"],
 		},
 		impact: {maintainer: "Replay produces one accepted state."},
-		knowledge: {topicRefs: ["kb:system/traces"], propagationRefs: []},
+		knowledge: knowledgeSetTransition({
+			subjectId: "cw:component:change-trace",
+			content: `Produce deterministic accepted state for ${changeId}.`,
+		}),
 		outcome: {
 			successSignals: [`Produce deterministic accepted state for ${changeId}.`],
 			evidenceExpectations: ["Required evidence and checks are exact."],

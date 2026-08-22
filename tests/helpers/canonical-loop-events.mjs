@@ -20,8 +20,8 @@ function canonicalDecisionIteration(input) {
 	const change = acceptedChangeFixture({
 		id: source?.id || "CHG-canonical-test",
 		question: source?.question,
-		currentState: source?.currentState,
-		desiredState: source?.desiredState,
+		problem: source?.problem,
+		objective: source?.objective,
 		rationale: source?.rationale,
 		targetRefs: source?.targetRefs,
 		sourceRefs: source?.sourceRefs,
@@ -111,6 +111,9 @@ function canonicalPlanningIteration(input) {
 			title: item.title || `Canonical work ${index + 1}`,
 			outcome: item.outcome || "Implement canonical planned work.",
 			technicalRequirements: item.technicalRequirements || ["Preserve canonical trace authority."],
+			knowledgeEffectIds: [],
+			unchangedKnowledgeTargets: [],
+			acceptanceRequirementIds: acceptanceCriteria.map((criterion) => criterion.id),
 			acceptanceRequirements: acceptanceCriteria.map((criterion) => criterion.text),
 			acceptanceCriteria,
 			componentRefs: item.componentRefs || ["source"],
@@ -121,6 +124,8 @@ function canonicalPlanningIteration(input) {
 				toolIds: ["node-test"],
 				skillIds: [],
 				custodyRequirements: ["private-workbench"],
+				consentRequirements: ["source-mutation"],
+				privacyClass: "internal",
 				budgetClass: "standard",
 			},
 			dependsOn: item.dependsOn || [],
@@ -140,13 +145,31 @@ function canonicalPlanningIteration(input) {
 			workUnitIds: [unit.id],
 		})),
 	);
+	const qualityAcceptanceCoverage = workUnits.flatMap((unit) =>
+		unit.acceptanceRequirementIds.map((obligationId) => ({
+			obligationId,
+			workUnitIds: [unit.id],
+		})),
+	);
 	const quality = evaluateGraphDeltaPlanning({
 		changeId,
 		workUnits,
 		dependencyEdges,
-		acceptanceCoverage,
+		knowledgeEffectCoverage: [],
+		unchangedKnowledgeCoverage: [],
+		acceptanceCoverage: qualityAcceptanceCoverage,
+		aggregateReviewRequirements: [
+			{
+				id: "AGR-canonical-test",
+				statement: "Review canonical work as one Change.",
+				workUnitIds: workUnits.map((unit) => unit.id),
+			},
+		],
+		uiPreviewTargets: [],
 		integrationRequirements: ["Integrate into exact Change lineage."],
-		workState: { workUnitIds: [] },
+		amendment: null,
+		rationale: "Map canonical test obligations.",
+		workState: {workUnitIds: [], workUnits: []},
 	});
 	const event = {
 		type: "trace_event",

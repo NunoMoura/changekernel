@@ -1,9 +1,10 @@
 ---
 type: User Story
+codewiki_id: cw:story:check-author.author-composable-checks
 title: Author Composable Checks
 description: A Check Author wants reusable read-only project intelligence and composition primitives that build into one deterministic Gate boundary.
 status: stable
-codewiki_user: /product/users/check-author.md
+codewiki_user: cw:user:check-author
 tags: [product, story, checks, sdk]
 ---
 # Author Composable Checks

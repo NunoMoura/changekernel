@@ -1,6 +1,7 @@
 ---
 okf_version: "0.2"
 type: Lexicon
+codewiki_id: cw:lexicon:codewiki
 title: CodeWiki Lexicon
 description: Active vocabulary for CodeWiki desired state, public contracts, and cross-boundary project explanations.
 status: stable
@@ -29,7 +30,7 @@ tags: [system, vocabulary]
 | Accountability closure | Condition where one accepted transition can identify its exact prior state, proposed state, producer and custody, judged subject, Checks and Evidence, authority, applied effects, and resulting state without requiring a record of every incidental activity. | [Project Server](system/components/project-server.md) |
 | Actor | Accountable authenticated principal, either a User or service, whose identity remains separate from Client, Stage Producer, Implementation Worker, Run Process, delegated harness, and model identity. | [Project Server](system/components/project-server.md) |
 | Actor Profile | Non-authoritative description of disciplines, skills, components, interests, contribution preferences, and availability used only to suggest fit. | [Project Server](system/components/project-server.md) |
-| Alignment | Condition where relevant desired and executable state is resolved, bound to active Change, or explicitly unknown. | [Alignment](system/components/alignment.md) |
+| Alignment | Condition where accepted desired Knowledge and realized source, tests, Git, and delivery state are connected through exact Change lineage, resolved, or explicitly unknown. | [Alignment](system/components/alignment.md) |
 | Alignment Graph | Disposable snapshot-bound projection of relationships, impact, and provenance. | [Alignment](system/components/alignment.md) |
 | Approval | Authenticated acceptance of one exact policy-scoped subject that implies no other approval. | [Project Server](system/components/project-server.md) |
 | Assignment | Exact Project Server binding among one accepted Work Unit, one Implementation Worker, and one Workbench. | [Project Server](system/components/project-server.md) |
@@ -37,11 +38,11 @@ tags: [system, vocabulary]
 | Backend-delegated provenance | Controlled provenance for a CodeWiki-launched delegated harness, binding exact Assignment or producer task, Workbench, process lifecycle, final output, resulting artifacts, and declared custody gaps without claiming unknown child internals. | [Runtime](system/components/runtime.md) |
 | Backend-owned provenance | Controlled provenance augmented by a complete admitted Run receipt and exact CodeWiki-controlled session-input ledger. | [Runtime](system/components/runtime.md) |
 | Benchmark | Controlled externally-oracled comparison of the same product task without and with CodeWiki. | [Benchmarks](system/components/benchmarks.md) |
-| Candidate | Immutable role-specific proposal with exactly one producing Run; Work Unit Candidates qualify local realization while Review binds the exact aggregate Change lineage. | [Decision](system/components/decision.md) |
+| Candidate | Immutable role-specific proposal with exactly one producing Run; a Stage Producer submits its irreducible payload and Project Server derives machine-owned bindings before Checks. | [Decision](system/components/decision.md) |
 | Candidate Manifest | Project Server-owned identity binding a Candidate to repository, base, tree, scope, custody, and provenance. | [Project Server](system/components/project-server.md) |
-| Change | Accountable intent carrying a proposed transition from accepted state to intended state plus its durable immutable-operation dossier. | [Change Trace](system/components/change-trace.md) |
+| Change | Accountable link from one accepted Knowledge State through an exact proposed semantic transition, realization obligations, source and tests, Review Evidence, and Git lineage. | [Change Trace](system/components/change-trace.md) |
 | Change Intake Material | Bounded untrusted suggestion, finding, provider issue, or external code capture that may propose or reinforce a Change. | [Change Intake](system/components/change-intake.md) |
-| Change revision | Immutable semantic version of a Change's accepted meaning. | [Decision](system/components/decision.md) |
+| Change revision | Immutable semantic version of a Change binding rationale, outcomes, requirements, and either exact reducible Knowledge Effects or explicit unchanged-Knowledge references. | [Decision](system/components/decision.md) |
 | Change Trace | Append-only typed operation history for one Change. | [Change Trace](system/components/change-trace.md) |
 | Check | Composable binary or quantitative judgment that becomes one project-owned Gate boundary when registered as a top-level Pack Check. | [Checks](system/components/checks.md) |
 | Check Author | Developer who builds reusable Probes and composable Checks against exact CodeWiki project snapshots. | [Checks](system/components/checks.md) |
@@ -74,8 +75,12 @@ tags: [system, vocabulary]
 | Gate Report | Immutable `passed`, `failed`, or `stopped` stage outcome carrying exact Results, execution facts, warnings, and any operational stop reason. | [Checks](system/components/checks.md) |
 | Implementation | Stage Loop that realizes accepted Planning obligations in source, tests, and Integration. | [Implementation](system/components/implementation.md) |
 | Improvement Assessment | Explicit deliberate process for producing Discovery Findings outside failed-Check feedback. | [Change Intake](system/components/change-intake.md) |
-| Integration | Project Server-owned expected-head-safe admission of passing Work Unit Candidates into one private Change lineage whose aggregate head becomes Review subject. | [Project Server](system/components/project-server.md) |
-| Knowledge | Accepted desired Product, System, and Design state stored as an OKF bundle. | [Knowledge](system/components/knowledge.md) |
+| Integration | Project Server-owned expected-head-safe admission of exact passing Candidates and receipts into one Change Trace-derived private lineage over Git commits and trees; its complete frozen aggregate becomes Review subject. | [Implementation](system/components/implementation.md) |
+| Knowledge | Authoritative accepted desired Product, System, and Design meaning, distinct from realized source, tests, and Git state. | [Knowledge](system/components/knowledge.md) |
+| Knowledge Effect | One atomic `set` or `retire` operation targeting a stable Knowledge subject or facet, binding expected prior state or absence, and carrying complete post-state once when required. | [Knowledge](system/components/knowledge.md) |
+| Knowledge Projection | Deterministic Markdown, YAML, OKF, dossier, index, or other materialized view of one exact Knowledge State under one exact renderer identity. | [Knowledge](system/components/knowledge.md) |
+| Knowledge State | Current accepted desired semantic subjects, facets, relationships, and content produced from the initial seed plus confirmed Knowledge Effects. | [Knowledge](system/components/knowledge.md) |
+| Knowledge Subject ID | Immutable path-independent `cw:<kind>:<stable-key>` identity connecting desired Knowledge through Change, Planning, source, tests, Evidence, Review, and Git realization; labels and artifact paths may change without changing it. | [Knowledge](system/components/knowledge.md) |
 | Model Check | Tool-free isolated model run over exact bounded input through a separately configured Check model route. | [Checks](system/components/checks.md) |
 | Model Provider | Local or remote inference supplier used by a Stage Producer, Implementation Worker, or Model Check; it owns no Stage Loop, tools, Workbench, Candidate, Check Result, or authority. | [Runtime](system/components/runtime.md) |
 | Outcome Diagnostics | Post-Gate bounded analysis of repeated outcomes that may propose ordinary Change Intake Material for Skills, Checks, context APIs, routes, or configuration without mutating them. | [Change Intake](system/components/change-intake.md) |

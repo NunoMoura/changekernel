@@ -13,7 +13,7 @@ import type {
 
 export const BACKLOG_TRIAGE_PROJECTION_PROTOCOL = Object.freeze({
 	id: "codewiki.backlog-triage-projection",
-	version: "2.0.0",
+	version: "3.0.0",
 	maxCandidates: 500,
 	freshDays: 7,
 	staleDays: 30,
@@ -21,7 +21,7 @@ export const BACKLOG_TRIAGE_PROJECTION_PROTOCOL = Object.freeze({
 
 export const BACKLOG_TRIAGE_QUERY_PROTOCOL = Object.freeze({
 	id: "codewiki.backlog-triage-query",
-	version: "2.0.0",
+	version: "3.0.0",
 	maxResults: 100,
 } as const);
 

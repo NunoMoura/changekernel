@@ -1,26 +1,27 @@
+codewiki_id: cw:diagram:architecture
 id: architecture
 purpose: Show every System Component inside CodeWiki or across its Client, Runtime, repository, and provider boundaries; detailed behavior belongs to named lifecycle and Runtime diagrams.
 components:
-  - { id: clients, concept: /system/components/clients.md, label: Clients, zone: client }
-  - { id: project-server, concept: /system/components/project-server.md, label: Project Server, zone: core }
-  - { id: protocol, concept: /system/components/protocol.md, label: Client-Project Server Protocol, zone: core }
-  - { id: intake, concept: /system/components/change-intake.md, label: Change Intake, zone: core }
-  - { id: runtime, concept: /system/components/runtime.md, label: Runtime, zone: execution }
-  - { id: decision, concept: /system/components/decision.md, label: Decision, zone: core }
-  - { id: planning, concept: /system/components/planning.md, label: Planning, zone: core }
-  - { id: implementation, concept: /system/components/implementation.md, label: Implementation, zone: core }
-  - { id: review, concept: /system/components/review.md, label: Review, zone: core }
-  - { id: checks, concept: /system/components/checks.md, label: Checks, zone: core }
-  - { id: evidence, concept: /system/components/evidence.md, label: Evidence, zone: core }
-  - { id: work-state, concept: /system/components/work-state.md, label: WorkState, zone: core }
-  - { id: alignment, concept: /system/components/alignment.md, label: Alignment, zone: core }
-  - { id: preview, concept: /system/components/preview.md, label: Preview, zone: execution }
-  - { id: knowledge, concept: /system/components/knowledge.md, label: Knowledge, zone: repository }
-  - { id: change-trace, concept: /system/components/change-trace.md, label: Change Trace, zone: repository }
-  - { id: project, concept: /system/components/project.md, label: Project Configuration, zone: repository }
-  - { id: package, concept: /system/components/package.md, label: CodeWiki Package, zone: repository }
-  - { id: benchmarks, concept: /system/components/benchmarks.md, label: Benchmarks, zone: repository }
-  - { id: provider, concept: /system/components/provider-boundary.md, label: Provider Boundary, zone: provider }
+  - { id: clients, concept: cw:component:clients, label: Clients, zone: client }
+  - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
+  - { id: protocol, concept: cw:component:protocol, label: Client-Project Server Protocol, zone: core }
+  - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
+  - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
+  - { id: decision, concept: cw:component:decision, label: Decision, zone: core }
+  - { id: planning, concept: cw:component:planning, label: Planning, zone: core }
+  - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
+  - { id: review, concept: cw:component:review, label: Review, zone: core }
+  - { id: checks, concept: cw:component:checks, label: Checks, zone: core }
+  - { id: evidence, concept: cw:component:evidence, label: Evidence, zone: core }
+  - { id: work-state, concept: cw:component:work-state, label: WorkState, zone: core }
+  - { id: alignment, concept: cw:component:alignment, label: Alignment, zone: core }
+  - { id: preview, concept: cw:component:preview, label: Preview, zone: execution }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
+  - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
+  - { id: project, concept: cw:component:project, label: Project Configuration, zone: repository }
+  - { id: package, concept: cw:component:package, label: CodeWiki Package, zone: repository }
+  - { id: benchmarks, concept: cw:component:benchmarks, label: Benchmarks, zone: repository }
+  - { id: provider, concept: cw:component:provider-boundary, label: Provider Boundary, zone: provider }
 connections:
   - { id: project-server-uses-protocol, from: project-server, to: protocol, type: invokes, label: validates authenticated transport-neutral requests }
   - id: project-server-invokes-runtime
@@ -45,6 +46,6 @@ connections:
   - { id: package-reads-project, from: package, to: project, type: reads, label: composes CodeWiki and passive Check Pack resources }
   - { id: benchmarks-read-package, from: benchmarks, to: package, type: reads, label: executes packed candidate }
 flows:
-  - concept: /system/flows/work-unit-execution.md
+  - concept: cw:flow:work-unit-execution
     paths:
       - connections: [project-server-invokes-runtime, runtime-invokes-preview]

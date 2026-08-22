@@ -4,6 +4,7 @@ import { changeContentDigest } from "../../src/changes/digest.ts";
 import { ChangeTraceStore } from "../../src/changes/trace/store.ts";
 import { createChangeRecord } from "../../src/changes/records.ts";
 import { CHANGE_SCHEMA_VERSION } from "../../src/changes/types.ts";
+import {knowledgeSetTransition} from "./knowledge-transition.mjs";
 
 const run = promisify(execFile);
 
@@ -17,11 +18,11 @@ export function acceptedChangeFixture(overrides = {}) {
 		intent: {
 			question:
 				overrides.question || "Should this validated Change become trace work?",
-			currentState:
-				overrides.currentState ||
+			problem:
+				overrides.problem ||
 				"Decision input is mutable before acceptance.",
-			desiredState:
-				overrides.desiredState ||
+			objective:
+				overrides.objective ||
 				"Decision embeds one exact accepted Change revision.",
 			rationale:
 				overrides.rationale || "Independent traces require immutable input.",
@@ -48,15 +49,14 @@ export function acceptedChangeFixture(overrides = {}) {
 			maintainer:
 				overrides.maintainerImpact || "Trace input remains replayable.",
 		},
-		knowledge: {
-			topicRefs: overrides.knowledgeTopicRefs || [
-				"kb:system/components/decision-loop.md",
-			],
-			propagationRefs: overrides.knowledgePropagationRefs || [
-				"kb:system/components/decision-loop.md",
-			],
-			noImpactRationale: overrides.knowledgeNoImpactRationale,
-		},
+		knowledge:
+			overrides.knowledge ||
+			knowledgeSetTransition({
+				subjectId: "cw:component:decision",
+				content:
+					overrides.objective ||
+					"Decision embeds one exact accepted Change revision.",
+			}),
 		outcome: {
 			successSignals: [
 				overrides.successSignal ||

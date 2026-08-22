@@ -44,14 +44,6 @@ import {
 } from "../integration/worker.ts";
 import { scheduleImplementationWorkerAssignment } from "./jobs.ts";
 import { implementationWorkerClaimReleaseJob } from "../claims/release.ts";
-import {
-	projectBranchMergeJob,
-	type ProjectBranchMergeAuthority,
-} from "../effects/project-branch-merge.ts";
-import {
-	projectBranchPushJob,
-	type ProjectBranchPushAuthority,
-} from "../effects/project-branch-push.ts";
 import type {
 	ProductPublicationAdapter,
 	ProductPublicationPlan,
@@ -94,8 +86,6 @@ export interface ImplementationWorkerDispatcherOptions {
 	worktreeRunner?: WorktreeCommandRunner;
 	loadConfig?: (repoRoot: string) => Promise<WikiConfig>;
 	collectGitStatus?: (repoRoot: string) => Promise<GitStatusSnapshot>;
-	mergeAuthority?: ProjectBranchMergeAuthority;
-	pushAuthority?: ProjectBranchPushAuthority;
 	publicationPlan?: ProductPublicationPlan;
 	publicationAdapter?: ProductPublicationAdapter;
 	releasePlan?: ProductReleasePlan;
@@ -223,14 +213,6 @@ export class ImplementationWorkerDispatcher {
 			observation.records,
 			createdAt,
 		);
-		const merges = this.scheduleProjectBranchMerges(
-			observation.records,
-			createdAt,
-		);
-		const pushes = this.scheduleProjectBranchPushes(
-			observation.records,
-			createdAt,
-		);
 		const publications = this.scheduleProductPublications(
 			observation.records,
 			createdAt,
@@ -254,8 +236,6 @@ export class ImplementationWorkerDispatcher {
 		const resumedJobIds = [
 			...resumed.jobIds,
 			...integrations.jobIds,
-			...merges.jobIds,
-			...pushes.jobIds,
 			...publications.jobIds,
 			...productReleases.jobIds,
 			...releaseJobIds,
@@ -282,8 +262,6 @@ export class ImplementationWorkerDispatcher {
 		if (
 			cleanup.blockers.length > 0 ||
 			integrations.blockers.length > 0 ||
-			merges.blockers.length > 0 ||
-			pushes.blockers.length > 0 ||
 			publications.blockers.length > 0 ||
 			productReleases.blockers.length > 0 ||
 			!adapterAvailability.available
@@ -291,8 +269,6 @@ export class ImplementationWorkerDispatcher {
 			return complete("held", resumedJobIds, [
 				...cleanup.blockers,
 				...integrations.blockers,
-				...merges.blockers,
-				...pushes.blockers,
 				...publications.blockers,
 				...productReleases.blockers,
 				...(!adapterAvailability.available
@@ -561,109 +537,6 @@ export class ImplementationWorkerDispatcher {
 			return job.idempotencyKey;
 		});
 		return { jobIds, blockers: [] };
-	}
-
-	private scheduleProjectBranchMerges(
-		records: TraceRecord[],
-		createdAt: string,
-	): { jobIds: string[]; blockers: string[] } {
-		const candidates = records.filter(
-			(record): record is TraceEvent =>
-				record.type === "trace_event" &&
-				record.event === "runtime.integration.proven" &&
-				!projectBranchMergeAlreadyProven(record, records),
-		);
-		if (candidates.length === 0) return { jobIds: [], blockers: [] };
-		if (!this.options.mergeAuthority) {
-			return {
-				jobIds: [],
-				blockers: ["project_branch_merge_authority_unavailable"],
-			};
-		}
-		if (!this.options.worktreeRunner) {
-			return {
-				jobIds: [],
-				blockers: ["project_branch_merge_runner_unavailable"],
-			};
-		}
-		const jobIds: string[] = [];
-		const blockers: string[] = [];
-		for (const integrationEvent of candidates) {
-			try {
-				const job = projectBranchMergeJob({
-					repoRoot: this.options.repoRoot,
-					reactor: this.options.reactor,
-					integrationEvent,
-					authority: this.options.mergeAuthority,
-					createdAt,
-					runner: this.options.worktreeRunner,
-					beforeAppend: this.options.beforeAppend,
-				});
-				void this.options.coordinator
-					.schedule(job)
-					.then(() =>
-						this.enqueue({
-							kind: "project_truth_changed",
-							occurredAt: (this.options.now || (() => new Date().toISOString()))(),
-							refs: [integrationEvent.traceId],
-						}),
-					)
-					.catch(() => undefined);
-				jobIds.push(job.idempotencyKey);
-			} catch {
-				blockers.push(
-					`project_branch_merge_proof_invalid:${safeBlockerSegment(integrationEvent.id)}`,
-				);
-			}
-		}
-		return { jobIds, blockers };
-	}
-
-	private scheduleProjectBranchPushes(
-		records: TraceRecord[],
-		createdAt: string,
-	): { jobIds: string[]; blockers: string[] } {
-		const candidates = records.filter(
-			(record): record is TraceEvent =>
-				record.type === "trace_event" &&
-				record.event === "runtime.project_branch.merged" &&
-				!projectBranchPushAlreadyProven(record, records),
-		);
-		if (candidates.length === 0) return { jobIds: [], blockers: [] };
-		if (!this.options.pushAuthority) {
-			return {
-				jobIds: [],
-				blockers: ["project_branch_push_authority_unavailable"],
-			};
-		}
-		if (!this.options.worktreeRunner) {
-			return {
-				jobIds: [],
-				blockers: ["project_branch_push_runner_unavailable"],
-			};
-		}
-		const jobIds: string[] = [];
-		const blockers: string[] = [];
-		for (const mergeEvent of candidates) {
-			try {
-				const job = projectBranchPushJob({
-					repoRoot: this.options.repoRoot,
-					reactor: this.options.reactor,
-					mergeEvent,
-					authority: this.options.pushAuthority,
-					createdAt,
-					runner: this.options.worktreeRunner,
-					beforeAppend: this.options.beforeAppend,
-				});
-				void this.options.coordinator.schedule(job).catch(() => undefined);
-				jobIds.push(job.idempotencyKey);
-			} catch {
-				blockers.push(
-					`project_branch_push_proof_invalid:${safeBlockerSegment(mergeEvent.id)}`,
-				);
-			}
-		}
-		return { jobIds, blockers };
 	}
 
 	private scheduleProductPublications(
@@ -1036,34 +909,6 @@ async function inspectWorkerAdapter(
 	} catch {
 		return { available: false, reason: "inspection_failed" };
 	}
-}
-
-function projectBranchMergeAlreadyProven(
-	integrationEvent: TraceEvent,
-	records: TraceRecord[],
-): boolean {
-	return records.some(
-		(record) =>
-			record.type === "trace_event" &&
-			record.event === "runtime.project_branch.merged" &&
-			record.data?.integrationEventId === integrationEvent.id &&
-			record.data?.commit === integrationEvent.data?.commit &&
-			record.data?.tree === integrationEvent.data?.tree,
-	);
-}
-
-function projectBranchPushAlreadyProven(
-	mergeEvent: TraceEvent,
-	records: TraceRecord[],
-): boolean {
-	return records.some(
-		(record) =>
-			record.type === "trace_event" &&
-			record.event === "runtime.project_branch.pushed" &&
-			record.data?.mergeEventId === mergeEvent.id &&
-			record.data?.commit === mergeEvent.data?.commit &&
-			record.data?.tree === mergeEvent.data?.tree,
-	);
 }
 
 function productPublicationAlreadyProven(

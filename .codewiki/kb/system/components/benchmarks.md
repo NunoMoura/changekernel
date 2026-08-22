@@ -1,15 +1,16 @@
 ---
 type: System Component
+codewiki_id: cw:component:benchmarks
 title: Benchmarks
 description: Measures externally-oracled product outcomes with and without CodeWiki under controlled execution conditions.
 status: stable
 tags: [system, component]
-codewiki_component: benchmarks
+codewiki_component: cw:component:benchmarks
 codewiki_source_patterns: ["benchmarks/**"]
 codewiki_test_patterns: ["tests/benchmarks/**"]
 codewiki_relationships:
   - type: realizes
-    target: /product/stories/maintainer/automate-safe-work.md
+    target: cw:story:maintainer.automate-safe-work
     rationale: Benchmarks independently measure whether CodeWiki improves safe accountable delivery.
 ---
 # Benchmarks

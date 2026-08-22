@@ -7,16 +7,18 @@ import {
 	runWikiArchive,
 	runWikiConfig,
 	runWikiDecide,
-	runWikiImplement,
 	runWikiPlan,
 	runProjectServer,
 	type RunWikiArchiveInput,
 	type RunWikiConfigInput,
 	type RunWikiDecideInput,
-	type RunWikiImplementInput,
 	type RunWikiPlanInput,
 	type RunWikiProjectServerInput,
 } from "../../project-server/index.ts";
+import {
+	runWikiImplement,
+	type RunWikiImplementInput,
+} from "../../project-server/commands/implementation.ts";
 import { bootstrapCodewiki } from "../../project/bootstrap.ts";
 import {
 	findCodewikiProjectRoot,

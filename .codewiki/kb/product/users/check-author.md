@@ -1,5 +1,6 @@
 ---
 type: User
+codewiki_id: cw:user:check-author
 title: Check Author
 description: Developer who builds reusable Probes and composable Checks against exact CodeWiki project snapshots.
 status: stable

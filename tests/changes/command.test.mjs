@@ -27,8 +27,8 @@ function change(id = "CHG-api-test") {
 		status: "pending",
 		intent: {
 			question: "Should Changes have a guarded API?",
-			currentState: "Changes are not available through Pi.",
-			desiredState: "Changes have one guarded API.",
+			problem: "Changes are not available through Pi.",
+			objective: "Changes have one guarded API.",
 			rationale: "Adapters need one semantic contract.",
 			nonGoals: ["Do not accept Changes."],
 			alternatives: ["Keep Changes conversational only."],
@@ -45,9 +45,9 @@ function change(id = "CHG-api-test") {
 			maintainer: "Mutations use exact revision guards.",
 		},
 		knowledge: {
-			topicRefs: [],
-			propagationRefs: [],
-			noImpactRationale: "API-only fixture.",
+			kind: "unchanged",
+			refs: [],
+			rationale: "API-only fixture changes realized behavior, not accepted desired Knowledge.",
 		},
 		outcome: {
 			successSignals: ["Guarded Change API tests pass."],

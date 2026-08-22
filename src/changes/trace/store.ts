@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, open, readdir, rm, stat, truncate } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { readTraceFileSnapshot } from "./reader.ts";
+import {knowledgeTransitionSubjectIds} from "./knowledge-transition.ts";
 import { isTraceId, traceFilePath } from "./schema.ts";
 import type { TraceRecord } from "./types.ts";
 import { appendTraceRecords } from "./append.ts";
@@ -336,15 +337,14 @@ function searchableText(record: ChangeRecord): string {
 	return [
 		record.change.id,
 		record.change.intent.question,
-		record.change.intent.currentState,
-		record.change.intent.desiredState,
+		record.change.intent.problem,
+		record.change.intent.objective,
 		record.change.intent.rationale,
 		...record.change.intent.nonGoals,
 		...record.change.intent.alternatives,
 		...record.change.classification.affectedLayers,
 		...record.change.classification.targetRefs,
-		...record.change.knowledge.topicRefs,
-		...record.change.knowledge.propagationRefs,
+		...knowledgeTransitionSubjectIds(record.change.knowledge),
 		...record.change.outcome.successSignals,
 		...record.change.outcome.evidenceExpectations,
 		...record.change.evidence.sourceRefs,

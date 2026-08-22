@@ -63,7 +63,7 @@ async function planningInput(root, overrides = {}) {
 	const changeId = reaction.selection.change.changeId;
 	const change = workState.changes.find((candidate) => candidate.id === changeId);
 	const path = join(root, traceFilePath(changeTraceId(changeId)));
-	const acceptanceRequirement = "Project Server graph-delta tests pass.";
+	const acceptanceRequirementId = "REQ-project-server-tests";
 	return {
 		repoRoot: root,
 		expectedWorkStateDigest: workState.snapshotDigest,
@@ -82,7 +82,9 @@ async function planningInput(root, overrides = {}) {
 				title: "Implement shared runtime behavior",
 				outcome: "Approved runtime behavior is realized.",
 				technicalRequirements: ["Preserve Change Trace authority."],
-				acceptanceRequirements: [acceptanceRequirement],
+				knowledgeEffectIds: [],
+				unchangedKnowledgeTargets: [],
+				acceptanceRequirementIds: [acceptanceRequirementId],
 				componentRefs: ["runtime"],
 				pathScopes: ["src/shared.ts"],
 				verification: ["node --test tests/project-server/shared.test.mjs"],
@@ -91,16 +93,28 @@ async function planningInput(root, overrides = {}) {
 					toolIds: ["node-test"],
 					skillIds: [],
 					custodyRequirements: ["private-workbench"],
+					consentRequirements: ["source-mutation"],
+					privacyClass: "internal",
 					budgetClass: "standard",
 				},
 			},
 		],
 		dependencyEdges: [],
+		knowledgeEffectCoverage: [],
+		unchangedKnowledgeCoverage: [],
 		acceptanceCoverage: [
-			{ acceptanceRequirement, workUnitIds: ["WU-shared-runtime"] },
+			{ obligationId: acceptanceRequirementId, workUnitIds: ["WU-shared-runtime"] },
+		],
+		aggregateReviewRequirements: [
+			{
+				id: "AGR-shared-runtime",
+				statement: "Review shared runtime behavior across accepted work.",
+				workUnitIds: ["WU-shared-runtime"],
+			},
 		],
 		uiPreviewTargets: [],
 		integrationRequirements: ["Integrate into private Change lineage."],
+		amendment: null,
 		...overrides,
 	};
 }
@@ -143,7 +157,7 @@ describe("wiki_plan Change-scoped graph-delta facade", () => {
 			...input,
 			workUnits: [{ ...input.workUnits[0], owningChangeId: "CHG-other" }],
 			acceptanceCoverage: [
-				{ acceptanceRequirement: "missing", workUnitIds: ["WU-other"] },
+				{ obligationId: "missing", workUnitIds: ["WU-other"] },
 			],
 		};
 		const preview = await runWikiPlan({ ...invalid, mode: "preview" });

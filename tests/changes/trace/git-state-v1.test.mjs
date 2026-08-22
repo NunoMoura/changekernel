@@ -62,33 +62,6 @@ function buildChangeClaimRecord(state, changeId, actorId) {
 	}).operations;
 }
 
-function buildWorkUnitClaimRecord(state, changeId, workGraphDeltaId, workUnitId, actorId) {
-	const change = state.changes.find((entry) => entry.changeId === changeId);
-	return buildOperationSequence({
-		change,
-		changeId,
-		baseSnapshot: baseSnapshotFor(state),
-		authority: authorityBinding({actorId}),
-		specifications: [
-			{
-				kind: "work_unit_claim.acquired",
-				recordedAt: "2026-07-30T15:30:00.000Z",
-				payload: {
-					workGraphDeltaId,
-					workUnitId,
-					assignmentAttemptId: `attempt-${actorId}`,
-					workerId: actorId,
-					workbenchId: `workbench-${actorId}`,
-					sourceBase: state.observedBase.sourceHead,
-					scopeDigest: `sha256:${"1".repeat(64)}`,
-					budgetDigest: `sha256:${"2".repeat(64)}`,
-					obligationDigest: `sha256:${"3".repeat(64)}`,
-				},
-			},
-		],
-	}).operations;
-}
-
 describe("provider-neutral Git state CAS", () => {
 	it("accepts and replays exact canonical state from an empty bare remote", async () => {
 		const fixture = await createTwoCloneFixture();
@@ -271,47 +244,6 @@ describe("provider-neutral Git state CAS", () => {
 				(claim) => claim.status === "active",
 			);
 			assert.equal(activeClaims.length, 1);
-		} finally {
-			await fixture.cleanup();
-		}
-	});
-
-	it("serializes concurrent Claims for one Change-owned Work Unit", async () => {
-		const fixture = await createTwoCloneFixture();
-		try {
-			const initial = createInitialProjectWorkState();
-			const changeId = "CHG-planning-claim";
-			const opened = await propose(
-				fixture.cloneA,
-				initial,
-				buildOpenRecords(initial, changeId),
-			);
-			await push(fixture.cloneA, opened.proposal);
-			const states = await Promise.all([sync(fixture.cloneA), sync(fixture.cloneB)]);
-			const workGraphDeltaId = `sha256:${"4".repeat(64)}`;
-			const workUnitId = "work-git-claim";
-			const claimRecords = [
-				buildWorkUnitClaimRecord(states[0], changeId, workGraphDeltaId, workUnitId, "worker-a"),
-				buildWorkUnitClaimRecord(states[1], changeId, workGraphDeltaId, workUnitId, "worker-b"),
-			];
-			const claims = await Promise.all([
-				propose(fixture.cloneA, states[0], claimRecords[0]),
-				propose(fixture.cloneB, states[1], claimRecords[1]),
-			]);
-			const results = await Promise.all([
-				push(fixture.cloneA, claims[0].proposal),
-				push(fixture.cloneB, claims[1].proposal),
-			]);
-			const staleIndex = results.findIndex((result) => result.status === "stale");
-			const staleRepo = staleIndex === 0 ? fixture.cloneA : fixture.cloneB;
-			const staleWorker = staleIndex === 0 ? "worker-a" : "worker-b";
-			const refreshed = await sync(staleRepo);
-			assert.throws(
-				() => buildWorkUnitClaimRecord(refreshed, changeId, workGraphDeltaId, workUnitId, staleWorker),
-				(error) => error?.code === "ACTIVE_AUTHORITY",
-			);
-			const owner = refreshed.changes.find((change) => change.changeId === changeId);
-			assert.equal(owner.workUnitClaims.filter((claim) => claim.status === "active").length, 1);
 		} finally {
 			await fixture.cleanup();
 		}

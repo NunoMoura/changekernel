@@ -18,7 +18,6 @@ import {
 	isOkfMarkdownPath,
 	isOkfReservedPath,
 	normalizeOkfPath,
-	okfConceptId,
 } from "../knowledge/okf.ts";
 import {
 	okfConceptDocuments,
@@ -61,7 +60,6 @@ export interface CreateKnowledgeAlignmentProjectionInput {
 	readonly authority: "accepted" | "imported";
 	readonly today?: string;
 	readonly bundleRefPrefix?: string;
-	readonly conceptIdPrefix?: string;
 }
 
 export function createKnowledgeAlignmentProjection(
@@ -75,8 +73,13 @@ export function createKnowledgeAlignmentProjection(
 			entry.fields,
 		]),
 	);
-	const conceptIdPrefix = input.conceptIdPrefix ?? "kb:";
-	const concepts = okfConceptDocuments(files).map((document) => {
+	const documents = okfConceptDocuments(files);
+	const conceptIdsByPath = new Map(
+		documents.flatMap((document) =>
+			document.conceptId ? [[document.path, document.conceptId] as const] : [],
+		),
+	);
+	const concepts = documents.map((document) => {
 		const profile = analyzeOkfV02Document(document, {today: input.today});
 		const ownership = ownershipByPath.get(document.path);
 		const sourcePatterns = sortedUnique([
@@ -92,7 +95,7 @@ export function createKnowledgeAlignmentProjection(
 			) ?? []),
 		]);
 		return canonicalValue<KnowledgeAlignmentConcept>({
-			conceptId: qualifyConceptId(document.conceptId ?? "", conceptIdPrefix),
+			conceptId: requiredConceptId(document.conceptId, document.path),
 			path: underlyingKnowledgeRef(document.path, input.bundleRefPrefix),
 			authority: input.authority,
 			type: profile.type,
@@ -103,15 +106,12 @@ export function createKnowledgeAlignmentProjection(
 			markdownReferences: markdownKnowledgeReferences(
 				document.path,
 				document.body,
-				conceptIdPrefix,
+				conceptIdsByPath,
 			),
 			sourceResources: sortedUnique(
 				profile.sources.map((source) => source.resource),
 			),
-			relationships: profile.relationships.map((relationship) => ({
-				...relationship,
-				target: qualifyConceptId(relationship.target, conceptIdPrefix),
-			})),
+			relationships: profile.relationships,
 			sourcePatterns,
 			testPatterns,
 		});
@@ -128,7 +128,7 @@ export function createKnowledgeAlignmentProjection(
 function markdownKnowledgeReferences(
 	documentPath: string,
 	body: string,
-	conceptIdPrefix: string,
+	conceptIdsByPath: ReadonlyMap<string, string>,
 ): string[] {
 	return sortedUnique(
 		extractOkfMarkdownLinks(body).flatMap((link) => {
@@ -154,19 +154,17 @@ function markdownKnowledgeReferences(
 			) {
 				return [];
 			}
-			const targetConceptId = okfConceptId(resolved);
-			return targetConceptId
-				? [qualifyConceptId(targetConceptId, conceptIdPrefix)]
-				: [];
+			const targetConceptId = conceptIdsByPath.get(resolved);
+			return targetConceptId ? [targetConceptId] : [];
 		}),
 	);
 }
 
-function qualifyConceptId(conceptId: string, prefix: string): string {
-	if (!conceptId) throw new Error("Knowledge concept ID must not be empty.");
-	return conceptId.startsWith(prefix) || /^[a-z][a-z\d+.-]*:/i.test(conceptId)
-		? conceptId
-		: `${prefix}${conceptId}`;
+function requiredConceptId(conceptId: string | undefined, path: string): string {
+	if (!conceptId) {
+		throw new Error(`Knowledge concept ${path} requires immutable codewiki_id identity.`);
+	}
+	return conceptId;
 }
 
 function underlyingKnowledgeRef(path: string, prefix: string | undefined): string {
@@ -556,5 +554,6 @@ function knowledgeConceptNodeId(conceptId: string): string {
 }
 
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: callers assemble contract-shaped JSON values; canonicalization preserves shape while freezing and ordering.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

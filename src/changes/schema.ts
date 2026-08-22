@@ -1,3 +1,4 @@
+import {canonicalJson} from "../utils/canonical-json.ts";
 import { changeContentDigest } from "./digest.ts";
 import { normalizeChange } from "./normalize.ts";
 import {
@@ -62,16 +63,16 @@ function assertChangeShape(value: unknown): void {
 	const intent = record(change.intent, "change.intent");
 	keys(intent, "change.intent", [
 		"question",
-		"currentState",
-		"desiredState",
+		"problem",
+		"objective",
 		"rationale",
 		"nonGoals",
 		"alternatives",
 	]);
 	requiredStrings(intent, "change.intent", [
 		"question",
-		"currentState",
-		"desiredState",
+		"problem",
+		"objective",
 		"rationale",
 	]);
 	strings(intent.nonGoals, "change.intent.nonGoals");
@@ -101,15 +102,7 @@ function assertChangeShape(value: unknown): void {
 	requiredStrings(impact, "change.impact", ["user", "maintainer"]);
 	optionalStrings(impact, "change.impact", ["compatibility"]);
 
-	const knowledge = record(change.knowledge, "change.knowledge");
-	keys(knowledge, "change.knowledge", [
-		"topicRefs",
-		"propagationRefs",
-		"noImpactRationale",
-	]);
-	strings(knowledge.topicRefs, "change.knowledge.topicRefs");
-	strings(knowledge.propagationRefs, "change.knowledge.propagationRefs");
-	optionalStrings(knowledge, "change.knowledge", ["noImpactRationale"]);
+	assertKnowledgeTransition(change.knowledge);
 
 	const outcome = record(change.outcome, "change.outcome");
 	keys(outcome, "change.outcome", ["successSignals", "evidenceExpectations"]);
@@ -227,6 +220,113 @@ function assertChangeShape(value: unknown): void {
 
 	if (change.lastStatusTransition !== undefined) {
 		assertTransition(change.lastStatusTransition);
+	}
+}
+
+function assertKnowledgeTransition(value: unknown): void {
+	const knowledge = record(value, "change.knowledge");
+	string(knowledge.kind, "change.knowledge.kind");
+	if (knowledge.kind === "unchanged") {
+		keys(knowledge, "change.knowledge", ["kind", "refs", "rationale"]);
+		string(knowledge.rationale, "change.knowledge.rationale");
+		const refs = array(knowledge.refs, "change.knowledge.refs");
+		assertUniqueKnowledgeTargets(refs, "change.knowledge.refs");
+		return;
+	}
+	if (knowledge.kind !== "effects") {
+		fail("change.knowledge.kind must be effects or unchanged");
+	}
+	keys(knowledge, "change.knowledge", ["kind", "effects"]);
+	const effects = array(knowledge.effects, "change.knowledge.effects");
+	if (effects.length === 0) fail("change.knowledge.effects must not be empty");
+	assertUniqueKnowledgeTargets(
+		effects.map((value, index) =>
+			record(value, `change.knowledge.effects[${index}]`).target,
+		),
+		"change.knowledge.effects",
+	);
+	for (const [index, value] of effects.entries()) {
+		const path = `change.knowledge.effects[${index}]`;
+		const effect = record(value, path);
+		string(effect.action, `${path}.action`);
+		assertKnowledgeTarget(effect.target, `${path}.target`);
+		if (effect.action === "retire") {
+			keys(effect, path, ["action", "target", "expected"]);
+			digest(effect.expected, `${path}.expected`);
+			continue;
+		}
+		if (effect.action !== "set") fail(`${path}.action is unsupported`);
+		keys(effect, path, ["action", "target", "expected", "postState"]);
+		if (effect.expected !== "absent") digest(effect.expected, `${path}.expected`);
+		assertKnowledgePostState(effect.postState, `${path}.postState`);
+		const postState = record(effect.postState, `${path}.postState`);
+		if (effect.expected === postState.digest) {
+			fail(`${path} must change semantic state`);
+		}
+	}
+}
+
+function assertUniqueKnowledgeTargets(values: unknown[], path: string): void {
+	const seen = new Set<string>();
+	for (const [index, value] of values.entries()) {
+		const key = assertKnowledgeTarget(value, `${path}[${index}]`);
+		if (seen.has(key)) fail(`${path} contains duplicate target ${key}`);
+		seen.add(key);
+	}
+}
+
+function assertKnowledgeTarget(value: unknown, path: string): string {
+	const target = record(value, path);
+	keys(target, path, ["subjectId", "facetId"]);
+	string(target.subjectId, `${path}.subjectId`);
+	if (!/^cw:[a-z][a-z0-9-]*:[a-z0-9][a-z0-9._-]*$/.test(target.subjectId)) {
+		fail(`${path}.subjectId must be a stable Knowledge subject ID`);
+	}
+	if (target.facetId !== undefined) {
+		string(target.facetId, `${path}.facetId`);
+		if (!/^[a-z][a-z0-9._-]*$/.test(target.facetId)) {
+			fail(`${path}.facetId must be a stable facet key`);
+		}
+	}
+	return `${target.subjectId}\u0000${target.facetId ?? ""}`;
+}
+
+function assertKnowledgePostState(value: unknown, path: string): void {
+	const postState = record(value, path);
+	keys(postState, path, ["id", "digest", "schemaVersion", "artifact"]);
+	requiredStrings(postState, path, ["id", "digest", "schemaVersion"]);
+	digest(postState.digest, `${path}.digest`);
+	if (!/^knowledge-post-state:[0-9a-f]{64}$/.test(String(postState.id))) {
+		fail(`${path}.id must bind a Knowledge post-state digest`);
+	}
+	if (postState.schemaVersion !== "1.0.0") fail(`${path}.schemaVersion must be 1.0.0`);
+	const artifact = record(postState.artifact, `${path}.artifact`);
+	keys(artifact, `${path}.artifact`, ["schemaVersion", "mediaType", "content"]);
+	requiredStrings(artifact, `${path}.artifact`, [
+		"schemaVersion",
+		"mediaType",
+		"content",
+	]);
+	if (artifact.schemaVersion !== "1.0.0") {
+		fail(`${path}.artifact.schemaVersion must be 1.0.0`);
+	}
+	if (![
+		"text/markdown",
+		"application/yaml",
+		"application/json",
+	].includes(String(artifact.mediaType))) {
+		fail(`${path}.artifact.mediaType is unsupported`);
+	}
+	if (artifact.mediaType === "application/json") {
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(String(artifact.content));
+		} catch {
+			fail(`${path}.artifact.content must be valid JSON`);
+		}
+		if (canonicalJson(parsed) !== artifact.content) {
+			fail(`${path}.artifact.content must be canonical JSON`);
+		}
 	}
 }
 

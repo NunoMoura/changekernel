@@ -20,8 +20,8 @@ function planningTraceEvents(traceId = "TRACE-review-evidence-cache") {
 				{
 					id: "CHG-cache",
 					question: "Should implementation evidence be cached?",
-					currentState: "Fast feedback evidence is transient.",
-					desiredState: "Implementation can reuse cached review evidence.",
+					problem: "Fast feedback evidence is transient.",
+					objective: "Implementation can reuse cached review evidence.",
 					rationale: "Cached diagnostics should survive until loop exit.",
 					...decisionQualityFields(),
 					approval: "approved",

@@ -25,7 +25,7 @@ import {
 
 export const ALIGNMENT_GRAPH_PROJECTOR = Object.freeze({
 	id: "codewiki.alignment-graph-projector",
-	version: "3.0.0",
+	version: "4.0.0",
 } as const);
 
 export type AlignmentGraphProvenanceClass =
@@ -180,7 +180,9 @@ const OPERATION_GRAPH_PROJECTORS: Readonly<
 	"loop.attempt_started": projectLoopAttempt,
 	"loop.attempt_ended": projectAttemptEnd,
 	"decision.candidate_recorded": projectCandidate,
+	"decision.confirmed": projectDecisionConfirmation,
 	"planning.candidate_recorded": projectCandidate,
+	"planning.delta_accepted": projectPlanningDeltaAcceptance,
 	"implementation.candidate_recorded": projectCandidate,
 	"loop.exit_policy_recorded": projectExitPolicy,
 	"evidence.recorded": projectEvidence,
@@ -196,6 +198,9 @@ const OPERATION_GRAPH_PROJECTORS: Readonly<
 	"worker.report_recorded": projectWorkerReport,
 	"integration.attempt_started": projectIntegrationAttempt,
 	"integration.result_recorded": projectIntegrationResult,
+	"integration.candidate_admitted": projectPrivateIntegrationAdmission,
+	"implementation.aggregate_frozen": projectImplementationAggregate,
+	"delivery.applied": projectGuardedDelivery,
 	"source.branch_merge_recorded": projectSourceMerge,
 	"source.branch_push_recorded": projectSourcePush,
 	"review_projection.published": projectReviewProjection,
@@ -543,14 +548,20 @@ function projectCandidate(
 	const payload = candidatePayload(operation);
 	const candidateNode = `candidate:${payload.candidate.id}`;
 	const provenance = operationProvenance(operation);
+	const attributes: Record<string, CanonicalJsonValue> = {
+		digest: inlineArtifactAttribute(payload.candidate, "digest"),
+		contentDigest: payload.candidate.digest,
+	};
+	const workUnitId =
+		operation.body.kind === "implementation.candidate_recorded"
+			? inlineCandidateContentAttribute(payload.candidate, "workUnitId")
+			: null;
+	if (workUnitId !== null) attributes.workUnitId = workUnitId;
 	graph.node({
 		id: candidateNode,
 		type: "candidate",
 		label: payload.candidate.id,
-		attributes: {
-			digest: inlineArtifactAttribute(payload.candidate, "digest"),
-			contentDigest: payload.candidate.digest,
-		},
+		attributes,
 		provenance,
 	});
 	graph.edge(
@@ -559,6 +570,14 @@ function projectCandidate(
 		candidateNode,
 		provenance,
 	);
+	if (typeof workUnitId === "string") {
+		graph.edge(
+			"work_unit_realized_by_candidate",
+			workUnitNodeId(workUnitId),
+			candidateNode,
+			provenance,
+		);
+	}
 }
 
 function projectExitPolicy(
@@ -677,6 +696,75 @@ function projectExitReport(
 	);
 }
 
+function projectPlanningDeltaAcceptance(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+): void {
+	const payload = payloadOf(operation, "planning.delta_accepted");
+	const acceptanceNode = `planning-acceptance:${operation.operationId}`;
+	const deltaNode = `work-graph-delta:${payload.deltaId}`;
+	const provenance = operationProvenance(operation);
+	graph.node({
+		id: acceptanceNode,
+		type: "planning_acceptance",
+		label: payload.deltaId,
+		attributes: {
+			candidateDigest: payload.candidateDigest,
+			gateReportDigest: payload.gateReportDigest,
+			workGraphDigest: payload.expectedWorkGraphDigest,
+		},
+		provenance,
+	});
+	graph.node({
+		id: deltaNode,
+		type: "work_graph_delta",
+		label: payload.deltaId,
+		attributes: {},
+		provenance,
+	});
+	graph.edge(
+		"candidate_accepted_by",
+		`candidate:${payload.candidateId}`,
+		acceptanceNode,
+		provenance,
+	);
+	graph.edge("planning_delta_updates_work_graph", acceptanceNode, deltaNode, provenance);
+}
+
+function projectDecisionConfirmation(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+): void {
+	const payload = payloadOf(operation, "decision.confirmed");
+	const confirmationNode = `decision-confirmation:${operation.operationId}`;
+	const provenance = operationProvenance(operation);
+	graph.node({
+		id: confirmationNode,
+		type: "decision_confirmation",
+		label: payload.disposition,
+		attributes: {
+			candidateDigest: payload.candidateDigest,
+			gateReportDigest: payload.gateReportDigest,
+			...(payload.disposition === "approve"
+				? {knowledgeStateDigest: payload.resultingKnowledgeStateDigest}
+				: {}),
+		},
+		provenance,
+	});
+	graph.edge(
+		"candidate_confirmed_by",
+		`candidate:${payload.candidateId}`,
+		confirmationNode,
+		provenance,
+	);
+	graph.edge(
+		"confirmation_binds_gate_report",
+		confirmationNode,
+		`gate-report:${payload.gateReportId}`,
+		provenance,
+	);
+}
+
 function projectServerRoute(
 	graph: GraphAccumulator,
 	operation: CanonicalChangeOperation,
@@ -731,7 +819,13 @@ function projectWorkUnitClaimNode(
 	operation: CanonicalChangeOperation,
 	payload: Pick<
 		ChangeOperationPayload<"work_unit_claim.acquired">,
-		"workGraphDeltaId" | "workUnitId" | "workerId"
+		| "workGraphDeltaId"
+		| "workUnitId"
+		| "workerId"
+		| "workerOfferId"
+		| "workerOfferDigest"
+		| "schedulingPolicyDigest"
+		| "leaseExpiresAt"
 	>,
 ): void {
 	const provenance = operationProvenance(operation);
@@ -740,7 +834,13 @@ function projectWorkUnitClaimNode(
 		id: claimNode,
 		type: "work_unit_claim",
 		label: payload.workUnitId,
-		attributes: {workerId: payload.workerId},
+		attributes: {
+			workerId: payload.workerId,
+			workerOfferId: payload.workerOfferId,
+			workerOfferDigest: payload.workerOfferDigest,
+			schedulingPolicyDigest: payload.schedulingPolicyDigest,
+			leaseExpiresAt: payload.leaseExpiresAt,
+		},
 		provenance,
 	});
 	const workerNode = `actor:${payload.workerId}`;
@@ -780,7 +880,14 @@ function projectAssignment(
 		id: assignmentNode,
 		type: "assignment",
 		label: payload.assignmentAttemptId,
-		attributes: {workerId: payload.workerId, workbenchId: payload.workbenchId},
+		attributes: {
+			workerId: payload.workerId,
+			workerOfferId: payload.workerOfferId,
+			workerOfferDigest: payload.workerOfferDigest,
+			workbenchId: payload.workbenchId,
+			workbenchDigest: payload.workbenchDigest,
+			assignmentDigest: payload.assignmentDigest,
+		},
 		provenance,
 	});
 	graph.edge(
@@ -867,6 +974,76 @@ function projectIntegrationAttempt(
 	);
 }
 
+function projectPrivateIntegrationAdmission(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+): void {
+	classifyOperation("candidate_admitted_to_private_lineage")(graph, operation);
+	const payload = payloadOf(operation, "integration.candidate_admitted");
+	const provenance = operationProvenance(operation);
+	const receipt = payload.receipt;
+	const workUnitId = inlineArtifactAttribute(receipt, "workUnitId");
+	const candidateId = inlineArtifactAttribute(receipt, "candidateId");
+	const resultCommit = inlineArtifactAttribute(receipt, "resultCommit");
+	if (typeof workUnitId === "string") {
+		graph.edge(
+			"work_unit_admitted_to_private_lineage",
+			workUnitNodeId(workUnitId),
+			operationNodeId(operation.operationId),
+			provenance,
+		);
+	}
+	if (typeof candidateId === "string") {
+		graph.edge(
+			"candidate_admitted_to_private_lineage",
+			`candidate:${candidateId}`,
+			operationNodeId(operation.operationId),
+			provenance,
+		);
+	}
+	if (typeof resultCommit === "string") {
+		graph.edge(
+			"private_lineage_has_commit",
+			operationNodeId(operation.operationId),
+			`git-commit:${resultCommit}`,
+			provenance,
+		);
+	}
+}
+
+function projectImplementationAggregate(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+): void {
+	classifyOperation("change_has_frozen_implementation_aggregate")(graph, operation);
+	const payload = payloadOf(operation, "implementation.aggregate_frozen");
+	const provenance = operationProvenance(operation);
+	const candidateIds = inlineArtifactAttribute(payload.aggregate, "contributingCandidateIds");
+	const workUnitIds = inlineArtifactAttribute(payload.aggregate, "requiredWorkUnitIds");
+	if (Array.isArray(candidateIds)) {
+		for (const candidateId of candidateIds) {
+			if (typeof candidateId !== "string") continue;
+			graph.edge(
+				"candidate_contributes_to_implementation_aggregate",
+				`candidate:${candidateId}`,
+				operationNodeId(operation.operationId),
+				provenance,
+			);
+		}
+	}
+	if (Array.isArray(workUnitIds)) {
+		for (const workUnitId of workUnitIds) {
+			if (typeof workUnitId !== "string") continue;
+			graph.edge(
+				"work_unit_contributes_to_implementation_aggregate",
+				workUnitNodeId(workUnitId),
+				operationNodeId(operation.operationId),
+				provenance,
+			);
+		}
+	}
+}
+
 function projectIntegrationResult(
 	graph: GraphAccumulator,
 	operation: CanonicalChangeOperation,
@@ -888,6 +1065,28 @@ function projectIntegrationResult(
 			provenance,
 		);
 	}
+}
+
+function projectGuardedDelivery(
+	graph: GraphAccumulator,
+	operation: CanonicalChangeOperation,
+): void {
+	const payload = payloadOf(operation, "delivery.applied");
+	const provenance = operationProvenance(operation, "observed_binding", [
+		payload.authority.id,
+	]);
+	graph.edge(
+		"review_authorizes_delivery",
+		`review-attempt:${payload.reviewAttemptDigest}`,
+		operationNodeId(operation.operationId),
+		provenance,
+	);
+	graph.edge(
+		"delivery_realizes_aggregate",
+		operationNodeId(operation.operationId),
+		`git-commit:${payload.deliveredCommit}`,
+		provenance,
+	);
 }
 
 function projectSourceMerge(
@@ -1285,6 +1484,18 @@ function inlineArtifactAttribute(
 	return artifact[field] ?? null;
 }
 
+function inlineCandidateContentAttribute(
+	inline: CanonicalInlineSemanticArtifact,
+	field: string,
+): CanonicalJsonValue {
+	const artifact = inline.artifact as Record<string, CanonicalJsonValue>;
+	const content = artifact.content;
+	if (!content || typeof content !== "object" || Array.isArray(content)) return null;
+	const contentRecord = content as Readonly<Record<string, CanonicalJsonValue>>;
+	return contentRecord[field] ?? null;
+}
+
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: graph projectors assemble contract values; canonicalization preserves shape while freezing and ordering.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

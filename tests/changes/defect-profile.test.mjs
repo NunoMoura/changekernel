@@ -6,6 +6,7 @@ import {
 	CHANGE_DEFECT_PROFILE_PROTOCOL,
 	normalizeChangeDefectProfile,
 } from "../../src/changes/defect-profile.ts";
+import {knowledgeSetTransition} from "../helpers/knowledge-transition.mjs";
 
 function profile(overrides = {}) {
 	return {
@@ -112,8 +113,8 @@ describe("Change defect and security profile", () => {
 		const content = {
 			title: "Validate token issuer",
 			intent: {
-				currentState: "Issuer validation is incomplete.",
-				desiredState: "Only configured issuers pass.",
+				problem: "Issuer validation is incomplete.",
+				objective: "Only configured issuers pass.",
 				nonGoals: [],
 				alternatives: [],
 			},
@@ -125,7 +126,10 @@ describe("Change defect and security profile", () => {
 				targetRefs: ["src/security/token.ts"],
 			},
 			impact: {},
-			knowledge: {topicRefs: ["kb:system/runtime"], propagationRefs: []},
+			knowledge: knowledgeSetTransition({
+				subjectId: "cw:component:runtime",
+				content: "Only configured issuers pass.",
+			}),
 			outcome: {
 				successSignals: ["Only configured issuers pass."],
 				evidenceExpectations: [],

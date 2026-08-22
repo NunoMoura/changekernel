@@ -814,7 +814,7 @@ function pipelineEntries() {
 		return {
 			kind: 'change', id: 'change:' + card.identity.changeId, stage: stage, card: card, sourceIndex: index,
 			blocked: false,
-			searchText: [card.identity.changeId, card.question, card.identity.status, card.identity.validationState, card.sections.currentState.text, card.sections.proposedChange.text].join(' ').toLowerCase(),
+			searchText: [card.identity.changeId, card.question, card.identity.status, card.identity.validationState, card.sections.problem.text, card.sections.objective.text].join(' ').toLowerCase(),
 		};
 	}).concat(traces.map(function(trace, index) {
 		const stage = trace.stage || (trace.committed ? 'committed' : trace.loop === 'archived' ? 'committed' : trace.loop);
@@ -1074,8 +1074,8 @@ function pluralLabel(count, singular) { return count === 1 ? singular : singular
 function renderChangeDetail(card) {
 	const node = document.createElement('div'); node.className = 'detail stage-detail stage-change change-card';
 	const identity = document.createElement('div'); identity.className = 'change-identity'; text(identity, 'revision ' + card.identity.revision + ' · record ' + card.identity.recordRevision + ' · ' + card.identity.status + ' · ' + card.identity.validationState); node.append(identity);
-	node.append(changeSection('Current state', [card.sections.currentState.text]));
-	node.append(changeSection('Proposed change', [card.sections.proposedChange.text, 'Rationale: ' + card.sections.proposedChange.rationale]));
+	node.append(changeSection('Problem', [card.sections.problem.text]));
+	node.append(changeSection('Objective', [card.sections.objective.text, 'Rationale: ' + card.sections.objective.rationale]));
 	const opinion = [];
 	(card.sections.agentOpinion.assessments || []).forEach(function(item) { opinion.push(item.actor + ' · ' + item.stance + ': ' + item.rationale); });
 	(card.sections.agentOpinion.recommendations || []).forEach(function(item) { opinion.push(item.actor + ' recommends ' + item.value + ': ' + item.rationale); });
@@ -1457,7 +1457,6 @@ const QUALITY_LAYER_ORDER = [
 	'other',
 ];
 const QUALITY_STANDARD_FALLBACKS = {
-	sprint_proposal_ready: 'input_contract|loop_contract|hard',
 	intention_understood: 'specificity|user_value|hard',
 	user_value_clear: 'specificity|user_value|soft',
 	cost_understood: 'project_fit|maintainability|soft',

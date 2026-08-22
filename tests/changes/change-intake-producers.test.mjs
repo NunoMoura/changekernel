@@ -139,7 +139,7 @@ describe("closed Change intake producers", () => {
 				observationId: "observation:knowledge:01",
 				previousSnapshotDigest: digest("8"),
 				currentSnapshotDigest: digest("9"),
-				topicRefs: ["kb:system/runtime"],
+				subjectIds: ["cw:component:runtime"],
 				content: content({claimedCategory: "knowledge"}),
 			}),
 		];
@@ -241,7 +241,7 @@ describe("closed Change intake producers", () => {
 			observationId: "knowledge-drift:README:01",
 			previousSnapshotDigest: digest("1"),
 			currentSnapshotDigest: digest("2"),
-			topicRefs: ["kb:product/terminal"],
+			subjectIds: ["cw:component:terminal"],
 			sourceRef: "trace:knowledge-linter:run:01",
 		});
 		assert.equal(drift.content.claimedCategory, "knowledge");
