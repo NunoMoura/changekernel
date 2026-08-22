@@ -163,6 +163,20 @@ export function appendExecutionLedgerEntry(
 	return ledgerFrom(normalized.header, [...normalized.entries, entry]);
 }
 
+export function assertExecutionLedgerEntry(
+	value: unknown,
+): Readonly<ExecutionLedgerEntry> {
+	const entry = record(value, "Execution Ledger entry");
+	if (!Number.isInteger(entry.sequence) || (entry.sequence as number) < 0) {
+		throw new Error("Execution Ledger entry sequence is invalid.");
+	}
+	const previousDigest = assertSha256Digest(
+		entry.previousDigest,
+		"Execution Ledger previous digest",
+	);
+	return normalizeEntry(value, entry.sequence as number, previousDigest);
+}
+
 export function assertExecutionLedger(
 	value: unknown,
 ): Readonly<ExecutionLedger> {

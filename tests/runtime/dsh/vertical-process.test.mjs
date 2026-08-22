@@ -28,6 +28,11 @@ import {
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {readDshRuntimeProvenance} from "../../../src/runtime/dsh/provenance.ts";
 import {
+	readRetainedRunRawLog,
+	readStoredExecutionLedger,
+} from "../../../src/runtime/evidence/store.ts";
+import {readStoredRunReceipt} from "../../../src/runtime/receipts/store.ts";
+import {
 	createNodeRunProcessManager,
 } from "../../../src/runtime/processes/node-process-manager.ts";
 import {createRuntime} from "../../../src/runtime/runtime.ts";
@@ -100,7 +105,11 @@ describe("DSH Runtime vertical process", () => {
 			candidateBytes.toString("utf8"),
 			/\bfrom\s+["']@deepseek-ai\//,
 		);
-		const runtime = createRuntime({processManager: fixture.processManager});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
 		try {
 			const handle = await runtime.start(fixture.request);
 			const receipt = await runtime.waitForReceipt(handle);
@@ -130,14 +139,75 @@ describe("DSH Runtime vertical process", () => {
 			const rawLogPath = await onlyJsonlFile(fixture.sessionRoot);
 			assert.equal(receipt.rawLog.digest, sha256Digest(await readFile(rawLogPath)));
 			assert.match(await readFile(rawLogPath, "utf8"), /DSH vertical slice complete\./);
+			assert.equal(
+				(await readStoredExecutionLedger({
+					stateRoot: fixture.stateRoot,
+					runId: receipt.runId,
+					requestDigest: receipt.requestDigest,
+				})).ledgerDigest,
+				receipt.executionLedgerDigest,
+			);
+			assert.equal(
+				(await readStoredRunReceipt({
+					stateRoot: fixture.stateRoot,
+					runId: receipt.runId,
+					requestDigest: receipt.requestDigest,
+				})).receiptDigest,
+				receipt.receiptDigest,
+			);
+			assert.deepEqual(
+				await readRetainedRunRawLog({
+					stateRoot: fixture.stateRoot,
+					reference: receipt.rawLog,
+				}),
+				await readFile(rawLogPath),
+			);
 		} finally {
 			await runtime.shutdown();
 		}
 	});
 
+	it("recovers durable receipt authority without launching the same Run twice", async () => {
+		const fixture = await runtimeFixture("receipt-recovery");
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
+		const handle = await runtime.start(fixture.request);
+		const receipt = await runtime.waitForReceipt(handle);
+		await runtime.shutdown();
+
+		const recovered = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
+		try {
+			await assert.rejects(
+				recovered.start(fixture.request),
+				/already has a committed Receipt/,
+			);
+			assert.equal(
+				(await readStoredRunReceipt({
+					stateRoot: fixture.stateRoot,
+					runId: receipt.runId,
+					requestDigest: receipt.requestDigest,
+				})).receiptDigest,
+				receipt.receiptDigest,
+			);
+		} finally {
+			await recovered.shutdown();
+		}
+	});
+
 	it("resumes exact Session head after Runtime and Run Process restart", async () => {
 		const fixture = await runtimeFixture("restart");
-		const firstRuntime = createRuntime({processManager: fixture.processManager});
+		const firstRuntime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
 		const firstHandle = await firstRuntime.start(fixture.request);
 		const firstReceipt = await firstRuntime.waitForReceipt(firstHandle);
 		await firstRuntime.shutdown();
@@ -156,7 +226,11 @@ describe("DSH Runtime vertical process", () => {
 			projectContextSnapshot: null,
 			resumeLog: firstReceipt.rawLog,
 		});
-		const secondRuntime = createRuntime({processManager: fixture.processManager});
+		const secondRuntime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(secondRequest.createdAt) + 100).toISOString(),
+		});
 		try {
 			const secondHandle = await secondRuntime.start(secondRequest);
 			const secondReceipt = await secondRuntime.waitForReceipt(secondHandle);
@@ -176,7 +250,11 @@ describe("DSH Runtime vertical process", () => {
 
 	it("transports immutable Project Context into admitted tools across authenticated process boundary", async () => {
 		const fixture = await runtimeFixture("context", {admitted: true});
-		const runtime = createRuntime({processManager: fixture.processManager});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
 		try {
 			const handle = await runtime.start(fixture.request);
 			const receipt = await runtime.waitForReceipt(handle);
@@ -203,7 +281,11 @@ describe("DSH Runtime vertical process", () => {
 			fixture.manifestPath,
 			canonicalJson({...fixture.manifest, prompt: "tampered"}),
 		);
-		const runtime = createRuntime({processManager: fixture.processManager});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
 		try {
 			const handle = await runtime.start(fixture.request);
 			await assert.rejects(
@@ -291,6 +373,7 @@ async function runtimeFixture(suffix, options = {}) {
 	});
 	return {
 		root,
+		stateRoot,
 		sessionRoot,
 		buildDigest: binding.buildDigest,
 		binding,

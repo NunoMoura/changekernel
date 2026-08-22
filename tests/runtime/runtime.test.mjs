@@ -3,7 +3,7 @@ import {Buffer} from "node:buffer";
 import {mkdtemp, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join, resolve} from "node:path";
-import {describe, it} from "node:test";
+import {after, describe, it} from "node:test";
 import {pathToFileURL} from "node:url";
 
 import {
@@ -32,6 +32,8 @@ import {canonicalJsonDigest, sha256Digest} from "../../src/utils/canonical-json.
 const NOW = "2026-08-16T10:00:00.000Z";
 const ACCEPTED_AT = "2026-08-16T10:00:01.000Z";
 const DEADLINE = "2026-08-16T10:01:00.000Z";
+const RUNTIME_STATE_ROOT = await mkdtemp(join(tmpdir(), "codewiki-runtime-state-"));
+after(() => rm(RUNTIME_STATE_ROOT, {recursive: true, force: true}));
 
 describe("Runtime", () => {
 	it("admits one exact Run Process, sequences events, proves exit, and erases its key", async () => {
@@ -408,6 +410,7 @@ function runtimeOptions(processManager) {
 	let nowCalls = 0;
 	return {
 		processManager,
+		stateRoot: RUNTIME_STATE_ROOT,
 		now: () => {
 			nowCalls += 1;
 			return nowCalls === 1 ? ACCEPTED_AT : "2026-08-16T10:00:01.500Z";

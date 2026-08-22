@@ -6,10 +6,12 @@ import test from "node:test";
 
 import {
 	appendStoredExecutionLedger,
+	appendStoredRunRawLogChunk,
 	openStoredExecutionLedger,
 	readRetainedRunRawLog,
 	readStoredExecutionLedger,
 	recoverStoredExecutionLedgers,
+	recoverStoredRawLogAppends,
 	retainRunRawLog,
 } from "../../../src/runtime/evidence/store.ts";
 import {
@@ -101,6 +103,54 @@ test("raw Agent Session logs are retained by digest and reverified on every read
 			readRetainedRunRawLog({stateRoot, reference}),
 			/byte length|digest/,
 		);
+	} finally {
+		await rm(stateRoot, {recursive: true, force: true});
+	}
+});
+
+test("raw-log chunk append survives interruption and resumes without duplicate bytes", async () => {
+	const stateRoot = await temporaryState();
+	try {
+		const request = runRequest();
+		const content = Buffer.from('{"type":"session/start"}\n{"type":"turn/end"}\n', "utf8");
+		const reference = rawLogReference(request, content);
+		const firstChunk = content.subarray(0, 19);
+		const first = await appendStoredRunRawLogChunk({
+			stateRoot,
+			reference,
+			offset: 0,
+			content: firstChunk,
+		});
+		assert.equal(first.complete, false);
+		assert.equal(first.nextOffset, firstChunk.byteLength);
+		assert.deepEqual(await recoverStoredRawLogAppends({stateRoot}), [first]);
+		assert.deepEqual(
+			await appendStoredRunRawLogChunk({
+				stateRoot,
+				reference,
+				offset: 0,
+				content: firstChunk,
+			}),
+			first,
+		);
+		await assert.rejects(
+			appendStoredRunRawLogChunk({
+				stateRoot,
+				reference,
+				offset: 0,
+				content: Buffer.alloc(firstChunk.byteLength, 1),
+			}),
+			/conflicts with retained bytes/,
+		);
+		const completed = await appendStoredRunRawLogChunk({
+			stateRoot,
+			reference,
+			offset: firstChunk.byteLength,
+			content: content.subarray(firstChunk.byteLength),
+		});
+		assert.equal(completed.complete, true);
+		assert.deepEqual(await recoverStoredRawLogAppends({stateRoot}), []);
+		assert.deepEqual(await readRetainedRunRawLog({stateRoot, reference}), content);
 	} finally {
 		await rm(stateRoot, {recursive: true, force: true});
 	}

@@ -487,10 +487,10 @@ Success: one Session may span Runs without hidden warm-process state or concurre
 
 ### Slice 12 — Durable DSH completion
 
-- Connect Run Process ledger and raw log to durable evidence stores during execution.
-- Validate terminal Candidate or stopped outcome, raw artifacts, quiescence, process exit, and evidence closure.
-- Atomically commit Runtime-authored Run Receipt only after all required evidence is durable.
-- Recover interrupted append and receipt commit without duplicate authority.
+- [x] Connect Run Process ledger and raw log to durable evidence stores during execution.
+- [x] Validate terminal Candidate or stopped outcome, raw artifacts, quiescence, process exit, and evidence closure.
+- [x] Atomically commit Runtime-authored Run Receipt only after all required evidence is durable.
+- [x] Recover interrupted append and receipt commit without duplicate authority.
 
 Success: Project Server never receives an admitted Candidate without complete durable receipt evidence.
 

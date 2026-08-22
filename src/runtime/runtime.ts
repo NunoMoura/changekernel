@@ -10,18 +10,38 @@ import {
 	type RunEvent,
 	type RunHandle,
 	type RunQuiescence,
+	type RunRawLogReference,
 	type RunReceipt,
 	type RunRequest,
 } from "./contracts.ts";
+import {
+	appendStoredExecutionLedger,
+	appendStoredRunRawLogChunk,
+	openStoredExecutionLedger,
+	recoverStoredExecutionLedgers,
+	recoverStoredRawLogAppends,
+} from "./evidence/store.ts";
+import type {
+	ExecutionLedger,
+	ExecutionLedgerEntry,
+	ExecutionLedgerHeader,
+} from "./evidence/execution-ledger.ts";
+import {
+	commitStoredRunReceipt,
+	recoverStoredRunReceipts,
+} from "./receipts/store.ts";
 import {canonicalJson, canonicalJsonDigest} from "../utils/canonical-json.ts";
 import {
 	admitRunProcessHandshakeResponse,
 	createRunProcessAcceptedEvent,
 	createRunProcessChallenge,
 	openRunProcessEnvelope,
+	runRawLogChunkBytes,
 	sealRunProcessEnvelope,
 	type RunProcessAuthenticatedEnvelope,
 	type RunProcessChallenge,
+	type RunProcessMessage,
+	type RunRawLogChunk,
 } from "./processes/protocol.ts";
 
 export interface RunProcessConnection {
@@ -55,6 +75,7 @@ export interface Runtime {
 
 export interface RuntimeOptions {
 	readonly processManager: RunProcessManager;
+	readonly stateRoot: string;
 	readonly now?: () => string;
 	readonly random?: (size: number) => Uint8Array;
 	readonly handshakeTimeoutMs?: number;
@@ -92,6 +113,9 @@ interface ActiveRun {
 	readonly receiptCompletion: Deferred<RunReceipt>;
 	readonly receiveAbort: AbortController;
 	result: RunProcessResult | null;
+	executionLedger: Readonly<ExecutionLedger> | null;
+	rawLogReference: Readonly<RunRawLogReference> | null;
+	rawLog: Readonly<RunRawLogReference> | null;
 	txSequence: number;
 	rxSequence: number;
 	terminal: boolean;
@@ -108,12 +132,15 @@ interface Deferred<T> {
 
 interface RuntimeState {
 	readonly processManager: RunProcessManager;
+	readonly stateRoot: string;
 	readonly now: () => string;
 	readonly random: (size: number) => Uint8Array;
 	readonly handshakeTimeoutMs: number;
 	readonly cancellationGraceMs: number;
 	readonly processExitTimeoutMs: number;
 	readonly runs: Map<string, ActiveRun>;
+	readonly recoveredReceipts: Map<string, RunReceipt>;
+	recovery: Promise<void> | null;
 	shuttingDown: boolean;
 }
 
@@ -123,8 +150,12 @@ function createRuntimeState(
 	if (!options || typeof options.processManager?.launch !== "function") {
 		throw new Error("Runtime requires a Run Process Manager.");
 	}
+	if (typeof options.stateRoot !== "string" || options.stateRoot.length === 0) {
+		throw new Error("Runtime requires a durable state root.");
+	}
 	return {
 		processManager: options.processManager,
+		stateRoot: options.stateRoot,
 		now: options.now ?? (() => new Date().toISOString()),
 		random: options.random ?? ((size) => randomBytes(size)),
 		handshakeTimeoutMs: boundedDuration(
@@ -143,8 +174,29 @@ function createRuntimeState(
 			60_000,
 		),
 		runs: new Map(),
+		recoveredReceipts: new Map(),
+		recovery: null,
 		shuttingDown: false,
 	};
+}
+
+async function ensureRuntimeRecovery(state: RuntimeState): Promise<void> {
+	state.recovery ??= recoverRuntimeState(state);
+	await state.recovery;
+}
+
+async function recoverRuntimeState(state: RuntimeState): Promise<void> {
+	const [, , receipts] = await Promise.all([
+		recoverStoredExecutionLedgers({stateRoot: state.stateRoot}),
+		recoverStoredRawLogAppends({stateRoot: state.stateRoot}),
+		recoverStoredRunReceipts({stateRoot: state.stateRoot}),
+	]);
+	for (const receipt of receipts) {
+		state.recoveredReceipts.set(
+			keyFor(receipt.runId, receipt.requestDigest),
+		receipt,
+		);
+	}
 }
 
 async function startSupervisedRun(
@@ -152,8 +204,12 @@ async function startSupervisedRun(
 	request: RunRequest,
 ): Promise<RunHandle> {
 	if (state.shuttingDown) throw new Error("Runtime is shutting down.");
+	await ensureRuntimeRecovery(state);
 	const runKey = keyFor(request.runId, request.requestDigest);
 	if (state.runs.has(runKey)) throw new Error("Run is already supervised.");
+	if (state.recoveredReceipts.has(runKey)) {
+		throw new Error("Run already has a committed Receipt.");
+	}
 	const active = await admitRun({
 		request,
 		processManager: state.processManager,
@@ -168,7 +224,7 @@ async function startSupervisedRun(
 			void cancelForDeadline(active, state.now, state.cancellationGraceMs);
 		},
 	);
-	void pumpRun(active, state.processExitTimeoutMs);
+	void pumpRun(active, state.stateRoot, state.processExitTimeoutMs);
 	return active.handle;
 }
 
@@ -261,6 +317,7 @@ function runForHandle(
 
 async function pumpRun(
 	active: ActiveRun,
+	stateRoot: string,
 	processExitTimeoutMs: number,
 ): Promise<void> {
 	try {
@@ -275,27 +332,13 @@ async function pumpRun(
 				bootstrapKey: active.bootstrapKey,
 			});
 			active.rxSequence += 1;
-			if (envelope.message.kind === "event") {
-				if (active.result) {
-					throw new Error("Run Process emitted an event after its result.");
-				}
-				appendRunEvent(active, envelope.message.event);
-				continue;
-			}
-			if (envelope.message.kind === "result") {
-				if (active.result) {
-					throw new Error("Run Process emitted more than one result.");
-				}
-				active.result = envelope.message.result;
-				continue;
-			}
-			if (envelope.message.kind !== "quiescence") {
-				throw new Error("Run Process emitted an unsupported message.");
-			}
-			if (
-				envelope.message.quiescence.finalEventSequence !==
-				lastEventSequence(active)
-			) {
+			const quiescence = await acceptRunProcessMessage(
+				stateRoot,
+				active,
+				envelope.message,
+			);
+			if (!quiescence) continue;
+			if (quiescence.finalEventSequence !== lastEventSequence(active)) {
 				throw new Error("Run Process quiescence does not cover the final event.");
 			}
 			await withTimeout({
@@ -303,15 +346,174 @@ async function pumpRun(
 				timeoutMs: processExitTimeoutMs,
 				message: "Run Process did not exit after quiescence.",
 			});
-			completeRun(active, envelope.message.quiescence);
+			await completeRun(stateRoot, active, quiescence);
 		}
 	} catch (error) {
 		if (!active.terminal) {
-			await stopRun(
-				active,
-				asError(error, "Run Process stopped."),
-			);
+			await stopRun(active, asError(error, "Run Process stopped."));
 		}
+	}
+}
+
+async function acceptRunProcessMessage(
+	stateRoot: string,
+	active: ActiveRun,
+	message: RunProcessMessage,
+): Promise<RunQuiescence | null> {
+	switch (message.kind) {
+		case "event":
+			if (active.result) throw new Error("Run Process emitted an event after its result.");
+			appendRunEvent(active, message.event);
+			return null;
+		case "ledger-header":
+			await stageExecutionLedgerHeader(stateRoot, active, message.header);
+			return null;
+		case "ledger-entry":
+			await stageExecutionLedgerEntry(stateRoot, active, message.entry);
+			return null;
+		case "raw-log-chunk":
+			await stageRawLogChunk(stateRoot, active, message.chunk);
+			return null;
+		case "result":
+			if (active.result) throw new Error("Run Process emitted more than one result.");
+			assertDurableEvidenceMatchesResult(active, message.result);
+			active.result = message.result;
+			return null;
+		case "quiescence":
+			return message.quiescence;
+		case "start":
+		case "cancel":
+			throw new Error("Run Process emitted a Runtime-only message.");
+		default:
+			throw new Error("Run Process emitted an unsupported message.");
+	}
+}
+
+async function stageRawLogChunk(
+	stateRoot: string,
+	active: ActiveRun,
+	chunk: RunRawLogChunk,
+): Promise<void> {
+	if (active.result) throw new Error("Run Process emitted raw-log evidence after its result.");
+	if (
+		active.rawLogReference &&
+		canonicalJson(active.rawLogReference) !== canonicalJson(chunk.reference)
+	) {
+		throw new Error("Run Process emitted more than one raw-log artifact.");
+	}
+	active.rawLogReference = chunk.reference;
+	const staged = await appendStoredRunRawLogChunk({
+		stateRoot,
+		reference: chunk.reference,
+		offset: chunk.offset,
+		content: runRawLogChunkBytes(chunk),
+	});
+	active.rawLog = staged.complete ? staged.reference : null;
+}
+
+async function stageExecutionLedgerHeader(
+	stateRoot: string,
+	active: ActiveRun,
+	header: ExecutionLedgerHeader,
+): Promise<void> {
+	if (active.result || active.executionLedger) {
+		throw new Error("Run Process emitted a duplicate or late Execution Ledger header.");
+	}
+	active.executionLedger = await openStoredExecutionLedger({stateRoot, header});
+}
+
+async function stageExecutionLedgerEntry(
+	stateRoot: string,
+	active: ActiveRun,
+	entry: ExecutionLedgerEntry,
+): Promise<void> {
+	if (active.result || !active.executionLedger) {
+		throw new Error("Run Process emitted an out-of-order Execution Ledger entry.");
+	}
+	const existing = active.executionLedger.entries[entry.sequence];
+	if (existing) {
+		if (canonicalJson(existing) !== canonicalJson(entry)) {
+			throw new Error("Run Process Execution Ledger entry conflicts with durable evidence.");
+		}
+		return;
+	}
+	if (entry.sequence !== active.executionLedger.entries.length) {
+		throw new Error("Run Process Execution Ledger entry sequence is noncontiguous.");
+	}
+	const next = await appendStoredExecutionLedger({
+		stateRoot,
+		runId: active.handle.runId,
+		requestDigest: active.handle.requestDigest,
+		expectedLedgerDigest: active.executionLedger.ledgerDigest,
+		entry: {
+			kind: entry.kind,
+			occurredAt: entry.occurredAt,
+			modelVisible: entry.modelVisible,
+			payload: entry.payload,
+		},
+	});
+	if (canonicalJson(next.entries.at(-1)) !== canonicalJson(entry)) {
+		throw new Error("Run Process Execution Ledger entry changed during durable append.");
+	}
+	active.executionLedger = next;
+}
+
+function assertDurableEvidenceMatchesResult(
+	active: ActiveRun,
+	result: RunProcessResult,
+): void {
+	if (!active.executionLedger || !active.rawLog) {
+		throw new Error("Run Process result preceded durable evidence closure.");
+	}
+	if (active.executionLedger.ledgerDigest !== result.executionLedgerDigest) {
+		throw new Error("Run Process result does not match durable Execution Ledger.");
+	}
+	assertTerminalOutputEntry(
+		lastExecutionLedgerEntry(active.executionLedger.entries, "output"),
+		result,
+	);
+}
+
+function lastExecutionLedgerEntry(
+	entries: readonly ExecutionLedgerEntry[],
+	kind: ExecutionLedgerEntry["kind"],
+): ExecutionLedgerEntry | undefined {
+	for (let index = entries.length - 1; index >= 0; index -= 1) {
+		if (entries[index].kind === kind) return entries[index];
+	}
+	return undefined;
+}
+
+function assertTerminalOutputEntry(
+	entry: ExecutionLedgerEntry | undefined,
+	result: RunProcessResult,
+): void {
+	if (!entry || !entry.payload || typeof entry.payload !== "object" || Array.isArray(entry.payload)) {
+		throw new Error("Run Process result lacks durable terminal output evidence.");
+	}
+	const payload = entry.payload as {outcome?: unknown; outputDigest?: unknown};
+	if (payload.outcome !== result.outcome || payload.outputDigest !== result.outputDigest) {
+		throw new Error("Run Process result does not match durable terminal output evidence.");
+	}
+}
+
+function assertDurableEvidenceMatchesQuiescence(
+	active: ActiveRun,
+	quiescence: RunQuiescence,
+): void {
+	if (!active.result || !active.rawLog || !quiescence.rawLog) {
+		throw new Error("Run Process quiescence preceded terminal evidence closure.");
+	}
+	if (canonicalJson(active.rawLog) !== canonicalJson(quiescence.rawLog)) {
+		throw new Error("Run Process quiescence raw log does not match durable evidence.");
+	}
+	const expectedProof = canonicalJsonDigest({
+		resultDigest: active.result.resultDigest,
+		rawLogDigest: active.rawLog.digest,
+		finalSessionEventSequence: quiescence.finalEventSequence,
+	});
+	if (quiescence.proofDigest !== expectedProof) {
+		throw new Error("Run Process quiescence proof does not close terminal evidence.");
 	}
 }
 
@@ -374,51 +576,61 @@ async function cancelForDeadline(
 	}
 }
 
-function completeRun(
+async function completeRun(
+	stateRoot: string,
 	active: ActiveRun,
 	quiescence: RunQuiescence,
-): void {
+): Promise<void> {
 	if (active.terminal) return;
+	if (!active.result || !active.executionLedger || !active.rawLog || !quiescence.rawLog) {
+		const error = new Error(
+			!active.result
+				? "Run Process quiesced without a terminal result."
+				: "Run Process completion evidence is incomplete.",
+		);
+		settleIncompleteRun(active, quiescence, error);
+		return;
+	}
+	assertDurableEvidenceMatchesQuiescence(active, quiescence);
+	const receipt = createRunReceipt({
+		handle: active.handle,
+		outcome: active.result.outcome,
+		finalEventSequence: quiescence.finalEventSequence,
+		startedAt: active.result.startedAt,
+		finishedAt: active.result.finishedAt,
+		executionLedgerDigest: active.executionLedger.ledgerDigest,
+		rawLog: active.rawLog,
+		outputDigest: active.result.outputDigest,
+		usageDigest: active.result.usageDigest,
+		cancellationDigest: active.result.cancellationDigest,
+		quiescenceDigest: canonicalJsonDigest(quiescence),
+		custodyGaps: active.result.custodyGaps,
+		operationalGaps: [],
+	});
+	const committed = await commitStoredRunReceipt({
+		stateRoot,
+		expectedReceiptDigest: null,
+		receipt,
+	});
 	active.terminal = true;
 	clearRunTimers(active);
 	active.receiveAbort.abort();
 	active.bootstrapKey.fill(0);
 	active.completion.resolve(quiescence);
-	if (!active.result) {
-		active.receiptCompletion.reject(
-			new Error("Run Process quiesced without a terminal result."),
-		);
-		return;
-	}
-	if (!quiescence.rawLog) {
-		active.receiptCompletion.reject(
-			new Error("Run Process quiesced without a raw Agent Session log."),
-		);
-		return;
-	}
-	try {
-		active.receiptCompletion.resolve(
-			createRunReceipt({
-				handle: active.handle,
-				outcome: active.result.outcome,
-				finalEventSequence: quiescence.finalEventSequence,
-				startedAt: active.result.startedAt,
-				finishedAt: active.result.finishedAt,
-				executionLedgerDigest: active.result.executionLedgerDigest,
-				rawLog: quiescence.rawLog,
-				outputDigest: active.result.outputDigest,
-				usageDigest: active.result.usageDigest,
-				cancellationDigest: active.result.cancellationDigest,
-				quiescenceDigest: canonicalJsonDigest(quiescence),
-				custodyGaps: active.result.custodyGaps,
-				operationalGaps: [],
-			}),
-		);
-	} catch (error) {
-		active.receiptCompletion.reject(
-			asError(error, "Runtime could not create the Run Receipt."),
-		);
-	}
+	active.receiptCompletion.resolve(committed);
+}
+
+function settleIncompleteRun(
+	active: ActiveRun,
+	quiescence: RunQuiescence,
+	error: Error,
+): void {
+	active.terminal = true;
+	clearRunTimers(active);
+	active.receiveAbort.abort();
+	active.bootstrapKey.fill(0);
+	active.completion.resolve(quiescence);
+	active.receiptCompletion.reject(error);
 }
 
 async function stopRun(active: ActiveRun, error: Error): Promise<void> {
@@ -470,6 +682,9 @@ async function admitRun(input: {
 		receiptCompletion,
 		receiveAbort: new AbortController(),
 		result: null,
+		executionLedger: null,
+		rawLogReference: null,
+		rawLog: null,
 		txSequence: 1,
 		rxSequence: 0,
 		terminal: false,

@@ -23,7 +23,9 @@ import {
 import {runDshAgent} from "../dsh/adapter.ts";
 import {createDshReplayModelInstaller} from "../dsh/replay.ts";
 import {
+	MAX_RUN_RAW_LOG_CHUNK_BYTES,
 	createRunProcessHandshakeResponse,
+	createRunRawLogChunk,
 	openRunProcessEnvelope,
 	sealRunProcessEnvelope,
 	type RunProcessChallenge,
@@ -307,6 +309,7 @@ async function executeDshProcessRun(input: {
 	for (const event of result.sessionEvents) {
 		await sender.sendEvent("session-event", event.digest);
 	}
+	await sendDshEvidence(sender, result);
 	const processResult = createRunProcessResult(input.handle, {
 		runId: input.handle.runId,
 		requestDigest: input.handle.requestDigest,
@@ -339,6 +342,30 @@ async function executeDshProcessRun(input: {
 	});
 	await endWriter(input.eventWriter);
 	await cancellationPump;
+}
+
+async function sendDshEvidence(
+	sender: DshProcessSender,
+	result: Awaited<ReturnType<typeof runDshAgent>>,
+): Promise<void> {
+	await sender.send({
+		kind: "ledger-header",
+		header: result.executionLedger.header,
+	});
+	for (const entry of result.executionLedger.entries) {
+		await sender.send({kind: "ledger-entry", entry});
+	}
+	const content = readFileSync(result.rawLogPath);
+	for (let offset = 0; offset < content.byteLength; offset += MAX_RUN_RAW_LOG_CHUNK_BYTES) {
+		await sender.send({
+			kind: "raw-log-chunk",
+			chunk: createRunRawLogChunk({
+				reference: result.rawLog,
+				offset,
+				content: content.subarray(offset, offset + MAX_RUN_RAW_LOG_CHUNK_BYTES),
+			}),
+		});
+	}
 }
 
 async function pumpCancellation(input: {

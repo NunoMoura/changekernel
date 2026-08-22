@@ -1,3 +1,4 @@
+import {Buffer} from "node:buffer";
 import {createHmac, timingSafeEqual} from "node:crypto";
 
 import {
@@ -9,6 +10,7 @@ import {
 	createRunHandle,
 	createRunQuiescence,
 	createRunProcessResult,
+	createRunRawLogReference,
 	createRunRequest,
 	type RunCustodyGap,
 	type RunProcessHandshake,
@@ -17,21 +19,31 @@ import {
 	type RunEvent,
 	type RunHandle,
 	type RunQuiescence,
+	type RunRawLogReference,
 	type RunRequest,
 	type RunRequestInput,
 	type RuntimeBuildBinding,
 } from "../contracts.ts";
 import {
+	assertExecutionLedgerEntry,
+	createExecutionLedger,
+	type ExecutionLedgerEntry,
+	type ExecutionLedgerHeader,
+} from "../evidence/execution-ledger.ts";
+import {
 	assertSha256Digest,
 	canonicalJson,
 	canonicalJsonDigest,
+	sha256Digest,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
 export const RUNNER_PROCESS_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
+
+export const MAX_RUN_RAW_LOG_CHUNK_BYTES = 64 * 1_024;
 
 export type RunProcessDirection =
 	| "runtime-to-run-process"
@@ -71,10 +83,29 @@ export type RuntimeWireMessage =
 			readonly request: RunCancellationRequest;
 	  };
 
+export interface RunRawLogChunk {
+	readonly reference: RunRawLogReference;
+	readonly offset: number;
+	readonly contentBase64: string;
+	readonly chunkDigest: Sha256Digest;
+}
+
 export type RunProcessWireMessage =
 	| {
 			readonly kind: "event";
 			readonly event: RunEvent;
+	  }
+	| {
+			readonly kind: "ledger-header";
+			readonly header: ExecutionLedgerHeader;
+	  }
+	| {
+			readonly kind: "ledger-entry";
+			readonly entry: ExecutionLedgerEntry;
+	  }
+	| {
+			readonly kind: "raw-log-chunk";
+			readonly chunk: RunRawLogChunk;
 	  }
 	| {
 			readonly kind: "result";
@@ -337,22 +368,53 @@ function normalizeMessage(input: {
 		const request = normalizeCancellation(message.request, handle);
 		return Object.freeze({kind: "cancel", request});
 	}
-	if (message.kind === "event" && input.direction === "run-process-to-runtime") {
-		assertExactKeys(message, ["kind", "event"], "Run Process event message");
-		const event = normalizeEvent(message.event, handle);
-		return Object.freeze({kind: "event", event});
-	}
-	if (message.kind === "result" && input.direction === "run-process-to-runtime") {
-		assertExactKeys(message, ["kind", "result"], "Run Process result message");
-		const result = normalizeResult(message.result, handle);
-		return Object.freeze({kind: "result", result});
-	}
-	if (message.kind === "quiescence" && input.direction === "run-process-to-runtime") {
-		assertExactKeys(message, ["kind", "quiescence"], "Run Process quiescence message");
-		const quiescence = normalizeQuiescence(message.quiescence, handle);
-		return Object.freeze({kind: "quiescence", quiescence});
+	if (input.direction === "run-process-to-runtime") {
+		const normalized = normalizeRunProcessMessage(message, handle);
+		if (normalized) return normalized;
 	}
 	throw new Error("Run Process envelope message is not allowed for its direction.");
+}
+
+function normalizeRunProcessMessage(
+	message: Record<string, unknown>,
+	handle: RunHandle,
+): RunProcessWireMessage | null {
+	if (message.kind === "event") {
+		assertExactKeys(message, ["kind", "event"], "Run Process event message");
+		return Object.freeze({kind: "event", event: normalizeEvent(message.event, handle)});
+	}
+	if (message.kind === "ledger-header") {
+		assertExactKeys(message, ["kind", "header"], "Run Process ledger header message");
+		return Object.freeze({
+			kind: "ledger-header",
+			header: normalizeLedgerHeader(message.header, handle),
+		});
+	}
+	if (message.kind === "ledger-entry") {
+		assertExactKeys(message, ["kind", "entry"], "Run Process ledger entry message");
+		const entry = assertExecutionLedgerEntry(message.entry);
+		assertCanonicalMatch(entry, message.entry, "Run Process ledger entry");
+		return Object.freeze({kind: "ledger-entry", entry});
+	}
+	if (message.kind === "raw-log-chunk") {
+		assertExactKeys(message, ["kind", "chunk"], "Run Process raw-log chunk message");
+		return Object.freeze({
+			kind: "raw-log-chunk",
+			chunk: normalizeRunRawLogChunk(message.chunk, handle),
+		});
+	}
+	if (message.kind === "result") {
+		assertExactKeys(message, ["kind", "result"], "Run Process result message");
+		return Object.freeze({kind: "result", result: normalizeResult(message.result, handle)});
+	}
+	if (message.kind === "quiescence") {
+		assertExactKeys(message, ["kind", "quiescence"], "Run Process quiescence message");
+		return Object.freeze({
+			kind: "quiescence",
+			quiescence: normalizeQuiescence(message.quiescence, handle),
+		});
+	}
+	return null;
 }
 
 function normalizeRequest(value: unknown): RunRequest {
@@ -457,6 +519,81 @@ function normalizeEvent(value: unknown, handle: RunHandle): RunEvent {
 		payloadDigest: event.payloadDigest as Sha256Digest,
 	});
 	assertCanonicalMatch(normalized, event, "Run event");
+	return normalized;
+}
+
+export function createRunRawLogChunk(input: {
+	readonly reference: RunRawLogReference;
+	readonly offset: number;
+	readonly content: Uint8Array;
+}): Readonly<RunRawLogChunk> {
+	const reference = createRunRawLogReference(input.reference);
+	if (!Number.isInteger(input.offset) || input.offset < 0) {
+		throw new Error("Run raw-log chunk offset is invalid.");
+	}
+	const bytes = Buffer.from(input.content);
+	if (bytes.byteLength === 0 || bytes.byteLength > MAX_RUN_RAW_LOG_CHUNK_BYTES) {
+		throw new Error("Run raw-log chunk size is invalid.");
+	}
+	if (input.offset + bytes.byteLength > reference.byteLength) {
+		throw new Error("Run raw-log chunk exceeds its declared artifact.");
+	}
+	return Object.freeze({
+		reference,
+		offset: input.offset,
+		contentBase64: bytes.toString("base64"),
+		chunkDigest: sha256Digest(bytes),
+	});
+}
+
+export function runRawLogChunkBytes(chunk: RunRawLogChunk): Buffer {
+	const content = Buffer.from(chunk.contentBase64, "base64");
+	if (content.toString("base64") !== chunk.contentBase64) {
+		throw new Error("Run raw-log chunk encoding is invalid.");
+	}
+	if (sha256Digest(content) !== chunk.chunkDigest) {
+		throw new Error("Run raw-log chunk digest is invalid.");
+	}
+	return content;
+}
+
+function normalizeLedgerHeader(
+	value: unknown,
+	handle: RunHandle,
+): Readonly<ExecutionLedgerHeader> {
+	const header = createExecutionLedger(value as ExecutionLedgerHeader).header;
+	if (header.runId !== handle.runId || header.requestDigest !== handle.requestDigest) {
+		throw new Error("Run Process ledger header does not match its Run.");
+	}
+	assertCanonicalMatch(header, value, "Run Process ledger header");
+	return header;
+}
+
+function normalizeRunRawLogChunk(
+	value: unknown,
+	handle: RunHandle,
+): Readonly<RunRawLogChunk> {
+	const chunk = record(value, "Run raw-log chunk");
+	assertExactKeys(
+		chunk,
+		["reference", "offset", "contentBase64", "chunkDigest"],
+		"Run raw-log chunk",
+	);
+	if (typeof chunk.contentBase64 !== "string") {
+		throw new Error("Run raw-log chunk encoding is invalid.");
+	}
+	const normalized = createRunRawLogChunk({
+		reference: chunk.reference as RunRawLogReference,
+		offset: chunk.offset as number,
+		content: Buffer.from(chunk.contentBase64, "base64"),
+	});
+	if (
+		normalized.reference.sessionId !== handle.sessionId ||
+		normalized.reference.runtimeBuildDigest !== handle.runtimeBuild.buildDigest
+	) {
+		throw new Error("Run raw-log chunk does not match its Run.");
+	}
+	assertCanonicalMatch(normalized, value, "Run raw-log chunk");
 	return normalized;
 }
 
