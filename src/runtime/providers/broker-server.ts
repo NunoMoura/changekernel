@@ -62,6 +62,7 @@ export interface PrivateProviderBrokerServerOptions {
 	readonly runId: string;
 	readonly routeDigest: string;
 	readonly transport: PrivateProviderTransportPort;
+	readonly socketPath?: string;
 	readonly now?: () => string;
 	readonly recordReceipt?: (receipt: ProviderBrokerReceipt) => void | Promise<void>;
 }
@@ -95,6 +96,15 @@ export async function startPrivateProviderBrokerServer(
 	const consumed = new Set<string>();
 	const now = options.now || (() => new Date().toISOString());
 	let access: PrivateProviderBrokerAccess | undefined;
+	const socketAccess = options.socketPath
+		? createPrivateProviderBrokerAccess({
+			endpoint: unixSocketEndpoint(options.socketPath),
+			capabilityId: options.capabilityId,
+			capabilityToken: options.capabilityToken,
+			expiresAt: options.expiresAt,
+			binding: admittedOptions.binding,
+		})
+		: undefined;
 	const server = createServer((request, response) => {
 		void dispatchBrokerHttpRequest({
 			request,
@@ -112,20 +122,26 @@ export async function startPrivateProviderBrokerServer(
 	});
 	await new Promise<void>((resolve, reject) => {
 		server.once("error", reject);
-		server.listen(0, "127.0.0.1", () => {
+		const listening = () => {
 			server.off("error", reject);
 			resolve();
+		};
+		if (options.socketPath) server.listen(options.socketPath, listening);
+		else server.listen(0, "127.0.0.1", listening);
+	});
+	if (socketAccess) {
+		access = socketAccess;
+	} else {
+		const address = server.address() as AddressInfo | null;
+		if (!address) throw new Error("Private provider broker address is unavailable.");
+		access = createPrivateProviderBrokerAccess({
+			endpoint: `http://127.0.0.1:${address.port}`,
+			capabilityId: options.capabilityId,
+			capabilityToken: options.capabilityToken,
+			expiresAt: options.expiresAt,
+			binding: admittedOptions.binding,
 		});
-	});
-	const address = server.address() as AddressInfo | null;
-	if (!address) throw new Error("Private provider broker address is unavailable.");
-	access = createPrivateProviderBrokerAccess({
-		endpoint: `http://127.0.0.1:${address.port}`,
-		capabilityId: options.capabilityId,
-		capabilityToken: options.capabilityToken,
-		expiresAt: options.expiresAt,
-		binding: admittedOptions.binding,
-	});
+	}
 	return Object.freeze({
 		access,
 		receipts: () => Object.freeze([...receipts]),
@@ -139,6 +155,11 @@ export async function startPrivateProviderBrokerServer(
 			});
 		},
 	});
+}
+
+function unixSocketEndpoint(socketPath: string): string {
+	const encoded = socketPath.slice(1).split("/").map(encodeURIComponent).join("/");
+	return `unix:///${encoded}`;
 }
 
 async function dispatchBrokerHttpRequest(

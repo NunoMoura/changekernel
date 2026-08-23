@@ -21,6 +21,9 @@ codewiki_relationships:
   - type: realizes
     target: cw:story:agent.retrieve-bounded-context
     rationale: Runtime mounts exact Project Context Snapshots and receipts local queries, session continuity, and DSH compaction.
+  - type: realizes
+    target: cw:story:maintainer.contain-model-code
+    rationale: Runtime supplies separately qualified outer Run Process and inner model-code containment.
 ---
 # Runtime
 
@@ -30,9 +33,11 @@ Runtime is the Project Server-owned execution subsystem. It accepts immutable Ru
 Project Server
   -> Run Request
   -> Runtime
+  -> qualified outer Run Sandbox
   -> Run Process
   -> DSH Adapter
   -> DSH Agent + AgentLoop + Agent Session
+  -> admitted inner Code Runtime
   -> Runtime
   -> Run Receipt
   -> Project Server
@@ -44,7 +49,7 @@ Run Request and Run Receipt form the semantic boundary between Project Server an
 
 Run Process `5.0.0` accepts exact snapshot and replay or broker bindings. Run Request `5.0.0` binds subject, Build, Session lease, inputs, exact model route, workspace, budgets, and Run Continuation `1.0.0`; Project Server decides why it exists and what follows. Run Receipt `4.0.0` binds execution, route, raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
 
-Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@3.0.0` uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
+Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@3.0.0` uses shell-free spawn, private pipes, an empty environment, bounded frames, and observed termination.
 
 A Run Process sends one authenticated terminal result after its final event and before quiescence. It is not a receipt. Runtime issues a receipt only after validating request, result, events, custody, logs, ledger, quiescence, and exit. Missing required proof prevents `completed`; delegated custody records visibility gaps.
 
@@ -66,13 +71,13 @@ DSH owns AgentLoop requests, adapter registration, streaming, tools, continuatio
 
 Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, DSH UI/Host API, product MCP, and uncontrolled drivers. CodeWiki mounts DSH Goal state without a model Goal tool or autonomous driver. Project Server authorizes each Run; Candidate output pauses the Goal; Project Server and Gates determine completion. DSH never selects stages, retries, Results, Gates, or effects. Replay is qualification, not fallback.
 
-Each Runtime Plugin contributes one first-party allowlisted capability through the DSH Adapter: tool, context binding, Skill provider, model/delegate adapter, observer, or compaction policy. Project files install no executable Runtime Plugins. Effective capability is the intersection of CodeWiki release ceiling, Project Server authorization, Run Request, and any narrower Skill declaration.
+Each Runtime Plugin contributes one first-party allowlisted capability through the DSH Adapter: tool, context binding, Skill provider, model/delegate adapter, observer, compaction policy, or Code Mode binding. Project files install no executable Runtime Plugins. Effective capability is the intersection of CodeWiki release ceiling, Project Server authorization, Run Request, and any narrower Skill declaration.
 
 ## Run kinds and isolation
 
 Decision and Planning Sessions are Change-scoped, Implementation is Work Unit-scoped, and Review is integration-lineage-scoped and independent. Producer Sessions span bounded Runs without depending on process lifetime. Same-Session resume requires the original build, protocol, role, and model route; change requires rollover and canonical rehydration. Each Model Check uses a fresh tool-free Session without producer state. DSH owns no Stage Loop.
 
-Code Checks use deterministic admitted sandboxes rather than DSH. A Run Sandbox term is reserved for enforced filesystem, network, process, environment, credential, and resource containment; an ordinary child process is called a Run Process and is not mislabeled as a security sandbox.
+DSH and Code Checks use distinct sandboxes. Production DSH requires qualified outer and inner boundaries; see [Contain Model-Authored Code](../../product/stories/maintainer/contain-model-code.md).
 
 Only an Implementation Run may receive a writable Workbench. Project Server owns the Workbench, Assignment, base and resulting tree, command policy, and Integration. Runtime receives only the bounded capability described by the Run Request. Decision, Planning, Review, and Model Check Runs receive no writable Workbench authority.
 

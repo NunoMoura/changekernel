@@ -27,6 +27,10 @@ import {
 import {createDshPrivateProviderBrokerInstaller} from "../dsh/private-provider-broker.ts";
 import {createDshReplayModelInstaller} from "../dsh/replay.ts";
 import {
+	normalizeDshCodeModeConfig,
+	type DshCodeModeConfig,
+} from "../dsh/plugins.ts";
+import {
 	createPrivateProviderBrokerAccess,
 	type PrivateProviderBrokerAccess,
 } from "../providers/contracts.ts";
@@ -47,7 +51,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-const INPUT_MANIFEST_VERSION = "3.0.0" as const;
+const INPUT_MANIFEST_VERSION = "4.0.0" as const;
 const MAX_FRAME_BYTES = 1_048_576;
 const MAX_INPUT_MANIFEST_BYTES = 12 * 1_024 * 1_024;
 
@@ -73,6 +77,7 @@ interface DshRunProcessInputManifest {
 	readonly projectContextMount: ProjectContextMountBinding | null;
 	readonly projectContextAuthorization: ProjectContextAuthorization | null;
 	readonly modelAdapter: DshProcessModelAdapter;
+	readonly codeMode: DshCodeModeConfig | null;
 }
 
 function createDshRunProcessInputManifest(
@@ -91,6 +96,7 @@ function createDshRunProcessInputManifest(
 			"projectContextMount",
 			"projectContextAuthorization",
 			"modelAdapter",
+			"codeMode",
 		])
 	) {
 		throw new Error("DSH Run Process input manifest shape is invalid.");
@@ -113,11 +119,15 @@ function createDshRunProcessInputManifest(
 		? null
 		: assertProjectContextMountBinding(input.projectContextMount);
 	const modelAdapter = normalizeModelAdapter(input.modelAdapter);
+	const codeMode = input.codeMode === null
+		? null
+		: normalizeDshCodeModeConfig(input.codeMode);
 	return Object.freeze({
 		...input,
 		runtimeBuildDigest,
 		projectContextMount,
 		modelAdapter,
+		codeMode,
 	});
 }
 
@@ -357,6 +367,7 @@ async function executeDshProcessRun(input: {
 		},
 		projectContextSnapshot,
 		installModelAdapter: modelAdapterInstaller(input.manifest.modelAdapter),
+		codeMode: input.manifest.codeMode,
 		signal: cancellationController.signal,
 	});
 	for (const event of result.sessionEvents) {

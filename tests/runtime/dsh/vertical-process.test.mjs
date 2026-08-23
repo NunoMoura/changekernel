@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
+import {execFileSync} from "node:child_process";
+import {readFileSync, realpathSync} from "node:fs";
+import {mkdir, mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -30,6 +32,8 @@ import {
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {readDshRuntimeProvenance} from "../../../src/runtime/dsh/provenance.ts";
 import {createPrivateProviderBrokerBinding} from "../../../src/runtime/providers/contracts.ts";
+import {BUBBLEWRAP_SANDBOX_SCHEMA_VERSION} from "../../../src/runtime/sandbox/bubblewrap.ts";
+import {createBubblewrapRunProcessSandbox} from "../../../src/runtime/sandbox/run-process.ts";
 import {startPrivateProviderBrokerServer} from "../../../src/runtime/providers/broker-server.ts";
 import {
 	readRetainedRunRawLog,
@@ -64,6 +68,13 @@ const projectContextReplayFixturePath = resolve(
 );
 const projectContextReplayFixtureDigest = sha256Digest(
 	await readFile(projectContextReplayFixturePath),
+);
+const codeModeReplayFixturePath = resolve(
+	testDirectory,
+	"fixtures/replay-code-mode.jsonl",
+);
+const codeModeReplayFixtureDigest = sha256Digest(
+	await readFile(codeModeReplayFixturePath),
 );
 const packageLockPath = resolve(repositoryRoot, "package-lock.json");
 const temporaryDirectories = [];
@@ -171,10 +182,35 @@ describe("DSH Runtime vertical process", () => {
 		}
 	});
 
+	it("executes whole DSH Run Process inside qualified outer Bubblewrap containment", async () => {
+		const fixture = await runtimeFixture("outer-sandbox", {outerSandbox: true});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
+		try {
+			const handle = await runtime.start(fixture.request);
+			const receipt = await runtime.waitForReceipt(handle);
+			assert.equal(receipt.outcome, "completed");
+			assert.equal(
+				receipt.outputDigest,
+				canonicalJsonDigest({text: "DSH vertical slice complete."}),
+			);
+			assert.match(await readFile(await onlyJsonlFile(fixture.sessionRoot), "utf8"), /DSH vertical slice complete/);
+		} finally {
+			await runtime.shutdown();
+		}
+	});
+
 	it("executes a credential-free live broker through the isolated Run Process", async () => {
 		const modelRoute = processModelRoute("mock-provider", "mock-model", "mock-live");
 		const runId = "run-dsh-process-private-broker";
+		const brokerRoot = await mkdtemp(join(tmpdir(), "codewiki-provider-broker-"));
+		temporaryDirectories.push(brokerRoot);
+		const brokerSocketPath = join(brokerRoot, "provider-broker.sock");
 		const broker = await startPrivateProviderBrokerServer({
+			socketPath: brokerSocketPath,
 			binding: createPrivateProviderBrokerBinding({
 				brokerId: "vertical-private-broker",
 				implementationId: "codewiki-mock-provider",
@@ -201,6 +237,7 @@ describe("DSH Runtime vertical process", () => {
 		const fixture = await runtimeFixture("private-broker", {
 			modelRoute,
 			modelAdapter: {kind: "private-broker", access: broker.access},
+			outerSandbox: true,
 		});
 		const runtime = createRuntime({
 			processManager: fixture.processManager,
@@ -345,6 +382,34 @@ describe("DSH Runtime vertical process", () => {
 		}
 	});
 
+	it("runs secure Code Mode through authenticated Run Process", async () => {
+		const fixture = await runtimeFixture("code-mode", {
+			admitted: true,
+			codeMode: liveCodeMode(),
+			outerSandbox: true,
+		});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
+		try {
+			const handle = await runtime.start(fixture.request);
+			const receipt = await runtime.waitForReceipt(handle);
+			assert.equal(receipt.outcome, "completed");
+			assert.equal(
+				receipt.outputDigest,
+				canonicalJsonDigest({text: "Secure Code Mode query complete."}),
+			);
+			const rawLog = await readFile(await onlyJsonlFile(fixture.sessionRoot), "utf8");
+			assert.match(rawLog, /\"name\":\"run_code\"/);
+			assert.match(rawLog, /tool\/code-dispatch/);
+			assert.match(rawLog, /Secure Code Mode query complete\./);
+		} finally {
+			await runtime.shutdown();
+		}
+	});
+
 	it("creates no receipt when bound static input bytes are changed", async () => {
 		const fixture = await runtimeFixture("tampered");
 		await writeFile(
@@ -373,6 +438,7 @@ async function runtimeFixture(suffix, options = {}) {
 	temporaryDirectories.push(root);
 	const stateRoot = join(root, "runtime-state");
 	const sessionRoot = join(root, "sessions");
+	if (options.outerSandbox) await mkdir(sessionRoot, {recursive: true});
 	await qualifyStoredRuntimeBuild({
 		stateRoot,
 		expectedGeneration: 0,
@@ -403,14 +469,18 @@ async function runtimeFixture(suffix, options = {}) {
 			expiresAt: new Date(authorizationTime + 60_000).toISOString(),
 		})
 		: null;
-	const selectedReplayFixturePath = options.admitted
-		? projectContextReplayFixturePath
-		: replayFixturePath;
-	const selectedReplayFixtureDigest = options.admitted
-		? projectContextReplayFixtureDigest
-		: replayFixtureDigest;
+	const selectedReplayFixturePath = options.codeMode
+		? codeModeReplayFixturePath
+		: options.admitted
+			? projectContextReplayFixturePath
+			: replayFixturePath;
+	const selectedReplayFixtureDigest = options.codeMode
+		? codeModeReplayFixtureDigest
+		: options.admitted
+			? projectContextReplayFixtureDigest
+			: replayFixtureDigest;
 	const manifest = Object.freeze({
-		schemaVersion: "3.0.0",
+		schemaVersion: "4.0.0",
 		runtimeBuildDigest: binding.buildDigest,
 		runProtocolVersion: binding.runProtocolVersion,
 		systemPrompt: "CodeWiki deterministic qualification",
@@ -424,6 +494,7 @@ async function runtimeFixture(suffix, options = {}) {
 			fixturePath: selectedReplayFixturePath,
 			fixtureDigest: selectedReplayFixtureDigest,
 		},
+		codeMode: options.codeMode ?? null,
 	});
 	const manifestPath = join(root, "input-manifest.json");
 	await writeFile(manifestPath, canonicalJson(manifest));
@@ -444,6 +515,20 @@ async function runtimeFixture(suffix, options = {}) {
 				args: Object.freeze([...artifact.args, manifestPath]),
 			});
 		},
+		...(options.outerSandbox ? {
+			sandbox: createBubblewrapRunProcessSandbox({
+				profile: liveSandboxProfile(),
+				readOnlyPaths: [
+					manifestPath,
+					...(manifest.modelAdapter.kind === "replay"
+						? [manifest.modelAdapter.fixturePath]
+						: privateBrokerSocketMounts(manifest.modelAdapter)),
+					...(projectContextMount ? [projectContextMount.snapshotPath] : []),
+				],
+				writablePaths: [sessionRoot],
+				allowNestedUserNamespaces: Boolean(options.codeMode),
+			}),
+		} : {}),
 	});
 	return {
 		root,
@@ -565,6 +650,58 @@ function processModelRoute(
 		modelAssignmentDigest: digest("model-assignment"),
 		optionsDigest: digest("model-options"),
 	});
+}
+
+function liveSandboxProfile() {
+	const bubblewrap = realpathSync("/usr/bin/bwrap");
+	const prlimit = realpathSync("/usr/bin/prlimit");
+	return {
+				schemaVersion: BUBBLEWRAP_SANDBOX_SCHEMA_VERSION,
+				bubblewrap: {
+					path: bubblewrap,
+					version: execFileSync(bubblewrap, ["--version"], {encoding: "utf8", env: {}}).trim(),
+					digest: sha256Digest(readFileSync(bubblewrap)),
+				},
+				prlimit: {
+					path: prlimit,
+					version: execFileSync(prlimit, ["--version"], {encoding: "utf8", env: {}}).split("\n", 1)[0].trim(),
+					digest: sha256Digest(readFileSync(prlimit)),
+				},
+				systemReadOnlyPaths: ["/usr", "/lib", "/lib64"],
+				limits: {
+					addressSpaceBytes: 8 * 1024 * 1024 * 1024,
+					cpuSeconds: 30,
+					openFiles: 128,
+					processes: 512,
+					fileBytes: 1024 * 1024,
+				},
+	};
+}
+
+function liveCodeMode() {
+	const node = realpathSync(process.execPath);
+	return {
+		maxParallelSubCalls: 2,
+		runtime: {
+			sandbox: liveSandboxProfile(),
+			node: {path: node, version: process.version, digest: sha256Digest(readFileSync(node))},
+			maxProgramBytes: 64 * 1024,
+			maxFrameBytes: 1024 * 1024,
+			maxOutputBytes: 64 * 1024,
+			maxBindingCalls: 16,
+			maxBindingBytes: 64 * 1024,
+			maxWallMs: 2_000,
+			maxOldGenerationSizeMb: 128,
+		},
+	};
+}
+
+function privateBrokerSocketMounts(modelAdapter) {
+	if (modelAdapter.kind !== "private-broker") return [];
+	const endpoint = new URL(modelAdapter.access.endpoint);
+	return endpoint.protocol === "unix:"
+		? [dirname(decodeURIComponent(endpoint.pathname))]
+		: [];
 }
 
 function processContextSnapshot(runId) {

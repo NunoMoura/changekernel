@@ -1,4 +1,5 @@
 import {createHmac, timingSafeEqual} from "node:crypto";
+import {isAbsolute} from "node:path";
 import {
 	createRunModelRouteBinding,
 	type RunModelRouteBinding,
@@ -122,7 +123,7 @@ export function createPrivateProviderBrokerBinding(
 export function createPrivateProviderBrokerAccess(
 	input: PrivateProviderBrokerAccess,
 ): Readonly<PrivateProviderBrokerAccess> {
-	const endpoint = loopbackEndpoint(input.endpoint);
+	const endpoint = privateBrokerEndpoint(input.endpoint);
 	const capabilityToken = boundedText(
 		input.capabilityToken,
 		"Private provider broker capability token",
@@ -295,13 +296,14 @@ function receiptMac(receipt: ProviderBrokerReceipt, capabilityToken: string): st
 		.digest("hex");
 }
 
-function loopbackEndpoint(value: string): string {
+function privateBrokerEndpoint(value: string): string {
 	let endpoint: URL;
 	try {
 		endpoint = new URL(boundedText(value, "Private provider broker endpoint", 2_048));
 	} catch {
 		throw new Error("Private provider broker endpoint is invalid.");
 	}
+	if (endpoint.protocol === "unix:") return unixSocketEndpoint(endpoint);
 	if (
 		endpoint.protocol !== "http:" ||
 		!["127.0.0.1", "[::1]", "::1"].includes(endpoint.hostname) ||
@@ -310,10 +312,32 @@ function loopbackEndpoint(value: string): string {
 		endpoint.search ||
 		endpoint.hash
 	) {
-		throw new Error("Private provider broker endpoint must be credential-free loopback HTTP.");
+		throw new Error("Private provider broker endpoint must be credential-free loopback HTTP or an absolute Unix socket.");
 	}
 	endpoint.pathname = endpoint.pathname.replace(/\/$/, "");
 	return endpoint.toString().replace(/\/$/, "");
+}
+
+function unixSocketEndpoint(endpoint: URL): string {
+	let socketPath: string;
+	try {
+		socketPath = decodeURIComponent(endpoint.pathname);
+	} catch {
+		throw new Error("Private provider broker Unix socket path is invalid.");
+	}
+	if (
+		endpoint.hostname ||
+		endpoint.username ||
+		endpoint.password ||
+		endpoint.port ||
+		endpoint.search ||
+		endpoint.hash ||
+		!isAbsolute(socketPath) ||
+		Buffer.byteLength(socketPath) > 100
+	) {
+		throw new Error("Private provider broker Unix socket path must be absolute and bounded.");
+	}
+	return endpoint.toString();
 }
 
 function identifier(value: string, field: string): string {

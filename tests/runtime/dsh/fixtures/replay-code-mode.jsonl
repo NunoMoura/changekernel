@@ -1,0 +1,11 @@
+{"type":"session","version":0,"id":"codewiki-recorded-code-mode","createdAt":0,"delegationDepth":0}
+{"type":"assistant/chunk","seq":0,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}}}
+{"type":"assistant/chunk","seq":1,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"tool-call-delta","index":0,"id":"code-call-1","name":"run_code","argumentsDelta":"{\"code\":\"const result = await tools.query_project_knowledge({operation: 'subject', arguments: {subjectId: 'cw:component:runtime'}, limit: 10}); return {count: result.items.length, first: result.items[0].id};\",\"description\":\"Query runtime subject through typed CodeWiki SDK\"}"}}}
+{"type":"assistant/chunk","seq":2,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"code-call-1","name":"run_code","arguments":"{\"code\":\"const result = await tools.query_project_knowledge({operation: 'subject', arguments: {subjectId: 'cw:component:runtime'}, limit: 10}); return {count: result.items.length, first: result.items[0].id};\",\"description\":\"Query runtime subject through typed CodeWiki SDK\"}"}}}}
+{"type":"assistant/chunk","seq":3,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":20,"outputTokens":12}}}}
+{"type":"assistant/chunk","seq":4,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"tool-calls"}}}}
+{"type":"assistant/chunk","seq":5,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"block-start","index":0,"blockType":"text"}}}
+{"type":"assistant/chunk","seq":6,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"text-delta","index":0,"text":"Secure Code Mode query complete."}}}
+{"type":"assistant/chunk","seq":7,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"Secure Code Mode query complete."}}}}
+{"type":"assistant/chunk","seq":8,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"usage","usage":{"inputTokens":36,"outputTokens":6}}}}
+{"type":"assistant/chunk","seq":9,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}

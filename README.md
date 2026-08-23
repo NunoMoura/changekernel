@@ -48,13 +48,14 @@ CodeWiki
     +-- Checks, Gates, Workbenches, transitions, and effects
     `-- Runtime
         +-- Run Requests and Runs
-        +-- Runtime Builds and Run Processes
+        +-- Runtime Builds -> qualified outer Run Sandbox -> Run Process
         +-- DSH Adapter -> DSH AgentLoop
+        +-- admitted run_code -> qualified inner Code Runtime
         +-- authenticated private provider broker -> exact model route
         `-- CodeWiki-authored Run Receipts
 ```
 
-Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The DSH path proves an exact-pinned replay Runtime Build from authenticated Run Process launch through persistent Agent Session JSONL and Runtime-authored Run Receipt. Authenticated process frames persist the exact Execution Ledger and bounded raw-log chunks before Runtime atomically commits the Receipt; restart recovery rejects corrupt evidence and duplicate Run authority. Production producer Runs accept an authorized read-only content-addressed Project Context Snapshot mount and expose typed local Knowledge, Alignment, Project State, repository, Evidence, Result, batch, and Change-delta services; legacy `StageContextBundle` tools remain replay qualification evidence only. At Candidate checkpoint, Project Server freezes Gate Evaluation Package `1.0.0` over the complete resolved Check Pack, exact declared selections, source heads, stage lineage, and execution identities. Checks receive no producer handles or live project access. Project Server persists logical Session continuity independently of Runtime processes, admits one expected-head-CAS writer lease, and records cancellation, expiry, receipt advancement, and explicit rollover. Run Process `5.0.0`, Run Request `5.0.0`, Run Receipt `4.0.0`, Execution Ledger `5.0.0`, and Run Continuation `1.0.0` bind the exact continuity, lease, material, feedback, canonical rehydration, predictive reserves, build, expected head, and resulting head. DSH Goal state drives one Project Server-authorized round per Run; Candidate output pauses the Goal, while only Project Server and Gates determine completion. Predictive idle compaction uses deterministic non-authoritative CodeWiki summaries, records exact replacement provenance, and retains raw history. A credential-free loopback private broker now qualifies exact live streaming, bounded broker-owned retry, cancellation, route-mismatch rejection, and authenticated provider-call receipts while provider credentials remain outside DSH; replay remains mandatory CI. Credential-bearing provider adapters, optional pinned Switchyard passthrough, secure Code Mode, and Pi parity remain external release gates. Temporary Pi execution remains migration evidence.
+Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The DSH path proves an exact-pinned replay Runtime Build from authenticated Run Process launch through persistent Agent Session JSONL and Runtime-authored Run Receipt. Authenticated process frames persist the exact Execution Ledger and bounded raw-log chunks before Runtime atomically commits the Receipt; restart recovery rejects corrupt evidence and duplicate Run authority. Production producer Runs accept an authorized read-only content-addressed Project Context Snapshot mount and expose typed local Knowledge, Alignment, Project State, repository, Evidence, Result, batch, and Change-delta services; legacy `StageContextBundle` tools remain replay qualification evidence only. At Candidate checkpoint, Project Server freezes Gate Evaluation Package `1.0.0` over the complete resolved Check Pack, exact declared selections, source heads, stage lineage, and execution identities. Checks receive no producer handles or live project access. Project Server persists logical Session continuity independently of Runtime processes, admits one expected-head-CAS writer lease, and records cancellation, expiry, receipt advancement, and explicit rollover. Run Process `5.0.0`, Run Request `5.0.0`, Run Receipt `4.0.0`, Execution Ledger `5.0.0`, and Run Continuation `1.0.0` bind the exact continuity, lease, material, feedback, canonical rehydration, predictive reserves, build, expected head, and resulting head. DSH Goal state drives one Project Server-authorized round per Run; Candidate output pauses the Goal, while only Project Server and Gates determine completion. Predictive idle compaction uses deterministic non-authoritative CodeWiki summaries, records exact replacement provenance, and retains raw history. A credential-free host-local private broker now qualifies exact TCP-loopback and sandbox-mounted Unix-domain streaming, bounded broker-owned retry, cancellation, route-mismatch rejection, and authenticated provider-call receipts while provider credentials remain outside DSH; replay remains mandatory CI. Secure Code Mode uses DSH's `run_code` transport with a CodeWiki fresh-process TypeScript runtime and typed lossless-JSON bindings. Production revalidates exact Bubblewrap, `prlimit`, and Node paths, versions, and SHA-256 digests before launch. A qualified outer sandbox contains the whole DSH Run Process; a separate fresh inner sandbox contains each model-authored program. Both deny ambient authority and enforce namespace, mount, descriptor, process, CPU, memory, output, call, byte, timeout, and cancellation bounds without an in-process or worker-thread fallback. Credential-bearing provider adapters, optional pinned Switchyard passthrough, and Pi parity remain external release gates. Temporary Pi execution remains migration evidence.
 
 ## Exactly four Stage Loops
 
@@ -249,9 +250,16 @@ src/
     runtime.ts
     builds/
     checks/
+    context/
+    dsh/
+    evidence/
+    persistence/
     pi/
     processes/
+    providers/
+    receipts/
     review/
+    sandbox/
     security/
   utils/
   work-state/
@@ -261,7 +269,7 @@ scripts/
 tests/
 ```
 
-Project Server AuthN, Pairing, Client Sessions, project AuthZ, Stage Loop coordination, persistence, Workbenches, and effects live under `src/project-server/**`. Runtime contracts, Runtime Builds, the CodeWiki DSH Adapter, Run Process management, concrete Check execution, and temporary Pi/review migration adapters live under `src/runtime/**`. Release tooling bundles the exact DSH process closure into a self-contained Runtime Build candidate; qualification, activation, and launch reverify its content digest. Core Stage Loop and Check domains import only neutral Runtime contracts. No legacy `src/server/**`, `src/execution/**`, or compatibility path survives.
+Project Server AuthN, Pairing, Client Sessions, project AuthZ, Stage Loop coordination, persistence, Workbenches, and effects live under `src/project-server/**`. Runtime contracts, Runtime Builds, the CodeWiki DSH Adapter, Run Process management, qualified sandbox policies, concrete Check execution, and temporary Pi/review migration adapters live under `src/runtime/**`. Release tooling bundles the exact DSH process closure into a self-contained Runtime Build candidate; qualification, activation, and launch reverify its content digest. Core Stage Loop and Check domains import only neutral Runtime contracts. No legacy `src/server/**`, `src/execution/**`, or compatibility path survives.
 
 Public subpaths are `@nunomoura/codewiki/project-server`, `@nunomoura/codewiki/runtime`, and temporary `@nunomoura/codewiki/pi-sdk`.
 

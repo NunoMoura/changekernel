@@ -4,7 +4,7 @@
 
 This plan ratifies the deletion-first path from the current replay-qualified DSH Runtime slice to the production CodeWiki architecture. It is the implementation roadmap, not a compatibility promise and not canonical runtime input.
 
-Current green checkpoint: `71c5262` (`refactor: add stage-aware session compaction`). Slices 3B through 13 now prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, and stage-aware compaction. Slice 14 adds user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, and credential-free live qualification. Secure Code Mode, qualified outer containment, credential-bearing provider adapters, optional Switchyard external qualification, Pi parity deletion, and final product completion remain.
+Current green checkpoint: `099f0ff` (`refactor: broker live model execution`). Slices 3B through 14 now prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, stage-aware compaction, user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, and credential-free live qualification. The Slice 15 candidate adds secure Code Mode, qualified inner and outer containment, adversarial qualification, and workload-specific execution benchmarks. Credential-bearing provider adapters, optional Switchyard external qualification, Pi parity deletion, and final product completion remain.
 
 The Knowledge Base is intended design truth. Source and tests remain executable truth until each slice lands. Every temporary mismatch must be explicit and short-lived.
 
@@ -23,11 +23,13 @@ The Knowledge Base is intended design truth. Source and tests remain executable 
 ```text
 CodeWiki Project Server
   -> Runtime
-    -> authenticated Run Process
-      -> CodeWiki DSH Adapter
-        -> exact pinned DSH AgentLoop
-          -> authenticated loopback private provider broker
-            -> exact model provider route
+    -> qualified outer Run Sandbox
+      -> authenticated Run Process
+        -> CodeWiki DSH Adapter
+          -> exact pinned DSH AgentLoop
+            -> admitted qualified inner Code Runtime
+            -> authenticated host-local private provider broker
+              -> exact model provider route
 ```
 
 Project Server owns project meaning and authority. Runtime owns bounded execution and Runtime-authored receipts. DSH remains an in-process library inside authenticated empty-environment Run Processes and never speaks the Runtime protocol directly.
@@ -270,15 +272,15 @@ Production requires two separately qualified boundaries:
 1. Outer whole-DSH Run Process containment protecting host, canonical repository, Project Server, credentials, protocol descriptors, and protected effects.
 2. Inner model-authored Code Mode process/container protecting trusted DSH Adapter, Session state, material, evidence stream, and protocol from model code.
 
-The outer sandbox permits read-only Runtime Build and authorized material, bounded private scratch, and an Implementation-only Workbench. It denies canonical writes, protected refs, ambient environment, credentials, unrestricted network, inherited authority, and unbounded resources.
+The outer sandbox permits read-only Runtime Build, authorized material, and one exact host-local provider-broker Unix socket, bounded private scratch, and an Implementation-only Workbench. It denies canonical writes, protected refs, ambient environment, credentials, unrestricted network, inherited authority, and unbounded resources.
 
-The inner sandbox permits no filesystem, network, environment, inherited descriptors, DSH Session files, or protocol pipes. It exposes only authenticated typed async bindings and enforces hard termination plus cumulative call and byte budgets.
+The inner sandbox permits no filesystem, network, environment, inherited descriptors, DSH Session files, or protocol pipes. It exposes only host-admitted typed async bindings and enforces hard termination plus cumulative call and byte budgets.
 
-DSH's worker-thread Code Runtime is containment, not a security boundary, and cannot qualify. Official DSH filesystem sandboxing also does not solve network or whole-process isolation. Defer implementation until final integration, but make exact provider version, adversarial qualification, and fail-closed admission production release gates.
+DSH's worker-thread Code Runtime is containment, not a security boundary, and cannot qualify. Official DSH filesystem sandboxing also does not solve network or whole-process isolation. CodeWiki therefore supplies a fresh-process TypeScript Code Runtime behind an exact pinned Bubblewrap and `prlimit` policy, with Node's Permission Model used only as defense in depth. Production admission revalidates real executable paths, versions, and SHA-256 digests; unavailable or drifted containment fails closed without a worker-thread or in-process fallback.
 
-DSH receives no provider credentials or unrestricted provider egress. Runtime supplies one opaque expiring Run- and route-scoped capability to a loopback-only host-side provider-neutral broker. The broker owns credentials, billing integration, provider networking, bounded transport retry or equivalent-endpoint failover, normalization, provider request IDs, and host-side receipt retention. Authenticated receipts bind broker implementation/configuration, exact request and response digests, selected provider/model, transport attempts, usage, cancellation or typed failure, and receipt identity. Project Server alone interprets those outcomes.
+DSH receives no provider credentials or unrestricted provider egress. Runtime supplies one opaque expiring Run- and route-scoped capability to a host-local provider-neutral broker. Unsandboxed qualification may use TCP loopback; network-isolated production Run Processes use one explicitly mounted Unix-domain socket. The broker owns credentials, billing integration, provider networking, bounded transport retry or equivalent-endpoint failover, normalization, provider request IDs, and host-side receipt retention. Authenticated receipts bind broker implementation/configuration, exact request and response digests, selected provider/model, transport attempts, usage, cancellation or typed failure, and receipt identity. Project Server alone interprets those outcomes.
 
-Replay remains mandatory deterministic CI. Credential-free loopback mock infrastructure separately qualifies real streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Optional NVIDIA NeMo Switchyard remains a replaceable backend and begins only as exact pinned loopback passthrough with Switchyard retries disabled and selected-target equality. Dynamic classifier, stage, escalation, and advisor routes remain deferred.
+Replay remains mandatory deterministic CI. Credential-free host-local mock infrastructure separately qualifies TCP-loopback and sandbox-mounted Unix-domain streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Optional NVIDIA NeMo Switchyard remains a replaceable backend and begins only as exact pinned loopback passthrough with Switchyard retries disabled and selected-target equality. Dynamic classifier, stage, escalation, and advisor routes remain deferred.
 
 ## Completed foundation
 
@@ -520,7 +522,7 @@ Success: long-running continuity survives compaction without moving project auth
 - [x] Activate deterministic Work Unit model selection through Work Unit Model Assignment `1.0.0`, binding scheduled Assignment, Work Unit, route-policy digest, selected route, prior typed attempts, budgets, rationale, and exact Run route.
 - [x] Bind route ID, provider, model, reasoning effort, context window, timeout, policy attempt, model Assignment, options, and route digest in Run Request `5.0.0`; force model changes through fresh-Session rollover.
 - [x] Add typed recovery for broker transport retry, canonical rehydration, compatible-route selection, capability escalation, user authorization, and terminal stop.
-- [x] Implement an authenticated loopback provider-neutral private model capability with no provider credential in DSH, project files, prompts, Sessions, Workbenches, ledgers, or receipts.
+- [x] Implement an authenticated host-local provider-neutral private model capability with TCP-loopback and sandbox-mounted Unix-domain transports and no provider credential in DSH, project files, prompts, Sessions, Workbenches, ledgers, or receipts.
 - [x] Bind broker implementation/configuration, exact request/response, selected target, transport attempts, provider request ID, usage, cancellation or typed failure, and receipt identity into Execution Ledger `5.0.0` and Run Receipt `4.0.0` lineage.
 - [x] Qualify credential-free live streaming, bounded broker-owned retry, cancellation, selected-target mismatch rejection, and isolated Run Process transport without committed credentials or mandatory paid calls.
 - [x] Preserve replay as the deterministic CI route and prohibit fallback from failed live transport.
@@ -530,11 +532,12 @@ Success: Harness, Worker, and Check model authority stays distinct; every Work U
 
 ### Slice 15 — Secure Code Mode and sandbox qualification
 
-- Benchmark native direct, native batch, and Code Mode for source tokens, cached input tokens, model output tokens, tool-result tokens, repeated-byte ratio, new-byte ratio, Candidate-to-edit amplification, turns, bytes, latency, ledger size, compaction, and Candidate quality.
-- Select only a qualified inner Code Runtime provider exposing typed async CodeWiki bindings.
-- Select and pin a qualified outer whole-process sandbox provider.
-- Run adversarial filesystem, network, process, descriptor, credential, resource, escape, orphan, cancellation, and evidence-integrity tests.
-- Fail closed when either boundary is unavailable or version identity changes.
+- [x] Benchmark native direct, native batch, and Code Mode for source tokens, cached input tokens, model output tokens, tool-result tokens, repeated-byte ratio, new-byte ratio, Candidate-to-edit amplification, turns, bytes, latency, ledger size, compaction, and Candidate quality.
+- [x] Select only a qualified fresh-process TypeScript Code Runtime exposing typed async CodeWiki bindings through DSH `run_code`.
+- [x] Select and pin a qualified Bubblewrap plus `prlimit` outer whole-process sandbox policy.
+- [x] Run adversarial filesystem, network, process, descriptor, credential, resource, escape, orphan, cancellation, malformed-protocol, and evidence-integrity tests across separate inner and outer boundaries.
+- [x] Fail closed when either boundary is unavailable, unsupported, malformed, or version or executable identity changes.
+- [x] Bind normalized Code Mode configuration, sandbox profile, Node executable identity, static material, nested binding calls, termination, and output into authenticated Run Process and Execution Ledger evidence.
 
 Success: model-authored code has no ambient authority and production cannot start without both qualified boundaries.
 

@@ -55,6 +55,7 @@ export const TARGET_RUNTIME_SUBDIRECTORIES = [
 	"providers",
 	"receipts",
 	"review",
+	"sandbox",
 	"security",
 ] as const;
 

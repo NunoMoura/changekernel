@@ -1,5 +1,10 @@
 import type {Context} from "@deepseek-ai/cordis";
 import {
+	request as httpRequest,
+	type IncomingMessage,
+	type RequestOptions,
+} from "node:http";
+import {
 	LlmAdapter,
 	LlmError,
 	ReasoningEffortId,
@@ -158,12 +163,16 @@ class PrivateProviderBrokerAdapter extends LlmAdapter {
 			: undefined;
 		signal?.addEventListener("abort", cancellation as EventListener, {once: true});
 		try {
-			const response = await fetch(`${this.access.endpoint}/v1/model-calls`, {
-				method: "POST",
-				headers: brokerHeaders(this.access, {"content-type": "application/json"}),
-				body: canonicalJson(brokerRequest),
-			});
-			if (!response.ok || !response.body) {
+			const response = await requestPrivateProviderBroker(
+				this.access,
+				"/v1/model-calls",
+				{
+					method: "POST",
+					headers: brokerHeaders(this.access, {"content-type": "application/json"}),
+					body: canonicalJson(brokerRequest),
+				},
+			);
+			if (response.status < 200 || response.status >= 300) {
 				throw new LlmError(
 					`Private provider broker rejected model call with HTTP ${response.status}.`,
 					"BROKER_TRANSPORT",
@@ -228,7 +237,7 @@ function modelPayload(options: GenerateOptions): CanonicalJsonValue {
 }
 
 async function* readWireMessages(
-	body: ReadableStream<Uint8Array>,
+	body: AsyncIterable<Uint8Array>,
 ): AsyncIterable<ProviderBrokerWireMessage> {
 	const decoder = new TextDecoder();
 	let pending = "";
@@ -283,13 +292,53 @@ async function cancelBrokerCall(
 	callId: string,
 ): Promise<void> {
 	try {
-		await fetch(
-			`${access.endpoint}/v1/model-calls/${encodeURIComponent(callId)}/cancel`,
+		await requestPrivateProviderBroker(
+			access,
+			`/v1/model-calls/${encodeURIComponent(callId)}/cancel`,
 			{method: "POST", headers: brokerHeaders(access)},
 		);
 	} catch {
 		// Main stream still resolves the terminal broker receipt or transport failure.
 	}
+}
+
+interface PrivateProviderBrokerResponse {
+	readonly status: number;
+	readonly body: IncomingMessage;
+}
+
+function requestPrivateProviderBroker(
+	access: PrivateProviderBrokerAccess,
+	path: string,
+	input: {
+		readonly method: "POST";
+		readonly headers: Readonly<Record<string, string>>;
+		readonly body?: string;
+	},
+): Promise<PrivateProviderBrokerResponse> {
+	let endpoint: URL;
+	try {
+		endpoint = new URL(access.endpoint);
+	} catch {
+		return Promise.reject(new Error("Private provider broker endpoint is invalid."));
+	}
+	const requestOptions: RequestOptions = endpoint.protocol === "unix:"
+		? {socketPath: decodeURIComponent(endpoint.pathname), path}
+		: {
+			protocol: endpoint.protocol,
+			hostname: endpoint.hostname,
+			port: endpoint.port,
+			path,
+		};
+	return new Promise((resolve, reject) => {
+		const request = httpRequest({
+			...requestOptions,
+			method: input.method,
+			headers: input.headers,
+		}, (body) => resolve({status: body.statusCode || 0, body}));
+		request.once("error", reject);
+		request.end(input.body);
+	});
 }
 
 function brokerHeaders(

@@ -25,8 +25,14 @@ export type NodeRuntimeBuildResolver = (
 	challenge: RunProcessChallenge,
 ) => Promise<NodeRunProcessArtifact>;
 
+export interface NodeRunProcessSandbox {
+	readonly profileDigest: Sha256Digest;
+	prepare(artifact: NodeRunProcessArtifact): Promise<NodeRunProcessArtifact>;
+}
+
 export interface NodeRunProcessManagerOptions {
 	readonly resolveArtifact: NodeRuntimeBuildResolver;
+	readonly sandbox?: NodeRunProcessSandbox;
 	readonly maxFrameBytes?: number;
 	readonly terminationGraceMs?: number;
 }
@@ -55,10 +61,16 @@ export function createNodeRunProcessManager(
 		launch: async (input: RunLaunchInput) => {
 			if (input.signal.aborted) throw new Error("Run Process launch was aborted.");
 			assertBootstrapKey(input.bootstrapKey);
-			const artifact = normalizeArtifact(
+			const resolvedArtifact = normalizeArtifact(
 				await options.resolveArtifact(input.challenge),
 				input.challenge,
 			);
+			const artifact = options.sandbox
+				? normalizeArtifact(
+						await options.sandbox.prepare(resolvedArtifact),
+						input.challenge,
+					)
+				: resolvedArtifact;
 			return launchNodeRunProcess({
 				artifact,
 				challenge: input.challenge,
@@ -87,6 +99,7 @@ async function launchNodeRunProcess(input: {
 		windowsHide: true,
 		stdio: ["ignore", "ignore", "ignore", "pipe", "pipe", "pipe"],
 	});
+	// SAFETY: spawn received an exact six-entry stdio tuple with writable fd 3/4 and readable fd 5.
 	const privatePipes = child.stdio as unknown as readonly (
 		| Readable
 		| Writable
@@ -347,7 +360,7 @@ function normalizeArtifact(
 	}
 	assertProcessText(value.executable, "Node Run Process executable", 4096);
 	assertProcessText(value.cwd, "Node Run Process cwd", 4096);
-	if (!Array.isArray(value.args) || value.args.length > 64) {
+	if (!Array.isArray(value.args) || value.args.length > 256) {
 		throw new Error("Node Run Process arguments are invalid.");
 	}
 	const args = value.args.map((argument) => {
@@ -471,7 +484,10 @@ function boundedInteger(
 	return value;
 }
 
-function hasExactKeys(value: object, expected: readonly string[]): boolean {
+function hasExactKeys(
+	value: NodeRunProcessArtifact,
+	expected: readonly string[],
+): boolean {
 	const keys = Object.keys(value).sort(compareText);
 	const expectedKeys = [...expected].sort(compareText);
 	return (

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
+import {readFileSync, realpathSync} from "node:fs";
 import {mkdtemp, readFile, rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
@@ -11,6 +13,7 @@ import {
 	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {createDshReplayModelInstaller} from "../../../src/runtime/dsh/replay.ts";
+import {BUBBLEWRAP_SANDBOX_SCHEMA_VERSION} from "../../../src/runtime/sandbox/bubblewrap.ts";
 import {
 	RUN_PROTOCOL,
 	createRunModelRouteBinding,
@@ -41,6 +44,11 @@ const projectContextFixturePath = resolve(
 	"fixtures/replay-project-context.jsonl",
 );
 const projectContextFixtureDigest = sha256Digest(await readFile(projectContextFixturePath));
+const codeModeFixturePath = resolve(
+	dirname(fileURLToPath(import.meta.url)),
+	"fixtures/replay-code-mode.jsonl",
+);
+const codeModeFixtureDigest = sha256Digest(await readFile(codeModeFixturePath));
 const temporaryDirectories = [];
 
 after(async () => {
@@ -292,6 +300,42 @@ describe("CodeWiki DSH Adapter", () => {
 		assert.equal(queryEntry.payload.coverage, "complete");
 	});
 
+	it("executes typed Project Context bindings through secure Code Mode", async () => {
+		const root = await temporaryRoot();
+		const projectContextSnapshot = contextSnapshot();
+		const codeMode = liveCodeMode();
+		const result = await runDshAgent({
+			request: runRequest(
+				"run-dsh-context",
+				"session-dsh-code-mode",
+				projectContextSnapshot,
+			),
+			artifacts: artifacts(root),
+			projectContextSnapshot,
+			codeMode,
+			installModelAdapter: createDshReplayModelInstaller({
+				fixturePath: codeModeFixturePath,
+				fixtureDigest: codeModeFixtureDigest,
+			}),
+		});
+
+		assert.equal(result.outcome, "completed");
+		assert.equal(result.output, "Secure Code Mode query complete.");
+		const rawLog = await readFile(result.rawLogPath, "utf8");
+		const eventTypes = result.sessionEvents.map(({type}) => type);
+		assert.ok(eventTypes.includes("tool/code-dispatch-start"), rawLog);
+		assert.ok(eventTypes.includes("tool/code-dispatch"), rawLog);
+		assert.ok(result.executionLedger.entries.some(({kind}) => kind === "project-context-query"));
+		const staticInput = result.executionLedger.entries.find(({kind}) => kind === "static-input");
+		assert.equal(staticInput.payload.codeMode.configDigest, canonicalJsonDigest(codeMode));
+		assert.equal(
+			staticInput.payload.codeMode.sandboxProfileDigest,
+			canonicalJsonDigest(codeMode.runtime.sandbox),
+		);
+		assert.match(rawLog, /\"name\":\"run_code\"/);
+		assert.match(rawLog, /first.*runtime/);
+	});
+
 	it("rejects model-visible bytes that do not match the Run Request", async () => {
 		const root = await temporaryRoot();
 		await assert.rejects(
@@ -423,6 +467,46 @@ function runRequest(
 		createdAt: "2026-08-17T20:00:00.000Z",
 		deadlineAt: "2026-08-17T20:01:00.000Z",
 	});
+}
+
+function liveCodeMode() {
+	const bubblewrap = realpathSync("/usr/bin/bwrap");
+	const prlimit = realpathSync("/usr/bin/prlimit");
+	const node = realpathSync(process.execPath);
+	return {
+		maxParallelSubCalls: 2,
+		runtime: {
+			sandbox: {
+				schemaVersion: BUBBLEWRAP_SANDBOX_SCHEMA_VERSION,
+				bubblewrap: {
+					path: bubblewrap,
+					version: execFileSync(bubblewrap, ["--version"], {encoding: "utf8", env: {}}).trim(),
+					digest: sha256Digest(readFileSync(bubblewrap)),
+				},
+				prlimit: {
+					path: prlimit,
+					version: execFileSync(prlimit, ["--version"], {encoding: "utf8", env: {}}).split("\n", 1)[0].trim(),
+					digest: sha256Digest(readFileSync(prlimit)),
+				},
+				systemReadOnlyPaths: ["/usr", "/lib", "/lib64"],
+				limits: {
+					addressSpaceBytes: 8 * 1024 * 1024 * 1024,
+					cpuSeconds: 3,
+					openFiles: 128,
+					processes: 512,
+					fileBytes: 1024 * 1024,
+				},
+			},
+			node: {path: node, version: process.version, digest: sha256Digest(readFileSync(node))},
+			maxProgramBytes: 64 * 1024,
+			maxFrameBytes: 1024 * 1024,
+			maxOutputBytes: 64 * 1024,
+			maxBindingCalls: 16,
+			maxBindingBytes: 64 * 1024,
+			maxWallMs: 2_000,
+			maxOldGenerationSizeMb: 128,
+		},
+	};
 }
 
 function contextSnapshot() {

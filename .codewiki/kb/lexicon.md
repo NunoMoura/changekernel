@@ -13,10 +13,10 @@ tags: [system, vocabulary]
 | --- | --- | --- |
 | CodeWiki | Complete product containing Project Servers, Clients, shared package assets, and release-managed Runtime Builds. | [Package](system/components/package.md) |
 | Project Server | Sole authoritative long-lived owner for one governed project: transport, AuthN, project AuthZ, canonical state, Stage Loops, Checks, Workbenches, transitions, effects, and its subordinate Runtime. | [Project Server](system/components/project-server.md) |
-| Runtime | Project Server-owned execution subsystem that accepts immutable Run Requests, executes bounded Runs, controls Run Processes, and creates Run Receipts without project, Check Result, Gate, transition, or effect authority. | [Runtime](system/components/runtime.md) |
+| Runtime | Project Server-owned execution subsystem that executes bounded Run Requests and creates Run Receipts without project or lifecycle authority. | [Runtime](system/components/runtime.md) |
 | Run | One bounded execution attempt for a Stage Producer, Implementation Worker, Check, or delegated harness under one immutable Run Request. | [Runtime](system/components/runtime.md) |
 | Run Request | Immutable binding of one Run to its subject, inputs, execution identities, limits, custody, and Session lease. | [Runtime](system/components/runtime.md) |
-| Run Process | Isolated OS process controlled by Runtime for one Run and denied canonical project authority. | [Runtime](system/components/runtime.md) |
+| Run Process | Runtime-controlled OS process for one Run; process separation alone is not a security sandbox. | [Runtime](system/components/runtime.md) |
 | Run Port | Neutral internal contract through which Project Server or Checks requests bounded execution without importing DSH or a delegated harness. | [Runtime](system/components/runtime.md) |
 | Run Receipt | Immutable CodeWiki-authored account of one Run and only the inputs, outputs, custody, evidence, and gaps CodeWiki can prove. | [Runtime](system/components/runtime.md) |
 | Runtime Build | Content-addressed DSH execution closure binding artifact bytes, protocol, Node, plugins, adapters, and qualification Evidence. | [Runtime](system/components/runtime.md) |

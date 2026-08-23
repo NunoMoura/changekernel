@@ -34,7 +34,10 @@ import {
 	pauseGoalAtCandidateBoundary,
 	prepareDshContinuation,
 } from "./execution-context.ts";
-import {mountDshExecutionPlugins} from "./plugins.ts";
+import {
+	mountDshExecutionPlugins,
+	type DshCodeModeConfig,
+} from "./plugins.ts";
 import type {ProviderBrokerReceipt} from "../providers/contracts.ts";
 
 export interface DshRunArtifacts {
@@ -80,6 +83,7 @@ export interface RunDshAgentOptions {
 	readonly artifacts: DshRunArtifacts;
 	readonly projectContextSnapshot?: ProjectContextSnapshot | null;
 	readonly installModelAdapter: DshModelAdapterInstaller;
+	readonly codeMode?: DshCodeModeConfig | null;
 	readonly signal?: AbortSignal;
 	readonly now?: () => string;
 }
@@ -151,6 +155,14 @@ function createDshExecutionLedger(
 				: null,
 			inputBindings: options.request.inputs,
 			continuation: options.request.continuation,
+			codeMode: options.codeMode
+				? {
+					isolation: "bubblewrap-process",
+					configDigest: canonicalJsonDigest(options.codeMode),
+					sandboxProfileDigest: canonicalJsonDigest(options.codeMode.runtime.sandbox),
+					nodeExecutableDigest: options.codeMode.runtime.node.digest,
+				}
+				: null,
 		},
 	});
 	return {
@@ -196,6 +208,7 @@ async function createDshExecution(
 		systemPrompt: options.artifacts.systemPrompt,
 		sessionRoot: options.artifacts.sessionRoot,
 		continuation: options.request.continuation,
+		codeMode: options.codeMode ?? null,
 	});
 	const ledger = createDshExecutionLedger(options, startedAt);
 	let modelLease: DshModelAdapterLease | undefined;
