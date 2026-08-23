@@ -19,14 +19,12 @@ import {
 } from "../../../src/project-server/sessions/continuity-store.ts";
 import {
 	createRunHandle,
+	createRunModelRouteBinding,
 	createRunRawLogReference,
 	createRunReceipt,
 	createRunRequest,
 } from "../../../src/runtime/contracts.ts";
-import {
-	canonicalJsonDigest,
-	sha256Digest,
-} from "../../../src/utils/canonical-json.ts";
+import {sha256Digest} from "../../../src/utils/canonical-json.ts";
 
 const build = Object.freeze({
 	buildDigest: digest("runtime-build-one"),
@@ -273,16 +271,18 @@ function completedReceipt(session, runId, rawContent) {
 			producerSkillSetDigest: digest("skills"),
 			toolMode: "admitted",
 			toolSetDigest: digest("tools"),
-			modelRoute: {
+			modelRoute: createRunModelRouteBinding({
+				routeId: "implementation",
 				provider: "provider",
 				model: "model",
+				reasoningEffort: null,
+				contextWindowTokens: 128_000,
+				timeoutMs: 60_000,
+				policyDigest: digest("policy"),
+				policyAttempt: 0,
+				modelAssignmentDigest: digest("model-assignment"),
 				optionsDigest: digest("options"),
-				routeDigest: canonicalJsonDigest({
-					provider: "provider",
-					model: "model",
-					optionsDigest: digest("options"),
-				}),
-			},
+			}),
 		},
 		workspace: {
 			kind: "runtime-workbench",

@@ -20,6 +20,7 @@ import {
 	createRunHandle,
 	createRunQuiescence,
 	createRunRawLogReference,
+	createRunModelRouteBinding,
 	createRunRequest,
 	createRunSessionLeaseBinding,
 	createStageRunContinuationBinding,
@@ -273,9 +274,9 @@ describe("execution ports", () => {
 		);
 		const spec = runRequest(build.buildDigest);
 		const {requestDigest, ...digestBody} = spec;
-		assert.equal(RUN_PROTOCOL.version, "4.0.0");
-		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "4.0.0");
-		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "3.0.0");
+		assert.equal(RUN_PROTOCOL.version, "5.0.0");
+		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "5.0.0");
+		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "4.0.0");
 		assert.equal(spec.schemaVersion, RUN_REQUEST_SCHEMA_VERSION);
 		assert.equal(requestDigest, canonicalJsonDigest(digestBody));
 		assert.equal(Object.isFrozen(spec), true);
@@ -642,12 +643,18 @@ function runRequest(buildDigest, overrides = {}) {
 					: overrides.producerSkillSetDigest,
 			toolMode: role === "model-check" ? "none" : "admitted",
 			toolSetDigest: sha256Digest(role === "model-check" ? "no-tools" : "tools"),
-			modelRoute: {
+			modelRoute: createRunModelRouteBinding({
+				routeId: "test-route",
 				provider,
 				model,
+				reasoningEffort: null,
+				contextWindowTokens: 128_000,
+				timeoutMs: 30_000,
+				policyDigest: sha256Digest("model-policy"),
+				policyAttempt: 0,
+				modelAssignmentDigest: sha256Digest("model-assignment"),
 				optionsDigest,
-				routeDigest: canonicalJsonDigest({provider, model, optionsDigest}),
-			},
+			}),
 		},
 		workspace,
 		budget: {

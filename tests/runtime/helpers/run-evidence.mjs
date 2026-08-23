@@ -1,6 +1,7 @@
 import {
 	RUN_PROTOCOL,
 	createRunHandle,
+	createRunModelRouteBinding,
 	createRunRawLogReference,
 	createRunReceipt,
 	createRunRequest,
@@ -16,17 +17,18 @@ export function digest(label) {
 }
 
 export function runRequest(runId = "run-evidence", sessionId = "session-evidence") {
-	const optionsDigest = digest("model-options");
-	const modelRoute = {
+	const modelRoute = createRunModelRouteBinding({
+		routeId: "codewiki-replay",
 		provider: "codewiki-replay",
 		model: "deterministic",
-		optionsDigest,
-		routeDigest: canonicalJsonDigest({
-			provider: "codewiki-replay",
-			model: "deterministic",
-			optionsDigest,
-		}),
-	};
+		reasoningEffort: null,
+		contextWindowTokens: 128_000,
+		timeoutMs: 30_000,
+		policyDigest: digest("model-policy"),
+		policyAttempt: 0,
+		modelAssignmentDigest: digest("model-assignment"),
+		optionsDigest: digest("model-options"),
+	});
 	return createRunRequest({
 		runId,
 		operationId: `operation-${runId}`,

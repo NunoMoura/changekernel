@@ -144,6 +144,7 @@ test("Run Receipt commit fails closed for missing evidence and conflicting immut
 				continuationBindingDigest: receipt.continuationBindingDigest,
 				materialDigest: receipt.materialDigest,
 				feedbackDigest: receipt.feedbackDigest,
+				modelRouteDigest: receipt.modelRouteDigest,
 				acceptedAt: receipt.acceptedAt,
 			},
 			outcome: receipt.outcome,

@@ -146,6 +146,7 @@ function normalizeReceipt(value: RunReceipt): Readonly<RunReceipt> {
 		continuationBindingDigest: value.continuationBindingDigest,
 		materialDigest: value.materialDigest,
 		feedbackDigest: value.feedbackDigest,
+		modelRouteDigest: value.modelRouteDigest,
 		acceptedAt: value.acceptedAt,
 	};
 	const normalized = createRunReceipt({

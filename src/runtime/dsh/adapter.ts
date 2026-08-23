@@ -35,6 +35,7 @@ import {
 	prepareDshContinuation,
 } from "./execution-context.ts";
 import {mountDshExecutionPlugins} from "./plugins.ts";
+import type {ProviderBrokerReceipt} from "../providers/contracts.ts";
 
 export interface DshRunArtifacts {
 	readonly systemPrompt: string;
@@ -45,6 +46,7 @@ export interface DshRunArtifacts {
 
 export interface DshModelAdapterLease {
 	readonly assertComplete?: () => void;
+	readonly providerReceipts?: () => readonly ProviderBrokerReceipt[];
 	readonly dispose: () => void | Promise<void>;
 }
 
@@ -312,6 +314,14 @@ async function executeDshSession(
 	);
 	if (!flushed) throw new Error("DSH Agent Session has no persistence checkpoint.");
 	execution.modelLease.assertComplete?.();
+	for (const receipt of execution.modelLease.providerReceipts?.() || []) {
+		execution.ledger.record({
+			kind: "provider-call",
+			occurredAt: receipt.finishedAt,
+			modelVisible: false,
+			payload: receipt,
+		});
+	}
 	const sessionId = SessionId(options.request.session.sessionId);
 	const raw = await execution.context.sessionPersistence.readRaw(sessionId);
 	if (!raw) throw new Error("DSH Agent Session raw log is unavailable.");

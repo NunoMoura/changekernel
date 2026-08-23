@@ -52,6 +52,7 @@ export const TARGET_RUNTIME_SUBDIRECTORIES = [
 	"persistence",
 	"pi",
 	"processes",
+	"providers",
 	"receipts",
 	"review",
 	"security",

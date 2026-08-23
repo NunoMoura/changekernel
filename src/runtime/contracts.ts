@@ -245,7 +245,7 @@ export interface SessionIsolationPort {
 
 export const RUN_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "4.0.0",
+	version: "5.0.0",
 } as const);
 
 export const RUNTIME_BUILD_SCHEMA_VERSION = "1.0.0" as const;
@@ -336,7 +336,7 @@ export function admitRunProcessHandshake(
 	});
 }
 
-export const RUN_REQUEST_SCHEMA_VERSION = "4.0.0" as const;
+export const RUN_REQUEST_SCHEMA_VERSION = "5.0.0" as const;
 
 export type RunCustody = "backend-owned" | "backend-delegated";
 export type RunRole =
@@ -412,10 +412,26 @@ export function createRunSessionLeaseBinding(input: Omit<RunSessionLeaseBinding,
 }
 
 export interface RunModelRouteBinding {
+	readonly routeId: string;
 	readonly provider: string;
 	readonly model: string;
+	readonly reasoningEffort: string | null;
+	readonly contextWindowTokens: number;
+	readonly timeoutMs: number;
+	readonly policyDigest: Sha256Digest;
+	readonly policyAttempt: number;
+	readonly modelAssignmentDigest: Sha256Digest;
 	readonly optionsDigest: Sha256Digest;
 	readonly routeDigest: Sha256Digest;
+}
+
+export function createRunModelRouteBinding(
+	value: Omit<RunModelRouteBinding, "routeDigest">,
+): RunModelRouteBinding {
+	return normalizeRunModelRoute({
+		...value,
+		routeDigest: canonicalJsonDigest(value),
+	});
 }
 
 export const PROJECT_CONTEXT_SNAPSHOT_PROTOCOL = Object.freeze({
@@ -703,7 +719,7 @@ export function createRunRequest(
 	return Object.freeze({...body, requestDigest: canonicalJsonDigest(body)});
 }
 
-export const RUN_RECEIPT_SCHEMA_VERSION = "3.0.0" as const;
+export const RUN_RECEIPT_SCHEMA_VERSION = "4.0.0" as const;
 
 export const RUN_EVENT_KINDS = Object.freeze([
 	"accepted",
@@ -747,6 +763,7 @@ export interface RunHandle {
 	readonly continuationBindingDigest: Sha256Digest;
 	readonly materialDigest: Sha256Digest;
 	readonly feedbackDigest: Sha256Digest | null;
+	readonly modelRouteDigest: Sha256Digest;
 	readonly acceptedAt: string;
 }
 
@@ -841,6 +858,7 @@ export function createRunHandle(
 		continuationBindingDigest: request.continuation.bindingDigest,
 		materialDigest: request.inputs.materialDigest,
 		feedbackDigest: request.inputs.feedbackDigest,
+		modelRouteDigest: request.inputs.modelRoute.routeDigest,
 		acceptedAt,
 	});
 }
@@ -1078,6 +1096,7 @@ export function createRunReceipt(
 		resultingSessionHead: rawLog?.digest ?? null,
 		materialDigest: value.handle.materialDigest,
 		feedbackDigest: value.handle.feedbackDigest,
+		modelRouteDigest: value.handle.modelRouteDigest,
 		acceptedAt: value.handle.acceptedAt,
 		outcome: value.outcome,
 		finalEventSequence: value.finalEventSequence,
@@ -1111,6 +1130,7 @@ export function assertRunReceipt(receipt: RunReceipt): void {
 		continuationBindingDigest: receipt.continuationBindingDigest,
 		materialDigest: receipt.materialDigest,
 		feedbackDigest: receipt.feedbackDigest,
+		modelRouteDigest: receipt.modelRouteDigest,
 		acceptedAt: receipt.acceptedAt,
 	};
 	const expected = createRunReceipt({
@@ -1169,6 +1189,7 @@ function assertRunHandle(value: RunHandle): void {
 	assertSha256Digest(value.continuationBindingDigest, "Run handle continuation binding digest");
 	assertSha256Digest(value.materialDigest, "Run handle material digest");
 	optionalSha256Digest(value.feedbackDigest, "Run handle feedback digest");
+	assertSha256Digest(value.modelRouteDigest, "Run handle model route digest");
 	assertTimestamp(value.acceptedAt, "Run handle acceptedAt");
 }
 
@@ -1337,6 +1358,7 @@ const RUN_HANDLE_KEYS = [
 	"continuationBindingDigest",
 	"materialDigest",
 	"feedbackDigest",
+	"modelRouteDigest",
 	"acceptedAt",
 ] as const;
 const RUN_PROCESS_RESULT_INPUT_KEYS = [
@@ -1567,28 +1589,56 @@ function normalizeRunInputs(
 function normalizeRunModelRoute(
 	value: RunModelRouteBinding,
 ): RunModelRouteBinding {
-	if (!hasExactKeys(value, ["provider", "model", "optionsDigest", "routeDigest"])) {
+	if (!hasExactKeys(value, [
+		"routeId",
+		"provider",
+		"model",
+		"reasoningEffort",
+		"contextWindowTokens",
+		"timeoutMs",
+		"policyDigest",
+		"policyAttempt",
+		"modelAssignmentDigest",
+		"optionsDigest",
+		"routeDigest",
+	])) {
 		throw new Error("Run model route shape is invalid.");
 	}
+	assertIdentifier(value.routeId, "Run model route id");
 	assertBoundedText(value.provider, "Run model provider", 128);
 	assertBoundedText(value.model, "Run model", 256);
+	if (value.reasoningEffort !== null) {
+		assertBoundedText(value.reasoningEffort, "Run model reasoning effort", 64);
+	}
+	assertPositiveInteger(value.contextWindowTokens, "Run model context window");
+	assertPositiveInteger(value.timeoutMs, "Run model timeout");
+	const policyDigest = assertSha256Digest(value.policyDigest, "Run model policy digest");
+	assertNonNegativeInteger(value.policyAttempt, "Run model policy attempt");
+	const modelAssignmentDigest = assertSha256Digest(
+		value.modelAssignmentDigest,
+		"Run model Assignment digest",
+	);
 	const optionsDigest = assertSha256Digest(
 		value.optionsDigest,
 		"Run model options digest",
 	);
 	const routeDigest = assertSha256Digest(value.routeDigest, "Run model route digest");
-	if (
-		routeDigest !==
-		canonicalJsonDigest({provider: value.provider, model: value.model, optionsDigest})
-	) {
-		throw new Error("Run model route digest does not match its route.");
-	}
-	return Object.freeze({
+	const body = {
+		routeId: value.routeId,
 		provider: value.provider,
 		model: value.model,
+		reasoningEffort: value.reasoningEffort,
+		contextWindowTokens: value.contextWindowTokens,
+		timeoutMs: value.timeoutMs,
+		policyDigest,
+		policyAttempt: value.policyAttempt,
+		modelAssignmentDigest,
 		optionsDigest,
-		routeDigest,
-	});
+	};
+	if (routeDigest !== canonicalJsonDigest(body)) {
+		throw new Error("Run model route digest does not match its route.");
+	}
+	return Object.freeze({...body, routeDigest});
 }
 
 function normalizeRunWorkspace(

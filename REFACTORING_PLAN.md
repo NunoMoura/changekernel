@@ -4,7 +4,7 @@
 
 This plan ratifies the deletion-first path from the current replay-qualified DSH Runtime slice to the production CodeWiki architecture. It is the implementation roadmap, not a compatibility promise and not canonical runtime input.
 
-Current executable checkpoint: `c433150` (`refactor: name accepted active changes`). It preserves the DSH Runtime foundation proven at `833f838` and additionally proves the Work Unit vocabulary cut, rolling-planning deletion, Change-scoped Planning contracts, and exact accepted active Changes binding and compatibility checks through Slice 3. It does not yet implement stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic Candidate-to-Knowledge materialization, atomic desired-state application, production material, persistent continuity, Work Unit completion, aggregate Review, live-provider, or sandbox architecture.
+Current green checkpoint: `71c5262` (`refactor: add stage-aware session compaction`). Slices 3B through 13 now prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, and stage-aware compaction. Slice 14 adds user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, and credential-free live qualification. Secure Code Mode, qualified outer containment, credential-bearing provider adapters, optional Switchyard external qualification, Pi parity deletion, and final product completion remain.
 
 The Knowledge Base is intended design truth. Source and tests remain executable truth until each slice lands. Every temporary mismatch must be explicit and short-lived.
 
@@ -26,6 +26,8 @@ CodeWiki Project Server
     -> authenticated Run Process
       -> CodeWiki DSH Adapter
         -> exact pinned DSH AgentLoop
+          -> authenticated loopback private provider broker
+            -> exact model provider route
 ```
 
 Project Server owns project meaning and authority. Runtime owns bounded execution and Runtime-authored receipts. DSH remains an in-process library inside authenticated empty-environment Run Processes and never speaks the Runtime protocol directly.
@@ -39,7 +41,13 @@ Decision(change)
       -> Review(exact aggregate change lineage)
 ```
 
-Decision, Planning, Implementation, and Review produce Candidates. Checks independently judge exact Candidates. Gates reduce completed Results. Project Server alone applies canonical Knowledge and graph changes, Claims, Assignments, integrations, lifecycle transitions, and protected effects.
+Decision, Planning, Implementation, and Review produce Candidates. Checks independently judge exact Candidates. Gates reduce completed Results. Project Server alone applies canonical Knowledge and graph changes, Claims, Assignments, model-route authorization, integrations, lifecycle transitions, and protected effects.
+
+### Harness Agent and role routes
+
+The user-selected Harness Agent is the primary interactive DSH-backed Agent, not a fifth Stage Loop, Worker, Check, Review authority, or Project Server coordinator. It submits Decision and Planning Candidates through exact role-scoped Runs. Decision and Planning inherit its route by default. Review may inherit the same provider/model configuration but always uses a fresh independent producer Session. Implementation Workers use a separate user-authorized route pool and explicit escalation graph; Model Checks use Check-owned routes.
+
+Harness Agent may inspect canonical Implementation and Review outcomes for user explanation, but observation is selective and asynchronous. Project Server supplies coalesced current Work Unit progress, stop or conflict facts, compact Review outcomes, and exact report references rather than injecting every passing report or superseded failure. Exact relevant Review Results are rehydrated into Harness producer context only when typed ownership returns work to Decision or Planning. Harness Agent never authors, rewrites, or forwards Check feedback, and its availability never blocks Workers, Checks, integration, Review, or delivery.
 
 ### Top-down Knowledge and realization
 
@@ -117,7 +125,7 @@ Delete rolling multi-Change Planning, planning horizons, Sprints as canonical ex
 
 ### Work Unit Implementation
 
-Every Work Unit has exactly one owning Change and one logical Implementation continuity. Independent ready units may execute and be judged concurrently.
+Every Work Unit has exactly one owning Change and one logical Implementation continuity. Independent ready units may execute and be judged concurrently. Project Server resolves each scheduled Assignment against only the user-authorized Worker route pool and records Work Unit Model Assignment `1.0.0`, binding exact provider/model/options, policy snapshot, prior typed attempts, remaining budgets, and rationale. Planning declares requirements and risk but cannot select a model. A route change occurs only between Runs and requires a fresh Session with canonical rehydration; broker-owned transport retries do not consume Project Server escalation attempts.
 
 Each Work Unit Candidate binds:
 
@@ -131,7 +139,7 @@ Each Work Unit Candidate binds:
 
 One resolved stage-wide Implementation Check Pack policy applies to every Work Unit Candidate. Planning, workers, routes, and models cannot select Work Unit-specific Packs. Candidate-specific evaluation packages vary only through exact owning Change acceptance slice, Work Unit obligations, base, dependency outputs, changed paths, Evidence, and receipts. Deterministic applicability may report `not_applicable`; it does not create another policy.
 
-A failed Gate returns feedback to the same Work Unit continuity. A passed Gate qualifies only that Candidate. Project Server then attempts expected-head-safe admission to the Change-owned private integration lineage. Gate pass, integration pending, integrated, stale, and conflicted are distinct states. Changed bytes, base drift, claim loss, custody loss, or merge conflict requires a new Candidate and Gate.
+A failed Gate returns the exact Project Server-recorded Results and Gate Report directly to the same Work Unit continuity. A passed Gate qualifies only that Candidate. Each completed Work Unit produces and gates its own immutable Candidate immediately; Checks never wait for all Workers. Unit Gates prove local realization, while final aggregate Review proves cross-unit and integration behavior. Project Server then attempts expected-head-safe admission to the Change-owned private integration lineage. Gate pass, integration pending, integrated, stale, and conflicted are distinct states. Changed bytes, base drift, claim loss, custody loss, or merge conflict requires a new Candidate and Gate.
 
 No long-lived Change-level model coordinator owns Implementation. Project Server, WorkState, and the canonical Work Graph coordinate units. If several agents collaborate on one unit, split the unit or make one Run the sole Candidate producer while subordinate outputs remain contributions and Evidence.
 
@@ -147,7 +155,7 @@ A Change remains in Implementation until all required Work Units:
 
 Review uses a fresh independent Session and judges that exact aggregate head. It proves complete realization of the ratified Change's Knowledge Effects and acceptance requirements, cross-unit behavior, aggregate-only criteria, full build and integration behavior, scope discipline, provenance, and delivery readiness. Work Unit Gates cannot certify merged bytes.
 
-A Review failure normally reopens affected Work Unit Implementation. A decomposition defect requires an explicit Planning amendment. Changed or contradictory meaning requires Decision. Project Server owns these typed routes; Checks and models do not select lifecycle transitions.
+A Review failure normally reopens affected Work Unit Implementation. A decomposition defect requires an explicit Planning amendment. Changed or contradictory meaning requires Decision. Project Server owns these typed routes; Checks and models do not select lifecycle transitions. Harness Agent observes the compact Review boundary and receives exact relevant Results only when work returns to Decision or Planning; it does not mediate Review or Work Unit feedback.
 
 Only a fresh passed Review Gate plus separate current authority permits protected delivery.
 
@@ -268,7 +276,9 @@ The inner sandbox permits no filesystem, network, environment, inherited descrip
 
 DSH's worker-thread Code Runtime is containment, not a security boundary, and cannot qualify. Official DSH filesystem sandboxing also does not solve network or whole-process isolation. Defer implementation until final integration, but make exact provider version, adversarial qualification, and fail-closed admission production release gates.
 
-DSH receives no provider credentials and ideally no raw network. Runtime supplies a private authenticated model capability through a host-side provider-neutral broker. Live-provider qualification uses disposable infrastructure with no committed credentials or mandatory paid calls.
+DSH receives no provider credentials or unrestricted provider egress. Runtime supplies one opaque expiring Run- and route-scoped capability to a loopback-only host-side provider-neutral broker. The broker owns credentials, billing integration, provider networking, bounded transport retry or equivalent-endpoint failover, normalization, provider request IDs, and host-side receipt retention. Authenticated receipts bind broker implementation/configuration, exact request and response digests, selected provider/model, transport attempts, usage, cancellation or typed failure, and receipt identity. Project Server alone interprets those outcomes.
+
+Replay remains mandatory deterministic CI. Credential-free loopback mock infrastructure separately qualifies real streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Optional NVIDIA NeMo Switchyard remains a replaceable backend and begins only as exact pinned loopback passthrough with Switchyard retries disabled and selected-target equality. Dynamic classifier, stage, escalation, and advisor routes remain deferred.
 
 ## Completed foundation
 
@@ -505,13 +515,18 @@ Success: long-running continuity survives compaction without moving project auth
 
 ### Slice 14 — Provider broker and live-model qualification
 
-- Implement provider-neutral private model capability.
-- Keep credentials and unrestricted egress outside DSH.
-- Bind provider request/response, route, usage, cancellation, and receipt identity.
-- Qualify disposable live infrastructure without committed credentials or mandatory paid calls.
-- Preserve replay as deterministic CI route.
+- [x] Separate one user-selected Harness route with Decision, Planning, and Review inheritance or override from the independent user-authorized Worker pool and Check-owned Model Check routes.
+- [x] Add explicit Worker escalation transitions and context-window capabilities; routes omitted from the Worker pool cannot be assigned or entered by escalation.
+- [x] Activate deterministic Work Unit model selection through Work Unit Model Assignment `1.0.0`, binding scheduled Assignment, Work Unit, route-policy digest, selected route, prior typed attempts, budgets, rationale, and exact Run route.
+- [x] Bind route ID, provider, model, reasoning effort, context window, timeout, policy attempt, model Assignment, options, and route digest in Run Request `5.0.0`; force model changes through fresh-Session rollover.
+- [x] Add typed recovery for broker transport retry, canonical rehydration, compatible-route selection, capability escalation, user authorization, and terminal stop.
+- [x] Implement an authenticated loopback provider-neutral private model capability with no provider credential in DSH, project files, prompts, Sessions, Workbenches, ledgers, or receipts.
+- [x] Bind broker implementation/configuration, exact request/response, selected target, transport attempts, provider request ID, usage, cancellation or typed failure, and receipt identity into Execution Ledger `5.0.0` and Run Receipt `4.0.0` lineage.
+- [x] Qualify credential-free live streaming, bounded broker-owned retry, cancellation, selected-target mismatch rejection, and isolated Run Process transport without committed credentials or mandatory paid calls.
+- [x] Preserve replay as the deterministic CI route and prohibit fallback from failed live transport.
+- [x] Constrain optional Switchyard admission to pinned loopback passthrough, zero Switchyard retries, exact configuration/build identity, and exact selected-target evidence; defer dynamic routing.
 
-Success: live transport is separately qualified and provider identity grants no CodeWiki authority.
+Success: Harness, Worker, and Check model authority stays distinct; every Work Unit Run uses one user-authorized exact route; transport retry remains broker-owned; live transport is separately qualified; credentials stay outside DSH; and provider or broker identity grants no CodeWiki authority.
 
 ### Slice 15 — Secure Code Mode and sandbox qualification
 
@@ -534,6 +549,7 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ### Slice 17 — Product completion
 
+- Implement first-party Harness Agent interaction continuity, Decision/Planning submission, and selective canonical Implementation/Review observer projections.
 - Implement reserved MCP material-query, submission, status, confirmation, Work Unit, and Review operations.
 - Finish Check Author SDK and sandboxed Code Checks.
 - Finish Outcome Diagnostics through ordinary Change Intake.
@@ -555,7 +571,7 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ## Release blockers
 
-- Live provider broker is not qualified.
+- Credential-bearing provider adapters and optional pinned Switchyard deployment are not externally qualified.
 - Secure inner Code Runtime is unavailable.
 - Qualified outer whole-process containment is unavailable.
 - Pi/DSH parity and Pi execution deletion are incomplete.

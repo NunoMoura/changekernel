@@ -8,6 +8,11 @@ import {
 } from "../../src/project-server/scheduling/scheduler.ts";
 import {createImplementationRunRequest} from "../../src/project-server/workers/implementation-run.ts";
 import {
+	createWorkUnitModelAssignment,
+	runModelRouteForAssignment,
+} from "../../src/project-server/workers/model-assignment.ts";
+import {resolveWikiConfig} from "../../src/project/config.ts";
+import {
 	RUN_PROTOCOL,
 	createRunHandle,
 	createRunRawLogReference,
@@ -131,10 +136,7 @@ export function implementationRuntimeBuild() {
 	};
 }
 
-export function implementationRunInputs() {
-	const provider = "test-provider";
-	const model = "test-model";
-	const optionsDigest = sha256Digest("implementation-route-options");
+export function implementationRunInputs(modelRoute) {
 	return {
 		projectContextSnapshotDigest: sha256Digest("implementation-stage-context"),
 		materialDigest: sha256Digest("implementation-static-inputs"),
@@ -144,12 +146,7 @@ export function implementationRunInputs() {
 		producerSkillSetDigest: sha256Digest("implementation-skills"),
 		toolMode: "admitted",
 		toolSetDigest: sha256Digest("implementation-tools"),
-		modelRoute: {
-			provider,
-			model,
-			optionsDigest,
-			routeDigest: canonicalJsonDigest({provider, model, optionsDigest}),
-		},
+		modelRoute,
 	};
 }
 
@@ -165,6 +162,12 @@ export function implementationBudget() {
 
 export function implementationRunRequest(fixture, priorReceipts = [], runId = "run-implementation-1") {
 	const continuityKey = `implementation:${fixture.workUnit.id}`;
+	const modelAssignment = createWorkUnitModelAssignment({
+		config: implementationModelConfig(),
+		assignment: fixture.assignment,
+		workUnit: fixture.workUnit,
+		risk: "medium",
+	});
 	const previous = priorReceipts.at(-1);
 	const lease = createRunSessionLeaseBinding({
 		leaseId: `lease:${runId}`,
@@ -194,14 +197,53 @@ export function implementationRunRequest(fixture, priorReceipts = [], runId = "r
 		assignment: fixture.assignment,
 		workbench: fixture.workbench,
 		workUnit: fixture.workUnit,
+		modelAssignment,
 		runtimeBuild: implementationRuntimeBuild(),
-		inputs: implementationRunInputs(),
+		inputs: implementationRunInputs(runModelRouteForAssignment(modelAssignment)),
 		budget: implementationBudget(),
 		session,
 		priorReceipts,
 		runId,
 		createdAt: "2026-08-10T10:04:01.000Z",
 		deadlineAt: "2026-08-10T10:05:01.000Z",
+	});
+}
+
+function implementationModelConfig() {
+	return resolveWikiConfig({
+		runtime: {
+			modelRouting: {
+				qualityFloor: "standard",
+				maxEscalations: 0,
+				estimatedInputTokens: 64_000,
+				estimatedOutputTokens: 8_000,
+				routes: [{
+					id: "test-implementation",
+					provider: "test-provider",
+					model: "test-model",
+					thinking: "off",
+					quality: "standard",
+					latency: "fast",
+					contextWindowTokens: 128_000,
+					timeoutMs: 60_000,
+					pricing: {
+						inputUsdPerMillion: 0,
+						outputUsdPerMillion: 0,
+						cacheReadUsdPerMillion: 0,
+						cacheWriteUsdPerMillion: 0,
+					},
+					allowedTools: ["pi-lens"],
+				}],
+				roleRoutes: {
+					harness: null,
+					decision: "inherit",
+					planning: "inherit",
+					review: "inherit",
+					workers: ["test-implementation"],
+				},
+				escalationTransitions: [],
+			},
+		},
 	});
 }
 

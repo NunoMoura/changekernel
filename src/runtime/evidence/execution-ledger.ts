@@ -7,7 +7,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const EXECUTION_LEDGER_SCHEMA_VERSION = "4.0.0" as const;
+export const EXECUTION_LEDGER_SCHEMA_VERSION = "5.0.0" as const;
 
 export type ExecutionLedgerEntryKind =
 	| "static-input"
@@ -15,6 +15,7 @@ export type ExecutionLedgerEntryKind =
 	| "project-context-query"
 	| "model-request"
 	| "model-output"
+	| "provider-call"
 	| "tool-call"
 	| "tool-result"
 	| "compaction"
@@ -358,6 +359,7 @@ function assertEntryKind(value: unknown): asserts value is ExecutionLedgerEntryK
 		"project-context-query",
 		"model-request",
 		"model-output",
+		"provider-call",
 		"tool-call",
 		"tool-result",
 		"compaction",

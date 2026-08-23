@@ -20,8 +20,16 @@ import {
 	assertProjectContextMountBinding,
 	mountProjectContextSnapshot,
 } from "../context/project-context-mount.ts";
-import {runDshAgent} from "../dsh/adapter.ts";
+import {
+	runDshAgent,
+	type DshModelAdapterInstaller,
+} from "../dsh/adapter.ts";
+import {createDshPrivateProviderBrokerInstaller} from "../dsh/private-provider-broker.ts";
 import {createDshReplayModelInstaller} from "../dsh/replay.ts";
+import {
+	createPrivateProviderBrokerAccess,
+	type PrivateProviderBrokerAccess,
+} from "../providers/contracts.ts";
 import {
 	MAX_RUN_RAW_LOG_CHUNK_BYTES,
 	createRunProcessHandshakeResponse,
@@ -39,9 +47,20 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-const INPUT_MANIFEST_VERSION = "2.0.0" as const;
+const INPUT_MANIFEST_VERSION = "3.0.0" as const;
 const MAX_FRAME_BYTES = 1_048_576;
 const MAX_INPUT_MANIFEST_BYTES = 12 * 1_024 * 1_024;
+
+type DshProcessModelAdapter =
+	| {
+		readonly kind: "replay";
+		readonly fixturePath: string;
+		readonly fixtureDigest: Sha256Digest;
+	}
+	| {
+		readonly kind: "private-broker";
+		readonly access: PrivateProviderBrokerAccess;
+	};
 
 interface DshRunProcessInputManifest {
 	readonly schemaVersion: typeof INPUT_MANIFEST_VERSION;
@@ -53,8 +72,7 @@ interface DshRunProcessInputManifest {
 	readonly sessionRoot: string;
 	readonly projectContextMount: ProjectContextMountBinding | null;
 	readonly projectContextAuthorization: ProjectContextAuthorization | null;
-	readonly replayFixturePath: string;
-	readonly replayFixtureDigest: Sha256Digest;
+	readonly modelAdapter: DshProcessModelAdapter;
 }
 
 function createDshRunProcessInputManifest(
@@ -72,8 +90,7 @@ function createDshRunProcessInputManifest(
 		"sessionRoot",
 			"projectContextMount",
 			"projectContextAuthorization",
-			"replayFixturePath",
-			"replayFixtureDigest",
+			"modelAdapter",
 		])
 	) {
 		throw new Error("DSH Run Process input manifest shape is invalid.");
@@ -87,10 +104,6 @@ function createDshRunProcessInputManifest(
 		input.runtimeBuildDigest,
 		"DSH Run Process Runtime Build digest",
 	);
-	const replayFixtureDigest = assertSha256Digest(
-		input.replayFixtureDigest,
-		"DSH replay fixture digest",
-	);
 	assertText(input.runProtocolVersion, "DSH Run protocol version", 64);
 	assertText(input.systemPrompt, "DSH system prompt", 65_536);
 	assertText(input.prompt, "DSH prompt", 1_048_576);
@@ -99,13 +112,56 @@ function createDshRunProcessInputManifest(
 	const projectContextMount = input.projectContextMount === null
 		? null
 		: assertProjectContextMountBinding(input.projectContextMount);
-	assertAbsolute(input.replayFixturePath, "DSH replay fixture path");
+	const modelAdapter = normalizeModelAdapter(input.modelAdapter);
 	return Object.freeze({
 		...input,
 		runtimeBuildDigest,
-		replayFixtureDigest,
 		projectContextMount,
+		modelAdapter,
 	});
+}
+
+function normalizeModelAdapter(value: DshProcessModelAdapter): DshProcessModelAdapter {
+	if (!isRecord(value)) {
+		throw new Error("DSH Run Process model adapter is invalid.");
+	}
+	if (value.kind === "replay") {
+		if (!hasExactKeys(value, ["kind", "fixturePath", "fixtureDigest"])) {
+			throw new Error("DSH replay model adapter shape is invalid.");
+		}
+		assertAbsolute(value.fixturePath as string, "DSH replay fixture path");
+		return Object.freeze({
+			kind: "replay",
+			fixturePath: value.fixturePath as string,
+			fixtureDigest: assertSha256Digest(
+				value.fixtureDigest,
+				"DSH replay fixture digest",
+			),
+		});
+	}
+	if (value.kind === "private-broker") {
+		if (!hasExactKeys(value, ["kind", "access"])) {
+			throw new Error("DSH private broker model adapter shape is invalid.");
+		}
+		return Object.freeze({
+			kind: "private-broker",
+			access: createPrivateProviderBrokerAccess(
+				value.access as PrivateProviderBrokerAccess,
+			),
+		});
+	}
+	throw new Error("DSH Run Process model adapter kind is invalid.");
+}
+
+function modelAdapterInstaller(
+	adapter: DshProcessModelAdapter,
+): DshModelAdapterInstaller {
+	return adapter.kind === "replay"
+		? createDshReplayModelInstaller({
+			fixturePath: adapter.fixturePath,
+			fixtureDigest: adapter.fixtureDigest,
+		})
+		: createDshPrivateProviderBrokerInstaller({access: adapter.access});
 }
 
 async function runDshRunProcess(
@@ -300,10 +356,7 @@ async function executeDshProcessRun(input: {
 			sessionRoot: input.manifest.sessionRoot,
 		},
 		projectContextSnapshot,
-		installModelAdapter: createDshReplayModelInstaller({
-			fixturePath: input.manifest.replayFixturePath,
-			fixtureDigest: input.manifest.replayFixtureDigest,
-		}),
+		installModelAdapter: modelAdapterInstaller(input.manifest.modelAdapter),
 		signal: cancellationController.signal,
 	});
 	for (const event of result.sessionEvents) {

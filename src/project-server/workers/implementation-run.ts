@@ -25,11 +25,16 @@ import {
 	canonicalJsonDigest,
 	toCanonicalJsonValue,
 } from "../../utils/canonical-json.ts";
+import {
+	runModelRouteForAssignment,
+	type WorkUnitModelAssignment,
+} from "./model-assignment.ts";
 
 export interface CreateImplementationRunRequestInput {
 	readonly assignment: ScheduledAssignment;
 	readonly workbench: WorkbenchBinding;
 	readonly workUnit: PlanningWorkUnitCandidate;
+	readonly modelAssignment: WorkUnitModelAssignment;
 	readonly runtimeBuild: RuntimeBuildBinding;
 	readonly inputs: RunInputBindings;
 	readonly budget: RunBudget;
@@ -43,10 +48,24 @@ export interface CreateImplementationRunRequestInput {
 export function createImplementationRunRequest(
 	input: CreateImplementationRunRequestInput,
 ): RunRequest {
-	assertImplementationRunBinding(input.assignment, input.workbench, input.workUnit);
+	assertImplementationRunBinding(
+		input.assignment,
+		input.workbench,
+		input.workUnit,
+		input.modelAssignment,
+	);
+	const modelRoute = runModelRouteForAssignment(input.modelAssignment);
+	if (canonicalJson(input.inputs.modelRoute) !== canonicalJson(modelRoute)) {
+		throw new Error("Implementation Run model route differs from its model Assignment.");
+	}
 	const continuityKey = implementationContinuityKey(input.workUnit.id);
 	assertPriorReceipts(input.priorReceipts, continuityKey, input.runId);
-	assertImplementationSession(input.session, continuityKey, input.priorReceipts.at(-1));
+	assertImplementationSession(
+		input.session,
+		continuityKey,
+		input.priorReceipts.at(-1),
+		modelRoute.routeDigest,
+	);
 	const previous = input.priorReceipts.at(-1);
 	if (previous?.outputDigest) {
 		throw new Error("Producing Implementation Run already exists for this Assignment.");
@@ -117,6 +136,7 @@ function assertImplementationRunBinding(
 	assignment: ScheduledAssignment,
 	workbench: WorkbenchBinding,
 	workUnit: PlanningWorkUnitCandidate,
+	modelAssignment: WorkUnitModelAssignment,
 ): void {
 	if (
 		assignment.workUnitId !== workUnit.id ||
@@ -125,7 +145,11 @@ function assertImplementationRunBinding(
 		assignment.workUnitId !== workbench.workUnitId ||
 		assignment.workerId !== workbench.workerId ||
 		assignment.workbenchDigest !== workbench.workbenchDigest ||
-		assignment.sourceBase !== workbench.sourceBase
+		assignment.sourceBase !== workbench.sourceBase ||
+		modelAssignment.scheduledAssignmentAttemptId !== assignment.assignmentAttemptId ||
+		modelAssignment.scheduledAssignmentDigest !== assignment.assignmentDigest ||
+		modelAssignment.workUnitId !== workUnit.id ||
+		modelAssignment.workUnitDigest !== canonicalJsonDigest(toCanonicalJsonValue(workUnit))
 	) {
 		throw new Error("Implementation Run requires exact Assignment, Workbench, and Work Unit.");
 	}
@@ -160,9 +184,17 @@ function assertImplementationSession(
 	session: RunSessionBinding,
 	continuityKey: string,
 	previous: RunReceipt | undefined,
+	modelRouteDigest: string,
 ): void {
 	if (session.continuityKey !== continuityKey) {
 		throw new Error("Implementation Run requires exact Work Unit continuity.");
+	}
+	if (
+		previous &&
+		previous.modelRouteDigest !== modelRouteDigest &&
+		previous.sessionId === session.sessionId
+	) {
+		throw new Error("Implementation model route change requires a fresh Session.");
 	}
 	if (!previous || previous.sessionId !== session.sessionId) {
 		if (session.mode !== "create" || session.expectedHead !== "absent") {

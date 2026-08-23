@@ -10,6 +10,7 @@ import {
 	createRunHandle,
 	createRunQuiescence,
 	createRunRawLogReference,
+	createRunModelRouteBinding,
 	createRunRequest,
 	createRunSessionLeaseBinding,
 	createQualifiedRuntimeBuild,
@@ -27,7 +28,7 @@ import {
 	openRunProcessEnvelope,
 	sealRunProcessEnvelope,
 } from "../../../src/runtime/processes/protocol.ts";
-import {canonicalJsonDigest, sha256Digest} from "../../../src/utils/canonical-json.ts";
+import {sha256Digest} from "../../../src/utils/canonical-json.ts";
 
 const NOW = "2026-08-16T10:00:00.000Z";
 const EXPIRES = "2026-08-16T10:01:00.000Z";
@@ -347,11 +348,16 @@ function fixture() {
 }
 
 function modelRoute(provider, model) {
-	const optionsDigest = sha256Digest("model-options");
-	return {
+	return createRunModelRouteBinding({
+		routeId: "test-route",
 		provider,
 		model,
-		optionsDigest,
-		routeDigest: canonicalJsonDigest({provider, model, optionsDigest}),
-	};
+		reasoningEffort: null,
+		contextWindowTokens: 128_000,
+		timeoutMs: 30_000,
+		policyDigest: sha256Digest("model-policy"),
+		policyAttempt: 0,
+		modelAssignmentDigest: sha256Digest("model-assignment"),
+		optionsDigest: sha256Digest("model-options"),
+	});
 }

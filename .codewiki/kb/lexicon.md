@@ -19,7 +19,7 @@ tags: [system, vocabulary]
 | Run Process | Isolated OS process controlled by Runtime for one Run and denied canonical project authority. | [Runtime](system/components/runtime.md) |
 | Run Port | Neutral internal contract through which Project Server or Checks requests bounded execution without importing DSH or a delegated harness. | [Runtime](system/components/runtime.md) |
 | Run Receipt | Immutable CodeWiki-authored account of one Run and only the inputs, outputs, custody, evidence, and gaps CodeWiki can prove. | [Runtime](system/components/runtime.md) |
-| Runtime Build | Content-addressed immutable executable closure containing the CodeWiki DSH Adapter, exact artifact bytes, protocol, Node version, DSH and Cordis closure, Runtime Plugins, model/delegate adapters, and qualification Evidence. | [Runtime](system/components/runtime.md) |
+| Runtime Build | Content-addressed DSH execution closure binding artifact bytes, protocol, Node, plugins, adapters, and qualification Evidence. | [Runtime](system/components/runtime.md) |
 | Runtime Plugin | First-party trusted capability admitted into a Run Process through the CodeWiki DSH Adapter; it cannot extend Project Server authority or become project policy. | [Runtime](system/components/runtime.md) |
 | DSH Adapter | CodeWiki-owned translation layer inside a Run Process that maps one Run Request to exact DSH setup and maps DSH events and output back to Runtime facts. | [Runtime](system/components/runtime.md) |
 | DSH AgentLoop | Upstream DSH model-request, tool-execution, streaming, and continuation mechanism used inside a model-driven Run. | [Runtime](system/components/runtime.md) |
@@ -68,7 +68,7 @@ tags: [system, vocabulary]
 | Development stage | User-facing Decision, Planning, Implementation, or Review stage backed by its semantic Stage Loop. | [Project Server](system/components/project-server.md) |
 | Discovery Finding | Producer-neutral bounded report of new or out-of-scope work that carries no Check or Change authority. | [Change Intake](system/components/change-intake.md) |
 | Evidence Record | Immutable metadata record for an exact observation with provenance and freshness. | [Evidence](system/components/evidence.md) |
-| Execution Ledger | Append-only retained record of exact CodeWiki-controlled model-visible inputs, query activity, compaction provenance, usage, and outputs for one Run. | [Runtime](system/components/runtime.md) |
+| Execution Ledger | Append-only retained record of exact CodeWiki-controlled Run inputs, queries, provider receipts, compaction, usage, cancellation, and output. | [Runtime](system/components/runtime.md) |
 | External Agent Client | Independently operated harness that calls CodeWiki through MCP and retains ownership of its own prompts, tools, local reads, models, subagents, code runtime, and memory. | [Clients](system/components/clients.md) |
 | External Candidate Capture | Immutable fingerprint and retained material for observed Git state lacking exact Project Server custody. | [Project Server](system/components/project-server.md) |
 | External-client provenance | Controlled provenance binding authenticated CodeWiki operations and any admitted Workbench custody without claiming the External Agent Client's internal execution. | [Project Server](system/components/project-server.md) |

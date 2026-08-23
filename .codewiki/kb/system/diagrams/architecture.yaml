@@ -41,6 +41,18 @@ connections:
   - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: freezes stage context and evaluates guards and scheduling }
   - { id: alignment-returns-project-server, from: alignment, to: project-server, type: returns, label: returns bounded context, provenance, and impact }
   - { id: runtime-invokes-preview, from: runtime, to: preview, type: invokes, label: captures bounded Run observations }
+  - id: runtime-invokes-provider
+    from: runtime
+    to: provider
+    type: invokes
+    label: uses one authenticated exact-Run private broker capability
+    boundary: { type: trust, failure: Stop on unavailable transport, route mismatch, unauthenticated receipt, quota, or malformed provider evidence. }
+  - id: provider-returns-runtime
+    from: provider
+    to: runtime
+    type: returns
+    label: returns normalized stream and authenticated receipt
+    boundary: { type: trust, failure: Reject mismatched target, digest, usage, outcome, or receipt authentication. }
   - { id: knowledge-reads-project, from: knowledge, to: project, type: reads, label: validates project profile }
   - { id: change-trace-reads-project, from: change-trace, to: project, type: reads, label: binds repository identity }
   - { id: package-reads-project, from: package, to: project, type: reads, label: composes CodeWiki and passive Check Pack resources }
@@ -48,4 +60,4 @@ connections:
 flows:
   - concept: cw:flow:work-unit-execution
     paths:
-      - connections: [project-server-invokes-runtime, runtime-invokes-preview]
+      - connections: [project-server-invokes-runtime, runtime-invokes-provider, provider-returns-runtime, runtime-invokes-preview]

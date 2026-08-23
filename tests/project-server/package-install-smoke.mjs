@@ -466,6 +466,9 @@ assert.equal(typeof runtimeModule.appendStoredRunRawLogChunk, "function");
 assert.equal(typeof runtimeModule.recoverStoredRawLogAppends, "function");
 assert.equal(typeof runtimeModule.commitStoredRunReceipt, "function");
 assert.equal(typeof runtimeModule.runDshAgent, "function");
+assert.equal(typeof runtimeModule.createDshPrivateProviderBrokerInstaller, "function");
+assert.equal(typeof runtimeModule.createPrivateProviderBrokerBinding, "function");
+assert.equal(typeof runtimeModule.startPrivateProviderBrokerServer, "function");
 assert.equal(typeof runtimeModule.readDshRuntimeProvenance, "function");
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.version, "0.1.0-rc.6");
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.commit.length, 40);
@@ -474,6 +477,7 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"CHANGE_INTAKE_RUNTIME_PROTOCOL",
 	"SCHEDULING_PLAN_PROTOCOL",
 	"SESSION_CONTINUITY_PROTOCOL",
+	"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
 	"acquireSessionLease",
 	"appendStoredSessionContinuity",
 	"assertCurrentAggregateReviewAttempt",
@@ -501,12 +505,16 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"createSchedulingOperationSequence",
 	"createSessionContinuity",
 	"createStoredSessionContinuity",
+	"createWorkUnitModelAssignment",
 	"deriveReadyWorkUnits",
+	"executionFailureFromProviderReceipt",
 	"expireSessionLease",
 	"privateChangeIntegrationRef",
 	"readStoredSessionContinuity",
 	"requestSessionLeaseCancellation",
+	"resolveExecutionRecovery",
 	"rolloverSessionContinuity",
+	"runModelRouteForAssignment",
 	"runProjectServer",
 	"runProjectServerSemanticExecutor",
 	"runWikiArchive",

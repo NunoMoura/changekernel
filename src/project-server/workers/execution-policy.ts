@@ -1,10 +1,18 @@
-import { createHash } from "node:crypto";
 import type {
 	WikiConfig,
 	WikiConfigAgencyLevel,
 	WikiModelQuality,
 	WikiModelRouteConfig,
 } from "../../project/config.ts";
+import {
+	canonicalJsonDigest,
+	type Sha256Digest,
+} from "../../utils/canonical-json.ts";
+import {
+	resolveExecutionRecovery,
+	type ExecutionFailureKind,
+	type ExecutionRecoveryDecision,
+} from "./execution-recovery.ts";
 
 export type ExecutionRisk = "low" | "medium" | "high" | "critical";
 export type ExecutionTarget =
@@ -21,6 +29,7 @@ export type ExecutionAttemptOutcome =
 export interface ExecutionPolicyAttempt {
 	routeId: string;
 	outcome: ExecutionAttemptOutcome;
+	failureKind?: ExecutionFailureKind;
 	inputTokens: number;
 	outputTokens: number;
 	costUsd: number;
@@ -74,37 +83,39 @@ export interface WorkerExecutionUsage {
 }
 
 export interface WorkerExecutionPolicySnapshot {
-	digest: string;
-	qualityFloor: WikiModelQuality;
-	route: {
-		routeId: string;
-		provider: string;
-		model: string;
-		thinking: WikiModelRouteConfig["thinking"];
-		quality: WikiModelQuality;
-		timeoutMs: number;
-		allowedTools: string[];
-		pricingSnapshot: WikiModelRouteConfig["pricing"];
+	readonly digest: Sha256Digest;
+	readonly qualityFloor: WikiModelQuality;
+	readonly route: {
+		readonly routeId: string;
+		readonly provider: string;
+		readonly model: string;
+		readonly thinking: WikiModelRouteConfig["thinking"];
+		readonly quality: WikiModelQuality;
+		readonly contextWindowTokens: number;
+		readonly timeoutMs: number;
+		readonly allowedTools: readonly string[];
+		readonly pricingSnapshot: Readonly<WikiModelRouteConfig["pricing"]>;
 	};
-	budget: ResolvedExecutionPolicy["budget"];
-	escalation: ResolvedExecutionPolicy["escalation"];
+	readonly budget: Readonly<ResolvedExecutionPolicy["budget"]>;
+	readonly escalation: Readonly<ResolvedExecutionPolicy["escalation"]>;
 }
 
 export interface WorkerExecutionVerification {
-	policyDigest: string;
+	policyDigest: Sha256Digest;
 	routeId: string;
 	usage: WorkerExecutionUsage;
 }
 
 export interface ResolvedExecutionPolicy {
 	status: "selected" | "blocked";
-	digest: string;
+	digest: Sha256Digest;
 	qualityFloor: WikiModelQuality;
 	selected?: {
 		routeId: string;
 		provider: string;
 		model: string;
 		thinking: WikiModelRouteConfig["thinking"];
+		contextWindowTokens: number;
 		timeoutMs: number;
 		estimatedCostUsd: number;
 		quality: WikiModelQuality;
@@ -127,6 +138,8 @@ export interface ResolvedExecutionPolicy {
 		attempt: number;
 		maxEscalations: number;
 		previousRouteId?: string;
+		failureKind?: ExecutionFailureKind;
+		recoveryAction?: ExecutionRecoveryDecision["action"];
 	};
 	rationale: string;
 }
@@ -146,6 +159,7 @@ export function workerExecutionPolicySnapshot(
 			model: policy.selected.model,
 			thinking: policy.selected.thinking,
 			quality: policy.selected.quality,
+			contextWindowTokens: policy.selected.contextWindowTokens,
 			timeoutMs: policy.selected.timeoutMs,
 			allowedTools: [...policy.selected.allowedTools],
 			pricingSnapshot: { ...policy.selected.pricingSnapshot },
@@ -207,18 +221,12 @@ export function resolveExecutionPolicy(
 ): ResolvedExecutionPolicy {
 	const normalized = normalizeContext(context);
 	const attempts = normalized.previousAttempts || [];
+	const history = executionHistory(config, attempts);
 	const qualityFloor = effectiveQualityFloor(
 		config.runtime.modelRouting.qualityFloor,
 		normalized,
 	);
 	const budget = budgetState(config, attempts, normalized.priorUsage);
-	const attempt = attempts.length;
-	const previous = attempts.at(-1);
-	const previousRoute = previous
-		? config.runtime.modelRouting.routes.find(
-				(route) => route.id === previous.routeId,
-			)
-		: undefined;
 	const evaluations = config.runtime.modelRouting.routes.map((route) =>
 		evaluateCandidate(
 			route,
@@ -229,57 +237,115 @@ export function resolveExecutionPolicy(
 			attempts,
 		),
 	);
-	if (previous) {
-		for (const evaluation of evaluations) {
-			if (
-				evaluation.reasons.length === 0 &&
-				!escalationEligible(evaluation.route, previous, previousRoute)
-			) {
-				evaluation.reasons.push(
-					previousRoute
-						? `escalation must exceed ${previousRoute.quality} quality.`
-						: `previous route ${previous.routeId} is not in policy.`,
-				);
-			}
-		}
-	}
+	applyEscalationPolicy(config, evaluations, history);
 	const eligible = evaluations
 		.filter((evaluation) => evaluation.reasons.length === 0)
 		.sort(compareCandidates);
-	const escalationAllowed =
-		attempt === 0 ||
-		(previous?.outcome === "failed" &&
-			attempt <= config.runtime.modelRouting.maxEscalations);
+	const escalationAllowed = routeSelectionAllowed(
+		history,
+		config.runtime.modelRouting.maxEscalations,
+	);
 	const selected = escalationAllowed ? eligible[0] : undefined;
-	const policy = {
-		status: selected ? ("selected" as const) : ("blocked" as const),
+	const policy: Omit<ResolvedExecutionPolicy, "digest"> = {
+		status: selected ? "selected" : "blocked",
 		qualityFloor,
-		...(selected ? { selected: selectedRoute(selected) } : {}),
 		eligibleRouteIds: eligible.map((evaluation) => evaluation.route.id),
-		rejected: evaluations
-			.filter((evaluation) => evaluation.reasons.length > 0)
-			.map((evaluation) => ({
-				routeId: evaluation.route.id,
-				reasons: evaluation.reasons,
-			})),
+		rejected: rejectedRoutes(evaluations),
 		capabilities: autonomyCapabilities(
 			config.runtime.agency,
 			config.runtime.automation,
 		),
 		budget,
-		escalation: {
-			attempt,
-			maxEscalations: config.runtime.modelRouting.maxEscalations,
-			...(previous ? { previousRouteId: previous.routeId } : {}),
-		},
+		escalation: escalationEvidence(
+			history,
+			config.runtime.modelRouting.maxEscalations,
+		),
 		rationale: policyRationale(
 			selected,
 			qualityFloor,
-			attempt,
+			history.attempt,
 			escalationAllowed,
+			history.recovery,
 		),
 	};
-	return { ...policy, digest: executionPolicyDigest(policy) };
+	if (selected) policy.selected = selectedRoute(selected);
+	return {...policy, digest: canonicalJsonDigest(policy)};
+}
+
+interface ExecutionHistory {
+	readonly attempt: number;
+	readonly previous: ExecutionPolicyAttempt | undefined;
+	readonly previousRoute: WikiModelRouteConfig | undefined;
+	readonly recovery: ExecutionRecoveryDecision | undefined;
+}
+
+function executionHistory(
+	config: WikiConfig,
+	attempts: readonly ExecutionPolicyAttempt[],
+): ExecutionHistory {
+	const previous = attempts.at(-1);
+	const previousRoute = previous
+		? config.runtime.modelRouting.routes.find((route) => route.id === previous.routeId)
+		: undefined;
+	const recovery = previous?.outcome === "failed" && previous.failureKind
+		? resolveExecutionRecovery(previous.failureKind)
+		: undefined;
+	return {attempt: attempts.length, previous, previousRoute, recovery};
+}
+
+function applyEscalationPolicy(
+	config: WikiConfig,
+	evaluations: CandidateEvaluation[],
+	history: ExecutionHistory,
+): void {
+	if (!history.previous) return;
+	for (const evaluation of evaluations) {
+		if (evaluation.reasons.length > 0) continue;
+		const rejection = escalationRejection(
+			evaluation.route,
+			history.previous,
+			history.previousRoute,
+			history.recovery,
+			config.runtime.modelRouting.escalationTransitions,
+		);
+		if (rejection) evaluation.reasons.push(rejection);
+	}
+}
+
+function routeSelectionAllowed(
+	history: ExecutionHistory,
+	maxEscalations: number,
+): boolean {
+	if (history.attempt === 0) return true;
+	return Boolean(
+		history.recovery?.owner === "project-server" &&
+		history.recovery.routeRequirement !== "none" &&
+		history.attempt <= maxEscalations,
+	);
+}
+
+function rejectedRoutes(
+	evaluations: readonly CandidateEvaluation[],
+): ExecutionRouteRejection[] {
+	return evaluations.flatMap((evaluation) =>
+		evaluation.reasons.length === 0
+			? []
+			: [{routeId: evaluation.route.id, reasons: evaluation.reasons}],
+	);
+}
+
+function escalationEvidence(
+	history: ExecutionHistory,
+	maxEscalations: number,
+): ResolvedExecutionPolicy["escalation"] {
+	const evidence: ResolvedExecutionPolicy["escalation"] = {
+		attempt: history.attempt,
+		maxEscalations,
+	};
+	if (history.previous) evidence.previousRouteId = history.previous.routeId;
+	if (history.previous?.failureKind) evidence.failureKind = history.previous.failureKind;
+	if (history.recovery) evidence.recoveryAction = history.recovery.action;
+	return evidence;
 }
 
 function evaluateCandidate(
@@ -303,6 +369,9 @@ function evaluateCandidate(
 	}
 	const estimatedTokens =
 		context.estimatedInputTokens + context.estimatedOutputTokens;
+	if (estimatedTokens > route.contextWindowTokens) {
+		reasons.push("estimated context exceeds the route context window.");
+	}
 	if (
 		config.runtime.budgets.maxTokens !== undefined &&
 		budget.spentTokens + estimatedTokens > config.runtime.budgets.maxTokens
@@ -328,14 +397,45 @@ function evaluateCandidate(
 	return { route, estimatedCostUsd, reasons };
 }
 
-function escalationEligible(
+function escalationRejection(
 	route: WikiModelRouteConfig,
-	previous: ExecutionPolicyAttempt | undefined,
+	previous: ExecutionPolicyAttempt,
 	previousRoute: WikiModelRouteConfig | undefined,
-): boolean {
-	if (!previous) return true;
-	if (!previousRoute) return false;
-	return qualityRank(route.quality) > qualityRank(previousRoute.quality);
+	recovery: ExecutionRecoveryDecision | undefined,
+	transitions: WikiConfig["runtime"]["modelRouting"]["escalationTransitions"],
+): string | null {
+	if (!previousRoute) return `previous route ${previous.routeId} is not in policy.`;
+	if (!recovery || recovery.owner !== "project-server" || recovery.routeRequirement === "none") {
+		return recovery
+			? `recovery action ${recovery.action} does not authorize a route change.`
+			: "failed attempt has no typed recovery authorization.";
+	}
+	if (!transitions.some(
+		(transition) =>
+			transition.fromRouteId === previous.routeId &&
+			transition.toRouteId === route.id,
+	)) {
+		return `transition ${previous.routeId} -> ${route.id} is not user-authorized.`;
+	}
+	if (
+		recovery.routeRequirement === "stronger" &&
+		qualityRank(route.quality) <= qualityRank(previousRoute.quality)
+	) {
+		return `capability escalation must exceed ${previousRoute.quality} quality.`;
+	}
+	if (
+		recovery.routeRequirement === "larger-context" &&
+		route.contextWindowTokens <= previousRoute.contextWindowTokens
+	) {
+		return `context recovery must exceed ${previousRoute.contextWindowTokens} tokens.`;
+	}
+	if (
+		recovery.routeRequirement === "compatible" &&
+		qualityRank(route.quality) < qualityRank(previousRoute.quality)
+	) {
+		return `compatible-route recovery cannot downgrade ${previousRoute.quality} quality.`;
+	}
+	return null;
 }
 
 function compareCandidates(
@@ -357,6 +457,7 @@ function selectedRoute(evaluation: CandidateEvaluation) {
 		provider: route.provider,
 		model: route.model,
 		thinking: route.thinking,
+		contextWindowTokens: route.contextWindowTokens,
 		timeoutMs: route.timeoutMs,
 		estimatedCostUsd: evaluation.estimatedCostUsd,
 		quality: route.quality,
@@ -458,46 +559,50 @@ function latencyRank(value: WikiModelRouteConfig["latency"]): number {
 function normalizeContext(
 	context: ExecutionPolicyContext,
 ): ExecutionPolicyContext {
-	for (const [name, value] of [
-		["estimatedInputTokens", context.estimatedInputTokens],
-		["estimatedOutputTokens", context.estimatedOutputTokens],
-	] as const) {
-		if (!Number.isInteger(value) || value < 0) {
-			throw new Error(
-				`Execution policy ${name} must be a non-negative integer.`,
-			);
-		}
-	}
+	assertTokenEstimate("estimatedInputTokens", context.estimatedInputTokens);
+	assertTokenEstimate("estimatedOutputTokens", context.estimatedOutputTokens);
 	if (context.priorUsage) {
-		for (const value of Object.values(context.priorUsage)) {
-			if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-				throw new Error(
-					"Execution policy prior usage must be finite and non-negative.",
-				);
-			}
-		}
+		assertUsageValues(
+			Object.values(context.priorUsage),
+			"Execution policy prior usage must be finite and non-negative.",
+		);
 	}
-	const previousAttempts = (context.previousAttempts || []).map((attempt) => {
-		for (const value of [
-			attempt.inputTokens,
-			attempt.outputTokens,
-			attempt.costUsd,
-			attempt.latencyMs,
-		]) {
-			if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-				throw new Error(
-					"Execution policy attempt usage must be finite and non-negative.",
-				);
-			}
-		}
-		return { ...attempt };
-	});
 	return {
 		...context,
 		pathScopes: unique(context.pathScopes),
 		requiredTools: unique(context.requiredTools),
-		previousAttempts,
+		previousAttempts: (context.previousAttempts || []).map(normalizeAttempt),
 	};
+}
+
+function assertTokenEstimate(name: string, value: number): void {
+	if (!Number.isInteger(value) || value < 0) {
+		throw new Error(`Execution policy ${name} must be a non-negative integer.`);
+	}
+}
+
+function normalizeAttempt(attempt: ExecutionPolicyAttempt): ExecutionPolicyAttempt {
+	assertUsageValues(
+		[attempt.inputTokens, attempt.outputTokens, attempt.costUsd, attempt.latencyMs],
+		"Execution policy attempt usage must be finite and non-negative.",
+	);
+	if (!(["completed", "blocked", "failed", "cancelled"] as const).includes(attempt.outcome)) {
+		throw new Error("Execution policy attempt outcome is invalid.");
+	}
+	if (attempt.outcome === "failed") {
+		if (!attempt.failureKind || !resolveExecutionRecovery(attempt.failureKind)) {
+			throw new Error("Failed execution policy attempt requires a typed failure kind.");
+		}
+	} else if (attempt.failureKind !== undefined) {
+		throw new Error("Only failed execution policy attempts may carry a failure kind.");
+	}
+	return {...attempt};
+}
+
+function assertUsageValues(values: readonly number[], message: string): void {
+	if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+		throw new Error(message);
+	}
 }
 
 function autonomyCapabilities(
@@ -528,33 +633,19 @@ function policyRationale(
 	floor: WikiModelQuality,
 	attempt: number,
 	escalationAllowed: boolean,
+	recovery: ExecutionRecoveryDecision | undefined,
 ): string {
 	if (selected) {
 		return `Selected ${selected.route.id}: meets ${floor} quality floor at lowest estimated cost, then latency.`;
 	}
 	if (!escalationAllowed) {
-		return `Blocked: escalation attempt ${attempt} is not permitted by policy or prior outcome.`;
+		return recovery
+			? `Blocked: ${recovery.reason}`
+			: `Blocked: escalation attempt ${attempt} lacks a typed failed outcome.`;
 	}
-	return `Blocked: no untried route satisfies ${floor} quality, tools, and remaining budgets.`;
-}
-
-function executionPolicyDigest(value: object): string {
-	return `sha256:${createHash("sha256")
-		.update(stableStringify(value))
-		.digest("hex")}`;
-}
-
-function stableStringify(value: unknown): string {
-	if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-	if (value && typeof value === "object") {
-		return `{${Object.entries(value)
-			.sort(([left], [right]) => left.localeCompare(right))
-			.map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-			.join(",")}}`;
-	}
-	return JSON.stringify(value);
+	return `Blocked: no untried route within user authorization satisfies ${floor} quality, context, tools, and remaining budgets.`;
 }
 
 function unique(values: string[]): string[] {
-	return [...new Set(values)].sort();
+	return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }

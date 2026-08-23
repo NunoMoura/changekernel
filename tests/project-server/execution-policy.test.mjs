@@ -13,6 +13,7 @@ function route(id, quality, overrides = {}) {
 		thinking: quality === "standard" ? "medium" : "high",
 		quality,
 		latency: quality === "standard" ? "fast" : "balanced",
+		contextWindowTokens: 128_000,
 		timeoutMs: 30_000,
 		pricing: {
 			inputUsdPerMillion: quality === "standard" ? 1 : 4,
@@ -53,6 +54,14 @@ function config(overrides = {}) {
 				qualityFloor: "standard",
 				maxEscalations: 1,
 				routes: [route("economy", "standard"), route("expert", "high")],
+				roleRoutes: {
+					harness: "expert",
+					decision: "inherit",
+					planning: "inherit",
+					review: "inherit",
+					workers: ["economy", "expert"],
+				},
+				escalationTransitions: [{fromRouteId: "economy", toRouteId: "expert"}],
 			},
 			...overrides,
 		},
@@ -130,6 +139,7 @@ describe("execution policy", () => {
 			{
 				routeId: "economy",
 				outcome: "failed",
+				failureKind: "checks-failed",
 				inputTokens: 1_000,
 				outputTokens: 500,
 				costUsd: 0.01,
@@ -150,12 +160,20 @@ describe("execution policy", () => {
 					qualityFloor: "standard",
 					maxEscalations: 0,
 					routes: [route("economy", "standard"), route("expert", "high")],
+					roleRoutes: {
+						harness: "expert",
+						decision: "inherit",
+						planning: "inherit",
+						review: "inherit",
+						workers: ["economy", "expert"],
+					},
+					escalationTransitions: [{fromRouteId: "economy", toRouteId: "expert"}],
 				},
 			}),
 			context({ previousAttempts }),
 		);
 		assert.equal(exhausted.status, "blocked");
-		assert.match(exhausted.rationale, /not permitted/i);
+		assert.match(exhausted.rationale, /explicitly authorized stronger route/i);
 	});
 
 	it("emits deterministic policy evidence with immutable authority ceilings", () => {

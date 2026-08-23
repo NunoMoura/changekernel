@@ -26,6 +26,7 @@ export {
 export {
 	DEFAULT_WIKI_CONFIG,
 	resolveWikiConfig,
+	resolveWikiStageModelRoute,
 	validateWikiConfig,
 	type PartialHostConfig,
 	type PartialQualityConfig,
@@ -39,6 +40,15 @@ export {
 	type WikiConfigRiskAction,
 	type WikiConfigWorktreeIsolation,
 	type WikiHostConfig,
+	type WikiHarnessStage,
+	type WikiModelEscalationTransitionConfig,
+	type WikiModelLatency,
+	type WikiModelPricingConfig,
+	type WikiModelQuality,
+	type WikiModelRoleRoutesConfig,
+	type WikiModelRouteConfig,
+	type WikiModelRoutingConfig,
+	type WikiModelThinking,
 	type WikiQualityConfig,
 	type WikiQualityJudgeConfig,
 	type WikiQualityReviewConfig,
@@ -528,6 +538,26 @@ export {
 	createImplementationRunRequest,
 	type CreateImplementationRunRequestInput,
 } from "./project-server/workers/implementation-run.ts";
+export {
+	WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL,
+	createWorkUnitModelAssignment,
+	runModelRouteForAssignment,
+	type CreateWorkUnitModelAssignmentInput,
+	type WorkUnitModelAssignment,
+} from "./project-server/workers/model-assignment.ts";
+export type {
+	ExecutionPolicyAttempt,
+	ExecutionRisk,
+	WorkerExecutionPolicySnapshot,
+} from "./project-server/workers/execution-policy.ts";
+export {
+	executionFailureFromProviderReceipt,
+	resolveExecutionRecovery,
+	type ExecutionFailureKind,
+	type ExecutionRecoveryAction,
+	type ExecutionRecoveryDecision,
+	type ExecutionRouteRequirement,
+} from "./project-server/workers/execution-recovery.ts";
 export {
 	createImplementationStageGate,
 	type CreateImplementationGateInput,

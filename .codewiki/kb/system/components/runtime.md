@@ -42,7 +42,7 @@ Run Request and Run Receipt form the semantic boundary between Project Server an
 
 ## Run lifecycle
 
-Run Process `4.0.0` accepts exact producer snapshot mounts. Run Request `4.0.0` binds stage, subject, custody, Build, Session head and lease, context, inputs, route, workspace, budgets, and Run Continuation `1.0.0`. Project Server decides why it exists and what follows. Run Receipt `3.0.0` binds that execution, resulting raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
+Run Process `5.0.0` accepts exact snapshot and replay or broker bindings. Run Request `5.0.0` binds subject, Build, Session lease, inputs, exact model route, workspace, budgets, and Run Continuation `1.0.0`; Project Server decides why it exists and what follows. Run Receipt `4.0.0` binds execution, route, raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
 
 Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@3.0.0` uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination.
 
@@ -62,7 +62,7 @@ There is no user-facing build selector, Pi fallback, or permanent multi-engine m
 
 CodeWiki's in-process DSH Adapter constructs exact DSH Agents from Requests and translates DSH events and terminal output into Runtime facts. DSH remains unmodified upstream code.
 
-DSH owns AgentLoop request, streaming, tool pairing, continuation, cancellation, Session events, compaction mechanics, and delegated plumbing. CodeWiki owns prompts, Skills, local context bindings, provider-broker capability, routes, secrets, budgets, policy, observations, and receipts.
+DSH owns AgentLoop requests, adapter registration, streaming, tools, continuation, cancellation, Session events, and compaction mechanics. Project Server owns route policy and lifecycle; the private broker owns credentials, networking, retry, normalization, and provider request identity; Runtime records bounded receipts. DSH receives no provider credential or project authority.
 
 Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, DSH UI/Host API, product MCP, and uncontrolled drivers. CodeWiki mounts DSH Goal state without a model Goal tool or autonomous driver. Project Server authorizes each Run; Candidate output pauses the Goal; Project Server and Gates determine completion. DSH never selects stages, retries, Results, Gates, or effects. Replay is qualification, not fallback.
 
@@ -70,7 +70,7 @@ Each Runtime Plugin contributes one first-party allowlisted capability through t
 
 ## Run kinds and isolation
 
-Decision and Planning Sessions are Change-scoped, Implementation is Work Unit-scoped, and Review is integration-lineage-scoped and independent. Producer Sessions span bounded Runs without depending on server or process lifetime. Same-Session resume requires original build/protocol; change requires rollover and canonical rehydration. DSH owns no Stage Loop. Each Model Check uses a fresh tool-free Session without producer state.
+Decision and Planning Sessions are Change-scoped, Implementation is Work Unit-scoped, and Review is integration-lineage-scoped and independent. Producer Sessions span bounded Runs without depending on process lifetime. Same-Session resume requires the original build, protocol, role, and model route; change requires rollover and canonical rehydration. Each Model Check uses a fresh tool-free Session without producer state. DSH owns no Stage Loop.
 
 Code Checks use deterministic admitted sandboxes rather than DSH. A Run Sandbox term is reserved for enforced filesystem, network, process, environment, credential, and resource containment; an ordinary child process is called a Run Process and is not mislabeled as a security sandbox.
 
@@ -84,7 +84,7 @@ Producer Runs mount immutable content-addressed Project Context Snapshot Protoco
 
 Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer context-query tools, producer Session, or memory. Production Run Processes require an exact unexpired authorization and read-only snapshot mount, then expose separate Knowledge, Alignment, Project State, repository, Evidence, Result, and Change-delta tools. `StageContextBundle` and `query_stage_context` remain isolated replay qualification evidence only.
 
-Every controlled model-visible input, context query, replacement, usage, output, and cancellation enters Execution Ledger `4.0.0`. Its header binds Request, Build, continuity, continuation policy, expected Session head, lease, material, feedback, input, route, tools, and Skills. Authenticated header and entry frames persist the canonical digest chain under expected-head CAS; recovery revalidates it.
+Every controlled model-visible input, context query, replacement, provider receipt, usage, output, and cancellation enters Execution Ledger `5.0.0`. Its header binds Request, Build, continuity, lease, material, feedback, route, tools, and Skills. Provider entries bind broker, request, response, selected target, attempts, request ID, usage, and outcome. Authenticated frames persist the digest chain under expected-head CAS.
 
 Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
 

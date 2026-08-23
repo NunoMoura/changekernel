@@ -87,6 +87,26 @@ export {
 	type CreateImplementationRunRequestInput,
 } from "./workers/implementation-run.ts";
 export {
+	WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL,
+	createWorkUnitModelAssignment,
+	runModelRouteForAssignment,
+	type CreateWorkUnitModelAssignmentInput,
+	type WorkUnitModelAssignment,
+} from "./workers/model-assignment.ts";
+export type {
+	ExecutionPolicyAttempt,
+	ExecutionRisk,
+	WorkerExecutionPolicySnapshot,
+} from "./workers/execution-policy.ts";
+export {
+	executionFailureFromProviderReceipt,
+	resolveExecutionRecovery,
+	type ExecutionFailureKind,
+	type ExecutionRecoveryAction,
+	type ExecutionRecoveryDecision,
+	type ExecutionRouteRequirement,
+} from "./workers/execution-recovery.ts";
+export {
 	createImplementationStageGate,
 	type CreateImplementationGateInput,
 	type ImplementationGateRun,

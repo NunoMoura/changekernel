@@ -99,6 +99,7 @@ describe("fresh scaffold", () => {
 			"CHANGE_INTAKE_RUNTIME_PROTOCOL",
 			"SCHEDULING_PLAN_PROTOCOL",
 			"SESSION_CONTINUITY_PROTOCOL",
+			"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
 			"acquireSessionLease",
 			"appendStoredSessionContinuity",
 			"assertCurrentAggregateReviewAttempt",
@@ -126,12 +127,16 @@ describe("fresh scaffold", () => {
 			"createSchedulingOperationSequence",
 			"createSessionContinuity",
 			"createStoredSessionContinuity",
+			"createWorkUnitModelAssignment",
 			"deriveReadyWorkUnits",
+			"executionFailureFromProviderReceipt",
 			"expireSessionLease",
 			"privateChangeIntegrationRef",
 			"readStoredSessionContinuity",
 			"requestSessionLeaseCancellation",
+			"resolveExecutionRecovery",
 			"rolloverSessionContinuity",
+			"runModelRouteForAssignment",
 			"runProjectServer",
 			"runProjectServerSemanticExecutor",
 			"runWikiArchive",
@@ -150,6 +155,8 @@ describe("fresh scaffold", () => {
 		assert.equal(typeof runtimeApi.createRunRequest, "function");
 		assert.equal(typeof runtimeApi.createRunReceipt, "function");
 		assert.equal(typeof runtimeApi.createRuntimeBuildManifest, "function");
+		assert.equal(typeof runtimeApi.createDshPrivateProviderBrokerInstaller, "function");
+		assert.equal(typeof runtimeApi.startPrivateProviderBrokerServer, "function");
 		assert.equal("runWikiChange" in runtimeApi, false);
 		assert.equal("createProjectServerApi" in runtimeApi, false);
 	});

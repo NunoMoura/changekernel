@@ -474,6 +474,7 @@ function normalizeHandle(
 			"continuationBindingDigest",
 			"materialDigest",
 			"feedbackDigest",
+			"modelRouteDigest",
 			"acceptedAt",
 		],
 		"Run handle",

@@ -13,6 +13,7 @@ components:
   - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
   - { id: preview, concept: cw:component:preview, label: Preview, zone: execution }
   - { id: evidence, concept: cw:component:evidence, label: Evidence, zone: core }
+  - { id: provider, concept: cw:component:provider-boundary, label: Private Provider Broker and Model Providers, zone: provider }
   - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
   - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: builds Project Context Snapshots or Gate packages and selects ready Work Units }
@@ -42,8 +43,20 @@ connections:
     from: project-server
     to: runtime
     type: invokes
-    label: submits bounded Run, continuation binding, and Session lease
-    boundary: { type: authority, failure: Reject stale context, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
+    label: submits Run, model Assignment, continuation, and Session lease
+    boundary: { type: authority, failure: Reject stale context, unauthorized route, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
+  - id: runtime-invokes-provider
+    from: runtime
+    to: provider
+    type: invokes
+    label: streams through one authenticated loopback exact-Run broker capability
+    boundary: { type: trust, failure: Stop on route mismatch, unauthenticated receipt, exhausted broker retry, quota, cancellation, or malformed provider evidence. }
+  - id: provider-returns-runtime
+    from: provider
+    to: runtime
+    type: returns
+    label: returns normalized chunks and authenticated provider-call receipt
+    boundary: { type: trust, failure: Refuse completion when selected target, request, response, usage, or receipt identity differs. }
   - id: runtime-returns-project-server
     from: runtime
     to: project-server
@@ -110,10 +123,10 @@ connections:
 flows:
   - concept: cw:flow:change-lifecycle
     paths:
-      - connections: [project-server-reads-knowledge, knowledge-returns-project-server, project-server-invokes-runtime, runtime-returns-project-server]
+      - connections: [project-server-reads-knowledge, knowledge-returns-project-server, project-server-invokes-runtime, runtime-invokes-provider, provider-returns-runtime, runtime-returns-project-server]
   - concept: cw:flow:work-unit-execution
     paths:
-      - connections: [project-server-invokes-runtime, runtime-returns-project-server, project-server-invokes-implementation, implementation-returns-project-server, project-server-invokes-preview, preview-produces-evidence]
+      - connections: [project-server-invokes-runtime, runtime-invokes-provider, provider-returns-runtime, runtime-returns-project-server, project-server-invokes-implementation, implementation-returns-project-server, project-server-invokes-preview, preview-produces-evidence]
       - connections: [project-server-invokes-checks, checks-read-knowledge, knowledge-returns-checks, checks-invoke-runtime, runtime-returns-checks, checks-return-project-server, project-server-writes-change-trace]
   - concept: cw:flow:external-candidate-admission
     paths:

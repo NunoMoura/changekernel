@@ -25,9 +25,25 @@ export interface WikiModelRouteConfig {
 	thinking: WikiModelThinking;
 	quality: WikiModelQuality;
 	latency: WikiModelLatency;
+	contextWindowTokens: number;
 	timeoutMs: number;
 	pricing: WikiModelPricingConfig;
 	allowedTools: string[];
+}
+
+export interface WikiModelEscalationTransitionConfig {
+	fromRouteId: string;
+	toRouteId: string;
+}
+
+export type WikiHarnessStage = "harness" | "decision" | "planning" | "review";
+
+export interface WikiModelRoleRoutesConfig {
+	harness: string | null;
+	decision: string | "inherit";
+	planning: string | "inherit";
+	review: string | "inherit";
+	workers: string[];
 }
 
 export interface WikiModelRoutingConfig {
@@ -36,12 +52,16 @@ export interface WikiModelRoutingConfig {
 	estimatedInputTokens: number;
 	estimatedOutputTokens: number;
 	routes: WikiModelRouteConfig[];
+	roleRoutes: WikiModelRoleRoutesConfig;
+	escalationTransitions: WikiModelEscalationTransitionConfig[];
 }
 
 export type PartialWikiModelRoutingConfig = Partial<
-	Omit<WikiModelRoutingConfig, "routes">
+	Omit<WikiModelRoutingConfig, "routes" | "roleRoutes" | "escalationTransitions">
 > & {
 	routes?: WikiModelRouteConfig[];
+	roleRoutes?: Partial<WikiModelRoleRoutesConfig>;
+	escalationTransitions?: WikiModelEscalationTransitionConfig[];
 };
 
 export const DEFAULT_MODEL_ROUTING_CONFIG: WikiModelRoutingConfig = {
@@ -50,6 +70,14 @@ export const DEFAULT_MODEL_ROUTING_CONFIG: WikiModelRoutingConfig = {
 	estimatedInputTokens: 75_000,
 	estimatedOutputTokens: 25_000,
 	routes: [],
+	roleRoutes: {
+		harness: null,
+		decision: "inherit",
+		planning: "inherit",
+		review: "inherit",
+		workers: [],
+	},
+	escalationTransitions: [],
 };
 
 export function resolveWikiModelRoutingConfig(
@@ -66,12 +94,42 @@ export function resolveWikiModelRoutingConfig(
 				allowedTools: [...route.allowedTools],
 			}),
 		),
+		roleRoutes: {
+			...DEFAULT_MODEL_ROUTING_CONFIG.roleRoutes,
+			...(input.roleRoutes || {}),
+			workers: input.roleRoutes?.workers
+				? [...input.roleRoutes.workers]
+				: [...DEFAULT_MODEL_ROUTING_CONFIG.roleRoutes.workers],
+		},
+		escalationTransitions: (
+			input.escalationTransitions || DEFAULT_MODEL_ROUTING_CONFIG.escalationTransitions
+		).map((transition) => ({...transition})),
 	});
 }
 
 export function validateWikiModelRoutingConfig(
 	config: WikiModelRoutingConfig,
 ): WikiModelRoutingConfig {
+	validateRoutingScalars(config);
+	const {routes, routeIds} = validateRoutes(config.routes);
+	const roleRoutes = validateRoleRoutes(config.roleRoutes, routeIds);
+	const escalationTransitions = validateEscalationTransitions(
+		config.escalationTransitions,
+		routeIds,
+		new Set(roleRoutes.workers),
+	);
+	return {
+		qualityFloor: config.qualityFloor,
+		maxEscalations: config.maxEscalations,
+		estimatedInputTokens: config.estimatedInputTokens,
+		estimatedOutputTokens: config.estimatedOutputTokens,
+		routes,
+		roleRoutes,
+		escalationTransitions,
+	};
+}
+
+function validateRoutingScalars(config: WikiModelRoutingConfig): void {
 	if (!isQuality(config.qualityFloor)) {
 		throw configError(
 			"runtime.modelRouting.qualityFloor",
@@ -86,10 +144,7 @@ export function validateWikiModelRoutingConfig(
 			config.maxEscalations,
 		);
 	}
-	for (const field of [
-		"estimatedInputTokens",
-		"estimatedOutputTokens",
-	] as const) {
+	for (const field of ["estimatedInputTokens", "estimatedOutputTokens"] as const) {
 		if (!Number.isInteger(config[field]) || config[field] < 0) {
 			throw configError(
 				`runtime.modelRouting.${field}`,
@@ -99,38 +154,88 @@ export function validateWikiModelRoutingConfig(
 		}
 	}
 	if (config.estimatedInputTokens + config.estimatedOutputTokens < 1) {
-		throw configError(
-			"runtime.modelRouting",
-			"must estimate at least one token.",
-			config,
-		);
+		throw configError("runtime.modelRouting", "must estimate at least one token.", config);
 	}
-	if (!Array.isArray(config.routes) || config.routes.length > 32) {
+}
+
+function validateRoutes(value: WikiModelRouteConfig[]): {
+	readonly routes: WikiModelRouteConfig[];
+	readonly routeIds: ReadonlySet<string>;
+} {
+	if (!Array.isArray(value) || value.length > 32) {
 		throw configError(
 			"runtime.modelRouting.routes",
 			"must contain at most 32 routes.",
-			config.routes,
+			value,
 		);
 	}
-	const routes = config.routes.map(validateRoute);
-	const ids = new Set<string>();
+	const routes = value.map(validateRoute);
+	const routeIds = new Set<string>();
 	for (const route of routes) {
-		if (ids.has(route.id)) {
+		if (routeIds.has(route.id)) {
 			throw configError(
 				"runtime.modelRouting.routes",
 				`contains duplicate route id ${route.id}.`,
 				route.id,
 			);
 		}
-		ids.add(route.id);
+		routeIds.add(route.id);
 	}
-	return {
-		qualityFloor: config.qualityFloor,
-		maxEscalations: config.maxEscalations,
-		estimatedInputTokens: config.estimatedInputTokens,
-		estimatedOutputTokens: config.estimatedOutputTokens,
-		routes,
-	};
+	return {routes, routeIds};
+}
+
+function validateEscalationTransitions(
+	value: WikiModelEscalationTransitionConfig[],
+	routeIds: ReadonlySet<string>,
+	workerRouteIds: ReadonlySet<string>,
+): WikiModelEscalationTransitionConfig[] {
+	if (!Array.isArray(value) || value.length > 64) {
+		throw configError(
+			"runtime.modelRouting.escalationTransitions",
+			"must contain at most 64 transitions.",
+			value,
+		);
+	}
+	const transitionKeys = new Set<string>();
+	return value.map((transition, index) => {
+		const path = `runtime.modelRouting.escalationTransitions[${index}]`;
+		const fromRouteId = identifier(transition.fromRouteId, `${path}.fromRouteId`);
+		const toRouteId = identifier(transition.toRouteId, `${path}.toRouteId`);
+		if (!routeIds.has(fromRouteId) || !routeIds.has(toRouteId)) {
+			throw configError(path, "must reference configured routes.", transition);
+		}
+		if (!workerRouteIds.has(fromRouteId) || !workerRouteIds.has(toRouteId)) {
+			throw configError(
+				path,
+				"must stay within the user-authorized Worker route pool.",
+				transition,
+			);
+		}
+		if (fromRouteId === toRouteId) {
+			throw configError(path, "cannot transition a route to itself.", transition);
+		}
+		const key = `${fromRouteId}\0${toRouteId}`;
+		if (transitionKeys.has(key)) {
+			throw configError(path, "duplicates an escalation transition.", transition);
+		}
+		transitionKeys.add(key);
+		return {fromRouteId, toRouteId};
+	});
+}
+
+export function resolveWikiStageModelRoute(
+	config: WikiModelRoutingConfig,
+	stage: WikiHarnessStage,
+): WikiModelRouteConfig | null {
+	const validated = validateWikiModelRoutingConfig(config);
+	const configured = stage === "harness"
+		? validated.roleRoutes.harness
+		: validated.roleRoutes[stage];
+	const routeId = configured === "inherit"
+		? validated.roleRoutes.harness
+		: configured;
+	if (routeId === null) return null;
+	return validated.routes.find((route) => route.id === routeId) || null;
 }
 
 export function validatePartialWikiModelRoutingKeys(
@@ -145,7 +250,34 @@ export function validatePartialWikiModelRoutingKeys(
 		"estimatedInputTokens",
 		"estimatedOutputTokens",
 		"routes",
+		"roleRoutes",
+		"escalationTransitions",
 	]);
+	if (config.roleRoutes !== undefined) {
+		knownKeys(record(config.roleRoutes, `${path}.roleRoutes`), `${path}.roleRoutes`, [
+			"harness",
+			"decision",
+			"planning",
+			"review",
+			"workers",
+		]);
+	}
+	if (config.escalationTransitions !== undefined) {
+		if (!Array.isArray(config.escalationTransitions)) {
+			throw configError(
+				`${path}.escalationTransitions`,
+				"must be an array.",
+				config.escalationTransitions,
+			);
+		}
+		for (const [index, candidate] of config.escalationTransitions.entries()) {
+			const transitionPath = `${path}.escalationTransitions[${index}]`;
+			knownKeys(record(candidate, transitionPath), transitionPath, [
+				"fromRouteId",
+				"toRouteId",
+			]);
+		}
+	}
 	if (config.routes === undefined) return;
 	if (!Array.isArray(config.routes)) {
 		throw configError(`${path}.routes`, "must be an array.", config.routes);
@@ -160,6 +292,7 @@ export function validatePartialWikiModelRoutingKeys(
 			"thinking",
 			"quality",
 			"latency",
+			"contextWindowTokens",
 			"timeoutMs",
 			"pricing",
 			"allowedTools",
@@ -172,6 +305,50 @@ export function validatePartialWikiModelRoutingKeys(
 			"cacheWriteUsdPerMillion",
 		]);
 	}
+}
+
+function validateRoleRoutes(
+	value: WikiModelRoleRoutesConfig,
+	routeIds: ReadonlySet<string>,
+): WikiModelRoleRoutesConfig {
+	const path = "runtime.modelRouting.roleRoutes";
+	const roles = record(value, path);
+	knownKeys(roles, path, ["harness", "decision", "planning", "review", "workers"]);
+	const harness = roles.harness === null
+		? null
+		: routeReference(roles.harness, `${path}.harness`, routeIds);
+	const decision = stageRouteReference(roles.decision, `${path}.decision`, routeIds);
+	const planning = stageRouteReference(roles.planning, `${path}.planning`, routeIds);
+	const review = stageRouteReference(roles.review, `${path}.review`, routeIds);
+	if (!Array.isArray(roles.workers) || roles.workers.length > 32) {
+		throw configError(`${path}.workers`, "must contain at most 32 route ids.", roles.workers);
+	}
+	const workers = unique(
+		roles.workers.map((routeId) =>
+			routeReference(routeId, `${path}.workers`, routeIds),
+		),
+	);
+	return {harness, decision, planning, review, workers};
+}
+
+function stageRouteReference(
+	value: unknown,
+	path: string,
+	routeIds: ReadonlySet<string>,
+): string {
+	return value === "inherit" ? value : routeReference(value, path, routeIds);
+}
+
+function routeReference(
+	value: unknown,
+	path: string,
+	routeIds: ReadonlySet<string>,
+): string {
+	const routeId = identifier(value, path);
+	if (!routeIds.has(routeId)) {
+		throw configError(path, "must reference a configured route.", value);
+	}
+	return routeId;
 }
 
 function validateRoute(
@@ -191,6 +368,13 @@ function validateRoute(
 	if (!isLatency(route.latency)) {
 		throw configError(`${path}.latency`, "is invalid.", route.latency);
 	}
+	if (!Number.isInteger(route.contextWindowTokens) || route.contextWindowTokens < 1) {
+		throw configError(
+			`${path}.contextWindowTokens`,
+			"must be >= 1.",
+			route.contextWindowTokens,
+		);
+	}
 	if (!Number.isInteger(route.timeoutMs) || route.timeoutMs < 1) {
 		throw configError(`${path}.timeoutMs`, "must be >= 1.", route.timeoutMs);
 	}
@@ -209,6 +393,7 @@ function validateRoute(
 		thinking: route.thinking,
 		quality: route.quality,
 		latency: route.latency,
+		contextWindowTokens: route.contextWindowTokens,
 		timeoutMs: route.timeoutMs,
 		pricing,
 		allowedTools: unique(

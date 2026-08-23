@@ -6,6 +6,7 @@ import { describe, it } from "node:test";
 import {
 	DEFAULT_WIKI_CONFIG,
 	resolveWikiConfig,
+	resolveWikiStageModelRoute,
 	runWikiConfig,
 } from "../../src/project/config.ts";
 import {
@@ -395,6 +396,7 @@ describe("wiki_config core facade", () => {
 			thinking: "high",
 			quality: "high",
 			latency: "balanced",
+			contextWindowTokens: 128_000,
 			timeoutMs: 60_000,
 			pricing: {
 				inputUsdPerMillion: 2.5,
@@ -415,12 +417,30 @@ describe("wiki_config core facade", () => {
 					qualityFloor: "high",
 					maxEscalations: 1,
 					routes: [modelRoute],
+					roleRoutes: {
+						harness: "high-quality",
+						decision: "inherit",
+						planning: "inherit",
+						review: "inherit",
+						workers: ["high-quality"],
+					},
 				},
 			},
 		});
 		assert.equal(resolved.runtime.budgets.maxCostUsd, 3.5);
 		assert.equal(resolved.runtime.modelRouting.routes[0].model, "gpt-5.4");
 		assert.notEqual(resolved.runtime.modelRouting.routes[0], modelRoute);
+		assert.equal(
+			resolveWikiStageModelRoute(resolved.runtime.modelRouting, "harness").id,
+			"high-quality",
+		);
+		for (const stage of ["decision", "planning", "review"]) {
+			assert.equal(
+				resolveWikiStageModelRoute(resolved.runtime.modelRouting, stage).id,
+				"high-quality",
+			);
+		}
+		assert.deepEqual(resolved.runtime.modelRouting.roleRoutes.workers, ["high-quality"]);
 
 		assert.throws(
 			() =>
@@ -437,6 +457,31 @@ describe("wiki_config core facade", () => {
 					runtime: { modelRouting: { routes: [modelRoute, modelRoute] } },
 				}),
 			/duplicate route id/i,
+		);
+		assert.throws(
+			() =>
+				resolveWikiConfig({
+					runtime: {
+						modelRouting: {
+							routes: [
+								modelRoute,
+								{...modelRoute, id: "harness-only", model: "gpt-5.4-harness"},
+							],
+							roleRoutes: {
+								harness: "harness-only",
+								decision: "inherit",
+								planning: "inherit",
+								review: "inherit",
+								workers: ["high-quality"],
+							},
+							escalationTransitions: [{
+								fromRouteId: "high-quality",
+								toRouteId: "harness-only",
+							}],
+						},
+					},
+				}),
+			/user-authorized Worker route pool/,
 		);
 		assert.throws(
 			() =>

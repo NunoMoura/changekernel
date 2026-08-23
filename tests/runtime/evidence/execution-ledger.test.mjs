@@ -32,8 +32,8 @@ test("Execution Ledger retains exact payloads in a contiguous digest chain", () 
 		payload: {text: "Completed"},
 	});
 
-	assert.equal(EXECUTION_LEDGER_SCHEMA_VERSION, "4.0.0");
-	assert.equal(initial.header.schemaVersion, "4.0.0");
+	assert.equal(EXECUTION_LEDGER_SCHEMA_VERSION, "5.0.0");
+	assert.equal(initial.header.schemaVersion, "5.0.0");
 	assert.equal(initial.header.continuityKey, "decision:session-evidence");
 	assert.equal(initial.header.expectedSessionHead, "absent");
 	assert.equal(initial.header.materialDigest, runRequest().inputs.materialDigest);

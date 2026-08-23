@@ -13,6 +13,7 @@ import {createProjectContextStore} from "../../../src/project-server/project-con
 import {
 	RUN_PROTOCOL,
 	createQualifiedRuntimeBuild,
+	createRunModelRouteBinding,
 	createRunRequest,
 	createRunSessionLeaseBinding,
 	createRuntimeBuildManifest,
@@ -28,6 +29,8 @@ import {
 	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {readDshRuntimeProvenance} from "../../../src/runtime/dsh/provenance.ts";
+import {createPrivateProviderBrokerBinding} from "../../../src/runtime/providers/contracts.ts";
+import {startPrivateProviderBrokerServer} from "../../../src/runtime/providers/broker-server.ts";
 import {
 	readRetainedRunRawLog,
 	readStoredExecutionLedger,
@@ -168,6 +171,69 @@ describe("DSH Runtime vertical process", () => {
 		}
 	});
 
+	it("executes a credential-free live broker through the isolated Run Process", async () => {
+		const modelRoute = processModelRoute("mock-provider", "mock-model", "mock-live");
+		const runId = "run-dsh-process-private-broker";
+		const broker = await startPrivateProviderBrokerServer({
+			binding: createPrivateProviderBrokerBinding({
+				brokerId: "vertical-private-broker",
+				implementationId: "codewiki-mock-provider",
+				implementationVersion: "1.0.0",
+				implementationDigest: digest("vertical-broker-implementation"),
+				configurationDigest: digest("vertical-broker-configuration"),
+				mode: "direct",
+				maxRetries: 0,
+			}),
+			capabilityId: "capability-vertical-private-broker",
+			capabilityToken: "v".repeat(64),
+			expiresAt: new Date(Date.now() + 60_000).toISOString(),
+			runId,
+			routeDigest: modelRoute.routeDigest,
+			transport: {
+				open: async () => ({
+					selectedProvider: "mock-provider",
+					selectedModel: "mock-model",
+					providerRequestId: "provider-request-vertical",
+					chunks: liveProcessChunks(),
+				}),
+			},
+		});
+		const fixture = await runtimeFixture("private-broker", {
+			modelRoute,
+			modelAdapter: {kind: "private-broker", access: broker.access},
+		});
+		const runtime = createRuntime({
+			processManager: fixture.processManager,
+			stateRoot: fixture.stateRoot,
+			now: () => new Date(Date.parse(fixture.request.createdAt) + 100).toISOString(),
+		});
+		try {
+			const handle = await runtime.start(fixture.request);
+			const receipt = await runtime.waitForReceipt(handle);
+			const ledger = await readStoredExecutionLedger({
+				stateRoot: fixture.stateRoot,
+				runId: receipt.runId,
+				requestDigest: receipt.requestDigest,
+			});
+			assert.equal(receipt.outcome, "completed");
+			assert.equal(
+				receipt.outputDigest,
+				canonicalJsonDigest({text: "DSH private broker process complete."}),
+			);
+			assert.equal(broker.receipts()[0].providerRequestId, "provider-request-vertical");
+			assert.equal(
+				ledger.entries.some((entry) =>
+					entry.kind === "provider-call" &&
+					entry.payload.receiptDigest === broker.receipts()[0].receiptDigest
+				),
+				true,
+			);
+		} finally {
+			await runtime.shutdown();
+			await broker.close();
+		}
+	});
+
 	it("recovers durable receipt authority without launching the same Run twice", async () => {
 		const fixture = await runtimeFixture("receipt-recovery");
 		const runtime = createRuntime({
@@ -215,8 +281,11 @@ describe("DSH Runtime vertical process", () => {
 
 		const secondManifest = Object.freeze({
 			...fixture.manifest,
-			replayFixturePath: replayTurnTwoFixturePath,
-			replayFixtureDigest: replayTurnTwoFixtureDigest,
+			modelAdapter: {
+				kind: "replay",
+				fixturePath: replayTurnTwoFixturePath,
+				fixtureDigest: replayTurnTwoFixtureDigest,
+			},
 		});
 		await writeFile(fixture.manifestPath, canonicalJson(secondManifest));
 		const secondRequest = runRequest({
@@ -341,7 +410,7 @@ async function runtimeFixture(suffix, options = {}) {
 		? projectContextReplayFixtureDigest
 		: replayFixtureDigest;
 	const manifest = Object.freeze({
-		schemaVersion: "2.0.0",
+		schemaVersion: "3.0.0",
 		runtimeBuildDigest: binding.buildDigest,
 		runProtocolVersion: binding.runProtocolVersion,
 		systemPrompt: "CodeWiki deterministic qualification",
@@ -350,8 +419,11 @@ async function runtimeFixture(suffix, options = {}) {
 		sessionRoot,
 		projectContextMount,
 		projectContextAuthorization,
-		replayFixturePath: selectedReplayFixturePath,
-		replayFixtureDigest: selectedReplayFixtureDigest,
+		modelAdapter: options.modelAdapter || {
+			kind: "replay",
+			fixturePath: selectedReplayFixturePath,
+			fixtureDigest: selectedReplayFixtureDigest,
+		},
 	});
 	const manifestPath = join(root, "input-manifest.json");
 	await writeFile(manifestPath, canonicalJson(manifest));
@@ -361,6 +433,7 @@ async function runtimeFixture(suffix, options = {}) {
 		buildDigest: binding.buildDigest,
 		materialDigest: canonicalJsonDigest(manifest),
 		projectContextSnapshot,
+		modelRoute: options.modelRoute,
 	});
 	const storedResolver = createStoredNodeRuntimeBuildResolver({stateRoot});
 	const processManager = createNodeRunProcessManager({
@@ -392,20 +465,10 @@ function runRequest({
 	materialDigest,
 	projectContextSnapshot,
 	resumeLog = null,
+	modelRoute = processModelRoute(),
 }) {
 	const createdAt = new Date(Date.now() - 1_000).toISOString();
 	const deadlineAt = new Date(Date.now() + 30_000).toISOString();
-	const optionsDigest = digest("model-options");
-	const modelRoute = {
-		provider: "codewiki-replay",
-		model: "deterministic",
-		optionsDigest,
-		routeDigest: canonicalJsonDigest({
-			provider: "codewiki-replay",
-			model: "deterministic",
-			optionsDigest,
-		}),
-	};
 	return createRunRequest({
 		runId,
 		operationId: `operation-${runId}`,
@@ -470,6 +533,37 @@ function runRequest({
 		},
 		createdAt,
 		deadlineAt,
+	});
+}
+
+async function* liveProcessChunks() {
+	yield {type: "block-start", index: 0, blockType: "text"};
+	yield {type: "text-delta", index: 0, text: "DSH private broker process complete."};
+	yield {
+		type: "block-end",
+		index: 0,
+		block: {type: "text", text: "DSH private broker process complete."},
+	};
+	yield {type: "usage", usage: {inputTokens: 12, outputTokens: 7}};
+	yield {type: "finish", reason: {kind: "stop"}};
+}
+
+function processModelRoute(
+	provider = "codewiki-replay",
+	model = "deterministic",
+	routeId = "codewiki-replay",
+) {
+	return createRunModelRouteBinding({
+		routeId,
+		provider,
+		model,
+		reasoningEffort: null,
+		contextWindowTokens: 128_000,
+		timeoutMs: 30_000,
+		policyDigest: digest("model-policy"),
+		policyAttempt: 0,
+		modelAssignmentDigest: digest("model-assignment"),
+		optionsDigest: digest("model-options"),
 	});
 }
 

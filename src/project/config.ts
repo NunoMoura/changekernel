@@ -17,15 +17,20 @@ import {
 	DEFAULT_MODEL_ROUTING_CONFIG,
 	type PartialWikiModelRoutingConfig,
 	resolveWikiModelRoutingConfig,
+	resolveWikiStageModelRoute,
 	type WikiModelRoutingConfig,
 	validatePartialWikiModelRoutingKeys,
 	validateWikiModelRoutingConfig,
 } from "./model-routing.ts";
 
+export {resolveWikiStageModelRoute};
 export type {
+	WikiHarnessStage,
+	WikiModelEscalationTransitionConfig,
 	WikiModelLatency,
 	WikiModelPricingConfig,
 	WikiModelQuality,
+	WikiModelRoleRoutesConfig,
 	WikiModelRouteConfig,
 	WikiModelRoutingConfig,
 	WikiModelThinking,
@@ -701,6 +706,16 @@ function mergeModelRoutingConfig(
 		...current,
 		...(patch || {}),
 		routes: patch?.routes ? [...patch.routes] : [...current.routes],
+		roleRoutes: {
+			...current.roleRoutes,
+			...(patch?.roleRoutes || {}),
+			workers: patch?.roleRoutes?.workers
+				? [...patch.roleRoutes.workers]
+				: [...current.roleRoutes.workers],
+		},
+		escalationTransitions: patch?.escalationTransitions
+			? [...patch.escalationTransitions]
+			: [...current.escalationTransitions],
 	};
 }
 

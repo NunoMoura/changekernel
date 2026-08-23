@@ -13,6 +13,7 @@ import {
 	createRunCancellationRequest,
 	createRunEvent,
 	createRunQuiescence,
+	createRunModelRouteBinding,
 	createRunRequest,
 	createRunSessionLeaseBinding,
 	createQualifiedRuntimeBuild,
@@ -27,7 +28,7 @@ import {
 } from "../../src/runtime/processes/protocol.ts";
 import {createNodeRunProcessManager} from "../../src/runtime/processes/node-process-manager.ts";
 import {createRuntime} from "../../src/runtime/runtime.ts";
-import {canonicalJsonDigest, sha256Digest} from "../../src/utils/canonical-json.ts";
+import {sha256Digest} from "../../src/utils/canonical-json.ts";
 
 const NOW = "2026-08-16T10:00:00.000Z";
 const ACCEPTED_AT = "2026-08-16T10:00:01.000Z";
@@ -516,11 +517,16 @@ function activeRunProcessBinding() {
 }
 
 function modelRoute(provider, model) {
-	const optionsDigest = sha256Digest("model-options");
-	return {
+	return createRunModelRouteBinding({
+		routeId: "test-route",
 		provider,
 		model,
-		optionsDigest,
-		routeDigest: canonicalJsonDigest({provider, model, optionsDigest}),
-	};
+		reasoningEffort: null,
+		contextWindowTokens: 128_000,
+		timeoutMs: 30_000,
+		policyDigest: sha256Digest("model-policy"),
+		policyAttempt: 0,
+		modelAssignmentDigest: sha256Digest("model-assignment"),
+		optionsDigest: sha256Digest("model-options"),
+	});
 }

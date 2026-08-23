@@ -13,6 +13,7 @@ import {
 import {createDshReplayModelInstaller} from "../../../src/runtime/dsh/replay.ts";
 import {
 	RUN_PROTOCOL,
+	createRunModelRouteBinding,
 	createRunRequest,
 	createRunSessionLeaseBinding,
 } from "../../../src/runtime/contracts.ts";
@@ -335,17 +336,18 @@ function runRequest(
 		stage === "implementation" ? "implementation-worker" : `${stage}-producer`
 	);
 	const feedbackDigest = settings.feedbackDigest ?? null;
-	const optionsDigest = digest("model-options");
-	const modelRoute = {
+	const modelRoute = createRunModelRouteBinding({
+		routeId: "codewiki-replay",
 		provider: "codewiki-replay",
 		model: "deterministic",
-		optionsDigest,
-		routeDigest: canonicalJsonDigest({
-			provider: "codewiki-replay",
-			model: "deterministic",
-			optionsDigest,
-		}),
-	};
+		reasoningEffort: null,
+		contextWindowTokens: 128_000,
+		timeoutMs: 30_000,
+		policyDigest: digest("model-policy"),
+		policyAttempt: 0,
+		modelAssignmentDigest: digest("model-assignment"),
+		optionsDigest: digest("model-options"),
+	});
 	return createRunRequest({
 		runId,
 		operationId: `operation-${runId}`,

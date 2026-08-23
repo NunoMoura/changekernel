@@ -18,6 +18,27 @@
 			"maxEscalations": 1,
 			"estimatedInputTokens": 75000,
 			"estimatedOutputTokens": 25000,
+			"roleRoutes": {
+				"harness": "openai-codex-gpt-5.4",
+				"decision": "inherit",
+				"planning": "inherit",
+				"review": "inherit",
+				"workers": [
+					"openai-codex-gpt-5.4-mini",
+					"openai-codex-gpt-5.4",
+					"openai-codex-gpt-5.5"
+				]
+			},
+			"escalationTransitions": [
+				{
+					"fromRouteId": "openai-codex-gpt-5.4-mini",
+					"toRouteId": "openai-codex-gpt-5.4"
+				},
+				{
+					"fromRouteId": "openai-codex-gpt-5.4",
+					"toRouteId": "openai-codex-gpt-5.5"
+				}
+			],
 			"routes": [
 				{
 					"id": "openai-codex-gpt-5.4-mini",
@@ -26,6 +47,7 @@
 					"thinking": "medium",
 					"quality": "standard",
 					"latency": "fast",
+					"contextWindowTokens": 200000,
 					"timeoutMs": 600000,
 					"pricing": {
 						"inputUsdPerMillion": 0.75,
@@ -61,6 +83,7 @@
 					"thinking": "high",
 					"quality": "high",
 					"latency": "balanced",
+					"contextWindowTokens": 256000,
 					"timeoutMs": 900000,
 					"pricing": {
 						"inputUsdPerMillion": 2.5,
@@ -96,6 +119,7 @@
 					"thinking": "xhigh",
 					"quality": "critical",
 					"latency": "slow",
+					"contextWindowTokens": 256000,
 					"timeoutMs": 1200000,
 					"pricing": {
 						"inputUsdPerMillion": 5,
