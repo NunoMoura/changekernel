@@ -2,7 +2,7 @@
 type: System Component
 codewiki_id: cw:component:runtime
 title: Runtime
-description: Executes immutable Run Requests through exact Runtime Builds and controlled Run Processes, then creates bounded Run Receipts without project authority.
+description: Executes immutable Run Requests through exact Runtime Builds, DSH Plugin composition, and controlled Run Processes without project authority.
 status: stable
 tags: [system, component]
 codewiki_component: cw:component:runtime
@@ -35,15 +35,15 @@ Project Server
   -> Runtime
   -> qualified outer Run Sandbox
   -> Run Process
-  -> DSH Adapter
-  -> DSH Agent + AgentLoop + Agent Session
+  -> Runtime Bridge
+  -> DSH Agent + AgentLoop + Agent Session + admitted DSH Plugins
   -> admitted inner Code Runtime
   -> Runtime
   -> Run Receipt
   -> Project Server
 ```
 
-Run Request and Run Receipt form the semantic boundary between Project Server and Runtime. Run Process protocol is an internal transport boundary. DSH remains behind the Adapter and receives no canonical storage handle.
+Run Request and Run Receipt form the semantic boundary between Project Server and Runtime. Run Process protocol is an internal transport boundary. DSH remains behind the Runtime Bridge and receives no canonical storage handle.
 
 ## Run lifecycle
 
@@ -57,21 +57,23 @@ Run failure cannot mutate accepted project state. Runtime returns a bounded stop
 
 ## Runtime Builds
 
-A Runtime Build is the immutable content-addressed DSH execution closure. Its manifest binds protocol, Node, reviewed source commit, executed DSH/Cordis closure, Runtime Plugins, adapters, and artifact bytes. Reviewed source and package closure remain distinct without attestation.
+A Runtime Build is the immutable content-addressed DSH execution closure. Its manifest binds protocol, Node, reviewed source commit, DSH profile and Cordis closure, DSH Plugins and Providers, Runtime Bridge, and artifact bytes. Reviewed source and package closure remain distinct without attestation.
 
 Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
 
 There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implementation. DSH is the sole first-party engine; Pi remains Client-only and cannot execute Runs.
 
-## DSH Adapter
+## DSH composition and Runtime Bridge
 
-CodeWiki's in-process DSH Adapter constructs exact DSH Agents from Requests and translates DSH events and terminal output into Runtime facts. DSH remains unmodified upstream code.
+Runtime Bridge constructs the exact DSH Agent and release-managed profile for one Request, then translates DSH events and output into Runtime facts.
 
-DSH owns AgentLoop requests, adapter registration, streaming, tools, continuation, cancellation, Session events, and compaction mechanics. Project Server owns route policy and lifecycle; the private broker owns credentials, networking, retry, normalization, and provider request identity; Runtime records bounded receipts. DSH receives no provider credential or project authority.
+DSH owns AgentLoop, Plugin and Provider registration, streaming, tools, continuation, cancellation, Session events, and compaction mechanics. Project Server owns route and lifecycle policy; private broker owns credential custody, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority inside a Run Process.
 
-Production disables ambient profiles, settings, Skill discovery, workspace instructions, dynamic plugins, DSH UI/Host API, product MCP, and uncontrolled drivers. CodeWiki mounts DSH Goal state without a model Goal tool or autonomous driver. Project Server authorizes each Run; Candidate output pauses the Goal; Project Server and Gates determine completion. DSH never selects stages, retries, Results, Gates, or effects. Replay is qualification, not fallback.
+Managed Run profiles disable ambient settings, discovery, dynamic installation, UI/Host APIs, product MCP, self-modification, and uncontrolled drivers. Trusted broker profiles may compose provider, authorization, and credential Plugins outside Run sandboxes. Future client profiles use only authenticated CodeWiki frontend contracts. No profile gains Project Server authority.
 
-Each Runtime Plugin contributes one first-party allowlisted capability through the DSH Adapter: tool, context binding, Skill provider, model/delegate adapter, observer, compaction policy, or Code Mode binding. Project files install no executable Runtime Plugins. Effective capability is the intersection of CodeWiki release ceiling, Project Server authorization, Run Request, and any narrower Skill declaration.
+Project Server authorizes each Run and mounts DSH Goal state without a model completion tool or autonomous driver. Candidate output pauses the Goal; Project Server and Gates determine completion. Replay is qualification, not fallback.
+
+Each DSH Plugin contributes an allowlisted capability in one trust plane. Project files install no executable Plugins. Effective Run capability intersects release ceiling, Project Server authorization, Run Request, and any narrower Skill declaration.
 
 ## Run kinds and isolation
 
@@ -81,7 +83,7 @@ DSH and Code Checks use distinct sandboxes. Production DSH requires qualified ou
 
 Only an Implementation Run may receive a writable Workbench. Project Server owns the Workbench, Assignment, base and resulting tree, command policy, and Integration. Runtime receives only the bounded capability described by the Run Request. Decision, Planning, Review, and Model Check Runs receive no writable Workbench authority.
 
-Delegated Runs use exact adapters. Runtime controls dispatch, admitted task/artifacts, lifecycle, cancellation, and granted Workbench capability. Receipts declare unobserved inner prompts, settings, tools, models, and continuation. External Agent Clients retain their pipelines.
+Delegated Runs use exact delegation Providers. Runtime controls dispatch, admitted task/artifacts, lifecycle, cancellation, and granted Workbench capability. Receipts declare unobserved inner prompts, settings, tools, models, and continuation. External Agent Clients retain their pipelines.
 
 ## Context, evaluation, ledger, and compaction
 
@@ -99,6 +101,6 @@ Compaction changes model-visible surface only. Run Continuation binds promoted a
 
 ## Authority and API
 
-Runtime cannot write Change Trace, WorkState, Knowledge, Project Configuration, Gate state, Workbench custody, or protected refs. Runtime Plugins and Run Processes receive no such capability. Project Server alone validates Run Receipt against the exact producer attempt, Assignment, or Check invocation and decides Candidate admission or further action.
+Runtime cannot write Change Trace, WorkState, Knowledge, Project Configuration, Gate state, Workbench custody, or protected refs. DSH Plugins and Run Processes receive no such capability. Project Server alone validates Run Receipt against the exact producer attempt, Assignment, or Check invocation and decides Candidate admission or further action.
 
-Runtime public contracts live at `src/runtime/index.ts` and publish as `@nunomoura/codewiki/runtime`. Core domains import only neutral `src/runtime/contracts.ts`; concrete DSH, Pi, delegate, process, and sandbox implementations remain outer adapters. Runtime is the only unqualified CodeWiki architecture term named Runtime. Upstream names such as `DSH RuntimeContext` remain explicitly DSH-qualified implementation details.
+Runtime public contracts live at `src/runtime/index.ts` and publish as `@nunomoura/codewiki/runtime`. Core domains import only neutral `src/runtime/contracts.ts`; concrete DSH, Pi, delegation, process, and sandbox implementations remain outside those contracts. Runtime is the only unqualified CodeWiki architecture term named Runtime. Upstream names such as `DSH RuntimeContext` remain explicitly DSH-qualified implementation details.

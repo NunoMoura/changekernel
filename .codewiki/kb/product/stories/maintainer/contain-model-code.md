@@ -13,7 +13,7 @@ As a maintainer, I want model-authored programs to run through qualified disposa
 
 ## Threat model
 
-Model-authored source, stdout and stderr, completion values, binding arguments, log volume, scheduling, and resource demand are hostile. Protected assets include the trusted DSH Adapter and Agent Session, authenticated outer Run Process protocol descriptors, provider capability, credentials, host files, canonical repository and project state, evidence chain, and descendant-process lifecycle.
+Model-authored source, stdout and stderr, completion values, binding arguments, log volume, scheduling, and resource demand are hostile. Protected assets include the trusted Runtime Bridge and DSH Agent Session, authenticated outer Run Process protocol descriptors, provider capability, credentials, host files, canonical repository and project state, evidence chain, and descendant-process lifecycle.
 
 The trusted computing base is the host operating system and kernel; exact qualified Bubblewrap, `prlimit`, and Node executables; the CodeWiki launch and worker bootstrap code; and every explicitly admitted host binding. Typed bindings are capabilities, not a sanitization boundary. Their host implementations retain ordinary authorization, snapshot, budget, and ledger checks.
 

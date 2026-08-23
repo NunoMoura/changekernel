@@ -44,7 +44,7 @@ Project Server resolves each stage's active Packs into one deterministic policy 
 
 ## Pack Skills
 
-A Pack Skill guides production but never judges output. Project Server supplies exact current stage Skills in stable Pack-ID order. Each bounded snapshot binds stage, Pack, name, complete file manifest, and digests to producer attempt and receipt. Ambient Skills stay disabled; delegated routes qualify only when their adapter receipts supplied bytes.
+A Pack Skill guides production but never judges output. Project Server supplies exact current stage Skills in stable Pack-ID order. Each bounded snapshot binds stage, Pack, name, complete file manifest, and digests to producer attempt and receipt. Ambient Skills stay disabled; delegated routes qualify only when their custody receipts prove supplied bytes.
 
 Pack Skills are harness-neutral Agent Skills, not plugins or settings. Their files run only through tools already admitted for the attempt. `allowed-tools` creates no capability. Check executors receive no Skill, producer memory, or tool.
 

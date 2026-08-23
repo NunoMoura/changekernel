@@ -7,6 +7,7 @@ components:
   - { id: protocol, concept: cw:component:protocol, label: Client-Project Server Protocol, zone: core }
   - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
   - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
+  - { id: domain-plugins, concept: cw:component:domain-plugins, label: Domain Plugins, zone: core }
   - { id: decision, concept: cw:component:decision, label: Decision, zone: core }
   - { id: planning, concept: cw:component:planning, label: Planning, zone: core }
   - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
@@ -31,6 +32,13 @@ connections:
     label: submits one immutable Run Request
     boundary: { type: authority, failure: Reject unauthorized, stale, malformed, or unsupported Run Request. }
   - { id: project-server-invokes-intake, from: project-server, to: intake, type: invokes, label: normalizes untrusted intent, external captures, and Outcome Diagnostics }
+  - { id: project-server-reads-domain-plugin, from: project-server, to: domain-plugins, type: reads, label: validates exact installed domain contract and compiler identity }
+  - id: domain-plugin-produces-knowledge
+    from: domain-plugins
+    to: knowledge
+    type: produces
+    label: defines bounded vocabulary, relationships, and deterministic projection rules
+    boundary: { type: trust, failure: Stop compilation when Plugin identity, integrity, contract, or deterministic output is unavailable or mismatched. }
   - { id: project-server-invokes-decision, from: project-server, to: decision, type: invokes, label: starts exact Decision attempt }
   - { id: project-server-invokes-planning, from: project-server, to: planning, type: invokes, label: starts exact Planning attempt }
   - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: starts exact Implementation attempt }
@@ -53,11 +61,20 @@ connections:
     type: returns
     label: returns normalized stream and authenticated receipt
     boundary: { type: trust, failure: Reject mismatched target, digest, usage, outcome, or receipt authentication. }
-  - { id: knowledge-reads-project, from: knowledge, to: project, type: reads, label: validates project profile }
+  - { id: knowledge-reads-project, from: knowledge, to: project, type: reads, label: validates project Domain Plugin binding }
+  - id: knowledge-returns-project-server
+    from: knowledge
+    to: project-server
+    type: returns
+    label: returns exact Plugin-bound accepted Knowledge
+    boundary: { type: persistence, failure: Stop admission when Knowledge, Domain Plugin, compiler, or checkpoint identity is unavailable or mismatched. }
   - { id: change-trace-reads-project, from: change-trace, to: project, type: reads, label: binds repository identity }
   - { id: package-reads-project, from: package, to: project, type: reads, label: composes CodeWiki and passive Check Pack resources }
   - { id: benchmarks-read-package, from: benchmarks, to: package, type: reads, label: executes packed candidate }
 flows:
+  - concept: cw:flow:change-lifecycle
+    paths:
+      - connections: [domain-plugin-produces-knowledge, knowledge-returns-project-server]
   - concept: cw:flow:work-unit-execution
     paths:
       - connections: [project-server-invokes-runtime, runtime-invokes-provider, provider-returns-runtime, runtime-invokes-preview]

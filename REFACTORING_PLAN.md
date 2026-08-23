@@ -1,17 +1,17 @@
-# CodeWiki Refactoring Plan
+# CodeWiki Refactoring Plan — Completed
 
-## Purpose and current checkpoint
+## Purpose and completion checkpoint
 
-This plan ratifies the deletion-first path from the current replay-qualified DSH Runtime slice to the production CodeWiki architecture. It is the implementation roadmap, not a compatibility promise and not canonical runtime input.
+This document records the completed deletion-first refactoring from the replay-qualified DSH Runtime foundation through the integrated CodeWiki architecture. It is historical implementation evidence, not the active roadmap, a compatibility promise, or canonical runtime input.
 
-Current green base: `840334e` (`refactor: delete Pi execution path`). Slices 3B through 16 prove stable Knowledge identity and Effects, deterministic materialization, all four canonical Stage Loops, frozen Gate inputs, durable Session and Run completion, private provider brokerage, secure Code Mode, qualified inner and outer containment, workload benchmarks, one DSH execution engine, and optional Pi Client-only integration. The Slice 17 candidate adds first-party Harness continuity and selective observation, reserved MCP bindings, public Check Author SDK and secure Code Checks, deterministic Outcome Diagnostics, passive Pack transport, external Candidate custody and admission, and synchronization/recovery projections. Credential-bearing provider adapters and optional Switchyard external qualification remain separate release-environment work.
+Completion checkpoint: `9b6e1ef` (`feat: complete product integration surfaces`). Slices 1 through 17 are complete. They prove stable Knowledge identity and Effects, deterministic materialization, all four canonical Stage Loops, frozen Gate inputs, durable Session and Run completion, private provider brokerage, secure Code Mode, qualified inner and outer containment, workload benchmarks, one DSH execution engine, Pi Client-only integration, first-party Harness continuity and selective observation, reserved MCP bindings, public Check Author SDK and secure Code Checks, deterministic Outcome Diagnostics, passive Pack transport, external Candidate custody and admission, and synchronization/recovery projections.
 
-The Knowledge Base is intended design truth. Source and tests remain executable truth until each slice lands. Every temporary mismatch must be explicit and short-lived.
+`BACKEND_V1_PLAN.md` is now the active roadmap for DSH plugin adoption, Domain Plugins, provider and authorization qualification, production hardening, safe dogfood, and Backend v1. The Knowledge Base remains intended design truth; source and tests remain executable truth.
 
 ## Delivery rules
 
 1. Create an exhaustive HEAD-anchored clean-cut manifest before each structural slice. Manifests are audit-only and never runtime or package inputs.
-2. Prefer breaking ownership cuts. Do not retain aliases, compatibility barrels, duplicate contracts, selectors, route fallbacks, `Work Item` terminology, rolling-planning adapters, or a permanent Pi/DSH engine switch.
+2. Prefer breaking ownership cuts. Do not retain aliases, compatibility barrels, duplicate contracts, selectors, route fallbacks, `Work Item` terminology, rolling-planning compatibility layers, or a permanent Pi/DSH engine switch.
 3. Ship one green commit per slice. Every changed line must belong to the slice.
 4. Preserve canonical bytes, deterministic identity, expected-head compare-and-swap, authority, provenance, replay, recovery, and effect boundaries.
 5. Update Knowledge, source, tests, README, exports, package smoke, and changelog together when executable behavior changes.
@@ -25,7 +25,7 @@ CodeWiki Project Server
   -> Runtime
     -> qualified outer Run Sandbox
       -> authenticated Run Process
-        -> CodeWiki DSH Adapter
+        -> CodeWiki Runtime Bridge
           -> exact pinned DSH AgentLoop
             -> admitted qualified inner Code Runtime
             -> authenticated host-local private provider broker
@@ -270,7 +270,7 @@ Session rollover is required for build/protocol incompatibility, corruption, rep
 Production requires two separately qualified boundaries:
 
 1. Outer whole-DSH Run Process containment protecting host, canonical repository, Project Server, credentials, protocol descriptors, and protected effects.
-2. Inner model-authored Code Mode process/container protecting trusted DSH Adapter, Session state, material, evidence stream, and protocol from model code.
+2. Inner model-authored Code Mode process/container protecting the trusted Runtime Bridge, Session state, material, evidence stream, and protocol from model code.
 
 The outer sandbox permits read-only Runtime Build, authorized material, and one exact host-local provider-broker Unix socket, bounded private scratch, and an Implementation-only Workbench. It denies canonical writes, protected refs, ambient environment, credentials, unrestricted network, inherited authority, and unbounded resources.
 
@@ -280,7 +280,7 @@ DSH's worker-thread Code Runtime is containment, not a security boundary, and ca
 
 DSH receives no provider credentials or unrestricted provider egress. Runtime supplies one opaque expiring Run- and route-scoped capability to a host-local provider-neutral broker. Unsandboxed qualification may use TCP loopback; network-isolated production Run Processes use one explicitly mounted Unix-domain socket. The broker owns credentials, billing integration, provider networking, bounded transport retry or equivalent-endpoint failover, normalization, provider request IDs, and host-side receipt retention. Authenticated receipts bind broker implementation/configuration, exact request and response digests, selected provider/model, transport attempts, usage, cancellation or typed failure, and receipt identity. Project Server alone interprets those outcomes.
 
-Replay remains mandatory deterministic CI. Credential-free host-local mock infrastructure separately qualifies TCP-loopback and sandbox-mounted Unix-domain streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Optional NVIDIA NeMo Switchyard remains a replaceable backend and begins only as exact pinned loopback passthrough with Switchyard retries disabled and selected-target equality. Dynamic classifier, stage, escalation, and advisor routes remain deferred.
+Replay remains mandatory deterministic CI. Credential-free host-local mock infrastructure separately qualifies TCP-loopback and sandbox-mounted Unix-domain streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Slice 14 also qualified a constrained optional Switchyard passthrough experiment. Later evaluation found no required capability and selected that dormant surface for deletion in Backend v1 Slice B1; it is not a production route.
 
 ## Completed foundation
 
@@ -526,7 +526,7 @@ Success: long-running continuity survives compaction without moving project auth
 - [x] Bind broker implementation/configuration, exact request/response, selected target, transport attempts, provider request ID, usage, cancellation or typed failure, and receipt identity into Execution Ledger `5.0.0` and Run Receipt `4.0.0` lineage.
 - [x] Qualify credential-free live streaming, bounded broker-owned retry, cancellation, selected-target mismatch rejection, and isolated Run Process transport without committed credentials or mandatory paid calls.
 - [x] Preserve replay as the deterministic CI route and prohibit fallback from failed live transport.
-- [x] Constrain optional Switchyard admission to pinned loopback passthrough, zero Switchyard retries, exact configuration/build identity, and exact selected-target evidence; defer dynamic routing.
+- [x] Historically constrain optional Switchyard admission to pinned loopback passthrough, zero Switchyard retries, exact configuration/build identity, and exact selected-target evidence. Backend v1 Slice B1 now owns deletion of that dormant experiment.
 
 Success: Harness, Worker, and Check model authority stays distinct; every Work Unit Run uses one user-authorized exact route; transport retry remains broker-owned; live transport is separately qualified; credentials stay outside DSH; and provider or broker identity grants no CodeWiki authority.
 
@@ -572,8 +572,8 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 9. `lens_diagnostics mode=all` with no blocking edited-file findings.
 10. Clean Git diff, one green commit, and push only after review.
 
-## Release blockers
+## Closure
 
-- Credential-bearing provider adapters and optional pinned Switchyard deployment are not externally qualified for production credentials; deterministic replay and credential-free broker qualification remain the release default.
+All numbered slices in this plan are complete. Their completion does not by itself declare a production release: provider and authorization plugins, Domain Plugin extraction, operational hardening, safe dogfood, and Backend v1 qualification belong to `BACKEND_V1_PLAN.md`.
 
-No production release, protected effect, or Pi deletion may bypass these gates.
+No production release or protected effect may bypass the active Backend v1 gates.

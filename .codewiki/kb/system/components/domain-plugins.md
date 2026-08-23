@@ -1,0 +1,36 @@
+---
+type: System Component
+codewiki_id: cw:component:domain-plugins
+title: Domain Plugins
+description: Defines exact release-managed domain meaning without extending CodeWiki kernel authority or loading executable project code.
+status: stable
+tags: [system, component, plugins]
+codewiki_relationships:
+  - type: realizes
+    target: cw:story:maintainer.maintain-intent
+    rationale: Domain Plugins define the bounded vocabulary and deterministic compilation rules through which accepted intent becomes linked Knowledge.
+  - type: realizes
+    target: cw:story:maintainer.automate-safe-work
+    rationale: Domain Plugins contribute admitted domain context, Checks, realization, and guarded-effect bindings without owning Stage Loop authority.
+---
+# Domain Plugins
+
+A Domain Plugin is a release- or operator-installed CodeWiki Plugin that supplies one bounded domain vocabulary and its deterministic interpretation. It is neither a workflow engine, project script, Check Pack, DSH profile, nor authority extension. Backend v1 supports one built-in Software Development Domain Plugin; other domains remain deferred until software and one infrastructure-as-code extension prove the boundary.
+
+CodeWiki kernel always owns stable subject identity, accepted Knowledge State, Change, four Stage Loops, Candidate custody, Gate reduction, expected-head compare-and-swap, authorization, provenance, Review, and protected effects. A Domain Plugin cannot add a stage, change a transition, authenticate itself, grant authority, select a model, create a Check Result outside Checks, write canonical state directly, or apply an effect outside Project Server.
+
+One Domain Plugin package may declare separately admitted contributions for three trust planes:
+
+- a deterministic Project Server contribution defining concept types, relationship predicates, schemas, link constraints, context projections, domain-specific Candidate fields, Check input projections, realization classes, and effect bindings;
+- DSH Plugins defining model-facing context or tools under the exact capability ceiling of one Run;
+- optional DSH client plugins defining domain views through the authenticated CodeWiki frontend contract.
+
+These contributions share one Domain Plugin identity but not authority or process context. Project Server does not expose canonical storage to DSH or client contributions. DSH lifecycle disposal cannot reverse accepted history or external effects.
+
+Every admitted Domain Plugin binds an immutable ID, version, package integrity, implementation digest, declared entrypoints, dependency closure, supported CodeWiki and DSH contract ranges, data limits, and qualification Evidence. Project configuration selects only an exact installed and allowlisted identity. `.codewiki/` cannot install executable Plugin code, name a local executable path, widen capabilities, or replace an operator floor. A Plugin change affects new work only after explicit admission; incompatible Knowledge, Candidate, Gate, Session, or frontend state fails closed.
+
+The Project Server contribution is deterministic over declared canonical inputs. It performs no provider networking, credential access, ambient filesystem reads, model calls, scheduling, or protected effects. Domain source Providers may produce versioned observations with stable source identity, revision, provenance, classification, and authorization metadata, but those observations remain non-authoritative Change Intake Material until exact policy admits proposed Knowledge Effects. Explicit source links are preferred; deterministic derived links retain compiler provenance; model-suggested links remain Candidates until independently judged and accepted.
+
+A Domain Plugin upgrade is an explicit compiler migration. Project Server binds old and new Plugin identities, recomputes affected projections, validates reference closure and semantic identity, exposes exact differences, and requires normal authority before accepted meaning changes. It never hot-swaps a compiler inside a Candidate, Gate Evaluation Package, active Run, or retained Session.
+
+The Software Development Domain Plugin owns the current Product, System, and Design Knowledge vocabulary; source and test ownership; repository and Git realization; Workbenches; software Evidence and Checks; private integration; aggregate Review; and guarded software delivery. Git and source artifacts remain software-domain facts rather than assumptions embedded in the domain-neutral governance kernel.

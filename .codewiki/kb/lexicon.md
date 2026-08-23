@@ -11,7 +11,7 @@ tags: [system, vocabulary]
 
 | Term | Definition | Owner |
 | --- | --- | --- |
-| CodeWiki | Complete product containing Project Servers, Clients, shared package assets, and release-managed Runtime Builds. | [Package](system/components/package.md) |
+| CodeWiki | Complete product containing Backend, Clients, Domain Plugins, package assets, and Runtime Builds. | [Package](system/components/package.md) |
 | Project Server | Sole authoritative long-lived owner for one governed project: transport, AuthN, project AuthZ, canonical state, Stage Loops, Checks, Workbenches, transitions, effects, and its subordinate Runtime. | [Project Server](system/components/project-server.md) |
 | Runtime | Project Server-owned execution subsystem that executes bounded Run Requests and creates Run Receipts without project or lifecycle authority. | [Runtime](system/components/runtime.md) |
 | Run | One bounded execution attempt for a Stage Producer, Implementation Worker, Check, or delegated harness under one immutable Run Request. | [Runtime](system/components/runtime.md) |
@@ -19,14 +19,14 @@ tags: [system, vocabulary]
 | Run Process | Runtime-controlled OS process for one Run; process separation alone is not a security sandbox. | [Runtime](system/components/runtime.md) |
 | Run Port | Neutral internal contract through which Project Server or Checks requests bounded execution without importing DSH or a delegated harness. | [Runtime](system/components/runtime.md) |
 | Run Receipt | Immutable CodeWiki-authored account of one Run and only the inputs, outputs, custody, evidence, and gaps CodeWiki can prove. | [Runtime](system/components/runtime.md) |
-| Runtime Build | Content-addressed DSH execution closure binding artifact bytes, protocol, Node, plugins, adapters, and qualification Evidence. | [Runtime](system/components/runtime.md) |
-| Runtime Plugin | First-party trusted capability admitted into a Run Process through the CodeWiki DSH Adapter; it cannot extend Project Server authority or become project policy. | [Runtime](system/components/runtime.md) |
-| DSH Adapter | CodeWiki-owned translation layer inside a Run Process that maps one Run Request to exact DSH setup and maps DSH events and output back to Runtime facts. | [Runtime](system/components/runtime.md) |
+| Runtime Build | Content-addressed DSH execution closure binding protocol, Node, Plugins, Providers, bytes, and qualification Evidence. | [Runtime](system/components/runtime.md) |
+| DSH Plugin | Trusted release-managed DSH capability admitted for one exact trust plane; project files cannot install it or extend its authority. | [Runtime](system/components/runtime.md) |
+| Runtime Bridge | CodeWiki-owned boundary mapping one Run Request to exact DSH composition and mapping DSH events and output to Runtime facts. | [Runtime](system/components/runtime.md) |
 | DSH AgentLoop | Upstream DSH model-request, tool-execution, streaming, and continuation mechanism used inside a model-driven Run. | [Runtime](system/components/runtime.md) |
 | DSH Agent Session | Persistent isolated DSH state for one producer continuity or fresh Model Check. | [Runtime](system/components/runtime.md) |
 | Session Continuity | Persistent binding of logical work to current Session, head, Build, lease, Receipt, and rollover. | [Project Server](system/components/project-server.md) |
 | Session Lease | Exclusive grant for one Run to write one expected Session head until commit, cancellation, or expiry. | [Project Server](system/components/project-server.md) |
-| DeepSeek Harness | Exact pinned upstream execution library used through the CodeWiki DSH Adapter inside Run Processes; it owns AgentLoop mechanics but no CodeWiki lifecycle or authority. | [Runtime](system/components/runtime.md) |
+| DeepSeek Harness | Exact pinned upstream Plugin ecosystem used behind CodeWiki contracts; it owns execution mechanics but no CodeWiki lifecycle or authority. | [Runtime](system/components/runtime.md) |
 | Client Session | Temporary authenticated Client connection, distinct from Pairing and DSH Agent Session. | [Project Server](system/components/project-server.md) |
 | Check Run Process | Runtime-controlled isolated process for a Code Check or tool-free Model Check; it reports bounded facts without owning Check Result or Gate authority. | [Runtime](system/components/runtime.md) |
 | Accountability closure | Condition where one accepted transition can identify its exact prior state, proposed state, producer and custody, judged subject, Checks and Evidence, authority, applied effects, and resulting state without requiring a record of every incidental activity. | [Project Server](system/components/project-server.md) |
@@ -55,18 +55,19 @@ tags: [system, vocabulary]
 | Check Run | One bounded execution attempt that either produces a Check Result or stops for an operational reason. | [Checks](system/components/checks.md) |
 | Check SDK | Author-facing read-only primitives for Probes, composable Checks, exact project queries, diagnostics, bundling, fixtures, and replay. | [Checks](system/components/checks.md) |
 | Client | Software endpoint that speaks CodeWiki Client-Project Server Protocol without becoming the accountable Actor or gaining Project Server authority. | [Clients](system/components/clients.md) |
-| Client Integration | App, CLI, Agent-product extension, channel adapter, or other endpoint that uses CodeWiki protocol without entering Runtime execution or canonical ownership. | [Clients](system/components/clients.md) |
+| Client Integration | App, CLI, Agent-product extension, channel Plugin, or other endpoint using CodeWiki protocol without Runtime or canonical authority. | [Clients](system/components/clients.md) |
 | Code Check | Sandboxed JavaScript program returning one binary or quantitative Check Output. | [Checks](system/components/checks.md) |
 | Compaction Checkpoint | Provenance-linked replacement of older model-visible session material by a bounded summary while exact retained execution history remains unchanged. | [Runtime](system/components/runtime.md) |
 | Controlled provenance | Candidate provenance positively proven by exact Project Server custody appropriate to that stage, including Workbench custody for Implementation. | [Project Server](system/components/project-server.md) |
 | Contribution Routing | Read-only projection of eligible reviewers, contributors, and Implementation Workers with match reasons, coverage, unknowns, and staleness. | [Alignment](system/components/alignment.md) |
-| Core Adapter | Trusted CodeWiki implementation of repository, Workbench, persistence, transport, authentication, delivery, or another control-plane infrastructure port; it is not project-installed policy. | [Package](system/components/package.md) |
+| Infrastructure Provider | Trusted Plugin implementing a repository, Workbench, persistence, transport, authentication, delivery, or other control-plane seam. | [Package](system/components/package.md) |
 | Decision | Stage Loop that evaluates accepted intent and desired-Knowledge impact. | [Decision](system/components/decision.md) |
 | Default Pack | Ordinary bare-bones Pack materialized once for a stage, then editable, removable, and never restored automatically. | [Checks](system/components/checks.md) |
 | Delegated Run | CodeWiki-launched Claude Code, Codex, ACP, or future harness run for which CodeWiki owns dispatch and admitted artifacts while the child harness owns its inner Turn Loop. | [Runtime](system/components/runtime.md) |
 | Delivery effect | Separately authorized change to a protected delivery boundary. | [Project Server](system/components/project-server.md) |
 | Development stage | User-facing Decision, Planning, Implementation, or Review stage backed by its semantic Stage Loop. | [Project Server](system/components/project-server.md) |
 | Discovery Finding | Producer-neutral bounded report of new or out-of-scope work that carries no Check or Change authority. | [Change Intake](system/components/change-intake.md) |
+| Domain Plugin | Release- or operator-installed Plugin defining bounded domain vocabulary, deterministic interpretation, and plane-specific contributions without extending kernel authority. | [Domain Plugins](system/components/domain-plugins.md) |
 | Evidence Record | Immutable metadata record for an exact observation with provenance and freshness. | [Evidence](system/components/evidence.md) |
 | Execution Ledger | Append-only retained record of exact CodeWiki-controlled Run inputs, queries, provider receipts, compaction, usage, cancellation, and output. | [Runtime](system/components/runtime.md) |
 | External Agent Client | Independently operated harness that calls CodeWiki through MCP and retains ownership of its own prompts, tools, local reads, models, subagents, code runtime, and memory. | [Clients](system/components/clients.md) |
