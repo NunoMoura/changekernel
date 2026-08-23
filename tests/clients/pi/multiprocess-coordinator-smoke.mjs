@@ -75,6 +75,12 @@ function startPi(projectRoot, env, name) {
 	return {
 		name,
 		child,
+		stderr() {
+			return stderr;
+		},
+		messages() {
+			return messages;
+		},
 		async request(type, input = {}) {
 			const id = `${name}:${++sequence}`;
 			child.stdin.write(`${JSON.stringify({ id, type, ...input })}\n`);
@@ -116,11 +122,11 @@ let eventClient;
 let projectRoot;
 try {
 	const packRoot = join(root, "pack");
-	const installRoot = join(root, "install");
 	projectRoot = join(root, "project");
+	const installRoot = join(projectRoot, ".pi", "npm");
 	mkdirSync(packRoot);
-	mkdirSync(installRoot);
 	mkdirSync(projectRoot);
+	mkdirSync(installRoot, {recursive: true});
 	writeFileSync(
 		join(projectRoot, "package.json"),
 		`${JSON.stringify({ name: "codewiki-pi-multiprocess", type: "module" }, null, 2)}\n`,
@@ -140,6 +146,7 @@ try {
 		...process.env,
 		PI_CODING_AGENT_DIR: join(root, "agent"),
 		PI_CODING_AGENT_SESSION_DIR: join(root, "sessions"),
+		CODEWIKI_PROJECT_SERVER_STATE_ROOT: join(root, "project-server-state"),
 		PI_OFFLINE: "1",
 	};
 	run("pi", ["install", "-l", packageRoot, "--approve"], {
@@ -151,7 +158,7 @@ try {
 			join(
 				packageRoot,
 				"dist",
-				"runtime",
+				"project-server",
 				"coordinator",
 				"service.js",
 			),
@@ -162,7 +169,7 @@ try {
 			join(
 				packageRoot,
 				"dist",
-				"runtime",
+				"project-server",
 				"coordinator",
 				"endpoint.js",
 			),
@@ -172,23 +179,38 @@ try {
 	const first = startPi(projectRoot, env, "pi-one");
 	clients.push(first);
 	assert.equal((await first.request("get_state")).success, true);
+	assert.equal(
+		(await first.request("prompt", {message: "/wiki-dashboard --no-open"}))
+			.success,
+		true,
+	);
+	let observedCoordinatorState;
+	let observedCoordinatorError;
 	const dashboardState = await waitUntil(
 		async () => {
 			try {
 				const state = await coordinator.readProjectCoordinatorServiceState(projectRoot);
+				observedCoordinatorState = state;
 				return state.clientCount === 1 && state.supervisorCount === 0
 					? state
 					: undefined;
-			} catch {
+			} catch (error) {
+				observedCoordinatorError = error;
 				return undefined;
 			}
 		},
 		15_000,
-		() => "Dashboard did not connect without ambient Pi supervision.",
+		() =>
+			`Dashboard did not connect without ambient Pi supervision. State: ${JSON.stringify(observedCoordinatorState)} Error: ${String(observedCoordinatorError)} Pi stderr: ${first.stderr()} Pi messages: ${JSON.stringify(first.messages().slice(-10))}`,
 	);
 	const second = startPi(projectRoot, env, "pi-two");
 	clients.push(second);
 	assert.equal((await second.request("get_state")).success, true);
+	assert.equal(
+		(await second.request("prompt", {message: "/wiki-dashboard --no-open"}))
+			.success,
+		true,
+	);
 	const afterSecond = await coordinator.readProjectCoordinatorServiceState(projectRoot);
 	assert.equal(afterSecond.generationId, dashboardState.generationId);
 	assert.equal(afterSecond.clientCount, 1);
@@ -196,7 +218,7 @@ try {
 	const endpoint = await coordinator.readProjectCoordinatorEndpoint(projectRoot);
 	assert.equal(endpoint.generationId, dashboardState.generationId);
 	const health = await coordinator.requestProjectCoordinatorHealth(endpoint);
-	assert.equal(health.semanticExecution, "service");
+	assert.equal(health.semanticExecution, "client_candidate");
 	eventClient = await coordinator.connectProjectCoordinatorClient(projectRoot, {
 		clientId: "test:multiprocess-events",
 		kind: "test",

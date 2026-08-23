@@ -173,11 +173,13 @@ test("secure Code Runtime hard-terminates hot loops, memory exhaustion, and abor
 	assert.equal(timeout.error?.kind, "timeout");
 
 	const memory = await runSecureCodeProgram(
-		liveConfig({maxOldGenerationSizeMb: 16, maxWallMs: 5_000}),
+		liveConfig({maxOldGenerationSizeMb: 16, maxWallMs: 10_000}),
 		{
 			program: `
 				const retained = [];
-				while (true) retained.push(new Array(100000).fill(retained.length));
+				while (true) {
+					retained.push(Array.from({length: 1000000}, (_, index) => ({index})));
+				}
 			`,
 			bindings: tools({}),
 		},

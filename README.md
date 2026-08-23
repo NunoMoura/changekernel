@@ -129,7 +129,7 @@ Backlog is a generated intake view over persisted pending Change revisions; subm
 
 Change Trace Protocol `12.0.0` makes every revision a complete content-addressed semantic input rather than a skeletal issue summary and binds authority through accountable actor plus proof-backed authenticated identity. Revision identity binds bounded problem and objective summaries, rationale and alternatives, classification and affected targets, impact, observable outcomes, delivery constraints, Evidence expectations, safety semantics, acceptance requirements, any normalized defect profile, and either exact reducible `set | retire` Knowledge Effects or explicit unchanged-Knowledge references and rationale. Effects target immutable `cw:<kind>:<stable-key>` subject IDs and optional stable facet keys, bind exact prior state or absence, and carry complete post-state once. Typed `decision.confirmed` operations bind the exact passed Candidate, Gate Report, expected WorkState, accepted-active-Changes digest, compiler plan, resulting Knowledge State, and projection identity. Missing assurance remains explicitly absent or unknown; intake claims never become risk or Check authority.
 
-Decision Candidate schema `7.0.0` is materialized only from native `ProjectWorkState`, the exact accepted Knowledge checkpoint, and the producer's strict disposition/rationale proposal. Project Server derives the current revision, active relationships, Accepted Effect Index `1.0.0`, complete `index_only | expanded` compatibility coverage, WorkState/Knowledge/source/config/policy refs, stable Effect identities, compiler identity, exact application plan, projected Knowledge State, exact Markdown/YAML projection, current/projected/diff view, and Candidate identity. Full accepted revisions enter model context only for shared Effect targets, shared invariants, explicit relationships, or unknown semantics. Callers cannot submit observed bases, validation state, authority, compiler output, or append bindings. Checks judge that immutable compiled Candidate. A separately authorized confirmation step then binds the unchanged Candidate and Gate Report under WorkState, Knowledge, and accepted-active-Changes compare-and-swap; no model runs after confirmation. Confirmed approval, Change Trace continuation, resulting Knowledge checkpoint, and Planning route commit in one accepted state batch. Native continuation reloads fresh Git state, verifies exact Gate binding, and recovers canonical completion without reinvoking producer or confirmer. `createDecisionGitAdmission()` supplies selection-side Git coordination, while `createPiSdkNativeDecisionCandidateProducer()` remains an isolated authority-free proposal source.
+Decision Candidate schema `7.0.0` is materialized only from native `ProjectWorkState`, the exact accepted Knowledge checkpoint, and the producer's strict disposition/rationale proposal. Project Server derives the current revision, active relationships, Accepted Effect Index `1.0.0`, complete `index_only | expanded` compatibility coverage, WorkState/Knowledge/source/config/policy refs, stable Effect identities, compiler identity, exact application plan, projected Knowledge State, exact Markdown/YAML projection, current/projected/diff view, and Candidate identity. Full accepted revisions enter model context only for shared Effect targets, shared invariants, explicit relationships, or unknown semantics. Callers cannot submit observed bases, validation state, authority, compiler output, or append bindings. Checks judge that immutable compiled Candidate. A separately authorized confirmation step then binds the unchanged Candidate and Gate Report under WorkState, Knowledge, and accepted-active-Changes compare-and-swap; no model runs after confirmation. Confirmed approval, Change Trace continuation, resulting Knowledge checkpoint, and Planning route commit in one accepted state batch. Native continuation reloads fresh Git state, verifies exact Gate binding, and recovers canonical completion without reinvoking producer or confirmer. `createDecisionGitAdmission()` supplies selection-side Git coordination. DSH producer output enters Decision only through the same strict Project Server Candidate boundary; no Client or model session can submit observed bases, compiler output, or authority fields.
 
 One Change owns one append-only JSONL dossier:
 
@@ -254,7 +254,6 @@ src/
     dsh/
     evidence/
     persistence/
-    pi/
     processes/
     providers/
     receipts/
@@ -269,15 +268,15 @@ scripts/
 tests/
 ```
 
-Project Server AuthN, Pairing, Client Sessions, project AuthZ, Stage Loop coordination, persistence, Workbenches, and effects live under `src/project-server/**`. Runtime contracts, Runtime Builds, the CodeWiki DSH Adapter, Run Process management, qualified sandbox policies, concrete Check execution, and temporary Pi/review migration adapters live under `src/runtime/**`. Release tooling bundles the exact DSH process closure into a self-contained Runtime Build candidate; qualification, activation, and launch reverify its content digest. Core Stage Loop and Check domains import only neutral Runtime contracts. No legacy `src/server/**`, `src/execution/**`, or compatibility path survives.
+Project Server AuthN, Pairing, Client Sessions, project AuthZ, Stage Loop coordination, persistence, Workbenches, and effects live under `src/project-server/**`. Runtime contracts, Runtime Builds, the CodeWiki DSH Adapter, Run Process management, qualified sandbox policies, concrete Check execution, and review adapters live under `src/runtime/**`. Project Server owns standalone daemon lifecycle under `src/project-server/coordinator/**`; optional Pi code remains only under `src/clients/pi/**` plus the package extension entrypoint. Release tooling bundles the exact DSH process closure into a self-contained Runtime Build candidate; qualification, activation, and launch reverify its content digest. Core Stage Loop and Check domains import only neutral Runtime contracts. No Pi executor, backend selector, `./pi-sdk`, legacy `src/server/**`, legacy `src/execution/**`, or compatibility path survives.
 
-Public subpaths are `@nunomoura/codewiki/project-server`, `@nunomoura/codewiki/runtime`, and temporary `@nunomoura/codewiki/pi-sdk`.
+Public subpaths are `@nunomoura/codewiki/project-server` and `@nunomoura/codewiki/runtime`.
 
 ## Development requirements
 
 - Package/runtime APIs target Node.js `>=20.6.0` where supported.
 - Local stripped-TypeScript commands require Node.js `>=22.6.0`.
-- Optional Pi SDK adapter follows Pi's stronger supported runtime requirement.
+- Optional Pi Client packaging follows Pi's supported host runtime requirement.
 - Npm packages build to `dist/**` before packing.
 
 Core commands:
@@ -291,11 +290,8 @@ npm run test:pi-install
 npm run test:pi-rpc
 npm run test:pi-multiprocess
 npm run test:coordinator
-npm run test:pi-sdk
-npm run test:pi-sdk-package
 npm run test:project-local-install
 npm run test:external-lifecycle
-npm run test:external-failures
 npm run test:readiness
 npm run audit:codewiki
 ```

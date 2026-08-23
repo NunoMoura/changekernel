@@ -53,7 +53,7 @@ try {
 	assert.deepEqual(Object.keys(manifest.exports).sort(), [
 		".",
 		"./package.json",
-		"./pi-sdk",
+		"./project-server",
 		"./runtime",
 	]);
 	assert.deepEqual(manifest.pi, { extensions: ["dist/pi-extension.js"] });

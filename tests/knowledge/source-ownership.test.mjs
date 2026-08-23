@@ -77,7 +77,7 @@ describe("OKF-backed intended source ownership", () => {
 			"cw:component:package",
 		);
 		assert.equal(
-			sourceOwnershipOwnerForPath(bundle, "src/runtime/pi/worker.ts")?.id,
+			sourceOwnershipOwnerForPath(bundle, "src/runtime/dsh/adapter.ts")?.id,
 			"cw:component:runtime",
 		);
 		assert.equal(

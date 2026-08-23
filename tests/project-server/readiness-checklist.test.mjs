@@ -101,7 +101,6 @@ describe("install readiness checklist", () => {
 		assert.deepEqual(Object.keys(packageJson.exports).sort(), [
 			".",
 			"./package.json",
-			"./pi-sdk",
 			"./project-server",
 			"./runtime",
 		]);
@@ -113,10 +112,7 @@ describe("install readiness checklist", () => {
 			types: "./dist/runtime/index.d.ts",
 			import: "./dist/runtime/index.js",
 		});
-		assert.deepEqual(packageJson.exports["./pi-sdk"], {
-			types: "./dist/runtime/pi/sdk-semantic-session.d.ts",
-			import: "./dist/runtime/pi/sdk-semantic-session.js",
-		});
+		assert.equal(packageJson.exports["./pi-sdk"], undefined);
 		assert.equal(packageJson.scripts["test:pi-dogfood"], undefined);
 		assert.equal(packageJson.scripts["test:pi-mutation"], undefined);
 		assert.equal(
@@ -130,10 +126,6 @@ describe("install readiness checklist", () => {
 		assert.equal(
 			packageJson.scripts["test:external-lifecycle"],
 			"node tests/project-server/external-package-lifecycle-smoke.mjs",
-		);
-		assert.equal(
-			packageJson.scripts["test:external-failures"],
-			"node tests/project-server/external-package-failures-smoke.mjs",
 		);
 	});
 
@@ -242,7 +234,7 @@ describe("install readiness checklist", () => {
 		);
 	});
 
-	it("keeps the Pi SDK entrypoint optional and out of runtime dependencies", () => {
+	it("keeps Pi Client types optional and out of runtime dependencies", () => {
 		const runtimeDependencyNames = [
 			...Object.keys(packageJson.dependencies || {}),
 			...Object.keys(packageJson.bundledDependencies || {}),
@@ -255,7 +247,7 @@ describe("install readiness checklist", () => {
 		);
 		assert.equal(
 			packageJson.devDependencies["@earendil-works/pi-coding-agent"],
-			"^0.81.1",
+			undefined,
 		);
 		assert.equal(
 			packageJson.peerDependencies["@earendil-works/pi-coding-agent"],

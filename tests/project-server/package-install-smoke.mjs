@@ -100,7 +100,6 @@ assert.equal(packageJson.pi.skills, undefined);
 assert.deepEqual(Object.keys(packageJson.exports).sort(), [
 	".",
 	"./package.json",
-	"./pi-sdk",
 	"./project-server",
 	"./runtime",
 ]);
@@ -112,10 +111,7 @@ assert.deepEqual(packageJson.exports["./runtime"], {
 	types: "./dist/runtime/index.d.ts",
 	import: "./dist/runtime/index.js",
 });
-assert.deepEqual(packageJson.exports["./pi-sdk"], {
-\ttypes: "./dist/runtime/pi/sdk-semantic-session.d.ts",
-\timport: "./dist/runtime/pi/sdk-semantic-session.js",
-});
+assert.equal(packageJson.exports["./pi-sdk"], undefined);
 assert.equal(
 \tpackageJson.peerDependencies["@earendil-works/pi-coding-agent"],
 \t">=0.80.10 <0.82.0",
@@ -433,7 +429,10 @@ assert.equal(existsSync(join(packageRoot, "dist", "project-server", "effects", "
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "effects", "product-release-proof.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "effects", "product-release-contract.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "effects", "product-release-manifest.js")), true);
-assert.equal(existsSync(join(packageRoot, "dist", "runtime", "pi", "process-worker-adapter.js")), true);
+assert.equal(
+	existsSync(join(packageRoot, "dist", "project-server", "coordinator", "daemon-process.js")),
+	true,
+);
 const dshRuntimeArtifact = join(
 	packageRoot,
 	"dist",
@@ -527,10 +526,16 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"wikiChangeOperationMutates",
 ]);
 assert.equal(typeof createProjectServerApi, "function");
-const { spawnPiProjectCoordinatorDaemon } = await import(
+const {spawnProjectCoordinatorDaemon} = await import(
 	pathToFileURL(
-		join(packageRoot, "dist", "runtime", "pi", "coordinator-daemon.js"),
-	).href
+		join(
+			packageRoot,
+			"dist",
+			"project-server",
+			"coordinator",
+			"daemon-process.js",
+		),
+	).href,
 );
 const projectServerApi = await connectProjectServerApi(
 	process.cwd(),
@@ -539,7 +544,7 @@ const projectServerApi = await connectProjectServerApi(
 		kind: "test",
 		supervision: "approved",
 	},
-	{ spawnDaemon: spawnPiProjectCoordinatorDaemon },
+	{spawnDaemon: spawnProjectCoordinatorDaemon},
 );
 assert.equal((await projectServerApi.queries.state()).supervisorCount, 1);
 const appRequestContext = {
@@ -627,46 +632,10 @@ for (const path of filesUnder(packageRoot)) {
 	}
 }
 assert.equal(readdirSync(join(packageRoot, "dist")).includes("pi"), false);
-for (const name of [
-	"decision-model-check-session",
-	"isolated-json-model-session",
-	"native-decision-host",
-	"native-decision-research",
-	"sdk-semantic-session",
-]) {
-	assert.equal(
-		existsSync(join(packageRoot, "dist", "runtime", "pi", name + ".js")),
-		true,
-		name,
-	);
-	assert.equal(
-		existsSync(join(packageRoot, "dist", "runtime", "pi", name + ".d.ts")),
-		true,
-		name,
-	);
-	assert.equal(
-		existsSync(join(packageRoot, "dist", "pi", name + ".js")),
-		false,
-		name,
-	);
-}
-for (const deleted of [
-	"decision-research-claims-session",
-	"user-standard-distillation-session",
-]) {
-	assert.equal(
-		existsSync(join(packageRoot, "dist", "runtime", "pi", deleted + ".js")),
-		false,
-		deleted,
-	);
-}
 assert.equal(
-	existsSync(join(packageRoot, "dist", "runtime", "pi", "process-session.js")),
-	true,
-);
-assert.equal(
-	existsSync(join(packageRoot, "dist", "runtime", "pi", "process-session.d.ts")),
-	true,
+	existsSync(join(packageRoot, "dist", "runtime", "pi")),
+	false,
+	"temporary Pi execution runtime is not packaged",
 );
 assert.equal(
 	existsSync(join(packageRoot, "dist", "runtime", "contracts.js")),
@@ -691,7 +660,12 @@ assert.equal(existsSync(join(packageRoot, "dist", "project-server", "coordinator
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "project-reactors.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "coordinator", "process.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "coordinator", "daemon.js")), true);
-assert.equal(existsSync(join(packageRoot, "dist", "runtime", "pi", "coordinator-daemon.js")), true);
+assert.equal(
+	existsSync(
+		join(packageRoot, "dist", "project-server", "coordinator", "daemon-process.js"),
+	),
+	true,
+);
 assert.equal(existsSync(join(packageRoot, "dist", "clients", "pi", "project-coordinator-daemon.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "clients", "pi", "project-service-client.js")), true);
 assert.equal(

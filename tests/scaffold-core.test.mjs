@@ -67,10 +67,6 @@ describe("fresh scaffold", () => {
 				types: "./dist/runtime/index.d.ts",
 				import: "./dist/runtime/index.js",
 			},
-			"./pi-sdk": {
-				types: "./dist/runtime/pi/sdk-semantic-session.d.ts",
-				import: "./dist/runtime/pi/sdk-semantic-session.js",
-			},
 			"./package.json": "./package.json",
 		});
 		assert.equal(packageJson.types, "./dist/index.d.ts");

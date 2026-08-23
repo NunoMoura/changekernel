@@ -257,16 +257,14 @@ describe("source architecture", () => {
 		}
 	});
 
-	it("contains temporary Pi execution imports inside Runtime pi only", () => {
+	it("keeps Runtime independent of Project Server implementations", () => {
 		for (const [source, targets] of importEdges(sourceFiles())) {
 			const sourcePath = relative(sourceRoot, source);
 			if (!sourcePath.startsWith("runtime/")) continue;
 			for (const target of targets) {
-				const targetPath = relative(sourceRoot, target);
-				if (!targetPath.startsWith("project-server/")) continue;
 				assert.equal(
-					sourcePath.startsWith("runtime/pi/"),
-					true,
+					relative(sourceRoot, target).startsWith("project-server/"),
+					false,
 					edgeLabel(source, target),
 				);
 			}

@@ -50,7 +50,6 @@ export const TARGET_RUNTIME_SUBDIRECTORIES = [
 	"dsh",
 	"evidence",
 	"persistence",
-	"pi",
 	"processes",
 	"providers",
 	"receipts",

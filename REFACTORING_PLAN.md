@@ -4,7 +4,7 @@
 
 This plan ratifies the deletion-first path from the current replay-qualified DSH Runtime slice to the production CodeWiki architecture. It is the implementation roadmap, not a compatibility promise and not canonical runtime input.
 
-Current green checkpoint: `099f0ff` (`refactor: broker live model execution`). Slices 3B through 14 now prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, stage-aware compaction, user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, and credential-free live qualification. The Slice 15 candidate adds secure Code Mode, qualified inner and outer containment, adversarial qualification, and workload-specific execution benchmarks. Credential-bearing provider adapters, optional Switchyard external qualification, Pi parity deletion, and final product completion remain.
+Current green base: `6c80222` (`refactor: secure DSH code mode`). Slices 3B through 15 prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, stage-aware compaction, user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, credential-free live qualification, secure Code Mode, qualified inner and outer containment, adversarial qualification, and workload-specific execution benchmarks. The Slice 16 candidate proves temporary Pi/DSH parity, moves standalone daemon ownership into Project Server, deletes the Pi execution tree and `./pi-sdk`, and retains Pi only as an optional Client integration. Credential-bearing provider adapters, optional Switchyard external qualification, and final product completion remain.
 
 The Knowledge Base is intended design truth. Source and tests remain executable truth until each slice lands. Every temporary mismatch must be explicit and short-lived.
 
@@ -543,10 +543,10 @@ Success: model-authored code has no ambient authority and production cannot star
 
 ### Slice 16 — Pi parity and deletion
 
-- Compare Decision, Change-scoped Planning, Work Unit Implementation, aggregate Review, Skills, Checks, material queries, cancellation, compaction, receipts, and failure behavior across temporary Pi evidence and DSH.
-- Pack reviewed candidate and test only in disposable external projects with isolated Pi settings.
-- Delete `src/runtime/pi/**`, temporary `./pi-sdk`, Pi execution adapters, selectors, fallbacks, and migration-only tests in one clean cut.
-- Retain Pi only as optional Client integration where still product-required.
+- [x] Compare Decision, Change-scoped Planning, Work Unit Implementation, aggregate Review, Skills, Checks, material queries, cancellation, compaction, receipts, and failure behavior across temporary Pi evidence and DSH.
+- [x] Pack reviewed candidate and test only in disposable external projects with isolated Pi settings.
+- [x] Delete `src/runtime/pi/**`, temporary `./pi-sdk`, Pi execution adapters, selectors, fallbacks, and migration-only tests in one clean cut.
+- [x] Retain Pi only as optional Client integration where still product-required.
 
 Success: one DSH execution engine remains; no selector or compatibility shell survives.
 
@@ -575,9 +575,7 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 ## Release blockers
 
 - Credential-bearing provider adapters and optional pinned Switchyard deployment are not externally qualified.
-- Secure inner Code Runtime is unavailable.
-- Qualified outer whole-process containment is unavailable.
-- Pi/DSH parity and Pi execution deletion are incomplete.
-- Full development audit still carries known Pi-related advisories even though production audit is clean.
+- First-party Harness Agent, reserved MCP operations, remaining Check Author and Pack transport surfaces, dashboard completion, remote synchronization, and recovery UX remain incomplete.
+- Final release qualification has not run against the completed product.
 
 No production release, protected effect, or Pi deletion may bypass these gates.

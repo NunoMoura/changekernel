@@ -10,14 +10,14 @@ import {
 
 function workerObservation(overrides = {}) {
 	return {
-		workerId: "pi-worker-001",
+		workerId: "dsh-worker-001",
 		workUnitId: "WU-a",
-		traceId: "TRACE-pi-a",
-		planningRefs: ["trace:TRACE-pi-a:planning:iteration:1#work:WU-a"],
+		traceId: "TRACE-dsh-a",
+		planningRefs: ["trace:TRACE-dsh-a:planning:iteration:1#work:WU-a"],
 		claimId: "claim-WU-a-001",
-		sessionId: "session-pi-worker-001",
+		sessionId: "session-dsh-worker-001",
 		sessionFile:
-			".codewiki/runtime/tmp/TRACE-pi-a/runtime/pi-workers/pi-worker-001.session.jsonl",
+			".codewiki/runtime/tmp/TRACE-dsh-a/dsh/sessions/dsh-worker-001.session.jsonl",
 		status: "started",
 		...overrides,
 	};
@@ -52,17 +52,17 @@ describe("worker completion normalization", () => {
 			}),
 		});
 
-		assert.equal(result.workerId, "pi-worker-001");
+		assert.equal(result.workerId, "dsh-worker-001");
 		assert.equal(result.workUnitId, "WU-a");
 		assert.equal(result.claimId, "claim-WU-a-001");
-		assert.equal(result.sessionId, "session-pi-worker-001");
+		assert.equal(result.sessionId, "session-dsh-worker-001");
 		assert.equal(
 			result.sessionFile,
-			".codewiki/runtime/tmp/TRACE-pi-a/runtime/pi-workers/pi-worker-001.session.jsonl",
+			".codewiki/runtime/tmp/TRACE-dsh-a/dsh/sessions/dsh-worker-001.session.jsonl",
 		);
 		assert.equal(result.status, "completed");
 		assert.deepEqual(result.planningRefs, [
-			"trace:TRACE-pi-a:planning:iteration:1#work:WU-a",
+			"trace:TRACE-dsh-a:planning:iteration:1#work:WU-a",
 		]);
 		assert.equal(result.message, "Worker finished.");
 		assert.deepEqual(result.proof?.changedPaths, [
@@ -80,7 +80,7 @@ describe("worker completion normalization", () => {
 	});
 
 	it("parses fenced CodeWiki worker reports from prose completion output", () => {
-		const planningRef = "trace:TRACE-pi-a:planning:iteration:1#work:WU-a";
+		const planningRef = "trace:TRACE-dsh-a:planning:iteration:1#work:WU-a";
 		const result = normalizeWorkerCompletion({
 			worker: workerObservation(),
 			output: `Worker done.\n\n\`\`\`codewiki-worker-report\n${JSON.stringify({
@@ -141,7 +141,7 @@ describe("worker completion normalization", () => {
 				blockers: [
 					{
 						message: "Needs planning scope change.",
-						refs: ["trace:TRACE-pi-a:planning:iteration:1#work:WU-a"],
+						refs: ["trace:TRACE-dsh-a:planning:iteration:1#work:WU-a"],
 					},
 				],
 			},

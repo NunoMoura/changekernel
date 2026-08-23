@@ -61,7 +61,7 @@ A Runtime Build is the immutable content-addressed DSH execution closure. Its ma
 
 Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
 
-There is no user-facing build selector, Pi fallback, or permanent multi-engine mode. The temporary Pi implementation remains migration evidence under `src/runtime/pi/**` until the DSH path proves semantic parity, then it is deleted.
+There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implementation. DSH is the sole first-party engine; Pi remains Client-only and cannot execute Runs.
 
 ## DSH Adapter
 

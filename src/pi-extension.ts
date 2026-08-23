@@ -5,7 +5,7 @@ import type {
 	CodewikiDashboardService,
 	CodewikiExtensionApi,
 } from "./clients/pi/types.ts";
-import { spawnPiProjectCoordinatorDaemon } from "./runtime/pi/coordinator-daemon.ts";
+import {spawnProjectCoordinatorDaemon} from "./project-server/coordinator/daemon-process.ts";
 import { connectEnsuredProjectCoordinatorClient } from "./project-server/coordinator/process.ts";
 import { connectProjectServerApi } from "./project-server/api.ts";
 import { stopProjectCoordinatorService } from "./project-server/coordinator/service.ts";
@@ -16,13 +16,13 @@ import {
 } from "./project-server/app/server.ts";
 
 /**
- * Neutral package bootstrap for the shipped Pi Client and managed Execution path.
+ * Optional Pi Client bootstrap over Project Server-owned lifecycle and execution.
  */
 export default function codewikiExtension(pi: CodewikiExtensionApi): void {
 	const projectServices = createPiProjectServiceClients({
 		connect(repoRoot, input) {
 			return connectEnsuredProjectCoordinatorClient(repoRoot, input, {
-				spawnDaemon: spawnPiProjectCoordinatorDaemon,
+				spawnDaemon: spawnProjectCoordinatorDaemon,
 			});
 		},
 		stop: stopProjectCoordinatorService,
@@ -37,14 +37,18 @@ export default function codewikiExtension(pi: CodewikiExtensionApi): void {
 				connectProjectServer: true,
 				projectServerConnector(repoRoot, connectionInput) {
 					return connectProjectServerApi(repoRoot, connectionInput, {
-						spawnDaemon: spawnPiProjectCoordinatorDaemon,
+						spawnDaemon: spawnProjectCoordinatorDaemon,
 					});
 				},
 			});
 		},
 		async stop(repoRoot) {
 			await closeCodewikiAppServer(repoRoot);
-			await projectServices.stop(repoRoot).catch(() => undefined);
+			try {
+				await projectServices.stop(repoRoot);
+			} catch {
+				// Project Server may already have stopped independently.
+			}
 		},
 		async shutdown(repoRoot) {
 			await Promise.all([

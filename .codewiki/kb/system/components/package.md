@@ -32,7 +32,7 @@ DSH is an exact pinned upstream library inside Runtime Builds. Users do not inst
 
 The broad product API remains `src/index.ts`. Project Server publishes at `@nunomoura/codewiki/project-server` from `src/project-server/index.ts`. Runtime publishes at `@nunomoura/codewiki/runtime` from `src/runtime/index.ts`. Internal Project Server coordination remains under `src/project-server/coordinator/**`; Run Process protocol and process management remain under `src/runtime/processes/**`. No legacy `src/server/**`, `src/execution/**`, `./coordinator`, or old `./runtime` Project Server compatibility surface survives.
 
-`src/pi-extension.ts` is an optional Pi Client integration, not CodeWiki bootstrap or Runtime. The temporary Pi executor under `src/runtime/pi/**` remains migration evidence only until DSH parity, after which it is deleted without a backend selector or fallback.
+`src/pi-extension.ts` is an optional Pi Client integration, not CodeWiki bootstrap or Runtime. Pi-specific code remains only in the Client integration and package entrypoint. Project Server owns its standalone daemon lifecycle, DSH is the sole first-party execution engine, and no Pi executor, `./pi-sdk` subpath, backend selector, compatibility shell, or fallback survives.
 
 ## Extension taxonomy
 
