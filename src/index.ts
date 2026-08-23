@@ -150,6 +150,7 @@ export {
 	normalizeChangeIntakeContent,
 	normalizeChangeIntakeMaterial,
 } from "./changes/intake/normalize.ts";
+export * from "./changes/intake/outcome-diagnostics.ts";
 export * from "./changes/triage/contracts.ts";
 export {
 	buildBacklogTriageProjection,
@@ -392,6 +393,12 @@ export * from "./checks/index.ts";
 export * from "./checks/packs/index.ts";
 export * from "./runtime/checks/code.ts";
 export * from "./runtime/checks/model.ts";
+export * from "./runtime/checks/secure-code-sandbox.ts";
+export * from "./project-server/admission/external-candidate.ts";
+export * from "./project-server/harness/contracts.ts";
+export * from "./project-server/harness/service.ts";
+export * from "./project-server/mcp/binding.ts";
+export * from "./project-server/queries/operational-status.ts";
 export * from "./work-state/checks.ts";
 export * from "./runtime/security/collectors.ts";
 export * from "./evidence/adapters/sarif.ts";

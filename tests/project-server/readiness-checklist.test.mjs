@@ -100,6 +100,7 @@ describe("install readiness checklist", () => {
 		assert.equal(packageJson.keywords.includes("pi-package"), true);
 		assert.deepEqual(Object.keys(packageJson.exports).sort(), [
 			".",
+			"./checks",
 			"./package.json",
 			"./project-server",
 			"./runtime",

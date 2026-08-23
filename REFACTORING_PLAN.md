@@ -4,7 +4,7 @@
 
 This plan ratifies the deletion-first path from the current replay-qualified DSH Runtime slice to the production CodeWiki architecture. It is the implementation roadmap, not a compatibility promise and not canonical runtime input.
 
-Current green base: `6c80222` (`refactor: secure DSH code mode`). Slices 3B through 15 prove stable path-independent Knowledge identity, reducible Knowledge Effects, deterministic materialization and atomic desired-state application, immutable Change-scoped Planning and canonical Work Graph, Work Unit Candidates and private integration, aggregate Review and guarded delivery, Project Context Snapshots, frozen Gate Evaluation Packages, persistent Session continuity, durable DSH completion, controlled Goals, stage-aware compaction, user-authorized role routes, Work Unit Model Assignments, typed recovery, a private provider broker, authenticated provider-call evidence, credential-free live qualification, secure Code Mode, qualified inner and outer containment, adversarial qualification, and workload-specific execution benchmarks. The Slice 16 candidate proves temporary Pi/DSH parity, moves standalone daemon ownership into Project Server, deletes the Pi execution tree and `./pi-sdk`, and retains Pi only as an optional Client integration. Credential-bearing provider adapters, optional Switchyard external qualification, and final product completion remain.
+Current green base: `840334e` (`refactor: delete Pi execution path`). Slices 3B through 16 prove stable Knowledge identity and Effects, deterministic materialization, all four canonical Stage Loops, frozen Gate inputs, durable Session and Run completion, private provider brokerage, secure Code Mode, qualified inner and outer containment, workload benchmarks, one DSH execution engine, and optional Pi Client-only integration. The Slice 17 candidate adds first-party Harness continuity and selective observation, reserved MCP bindings, public Check Author SDK and secure Code Checks, deterministic Outcome Diagnostics, passive Pack transport, external Candidate custody and admission, and synchronization/recovery projections. Credential-bearing provider adapters and optional Switchyard external qualification remain separate release-environment work.
 
 The Knowledge Base is intended design truth. Source and tests remain executable truth until each slice lands. Every temporary mismatch must be explicit and short-lived.
 
@@ -552,12 +552,12 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ### Slice 17 — Product completion
 
-- Implement first-party Harness Agent interaction continuity, Decision/Planning submission, and selective canonical Implementation/Review observer projections.
-- Implement reserved MCP material-query, submission, status, confirmation, Work Unit, and Review operations.
-- Finish Check Author SDK and sandboxed Code Checks.
-- Finish Outcome Diagnostics through ordinary Change Intake.
-- Finish Pack transport, dashboard projections, external Candidate admission, remote synchronization, and recovery UX.
-- Run full packed-install, adversarial, performance, benchmark, audit, and release qualification.
+- [x] Implement first-party Harness Agent interaction continuity, Decision/Planning submission, and selective canonical Implementation/Review observer projections.
+- [x] Implement reserved MCP material-query, submission, status, confirmation, Work Unit, and Review operations.
+- [x] Finish Check Author SDK and sandboxed Code Checks.
+- [x] Finish Outcome Diagnostics through ordinary Change Intake.
+- [x] Finish Pack transport, dashboard projections, external Candidate admission, remote synchronization, and recovery UX.
+- [x] Run full packed-install, adversarial, performance, benchmark, audit, and release qualification.
 
 ## Required verification for every executable slice
 
@@ -574,8 +574,6 @@ Success: one DSH execution engine remains; no selector or compatibility shell su
 
 ## Release blockers
 
-- Credential-bearing provider adapters and optional pinned Switchyard deployment are not externally qualified.
-- First-party Harness Agent, reserved MCP operations, remaining Check Author and Pack transport surfaces, dashboard completion, remote synchronization, and recovery UX remain incomplete.
-- Final release qualification has not run against the completed product.
+- Credential-bearing provider adapters and optional pinned Switchyard deployment are not externally qualified for production credentials; deterministic replay and credential-free broker qualification remain the release default.
 
 No production release, protected effect, or Pi deletion may bypass these gates.

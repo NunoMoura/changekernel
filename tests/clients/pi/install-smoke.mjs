@@ -52,6 +52,7 @@ try {
 	assert.equal(manifest.bin, undefined);
 	assert.deepEqual(Object.keys(manifest.exports).sort(), [
 		".",
+		"./checks",
 		"./package.json",
 		"./project-server",
 		"./runtime",

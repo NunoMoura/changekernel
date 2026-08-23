@@ -99,6 +99,7 @@ assert.deepEqual(packageJson.pi, { extensions: ["dist/pi-extension.js"] });
 assert.equal(packageJson.pi.skills, undefined);
 assert.deepEqual(Object.keys(packageJson.exports).sort(), [
 	".",
+	"./checks",
 	"./package.json",
 	"./project-server",
 	"./runtime",
@@ -110,6 +111,10 @@ assert.deepEqual(packageJson.exports["./project-server"], {
 assert.deepEqual(packageJson.exports["./runtime"], {
 	types: "./dist/runtime/index.d.ts",
 	import: "./dist/runtime/index.js",
+});
+assert.deepEqual(packageJson.exports["./checks"], {
+	types: "./dist/checks/index.d.ts",
+	import: "./dist/checks/index.js",
 });
 assert.equal(packageJson.exports["./pi-sdk"], undefined);
 assert.equal(
@@ -471,15 +476,27 @@ assert.equal(typeof runtimeModule.startPrivateProviderBrokerServer, "function");
 assert.equal(typeof runtimeModule.readDshRuntimeProvenance, "function");
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.version, "0.1.0-rc.6");
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.commit.length, 40);
+const checksModule = await import("@nunomoura/codewiki/checks");
+assert.equal(typeof checksModule.createCheckSdk, "function");
+assert.equal(typeof checksModule.prepareCheckPackTransport, "function");
+assert.equal(typeof checksModule.installCheckPackTransport, "function");
 const projectServerModule = await import("@nunomoura/codewiki/project-server");
 assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"CHANGE_INTAKE_RUNTIME_PROTOCOL",
+	"CODEWIKI_MCP_NAMESPACE",
+	"CODEWIKI_MCP_OPERATIONS",
+	"EXTERNAL_CANDIDATE_CAPTURE_PROTOCOL",
+	"HARNESS_OBSERVER_PROJECTION_PROTOCOL",
 	"SCHEDULING_PLAN_PROTOCOL",
 	"SESSION_CONTINUITY_PROTOCOL",
 	"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
 	"acquireSessionLease",
+	"admitExternalCandidateCapture",
 	"appendStoredSessionContinuity",
 	"assertCurrentAggregateReviewAttempt",
+	"assertExternalCandidateCapture",
+	"assertHarnessInteractionBinding",
+	"assertHarnessObserverProjection",
 	"assertSessionContinuityRecord",
 	"buildProjectWikiState",
 	"buildWikiState",
@@ -492,8 +509,13 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"createAggregateReviewAttempt",
 	"createChangeIntakeProjectServer",
 	"createCodeWikiLoopExecutionPorts",
+	"createCodewikiMcpBinding",
 	"createDeliveryAuthority",
+	"createExternalCandidateCapture",
 	"createGuardedDeliveryOperation",
+	"createHarnessCandidateSubmission",
+	"createHarnessInteractionBinding",
+	"createHarnessObserverProjection",
 	"createImplementationAggregateFreeze",
 	"createImplementationOperationSequence",
 	"createImplementationRunRequest",
@@ -508,11 +530,14 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"deriveReadyWorkUnits",
 	"executionFailureFromProviderReceipt",
 	"expireSessionLease",
+	"normalizeCodewikiMcpRequest",
 	"privateChangeIntegrationRef",
+	"projectOperationalStatus",
 	"readStoredSessionContinuity",
 	"requestSessionLeaseCancellation",
 	"resolveExecutionRecovery",
 	"rolloverSessionContinuity",
+	"runHarnessProducerTurn",
 	"runModelRouteForAssignment",
 	"runProjectServer",
 	"runProjectServerSemanticExecutor",

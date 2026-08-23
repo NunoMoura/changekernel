@@ -9,7 +9,18 @@ import {
 import {
 	runSecureCodeProgram,
 } from "../../../src/runtime/dsh/secure-code-runtime.ts";
+import {createSecureCodeCheckSandbox} from "../../../src/runtime/checks/secure-code-sandbox.ts";
+import {
+	assembleCheckInvocation,
+	subjectInputSelection,
+} from "../../../src/checks/protocol.ts";
 import {sha256Digest} from "../../../src/utils/canonical-json.ts";
+import {
+	checkSnapshot,
+	checkSubject,
+	digest,
+	packagedCheck,
+} from "../../helpers/checks.mjs";
 
 function liveConfig(overrides = {}) {
 	const bubblewrap = realpathSync("/usr/bin/bwrap");
@@ -269,4 +280,47 @@ test("secure Code Runtime carries no state between programs", async () => {
 	});
 	assert.equal(first.value, 42);
 	assert.equal(second.value, null);
+});
+
+test("secure Code Check runs self-contained CHECK.mjs with only frozen Invocation binding", async () => {
+	const check = packagedCheck();
+	const snapshot = checkSnapshot([check]);
+	const subject = checkSubject({stage: check.stage});
+	const selector = check.definition.inputs[0];
+	const invocation = assembleCheckInvocation({
+		subject,
+		snapshot,
+		gatePackageDigest: digest("secure-check-package"),
+		check,
+		inputs: [subjectInputSelection(subject, selector)],
+	});
+	const secure = createSecureCodeCheckSandbox(liveConfig());
+	const output = await secure.sandbox.execute({
+		source: `export default async function check(codewiki) {
+			const selection = codewiki.selection("subject", "");
+			return codewiki.output(
+				{kind: "binary", value: selection.items.length === 1},
+				"Read exact frozen subject.",
+			);
+		}`,
+		invocation,
+		timeoutMs: 2_000,
+		maximumOutputBytes: 16_384,
+		signal: new AbortController().signal,
+	});
+	assert.equal(output.invocationDigest, invocation.invocationDigest);
+	assert.equal(output.measurement.value, true);
+	assert.equal(secure.sandbox.admission.network, "denied");
+	await assert.rejects(
+		secure.sandbox.execute({
+			source: `export default async function check(codewiki) {
+				codewiki.selection("repository", "ambient:tree");
+			}`,
+			invocation,
+			timeoutMs: 2_000,
+			maximumOutputBytes: 16_384,
+			signal: new AbortController().signal,
+		}),
+		/Secure Code Check exception.*not declared/,
+	);
 });

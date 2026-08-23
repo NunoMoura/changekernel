@@ -15,6 +15,7 @@ export * from "./sandbox/bubblewrap.ts";
 export * from "./sandbox/run-process.ts";
 export * from "./dsh/adapter.ts";
 export * from "./dsh/secure-code-runtime.ts";
+export * from "./checks/secure-code-sandbox.ts";
 export * from "./dsh/private-provider-broker.ts";
 export * from "./dsh/context-tools.ts";
 export * from "./dsh/project-context-tools.ts";

@@ -278,6 +278,7 @@ describe("source architecture", () => {
 			"./dist/project-server/index.js",
 		);
 		assert.equal(packageJson.exports["./runtime"].import, "./dist/runtime/index.js");
+		assert.equal(packageJson.exports["./checks"].import, "./dist/checks/index.js");
 		for (const script of ["test:smoke", "test:features"]) {
 			assert.match(packageJson.scripts[script], /tests\/project-server\/\*\*\/\*\.test\.mjs/u);
 			assert.match(packageJson.scripts[script], /tests\/runtime\/processes\/\*\.test\.mjs/u);

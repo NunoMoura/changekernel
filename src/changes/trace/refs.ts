@@ -15,6 +15,7 @@ export function isCanonicalTraceRef(ref: string): boolean {
 		/^TRACE-[A-Za-z0-9._:-]+$/.test(value) ||
 		value.startsWith("kb:") ||
 		value.startsWith(".codewiki/kb/") ||
+		value.startsWith(".codewiki/check-packs/") ||
 		value.startsWith("git:") ||
 		/^sha256:[A-Fa-f0-9]+$/.test(value) ||
 		value.startsWith("src/") ||

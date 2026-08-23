@@ -188,3 +188,8 @@ export {
 	createStoredSessionContinuity,
 	readStoredSessionContinuity,
 } from "./sessions/continuity-store.ts";
+export * from "./admission/external-candidate.ts";
+export * from "./harness/contracts.ts";
+export * from "./harness/service.ts";
+export * from "./mcp/binding.ts";
+export * from "./queries/operational-status.ts";

@@ -24,6 +24,10 @@
 			"types": "./dist/runtime/index.d.ts",
 			"import": "./dist/runtime/index.js"
 		},
+		"./checks": {
+			"types": "./dist/checks/index.d.ts",
+			"import": "./dist/checks/index.js"
+		},
 		"./package.json": "./package.json"
 	},
 	"types": "./dist/index.d.ts",
