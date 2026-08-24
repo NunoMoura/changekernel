@@ -43,7 +43,7 @@ describe("OKF-backed intended source ownership", () => {
 		assert.equal(ownership.id, CODEWIKI_SOURCE_OWNERSHIP_ID);
 		assert.deepEqual(ownership.sourceRefs, CODEWIKI_SOURCE_OWNERSHIP_REFS);
 		assert.deepEqual(ownership.defaults, CODEWIKI_SOURCE_OWNERSHIP_DEFAULTS);
-		assert.equal(ownership.components.length, 19);
+		assert.equal(ownership.components.length, 20);
 		assert.equal(
 			components.get("cw:component:knowledge")?.doc,
 			".codewiki/kb/system/components/knowledge.md",
@@ -126,7 +126,7 @@ describe("OKF-backed intended source ownership", () => {
 			(extension) => extension.path === ".codewiki/kb/system/components/package.md",
 		);
 
-		assert.equal(extensions.length, 19);
+		assert.equal(extensions.length, 20);
 		assert.ok(packageExtension);
 		assert.deepEqual(packageExtension.fields.codewiki_components, ["cw:component:package"]);
 		assert.equal(

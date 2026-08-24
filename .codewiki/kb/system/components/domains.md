@@ -2,16 +2,20 @@
 type: System Component
 codewiki_id: cw:component:domains
 title: Domains
-description: Defines exact release-managed domain meaning without extending CodeWiki kernel authority or loading executable project code.
+description: Registry of admitted Domain Plugins; each plugin supplies one bounded domain's vocabulary, deterministic interpretation, and plane-specific contributions without extending kernel authority.
 status: stable
-tags: [system, component, plugins]
+tags: [system, component]
+codewiki_component: cw:component:domains
+codewiki_source_patterns:
+  - "src/domains/**"
+codewiki_test_patterns: ["tests/domains/**"]
 codewiki_relationships:
   - type: realizes
     target: cw:story:maintainer.maintain-intent
-    rationale: Domain Plugins define the bounded vocabulary and deterministic compilation rules through which accepted intent becomes linked Knowledge.
+    rationale: Domains supply the bounded vocabulary and deterministic compilation rules through which accepted intent becomes linked Knowledge.
   - type: realizes
     target: cw:story:maintainer.automate-safe-work
-    rationale: Domain Plugins contribute admitted domain context, Checks, realization, and guarded-effect bindings without owning Stage Loop authority.
+    rationale: Admitted Domain Plugins contribute domain context, Checks inputs, realization, and guarded-effect bindings without owning Stage Loop authority.
 ---
 # Domains
 
@@ -34,3 +38,5 @@ The Project Server contribution is deterministic over declared canonical inputs.
 A Domain Plugin upgrade is an explicit compiler migration. Project Server binds old and new Plugin identities, recomputes affected projections, validates reference closure and semantic identity, exposes exact differences, and requires normal authority before accepted meaning changes. It never hot-swaps a compiler inside a Candidate, Gate Evaluation Package, active Run, or retained Session.
 
 The Software Development Domain Plugin owns the current Product, System, and Design Knowledge vocabulary; source and test ownership; repository and Git realization; Workbenches; software Evidence and Checks; private integration; aggregate Review; and guarded software delivery. Git and source artifacts remain software-domain facts rather than assumptions embedded in the domain-neutral governance kernel.
+
+`src/domains/contracts.ts` defines the admission protocol `codewiki.domain-plugin-admission@1.0.0`: an immutable manifest (Plugin ID, version, contribution names, deterministic compiler ID) plus an admission digest over canonical bytes. `createDomainRegistry` admits plugins uniquely and fails closed on unknown selection. `src/domains/software-development.ts` declares the built-in `codewiki.domain.software-development@1.0.0` admission covering all nine contribution classes.

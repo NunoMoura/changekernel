@@ -3,6 +3,7 @@ export const CURRENT_SOURCE_ROOTS = [
 	"changes",
 	"checks",
 	"clients",
+	"domains",
 	"error-handling",
 	"evidence",
 	"git",
@@ -69,6 +70,7 @@ export const CORE_SOURCE_ROOTS = [
 	"alignment",
 	"changes",
 	"checks",
+	"domains",
 	"evidence",
 ] as const;
 
