@@ -14,10 +14,8 @@ import {
 
 export const PRIVATE_PROVIDER_BROKER_PROTOCOL = Object.freeze({
 	id: "codewiki.private-provider-broker",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
-
-export type PrivateProviderBrokerMode = "direct" | "switchyard-passthrough";
 export type ProviderBrokerOutcome = "completed" | "failed" | "cancelled";
 export type ProviderBrokerFailureKind =
 	| "timeout"
@@ -36,7 +34,6 @@ export interface PrivateProviderBrokerBinding {
 	readonly implementationVersion: string;
 	readonly implementationDigest: Sha256Digest;
 	readonly configurationDigest: Sha256Digest;
-	readonly mode: PrivateProviderBrokerMode;
 	readonly maxRetries: number;
 	readonly bindingDigest: Sha256Digest;
 }
@@ -92,6 +89,9 @@ export type ProviderBrokerWireMessage =
 export function createPrivateProviderBrokerBinding(
 	input: Omit<PrivateProviderBrokerBinding, "protocol" | "bindingDigest">,
 ): Readonly<PrivateProviderBrokerBinding> {
+	if ("mode" in input) {
+		throw new Error("Private provider broker mode is unsupported.");
+	}
 	const body = Object.freeze({
 		protocol: PRIVATE_PROVIDER_BROKER_PROTOCOL,
 		brokerId: identifier(input.brokerId, "Private provider broker id"),
@@ -111,12 +111,8 @@ export function createPrivateProviderBrokerBinding(
 			input.configurationDigest,
 			"Private provider broker configuration digest",
 		),
-		mode: brokerMode(input.mode),
 		maxRetries: nonNegativeInteger(input.maxRetries, "Private provider broker retries", 8),
 	});
-	if (body.mode === "switchyard-passthrough" && body.maxRetries !== 0) {
-		throw new Error("Switchyard passthrough qualification requires zero retries.");
-	}
 	return Object.freeze({...body, bindingDigest: canonicalJsonDigest(body)});
 }
 
@@ -386,13 +382,6 @@ function positiveInteger(value: number, field: string, maximum: number): number 
 
 function optionalDigest(value: Sha256Digest | null, field: string): Sha256Digest | null {
 	return value === null ? null : assertSha256Digest(value, field);
-}
-
-function brokerMode(value: PrivateProviderBrokerMode): PrivateProviderBrokerMode {
-	if (value !== "direct" && value !== "switchyard-passthrough") {
-		throw new Error("Private provider broker mode is invalid.");
-	}
-	return value;
 }
 
 function brokerOutcome(value: ProviderBrokerOutcome): ProviderBrokerOutcome {

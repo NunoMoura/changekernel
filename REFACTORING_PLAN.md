@@ -280,7 +280,7 @@ DSH's worker-thread Code Runtime is containment, not a security boundary, and ca
 
 DSH receives no provider credentials or unrestricted provider egress. Runtime supplies one opaque expiring Run- and route-scoped capability to a host-local provider-neutral broker. Unsandboxed qualification may use TCP loopback; network-isolated production Run Processes use one explicitly mounted Unix-domain socket. The broker owns credentials, billing integration, provider networking, bounded transport retry or equivalent-endpoint failover, normalization, provider request IDs, and host-side receipt retention. Authenticated receipts bind broker implementation/configuration, exact request and response digests, selected provider/model, transport attempts, usage, cancellation or typed failure, and receipt identity. Project Server alone interprets those outcomes.
 
-Replay remains mandatory deterministic CI. Credential-free host-local mock infrastructure separately qualifies TCP-loopback and sandbox-mounted Unix-domain streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Slice 14 also qualified a constrained optional Switchyard passthrough experiment. Later evaluation found no required capability and selected that dormant surface for deletion in Backend v1 Slice B1; it is not a production route.
+Replay remains mandatory deterministic CI. Credential-free host-local mock infrastructure separately qualifies TCP-loopback and sandbox-mounted Unix-domain streaming, retry ownership, cancellation, route mismatch rejection, Run Process transport, and Execution Ledger closure without committed credentials or paid calls. Slice 14 also qualified a constrained optional Switchyard passthrough experiment. Later evaluation found no required capability, and Backend v1 Slice B1 deleted that dormant surface before production.
 
 ## Completed foundation
 
@@ -526,7 +526,7 @@ Success: long-running continuity survives compaction without moving project auth
 - [x] Bind broker implementation/configuration, exact request/response, selected target, transport attempts, provider request ID, usage, cancellation or typed failure, and receipt identity into Execution Ledger `5.0.0` and Run Receipt `4.0.0` lineage.
 - [x] Qualify credential-free live streaming, bounded broker-owned retry, cancellation, selected-target mismatch rejection, and isolated Run Process transport without committed credentials or mandatory paid calls.
 - [x] Preserve replay as the deterministic CI route and prohibit fallback from failed live transport.
-- [x] Historically constrain optional Switchyard admission to pinned loopback passthrough, zero Switchyard retries, exact configuration/build identity, and exact selected-target evidence. Backend v1 Slice B1 now owns deletion of that dormant experiment.
+- [x] Historically constrain optional Switchyard admission to pinned loopback passthrough, zero Switchyard retries, exact configuration/build identity, and exact selected-target evidence. Backend v1 Slice B1 later deleted that dormant experiment.
 
 Success: Harness, Worker, and Check model authority stays distinct; every Work Unit Run uses one user-authorized exact route; transport retry remains broker-owned; live transport is separately qualified; credentials stay outside DSH; and provider or broker identity grants no CodeWiki authority.
 

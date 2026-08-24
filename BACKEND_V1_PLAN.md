@@ -133,12 +133,13 @@ An upstream addition strengthens CodeWiki when it improves execution beneath the
 
 Success: intended architecture and active roadmap agree before executable migration begins.
 
-### B1 — Switchyard deletion
+### B1 — Switchyard deletion — complete
 
-- Remove `switchyard-passthrough` from provider contracts, broker configuration, receipts, tests, documentation, and package closure.
-- Delete any backend selector made redundant by one direct DSH provider-plugin path.
-- Preserve authenticated Unix-domain broker transport, exact route binding, bounded broker-owned retry, replay, and evidence closure.
-- Prove no active Switchyard surface remains outside historical records.
+- [x] Remove the passthrough mode from provider contracts, broker binding evidence, tests, documentation, and package closure.
+- [x] Delete the backend selector and retain one brokered DSH provider-Plugin path.
+- [x] Advance the private provider broker protocol to `2.0.0` because canonical binding bytes changed; keep receipts bound to the resulting exact broker digest.
+- [x] Preserve authenticated Unix-domain broker transport, exact route binding, bounded broker-owned retry, replay, and evidence closure.
+- [x] Prove no active Switchyard surface remains outside historical records.
 
 Success: one provider path remains and no dormant dynamic router can widen exact Run authorization.
 

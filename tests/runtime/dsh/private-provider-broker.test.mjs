@@ -42,7 +42,6 @@ function binding(overrides = {}) {
 		implementationVersion: "1.0.0",
 		implementationDigest: sha256Digest("mock-provider-implementation"),
 		configurationDigest: sha256Digest("mock-provider-configuration"),
-		mode: "direct",
 		maxRetries: 0,
 		...overrides,
 	});
@@ -313,7 +312,7 @@ describe("private provider broker", () => {
 		}
 	});
 
-	it("owns bounded transport retry and constrains Switchyard to qualified passthrough", async () => {
+	it("owns bounded transport retry", async () => {
 		const modelRoute = route();
 		let attempts = 0;
 		const retrying = await startPrivateProviderBrokerServer({
@@ -362,19 +361,15 @@ describe("private provider broker", () => {
 		} finally {
 			await retrying.close();
 		}
+	});
 
-		assert.throws(
-			() => binding({mode: "switchyard-passthrough", maxRetries: 1}),
-			/zero retries/,
-		);
-		assert.equal(
-			binding({
-				implementationId: "nvidia-nemo-switchyard",
-				implementationVersion: "0.2.0",
-				mode: "switchyard-passthrough",
-				maxRetries: 0,
-			}).mode,
-			"switchyard-passthrough",
-		);
+	it("binds one provider implementation without a backend selector", () => {
+		const brokerBinding = binding();
+		assert.deepEqual(brokerBinding.protocol, {
+			id: "codewiki.private-provider-broker",
+			version: "2.0.0",
+		});
+		assert.equal("mode" in brokerBinding, false);
+		assert.throws(() => binding({mode: "direct"}), /mode is unsupported/);
 	});
 });

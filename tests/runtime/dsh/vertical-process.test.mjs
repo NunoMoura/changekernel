@@ -217,7 +217,6 @@ describe("DSH Runtime vertical process", () => {
 				implementationVersion: "1.0.0",
 				implementationDigest: digest("vertical-broker-implementation"),
 				configurationDigest: digest("vertical-broker-configuration"),
-				mode: "direct",
 				maxRetries: 0,
 			}),
 			capabilityId: "capability-vertical-private-broker",
