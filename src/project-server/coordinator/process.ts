@@ -10,13 +10,16 @@ import {
 	type ProjectCoordinatorEndpoint,
 } from "./endpoint.ts";
 import type { ProjectCoordinatorClientInput } from "./project.ts";
+import {DEFAULT_BACKEND_BUILD} from "../operations/build.ts";
+import {bootstrapBackendState} from "../operations/state.ts";
 
 const DEFAULT_START_TIMEOUT_MS = 10_000;
 const POLL_INTERVAL_MS = 50;
 
 export interface EnsureProjectCoordinatorServiceOptions {
 	timeoutMs?: number;
-	spawnDaemon?: (repoRoot: string) => void;
+	stateRoot?: string;
+	spawnDaemon?: (repoRoot: string, options?: {readonly stateRoot?: string}) => void;
 }
 
 export async function ensureProjectCoordinatorService(
@@ -24,15 +27,26 @@ export async function ensureProjectCoordinatorService(
 	options: EnsureProjectCoordinatorServiceOptions = {},
 ): Promise<ProjectCoordinatorEndpoint> {
 	const canonicalRoot = realpathSync(repoRoot);
-	const current = await responsiveEndpoint(canonicalRoot);
+	const backendState = await bootstrapBackendState({
+		repoRoot: canonicalRoot,
+		stateRoot: options.stateRoot,
+	});
+	if (
+		backendState.activeBuild.backendBuildDigest !==
+		DEFAULT_BACKEND_BUILD.backendBuildDigest
+	) {
+		throw new Error("Installed Backend Build is not the active project Backend Build.");
+	}
+	const current = await responsiveEndpoint(canonicalRoot, options.stateRoot);
 	if (current) return current;
 	if (!options.spawnDaemon) {
-		throw new Error("Project coordinator daemon spawner is required.");
+		throw new Error("Project Server daemon spawner is required.");
 	}
-	options.spawnDaemon(canonicalRoot);
+	options.spawnDaemon(canonicalRoot, {stateRoot: options.stateRoot});
 	return waitForResponsiveEndpoint(
 		canonicalRoot,
 		Date.now() + boundedStartTimeout(options.timeoutMs),
+		options.stateRoot,
 	);
 }
 
@@ -45,15 +59,15 @@ export async function connectEnsuredProjectCoordinatorClient(
 	await ensureProjectCoordinatorService(repoRoot, options);
 	return connectProjectCoordinatorClient(repoRoot, input, {
 		timeoutMs: options.timeoutMs,
+		stateRoot: options.stateRoot,
 	});
 }
 
 async function responsiveEndpoint(
 	repoRoot: string,
+	stateRoot?: string,
 ): Promise<ProjectCoordinatorEndpoint | undefined> {
-	const endpoint = await readProjectCoordinatorEndpoint(repoRoot).catch(
-		() => undefined,
-	);
+	const endpoint = await readProjectCoordinatorEndpoint(repoRoot, stateRoot);
 	if (!endpoint) return undefined;
 	try {
 		const health = await requestProjectCoordinatorHealth(endpoint, {
@@ -68,16 +82,17 @@ async function responsiveEndpoint(
 async function waitForResponsiveEndpoint(
 	repoRoot: string,
 	deadline: number,
+	stateRoot?: string,
 ): Promise<ProjectCoordinatorEndpoint> {
-	const endpoint = await responsiveEndpoint(repoRoot);
+	const endpoint = await responsiveEndpoint(repoRoot, stateRoot);
 	if (endpoint) return endpoint;
 	if (Date.now() >= deadline) {
 		throw new Error(
-			`Project coordinator service did not become ready for ${repoRoot}.`,
+			`Project Server service did not become ready for ${repoRoot}.`,
 		);
 	}
 	await delay(POLL_INTERVAL_MS);
-	return waitForResponsiveEndpoint(repoRoot, deadline);
+	return waitForResponsiveEndpoint(repoRoot, deadline, stateRoot);
 }
 
 function boundedStartTimeout(value: number | undefined): number {

@@ -1,14 +1,17 @@
 import {
 	appendFile,
 	chmod,
-	mkdir,
 	readFile,
 	rename,
 	rm,
 	stat,
 } from "node:fs/promises";
 import { join } from "node:path";
-import { traceTmpPath } from "./tmp.ts";
+import {
+	assertCodeWikiStatePath,
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+} from "../operations/paths.ts";
 
 export const DEV_LOG_CATEGORIES = [
 	"session",
@@ -127,7 +130,9 @@ export async function readDevLog(
 	identifier(traceId, "traceId");
 	if (!Number.isInteger(maxEntries) || maxEntries < 1 || maxEntries > 10_000)
 		throw new Error("Dev Log maxEntries must be an integer from 1 to 10000.");
+	const privateState = projectServerStatePaths({repoRoot});
 	const directory = devLogDirectory(repoRoot, traceId);
+	await assertCodeWikiStatePath(privateState, directory);
 	const entries = [ROTATED_FILE, LOG_FILE].flatMap((file) =>
 		readEntries(join(directory, file)),
 	);
@@ -146,14 +151,18 @@ export async function applyDevLogRetention(
 
 export function devLogDirectory(repoRoot: string, traceId: string): string {
 	identifier(traceId, "traceId");
-	return join(repoRoot, traceTmpPath(traceId, "dev-log"));
+	return join(
+		projectServerStatePaths({repoRoot}).logsRoot,
+		"development",
+		traceId,
+	);
 }
 
 async function appendEntry(repoRoot: string, entry: DevLogEntry): Promise<void> {
+	const privateState = projectServerStatePaths({repoRoot});
 	const directory = devLogDirectory(repoRoot, entry.traceId);
 	const path = join(directory, LOG_FILE);
-	await mkdir(directory, { recursive: true, mode: 0o700 });
-	if (process.platform !== "win32") await chmod(directory, 0o700);
+	await ensureCodeWikiStateDirectory(privateState, directory);
 	const line = `${JSON.stringify(entry)}\n`;
 	if ((await fileSize(path)) + Buffer.byteLength(line) > MAX_FILE_BYTES) {
 		await rm(join(directory, ROTATED_FILE), { force: true });

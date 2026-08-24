@@ -17,7 +17,7 @@ import {canonicalJson, sha256Digest} from "../../../src/utils/canonical-json.ts"
 const roots = [];
 const servers = [];
 
-const apiKey = "b4-qualified-secret";
+const apiKey = `fixture-${sha256Digest("provider-host-key-fixture").slice(7, 31)}`;
 
 const routes = Object.freeze([
 	brokerRoute("openai-route", "openai", "openai", "openai-account", "OPENAI_B4_KEY", "cw-openai"),

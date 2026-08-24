@@ -101,9 +101,9 @@ export interface ResolvedProjectServerConnection {
 }
 
 export async function readProjectServerRegistrySnapshot(
-	projectServerStateRoot: string,
+	registryRoot: string,
 ): Promise<ProjectServerRegistrySnapshot | undefined> {
-	const path = registryPath(projectServerStateRoot);
+	const path = registryPath(registryRoot);
 	let handle;
 	try {
 		handle = await open(
@@ -144,7 +144,7 @@ export async function readProjectServerRegistrySnapshot(
 }
 
 export async function writeProjectServerRegistrySnapshot(input: {
-	readonly projectServerStateRoot: string;
+	readonly registryRoot: string;
 	readonly expectedGeneration: number;
 	readonly snapshot: ProjectServerRegistrySnapshot;
 }): Promise<ProjectServerRegistrySnapshot> {
@@ -155,13 +155,13 @@ export async function writeProjectServerRegistrySnapshot(input: {
 	if (snapshot.generation !== input.expectedGeneration + 1) {
 		throw new Error("Server registry next generation must increment expected generation by one.");
 	}
-	return withRegistryLock(input.projectServerStateRoot, async () => {
-		const current = await readProjectServerRegistrySnapshot(input.projectServerStateRoot);
+	return withRegistryLock(input.registryRoot, async () => {
+		const current = await readProjectServerRegistrySnapshot(input.registryRoot);
 		if ((current?.generation ?? 0) !== input.expectedGeneration) {
 			throw new Error("Server registry generation conflict.");
 		}
 		if (current) assertRegistryTransition(current, snapshot);
-		await persistRegistry(input.projectServerStateRoot, snapshot);
+		await persistRegistry(input.registryRoot, snapshot);
 		return snapshot;
 	});
 }
@@ -668,11 +668,11 @@ function assertStatusDoesNotReactivate(
 }
 
 async function withRegistryLock<T>(
-	projectServerStateRoot: string,
+	registryRoot: string,
 	run: () => Promise<T>,
 ): Promise<T> {
-	const path = join(projectServerStateRoot, REGISTRY_LOCK_FILE);
-	await mkdir(projectServerStateRoot, {recursive: true, mode: 0o700});
+	const path = join(registryRoot, REGISTRY_LOCK_FILE);
+	await mkdir(registryRoot, {recursive: true, mode: 0o700});
 	let handle;
 	try {
 		handle = await open(path, "wx", 0o600);
@@ -691,10 +691,10 @@ async function withRegistryLock<T>(
 }
 
 async function persistRegistry(
-	projectServerStateRoot: string,
+	registryRoot: string,
 	snapshot: ProjectServerRegistrySnapshot,
 ): Promise<void> {
-	const path = registryPath(projectServerStateRoot);
+	const path = registryPath(registryRoot);
 	const temporary = `${path}.tmp-${process.pid}-${randomUUID()}`;
 	const bytes = canonicalJson(snapshot);
 	if (Buffer.byteLength(bytes) > MAX_REGISTRY_BYTES) {
@@ -723,11 +723,11 @@ async function persistRegistry(
 	}
 }
 
-function registryPath(projectServerStateRoot: string): string {
-	if (!isAbsolute(projectServerStateRoot)) {
+function registryPath(registryRoot: string): string {
+	if (!isAbsolute(registryRoot)) {
 		throw new Error("Server state root must be absolute.");
 	}
-	return join(projectServerStateRoot, REGISTRY_FILE);
+	return join(registryRoot, REGISTRY_FILE);
 }
 
 function records<T>(

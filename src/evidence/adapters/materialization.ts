@@ -156,6 +156,7 @@ export function materializeStandardAdapterEvidence(
 			runtime,
 		);
 	});
+	// SAFETY: canonical conversion preserves this already-validated JSON-compatible bundle shape.
 	const body = toCanonicalJsonValue({
 		protocol: STANDARD_ADAPTER_MATERIALIZATION_PROTOCOL,
 		adapterProtocol: ingestion.protocol,
@@ -254,6 +255,7 @@ function admittedIngestion(
 	) {
 		throw new Error("Standard adapter Evidence coverage is invalid.");
 	}
+	// SAFETY: admitted ingestion validation above proves a read-only string-keyed JSON object.
 	const object = value as unknown as Readonly<Record<string, unknown>>;
 	const {receiptDigest: _receiptDigest, ...body} = object;
 	if (canonicalJsonDigest(body) !== value.receiptDigest) {

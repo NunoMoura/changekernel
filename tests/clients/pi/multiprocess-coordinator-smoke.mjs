@@ -120,6 +120,7 @@ const clients = [];
 let coordinator;
 let eventClient;
 let projectRoot;
+let stateRoot;
 try {
 	const packRoot = join(root, "pack");
 	projectRoot = join(root, "project");
@@ -142,11 +143,12 @@ try {
 		"codewiki",
 	);
 	assert.equal(existsSync(join(packageRoot, "dist", "pi-extension.js")), true);
+	stateRoot = join(root, "project-server-state");
 	const env = {
 		...process.env,
 		PI_CODING_AGENT_DIR: join(root, "agent"),
 		PI_CODING_AGENT_SESSION_DIR: join(root, "sessions"),
-		CODEWIKI_PROJECT_SERVER_STATE_ROOT: join(root, "project-server-state"),
+		CODEWIKI_STATE_ROOT: stateRoot,
 		PI_OFFLINE: "1",
 	};
 	run("pi", ["install", "-l", packageRoot, "--approve"], {
@@ -189,7 +191,9 @@ try {
 	const dashboardState = await waitUntil(
 		async () => {
 			try {
-				const state = await coordinator.readProjectCoordinatorServiceState(projectRoot);
+				const state = await coordinator.readProjectCoordinatorServiceState(projectRoot, {
+					stateRoot,
+				});
 				observedCoordinatorState = state;
 				return state.clientCount === 1 && state.supervisorCount === 0
 					? state
@@ -211,19 +215,25 @@ try {
 			.success,
 		true,
 	);
-	const afterSecond = await coordinator.readProjectCoordinatorServiceState(projectRoot);
+	const afterSecond = await coordinator.readProjectCoordinatorServiceState(projectRoot, {
+		stateRoot,
+	});
 	assert.equal(afterSecond.generationId, dashboardState.generationId);
 	assert.equal(afterSecond.clientCount, 1);
 	assert.equal(afterSecond.supervisorCount, 0);
-	const endpoint = await coordinator.readProjectCoordinatorEndpoint(projectRoot);
+	const endpoint = await coordinator.readProjectCoordinatorEndpoint(projectRoot, stateRoot);
 	assert.equal(endpoint.generationId, dashboardState.generationId);
 	const health = await coordinator.requestProjectCoordinatorHealth(endpoint);
 	assert.equal(health.semanticExecution, "client_candidate");
-	eventClient = await coordinator.connectProjectCoordinatorClient(projectRoot, {
-		clientId: "test:multiprocess-events",
-		kind: "test",
-		supervision: "observer",
-	});
+	eventClient = await coordinator.connectProjectCoordinatorClient(
+		projectRoot,
+		{
+			clientId: "test:multiprocess-events",
+			kind: "test",
+			supervision: "observer",
+		},
+		{stateRoot},
+	);
 	const initialEvents = await eventClient.events(0);
 	assert.equal(
 		initialEvents.events.some((event) => event.clientKind === "pi"),
@@ -239,7 +249,9 @@ try {
 	await stopPi(first);
 	const unsupervised = await waitUntil(
 		async () => {
-			const state = await coordinator.readProjectCoordinatorServiceState(projectRoot);
+			const state = await coordinator.readProjectCoordinatorServiceState(projectRoot, {
+				stateRoot,
+			});
 			return state.clientCount === 1 && state.supervisorCount === 0
 				? state
 				: undefined;
@@ -261,6 +273,7 @@ try {
 	eventClient = undefined;
 	await coordinator.stopProjectCoordinatorService(projectRoot, {
 		timeoutMs: 5_000,
+		stateRoot,
 	});
 	console.log(
 		JSON.stringify(
@@ -283,7 +296,7 @@ try {
 	await Promise.all(clients.map((client) => stopPi(client)));
 	if (coordinator && projectRoot) {
 		await coordinator
-			.stopProjectCoordinatorService(projectRoot, { timeoutMs: 2_000 })
+			.stopProjectCoordinatorService(projectRoot, {timeoutMs: 2_000, stateRoot})
 			.catch(() => undefined);
 	}
 	rmSync(root, { recursive: true, force: true });

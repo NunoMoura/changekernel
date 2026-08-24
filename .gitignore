@@ -4,8 +4,6 @@ dist/
 *.log
 .pi-lens/
 .vscode/
-.codewiki/runtime/
-.codewiki/session/queue.json
 .tmp-worktrees/
 lab/runs/
 lab/holdout*.json

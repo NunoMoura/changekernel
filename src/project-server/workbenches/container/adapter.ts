@@ -29,6 +29,7 @@ import {
 	type ResolvedContainerOptions,
 } from "./options.ts";
 import type { OciContainerCommandResult } from "./command.ts";
+import {projectServerStatePaths} from "../../operations/paths.ts";
 
 export {
 	runOciContainerCommand,
@@ -410,10 +411,10 @@ function assertContainerAssignment(
 		throw new Error("Implementation container report path is not mount-safe.");
 	}
 	const reportDirectory = resolve(dirname(assignment.reportPath));
-	const runtimeRoot = resolve(canonicalRoot, ".codewiki", "runtime");
-	const reportChild = relative(runtimeRoot, reportDirectory);
-	if (!reportChild || reportChild.startsWith("..")) {
-		throw new Error("Implementation container report path escaped runtime state.");
+	const reportRoot = projectServerStatePaths({repoRoot: canonicalRoot}).workerReportsRoot;
+	const reportChild = relative(reportRoot, reportDirectory);
+	if (reportChild.startsWith("..")) {
+		throw new Error("Implementation container report path escaped private worker reports.");
 	}
 }
 

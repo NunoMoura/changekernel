@@ -10,7 +10,12 @@ import {
 	previewProfileDigest,
 	resolveWikiPreviewConfig,
 } from "../../src/preview/profile.ts";
-import { uiPreviewTargetDigest } from "../../src/preview/target.ts";
+import {uiPreviewTargetDigest} from "../../src/preview/target.ts";
+import {
+	PROJECT_STATE_REF_PREFIX,
+	projectServerStatePaths,
+	resolveProjectStateRef,
+} from "../../src/project/private-state.ts";
 
 function profile(browser = "playwright") {
 	return resolveWikiPreviewConfig({
@@ -169,14 +174,18 @@ describe("preview evidence capture", () => {
 			assert.equal(capture.console.truncated, true);
 			assert.doesNotMatch(capture.console.lines.join("\n"), /private|hunter2/);
 			assert.doesNotMatch(capture.network.lines.join("\n"), /private/);
+			const privateState = projectServerStatePaths({repoRoot: root});
 			const manifest = JSON.parse(
-				await readFile(join(root, capture.manifestPath), "utf8"),
+				await readFile(
+					resolveProjectStateRef(privateState, capture.manifestPath),
+					"utf8",
+				),
 			);
 			assert.equal(manifest.manifestDigest, capture.manifestDigest);
 			assert.equal(manifest.screenshots.length, 2);
 			assert.ok(
 				capture.screenshots.every((item) =>
-					item.path.startsWith(".codewiki/runtime/preview-evidence/"),
+					item.path.startsWith(`${PROJECT_STATE_REF_PREFIX}runtime/preview-evidence/`),
 				),
 			);
 		} finally {

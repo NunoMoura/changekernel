@@ -13,6 +13,7 @@ import {
 } from "./daemon.ts";
 import {createCodeWikiLoopExecutionPorts} from "./executor.ts";
 import type {ProjectCoordinatorServiceOptions} from "./service.ts";
+import {CODEWIKI_STATE_ROOT_ENV} from "../operations/paths.ts";
 
 export interface ProjectCoordinatorDaemonProcessOptions {
 	readonly service?: ProjectCoordinatorServiceOptions;
@@ -20,7 +21,10 @@ export interface ProjectCoordinatorDaemonProcessOptions {
 }
 
 /** Spawn the standalone Project Server daemon without selecting an execution engine. */
-export function spawnProjectCoordinatorDaemon(repoRoot: string): void {
+export function spawnProjectCoordinatorDaemon(
+	repoRoot: string,
+	options: {readonly stateRoot?: string} = {},
+): void {
 	const child = spawn(
 		process.execPath,
 		[projectCoordinatorDaemonScriptPath(), repoRoot],
@@ -29,6 +33,9 @@ export function spawnProjectCoordinatorDaemon(repoRoot: string): void {
 			detached: true,
 			stdio: "ignore",
 			windowsHide: true,
+			env: options.stateRoot
+				? {...process.env, [CODEWIKI_STATE_ROOT_ENV]: options.stateRoot}
+				: process.env,
 		},
 	);
 	child.on("error", () => undefined);
@@ -77,7 +84,7 @@ async function run(): Promise<void> {
 	const repoRoot = process.argv[2];
 	if (!repoRoot) {
 		throw new Error(
-			"CodeWiki project coordinator daemon requires a repo root argument.",
+			"CodeWiki Project Server daemon requires a repo root argument.",
 		);
 	}
 	const daemon = await startProjectCoordinatorDaemonProcess(repoRoot);

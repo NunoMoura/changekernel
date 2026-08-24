@@ -26,14 +26,14 @@ CodeWiki is private pre-production software under active Backend v1 stabilizatio
 - `REFACTORING_PLAN.md` records completed Slices 1–17; `BACKEND_V1_PLAN.md` is the active non-authoritative delivery roadmap.
 - This source checkout is developed with Pi native coding tools, Pi-Lens, normal file edits, tests, and Git.
 - It does **not** install, load, or dogfood its own CodeWiki extension during stabilization.
-- Repo-local Pi loads Pi-Lens only. No CodeWiki controller pin, local CodeWiki Skills, commands, tools, prompt injection, or active Change Traces belong here.
+- Repo-local Pi loads Pi-Lens only. No CodeWiki Backend pin, local CodeWiki Skills, commands, tools, prompt injection, or active Change Traces belong here.
 - Packed candidates are tested only in disposable external projects with isolated Pi settings.
-- `.codewiki/views/**` and `.codewiki/runtime/**` are disposable generated/private state, not source truth.
+- `.codewiki/**` contains governed declarations and canonical project meaning only. Physical `.codewiki/runtime/**` and `.codewiki/views/**` roots are prohibited; private state lives under an external repository-identity-bound CodeWiki State Root and Views remain logical deterministic projections.
 - Pi native compaction remains the active conversation-compaction mechanism.
 
-The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 plus Backend v1 B0–B6 is implemented and green; packaging/state evolution, operational hardening, safe dogfood, and final Backend v1 qualification remain pre-production work. Product frontend v1 starts only after every Backend v1 release gate passes.
+The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 plus Backend v1 B0–B7 is implemented; production hardening, safe dogfood, and final Backend v1 qualification remain pre-production work. Product frontend v1 starts only after every Backend v1 release gate passes.
 
-This source repository does not install or load CodeWiki during stabilization. Future source-repository dogfooding is ratified only for an immutable stable release installed in an isolated external controller and requires a separate explicit activation Change after external gates pass; historical pins, traces, approvals, and releases grant no authority.
+This source repository does not install or load CodeWiki during stabilization. Future source-repository dogfooding is ratified only for an immutable stable release installed through an isolated external Backend and Project Server and requires a separate explicit activation Change after external gates pass; historical pins, traces, approvals, and releases grant no authority.
 
 ## Primary product boundary
 
@@ -59,6 +59,54 @@ CodeWiki
 ```
 
 Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The managed package closure pins all 33 DSH packages to `0.1.1-rc.2`, Cordis to `4.0.1`, Cordis Plugin Loader to `1.0.2`, and the provider-protocol support package `@earendil-works/pi-ai` to `0.82.1`; exact package-lock integrities remain distinct from the explicitly unattested relationship to reviewed DSH source commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. DSH Loader owns Plugin lifecycle, while the read-only DSH Host Plugin Inventory must report every expected managed-Run entry enabled and active. Replay qualification proves that exact Runtime Build from authenticated Run Process launch through persistent Agent Session JSONL and Runtime-authored Run Receipt. Authenticated process frames persist the exact Execution Ledger and bounded raw-log chunks before Runtime atomically commits the Receipt; restart recovery rejects corrupt evidence and duplicate Run authority. Production producer Runs accept an authorized read-only content-addressed Project Context Snapshot mount and expose typed local Knowledge, Alignment, Project State, repository, Evidence, Result, batch, and Change-delta services; legacy `StageContextBundle` tools remain replay qualification evidence only. At Candidate checkpoint, Project Server freezes Gate Evaluation Package `2.0.0` over the complete resolved Check Pack, exact declared selections, source heads, stage lineage, and execution identities. Checks receive no producer handles or live project access. Project Server persists logical Session continuity independently of Runtime processes, admits one expected-head-CAS writer lease, and records cancellation, expiry, receipt advancement, and explicit rollover. Run Process `6.0.0`, Run Request `6.0.0`, Run Receipt `4.0.0`, Execution Ledger `5.0.0`, Run Continuation `1.0.0`, Runtime Build Manifest `3.0.0`, and Executable Plugin Admission Closure `1.0.0` bind the exact continuity, lease, material, feedback, canonical rehydration, predictive reserves, build, executable Plugin admission policy, expected head, and resulting head. DSH Goal state drives one Project Server-authorized round per Run; Candidate output pauses the Goal, while only Project Server and Gates determine completion. Predictive idle compaction uses deterministic non-authoritative CodeWiki summaries, records exact replacement provenance, and retains raw history. Trusted Broker Host composition now mounts official DSH LLM, authorization, local credential, and Host Plugin Inventory seams through DSH Loader. Deterministic local provider fixtures qualify API-key OpenAI, Anthropic, DeepSeek, and custom OpenAI-compatible wire paths, exact account and credential-reference binding, owner-only credential storage outside Run roots, broker-owned request/output budgets, cancellation, retry, and authenticated account-bound receipts. OAuth, ambient credentials, secret-bearing provider headers, unsupported provider protocols, and multi-user local-file custody fail closed; replay remains mandatory CI and live-provider qualification remains opt-in. Secure Code Mode uses DSH's `run_code` transport with a CodeWiki fresh-process TypeScript runtime and typed lossless-JSON bindings. Production revalidates exact Bubblewrap, `prlimit`, and Node paths, versions, and SHA-256 digests before launch. A qualified outer sandbox contains the whole DSH Run Process; a separate fresh inner sandbox contains each model-authored program. Both deny ambient authority and enforce namespace, mount, descriptor, process, CPU, memory, output, call, byte, timeout, and cancellation bounds without an in-process or worker-thread fallback. Backend v1 now qualifies current DSH provider, authorization, and credential Plugin surfaces rather than duplicating them; bundle and client composition remain later freeze work. Switchyard and its backend selector are absent. Public execution contracts use DSH Plugin, Infrastructure Provider, Runtime Bridge, and Client Plugin vocabulary; Pi remains Client-only.
+
+## Backend lifecycle and private state
+
+Package installation is passive. It runs no CodeWiki lifecycle hook, project code, Plugin, Skill, Check, credential lookup, daemon, or canonical write. Operators use the curated `@nunomoura/codewiki/project-server` surface explicitly:
+
+- `bootstrapStandaloneProjectServer`
+- `startStandaloneProjectServer`
+- `stopStandaloneProjectServer`
+- `restartStandaloneProjectServer`
+- `upgradeStandaloneBackend`
+- `rollbackStandaloneBackend`
+- `createBackendStateBackup` / `restoreBackendStateBackup`
+- `recoverBackendStateManifest` / `pruneBackendStateBackups`
+- `uninstallStandaloneBackendState`
+
+Set `CODEWIKI_STATE_ROOT` to one absolute owner-private location outside every governed checkout. If omitted, Linux uses `$XDG_STATE_HOME/codewiki` or `~/.local/state/codewiki`; Windows uses `%LOCALAPPDATA%/CodeWiki/State`.
+
+```text
+$CODEWIKI_STATE_ROOT/
+  registry/
+  runtime-builds/
+  backups/<repository-identity>/<backup-id>/
+  quarantine/<repository-identity>/<quarantine-id>/
+  projects/<repository-identity>/
+    state.json
+    project-server/
+      process-control/
+      continuity/
+      synchronization/
+      worker-assignments/
+      effects/
+      workbenches/
+      integration/
+      logs/
+      tmp/
+    runtime/
+      dsh-agent-sessions/
+      execution-evidence/
+      worker-reports/
+      preview-evidence/
+      publications/
+```
+
+Backend State `1.0.0` binds repository identity, generation, active Backend Build, and migration, restore, recovery, and build-transition heads. Backend Build `1.0.0` binds package version and lock, exact managed-Run and broker-host DSH profile closures, Domain Plugin closure, durable file schemas, and protocol versions. Startup rejects installed/active Build drift. Upgrade requires quiescence, expected-state CAS, compatible state schema, unchanged Domain closure unless separately migrated, and a verified pre-upgrade backup. Rollback restores exact canonical, Project Server-private, and Runtime-private scopes, preserves append-only audit receipts, advances generation, and requires Session rollover.
+
+Backups store canonical-project, Project-Server-private, Runtime-private, and Backend-audit scopes separately. Every regular file binds portable path, mode, size, and SHA-256 digest. DSH Agent Session files are opaque: DSH owns their format and live behavior, Runtime owns exact-byte custody and evidence, and Project Server owns continuity, resume, and rollover decisions. Restore never interprets or rewrites DSH internals. Corrupt state is quarantined and can recover only from an exact verified backup. Uninstall preserves `.codewiki/**` and private state by default; explicit private-state removal first creates a verified external backup.
+
+Supported schema-less `.codewiki/runtime/` and `.codewiki/views/` residue requires explicit stopped-Project-Server migration. Known durable paths move to declared external owners, all source bytes enter digest-bound quarantine, unknown or symbolic residue fails closed, and successful migration deletes both local roots. Normal operation never recreates them.
 
 ## Exactly four Stage Loops
 
@@ -209,7 +257,7 @@ WorkState and Alignment Graph queries are disposable views over canonical source
 
 CodeWiki has no separate project-learning, Feedback Bundle, or self-improvement subsystem. User feedback, benchmark regressions, CI/security findings, worker discoveries, delivery outcomes, and maintainer suggestions enter through normal bounded Change Intake. Improvement then follows the same authenticated selection, Decision, Planning, Implementation, Review, and release authority as any other Change. CodeWiki never uploads private project traces automatically.
 
-After stabilization and explicit activation, an immutable released CodeWiki version may operate on this source repository from an isolated external controller to coordinate the next version. It must not load mutable workspace code or edit its installed package, and dogfood evidence cannot replace independent CI, packed external proof, benchmark oracles, human review, or release authorization.
+After stabilization and explicit activation, an immutable released CodeWiki version may operate on this source repository through an isolated external Backend and Project Server to govern the next version. It must not load mutable workspace code or edit its installed package, and dogfood evidence cannot replace independent CI, packed external proof, benchmark oracles, human review, or release authorization.
 
 ## Source layout
 
@@ -349,7 +397,7 @@ Built-in pack ids are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyr
 
 ## Backend v1 and frontend entry gate
 
-`BACKEND_V1_PLAN.md` owns the active production sequence. CodeWiki has removed Switchyard and its backend selector and now pins one exact replay-qualified DSH Plugin baseline. Software Development Domain extraction and exact identity propagation are complete. Authenticated Frontend API, capability discovery, and resumable redacted event contracts are frozen at `1.0.0`. Before Backend v1 release, CodeWiki must retain OAuth as unsupported until its known qualification gaps close; prove install, upgrade, rollback, backup, restore, crash recovery, diagnostics, and audit; and complete external release-N-governs-N+1 dogfood without loading mutable source-controller code.
+`BACKEND_V1_PLAN.md` owns the active production sequence. CodeWiki has removed Switchyard and its backend selector and now pins one exact replay-qualified DSH Plugin baseline. Software Development Domain extraction and exact identity propagation are complete. Authenticated Frontend API, capability discovery, and resumable redacted event contracts are frozen at `1.0.0`. Backend v1 B7 now qualifies passive packed installation, explicit bootstrap/start/stop/restart, expected-state upgrade and rollback, multi-project isolation, scope-separated backup and restore, retention, corruption recovery, external private state, and uninstall that preserves canonical meaning. Before Backend v1 release, CodeWiki must retain OAuth as unsupported until its known qualification gaps close; complete B8 production crash, diagnostics, security, reliability, and audit gates; and complete external release-N-governs-N+1 dogfood without loading mutable source Backend code.
 
 Unsupported deployment, provider, authentication, and platform combinations fail closed. Frontend product implementation begins only after every Backend v1 release gate passes. The disposable DSH client-slot spike qualified exact `0.1.1-rc.2` typed slots, layout, and primitives, but rejected the stock Web connection because it has no authentication layer and rejected direct Provider settings/authorization reuse because those surfaces mutate the wrong authority planes. Frontend v1 keeps the authenticated CodeWiki App Server host.
 

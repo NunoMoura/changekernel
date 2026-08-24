@@ -109,7 +109,7 @@ describe("dashboard preview control", () => {
 				inProcess: true,
 				persistent: false,
 				previewControl,
-				projectServerStateRoot: join(root, ".server-state"),
+				stateRoot: join(tmpdir(), `codewiki-dashboard-preview-state-${process.pid}`),
 			});
 			const authorization = `Bearer ${dashboard.sessionCredential}`;
 			assert.match(new URL(dashboard.url).hash, /^#session=/);

@@ -196,7 +196,7 @@ test("App Server registers as observer of shared Project Server", async () => {
 			keepAlive: true,
 			inProcess: true,
 			persistent: false,
-			projectServerStateRoot: join(root, ".server-state"),
+			stateRoot: join(tmpdir(), `codewiki-app-runtime-state-${process.pid}`),
 			connectProjectServer: true,
 			projectServerConnector: async (repoRoot, input) => {
 				try {

@@ -35,6 +35,7 @@ export const TARGET_PROJECT_SERVER_SUBDIRECTORIES = [
 	"integration",
 	"lifecycle",
 	"mcp",
+	"operations",
 	"project-context",
 	"pairing",
 	"persistence",

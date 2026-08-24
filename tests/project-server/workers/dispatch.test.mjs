@@ -21,7 +21,8 @@ import {
 import { ProjectServerReactor } from "../../../src/project-server/coordinator/reactor.ts";
 import { buildProjectWorkState } from "../../../src/work-state/project.ts";
 import {producerSkills} from "../../helpers/checks.mjs";
-import { seedProjectServerImplementation } from "../../helpers/project-server-implementation.mjs";
+import {seedProjectServerImplementation} from "../../helpers/project-server-implementation.mjs";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 
 const execFile = promisify(execFileCallback);
 
@@ -314,12 +315,7 @@ test("replacement generation resumes active claim from private Assignment packet
 		assert.equal(executions, 1);
 		assert.equal(replacement.snapshot().completedJobCount, 1);
 
-		const packetDirectory = join(
-			root,
-			".codewiki",
-			"runtime",
-			"worker-assignments",
-		);
+		const packetDirectory = projectServerStatePaths({repoRoot: root}).workerAssignmentsRoot;
 		const [packetName] = await readdir(packetDirectory);
 		const packetPath = join(packetDirectory, packetName);
 		const packet = JSON.parse(await readFile(packetPath, "utf8"));

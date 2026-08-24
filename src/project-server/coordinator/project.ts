@@ -142,7 +142,7 @@ interface PendingJob<T = unknown> {
 }
 
 /**
- * Transport-neutral scheduling kernel for one elected project coordinator.
+ * Transport-neutral scheduling kernel for one elected Project Server.
  * Service discovery, authentication, and cross-process election remain host
  * responsibilities; this class owns client supervision and compatible-job
  * admission inside one elected generation.
@@ -199,7 +199,7 @@ export class ProjectCoordinator {
 			input.supervision || "observer",
 		);
 		if (this.clients.has(clientId)) {
-			throw new Error(`Project coordinator client ${clientId} is already connected.`);
+			throw new Error(`Project Server client ${clientId} is already connected.`);
 		}
 		const connection = Symbol(clientId);
 		this.clients.set(clientId, { kind, supervision, connection });
@@ -315,7 +315,7 @@ export class ProjectCoordinator {
 		);
 		if (active.length > 0) {
 			throw new Error(
-				`Project coordinator ${this.generationId} cannot close with ${active.length} active job(s).`,
+				`Project Server ${this.generationId} cannot close with ${active.length} active job(s).`,
 			);
 		}
 		this.closed = true;
@@ -323,7 +323,7 @@ export class ProjectCoordinator {
 			entry.settled = true;
 			entry.controller.abort();
 			entry.reject(
-				new Error(`Project coordinator ${this.generationId} closed before job start.`),
+				new Error(`Project Server ${this.generationId} closed before job start.`),
 			);
 		}
 		this.jobs.clear();
@@ -332,7 +332,7 @@ export class ProjectCoordinator {
 	}
 
 	async cancelJobs(
-		message = `Project coordinator ${this.generationId} is stopping.`,
+		message = `Project Server ${this.generationId} is stopping.`,
 		timeoutMs = 5_000,
 	): Promise<void> {
 		this.assertOpen();
@@ -366,7 +366,7 @@ export class ProjectCoordinator {
 					timer = setTimeout(() => {
 						reject(
 							new Error(
-								`Project coordinator ${this.generationId} did not drain cancelled jobs within ${boundedTimeoutMs}ms.`,
+								`Project Server ${this.generationId} did not drain cancelled jobs within ${boundedTimeoutMs}ms.`,
 							),
 						);
 					}, boundedTimeoutMs);
@@ -558,7 +558,7 @@ export class ProjectCoordinator {
 
 	private assertOpen(): void {
 		if (this.closed) {
-			throw new Error(`Project coordinator ${this.generationId} is closed.`);
+			throw new Error(`Project Server ${this.generationId} is closed.`);
 		}
 	}
 }
@@ -569,16 +569,16 @@ function normalizeJob<T>(
 	const idempotencyKey = requiredText(job.idempotencyKey, "idempotencyKey");
 	const lane = normalizeLane(job.lane);
 	if (typeof job.run !== "function") {
-		throw new Error(`Project coordinator job ${idempotencyKey} requires run().`);
+		throw new Error(`Project Server job ${idempotencyKey} requires run().`);
 	}
 	if (job.recover !== undefined && typeof job.recover !== "function") {
 		throw new Error(
-			`Project coordinator job ${idempotencyKey} recover must be a function.`,
+			`Project Server job ${idempotencyKey} recover must be a function.`,
 		);
 	}
 	if (job.conflictRefs !== undefined && !Array.isArray(job.conflictRefs)) {
 		throw new Error(
-			`Project coordinator job ${idempotencyKey} conflictRefs must be an array.`,
+			`Project Server job ${idempotencyKey} conflictRefs must be an array.`,
 		);
 	}
 	const conflictRefs = uniqueSorted(
@@ -587,7 +587,7 @@ function normalizeJob<T>(
 	const effect = normalizeEffect(job.effect || "read");
 	if (effect === "write" && !job.recover) {
 		throw new Error(
-			`Project coordinator write job ${idempotencyKey} requires durable recovery.`,
+			`Project Server write job ${idempotencyKey} requires durable recovery.`,
 		);
 	}
 	return { ...job, idempotencyKey, lane, conflictRefs, effect };
@@ -604,7 +604,7 @@ function normalizeRecovery<T>(
 		!("result" in value)
 	) {
 		throw new Error(
-			`Project coordinator recovery for ${idempotencyKey} must return completed result evidence.`,
+			`Project Server recovery for ${idempotencyKey} must return completed result evidence.`,
 		);
 	}
 	return value;
@@ -612,7 +612,7 @@ function normalizeRecovery<T>(
 
 function normalizeLane(lane: ProjectCoordinatorLane): ProjectCoordinatorLane {
 	if (!lane || typeof lane !== "object") {
-		throw new Error("Project coordinator lane is required.");
+		throw new Error("Project Server lane is required.");
 	}
 	if (lane.kind === "decision") return normalizeDecisionLane(lane);
 	if (lane.kind === "planning") return lane;
@@ -642,7 +642,7 @@ function normalizeLane(lane: ProjectCoordinatorLane): ProjectCoordinatorLane {
 		};
 	}
 	throw new Error(
-		`Unsupported project coordinator lane: ${String((lane as { kind?: unknown }).kind)}.`,
+		`Unsupported Project Server lane: ${String((lane as { kind?: unknown }).kind)}.`,
 	);
 }
 
@@ -678,7 +678,7 @@ function assertSameJob(
 ): void {
 	if (existingFingerprint === candidateFingerprint) return;
 	throw new Error(
-		`Project coordinator idempotency key ${idempotencyKey} was reused for a different job.`,
+		`Project Server idempotency key ${idempotencyKey} was reused for a different job.`,
 	);
 }
 
@@ -794,7 +794,7 @@ function assertLaneKeys(input: {
 	);
 	if (extra.length > 0) {
 		throw new Error(
-			`Project coordinator ${input.lane.kind} lane received unsupported field ${extra.sort(compareText).join(", ")}.`,
+			`Project Server ${input.lane.kind} lane received unsupported field ${extra.sort(compareText).join(", ")}.`,
 		);
 	}
 }
@@ -813,7 +813,7 @@ function normalizeExecutionPolicy(
 	if (value === "supervised" || value === "unattended" || value === "paused") {
 		return value;
 	}
-	throw new Error(`Unsupported project coordinator execution policy: ${String(value)}.`);
+	throw new Error(`Unsupported Project Server execution policy: ${String(value)}.`);
 }
 
 function normalizeClientKind(
@@ -828,19 +828,19 @@ function normalizeClientKind(
 	) {
 		return value;
 	}
-	throw new Error(`Unsupported project coordinator client kind: ${String(value)}.`);
+	throw new Error(`Unsupported Project Server client kind: ${String(value)}.`);
 }
 
 function normalizeSupervision(
 	value: "observer" | "approved",
 ): "observer" | "approved" {
 	if (value === "observer" || value === "approved") return value;
-	throw new Error(`Unsupported project coordinator supervision: ${String(value)}.`);
+	throw new Error(`Unsupported Project Server supervision: ${String(value)}.`);
 }
 
 function normalizeEffect(value: "read" | "write"): "read" | "write" {
 	if (value === "read" || value === "write") return value;
-	throw new Error(`Unsupported project coordinator effect: ${String(value)}.`);
+	throw new Error(`Unsupported Project Server effect: ${String(value)}.`);
 }
 
 function boundedInteger(

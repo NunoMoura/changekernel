@@ -17,7 +17,7 @@ function workerObservation(overrides = {}) {
 		claimId: "claim-WU-a-001",
 		sessionId: "session-dsh-worker-001",
 		sessionFile:
-			".codewiki/runtime/tmp/TRACE-dsh-a/dsh/sessions/dsh-worker-001.session.jsonl",
+			"codewiki-state://project/runtime/dsh-agent-sessions/dsh-worker-001.session.jsonl",
 		status: "started",
 		...overrides,
 	};
@@ -58,7 +58,7 @@ describe("worker completion normalization", () => {
 		assert.equal(result.sessionId, "session-dsh-worker-001");
 		assert.equal(
 			result.sessionFile,
-			".codewiki/runtime/tmp/TRACE-dsh-a/dsh/sessions/dsh-worker-001.session.jsonl",
+			"codewiki-state://project/runtime/dsh-agent-sessions/dsh-worker-001.session.jsonl",
 		);
 		assert.equal(result.status, "completed");
 		assert.deepEqual(result.planningRefs, [

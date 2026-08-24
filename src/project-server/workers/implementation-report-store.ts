@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
+import {projectServerStatePaths} from "../operations/paths.ts";
 import {
 	assertImplementationWorkerAssignment,
 	assertImplementationWorkerReport,
@@ -72,20 +73,17 @@ export function assertImplementationWorkerReportPath(
 	assignment: ImplementationWorkerAssignment,
 ): void {
 	const canonicalRoot = realpathSync(assignment.repoRoot);
-	const runtimeRoot = resolve(canonicalRoot, ".codewiki", "runtime");
+	const paths = projectServerStatePaths({repoRoot: canonicalRoot});
+	const reportRoot = paths.workerReportsRoot;
 	const target = resolve(assignment.reportPath);
-	const child = relative(runtimeRoot, target);
+	const child = relative(reportRoot, target);
 	if (!child || child.startsWith("..") || child.includes("\0")) {
 		throw new Error(
-			"Implementation worker reportPath must stay below .codewiki/runtime.",
+			"Implementation worker reportPath must stay below private worker reports.",
 		);
 	}
-	let current = canonicalRoot;
-	for (const segment of [
-		".codewiki",
-		"runtime",
-		...child.split(/[\\/]/).slice(0, -1),
-	]) {
+	let current = paths.stateRoot;
+	for (const segment of relative(paths.stateRoot, dirname(target)).split(/[\\/]/)) {
 		current = resolve(current, segment);
 		if (existsSync(current) && lstatSync(current).isSymbolicLink()) {
 			throw new Error(

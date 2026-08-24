@@ -34,6 +34,7 @@ import type {
 	ProjectCoordinatorJob,
 } from "../coordinator/project.ts";
 import type { ProjectServerReactor } from "../coordinator/reactor.ts";
+import {projectServerStatePaths} from "../operations/paths.ts";
 
 const MAX_GIT_OUTPUT_BYTES = 8 * 1024 * 1024;
 const MAX_CHANGED_PATHS = 1_024;
@@ -713,13 +714,8 @@ function integrationIdentity(
 		.update(stableJson({ targetRef, baseCommit }))
 		.digest("hex");
 	const jobKey = jobId.slice(-64);
-	const artifactDirectory = join(
-		input.repoRoot,
-		".codewiki",
-		"runtime",
-		"integrations",
-		jobKey,
-	);
+	const privateState = projectServerStatePaths({repoRoot: input.repoRoot});
+	const artifactDirectory = join(privateState.integrationRoot, jobKey);
 	return {
 		jobId,
 		targetRef,
@@ -727,10 +723,7 @@ function integrationIdentity(
 		baseCommit,
 		branch: `codewiki/integration/${integrationKey.slice(0, 24)}`,
 		workspacePath: join(
-			input.repoRoot,
-			".codewiki",
-			"runtime",
-			"tmp",
+			privateState.workbenchesRoot,
 			"integration",
 			integrationKey,
 			"worktree",
@@ -779,29 +772,29 @@ async function assertSafeIntegrationPaths(
 	packet: ImplementationWorkerDispatchPacket,
 	identity: IntegrationIdentity,
 ): Promise<void> {
-	const runtimeTmp = resolve(repoRoot, ".codewiki", "runtime", "tmp");
+	const privateState = projectServerStatePaths({repoRoot});
 	const workerPath = resolve(packet.assignment.worktree?.path as string);
 	if (
-		!isInside(runtimeTmp, workerPath) ||
-		!isInside(runtimeTmp, identity.workspacePath) ||
+		!isInside(privateState.workbenchesRoot, workerPath) ||
+		!isInside(privateState.workbenchesRoot, identity.workspacePath) ||
 		workerPath === resolve(identity.workspacePath)
 	) {
-		throw new Error("Implementation integration worktree path escapes runtime tmp.");
+		throw new Error("Implementation integration worktree escaped private Workbenches.");
 	}
-	await assertNoSymlinkPath(repoRoot, workerPath, true);
-	await assertNoSymlinkPath(repoRoot, identity.workspacePath, false);
-	await assertNoSymlinkPath(repoRoot, identity.artifactDirectory, false);
+	await assertNoSymlinkPath(privateState.projectStateRoot, workerPath, true);
+	await assertNoSymlinkPath(privateState.projectStateRoot, identity.workspacePath, false);
+	await assertNoSymlinkPath(privateState.projectStateRoot, identity.artifactDirectory, false);
 }
 
 async function assertNoSymlinkPath(
-	repoRoot: string,
+	privateStateRoot: string,
 	path: string,
 	requireLeaf: boolean,
 ): Promise<void> {
-	const root = resolve(repoRoot);
+	const root = resolve(privateStateRoot);
 	const target = resolve(path);
 	if (!isInside(root, target)) {
-		throw new Error("Implementation integration path escapes repository root.");
+		throw new Error("Implementation integration path escapes private project state.");
 	}
 	const parts = relative(root, target).split(sep).filter(Boolean);
 	let current = root;

@@ -212,12 +212,12 @@ Success: software behavior remains unchanged while domain meaning is one exact a
 
 Success: the frontend-facing backend contract and client-substrate decision are ready for B7–B9 qualification. Product frontend implementation remains blocked until every Backend v1 release gate passes.
 
-### B7 — Backend packaging, lifecycle, and state evolution
+### B7 — Backend packaging, lifecycle, and state evolution — complete
 
-- Qualify standalone install, bootstrap, start, stop, restart, upgrade, rollback, uninstall, and multi-project lifecycle.
-- Define durable state locations, ownership, schema migration, backup, restore, retention, and corruption recovery.
-- Keep `.codewiki/` as the only project-local footprint and controller state outside the governed checkout.
-- Bind Backend Build, DSH profile bundles, Domain Plugin closure, database or file schemas, and protocol versions into operational status.
+- [x] Qualify passive standalone install, explicit bootstrap, start, stop, restart, expected-state upgrade, backup-bound rollback, uninstall, and repository-identity-isolated multi-project lifecycle in disposable packed environments.
+- [x] Define owner-private external state locations, Backend State `1.0.0`, schema-less legacy migration and quarantine, scope-separated backup and restore, retention, corruption recovery, quiescence, permissions, bounds, symlink refusal, and opaque DSH Agent Session byte custody.
+- [x] Keep `.codewiki/` as the only project-local footprint for governed declarations and canonical meaning; delete physical `.codewiki/runtime/` and `.codewiki/views/`, reject undeclared residue, and prove normal operation never recreates either root.
+- [x] Bind Backend Build `1.0.0`, exact managed-Run and broker-host DSH profile closures, admitted Domain Plugin closure, durable file schemas, protocol versions, Backend State generation, and active Runtime Build identity into operational status.
 
 Success: operators can recover or roll back without losing canonical meaning, duplicating authority, or trusting mutable project code.
 

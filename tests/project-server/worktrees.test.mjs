@@ -5,7 +5,9 @@ import {
 	planProjectServerWorkUnitClaimWorktrees,
 	WorktreeCommandExecutionError,
 } from "../../src/git/worktrees.ts";
-import { createShellWorktreeCommandRunner } from "../../src/git/worktree-shell-runner.ts";
+import {createShellWorktreeCommandRunner} from "../../src/git/worktree-shell-runner.ts";
+import {projectServerStatePaths} from "../../src/project/private-state.ts";
+import {join} from "node:path";
 
 function item(id, pathScopes = [`src/${id}.ts`]) {
 	return {
@@ -32,10 +34,14 @@ describe("runtime worktree planning", () => {
 		assert.equal(plan.required, true);
 		assert.equal(plan.reason, "policy_required");
 		assert.equal(plan.workerId, "worker-custom");
-		assert.equal(
-			plan.worktree?.path,
-			"/tmp/repo/codewiki/.codewiki/runtime/tmp/TRACE-worktree/worktree/WU-one/worker-custom",
+		const expectedPath = join(
+			projectServerStatePaths({repoRoot: "/tmp/repo/codewiki"}).workbenchesRoot,
+			"TRACE-worktree",
+			"worktree",
+			"WU-one",
+			"worker-custom",
 		);
+		assert.equal(plan.worktree?.path, expectedPath);
 		assert.equal(
 			plan.worktree?.branch,
 			"codewiki/TRACE-worktree/WU-one/worker-custom",
@@ -50,7 +56,7 @@ describe("runtime worktree planning", () => {
 					"add",
 					"-B",
 					"codewiki/TRACE-worktree/WU-one/worker-custom",
-					"/tmp/repo/codewiki/.codewiki/runtime/tmp/TRACE-worktree/worktree/WU-one/worker-custom",
+					expectedPath,
 					"abc1234",
 				],
 			},

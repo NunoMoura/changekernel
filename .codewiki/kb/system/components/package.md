@@ -55,6 +55,10 @@ Runtime Builds are release artifacts, not project extensions. Runtime Build Mani
 
 Shared error handling stays lean under `src/error-handling/**`: CodeWiki error envelope, serialization, type guards, and stable cross-owner operation-failure contracts belong to Package. Configuration and Change Trace define specialized errors with their owners rather than growing a cross-domain error catalog.
 
+## Backend packaging and state evolution
+
+Installation is passive. Project Server owns lifecycle. Backend Build `1.0.0` binds package, DSH profiles, Domain closure, schemas, and protocols; upgrade is backup-first, migration-aware, and CAS-bound. `CODEWIKI_STATE_ROOT` isolates state outside checkouts. Backups separate canonical, Project Server, Runtime, and audit scopes, preserve DSH Session bytes opaquely, and precede destructive uninstall.
+
 ## Check Pack transport
 
 Discovery searches npm packages carrying the `codewiki-check-pack` keyword. Installation accepts an exact npm version, Git source and revision, or local package path. Each source uses either `package.json` `codewiki.checkPacks` resources or conventional `check-packs/` directories, and one package may transport Packs for several stages. `package.json` is transport metadata and never replaces a Check's `check.json`.

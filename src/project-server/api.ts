@@ -42,7 +42,8 @@ export interface ProjectServerConnectionInput {
 
 export interface ProjectServerConnectionOptions {
 	timeoutMs?: number;
-	spawnDaemon?: (repoRoot: string) => void;
+	stateRoot?: string;
+	spawnDaemon?: (repoRoot: string, options?: {readonly stateRoot?: string}) => void;
 }
 
 export interface ProjectServerState {
@@ -365,7 +366,7 @@ export async function connectProjectServerApi(
 
 export async function stopProjectServer(
 	repoRoot: string,
-	options: Pick<ProjectServerConnectionOptions, "timeoutMs"> = {},
+	options: Pick<ProjectServerConnectionOptions, "timeoutMs" | "stateRoot"> = {},
 ): Promise<void> {
 	await stopProjectCoordinatorService(repoRoot, options);
 }

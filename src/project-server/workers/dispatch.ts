@@ -43,6 +43,7 @@ import {
 	type ImplementationWorkerIntegrationInput,
 } from "../integration/worker.ts";
 import { scheduleImplementationWorkerAssignment } from "./jobs.ts";
+import {projectServerStatePaths} from "../operations/paths.ts";
 import { implementationWorkerClaimReleaseJob } from "../claims/release.ts";
 import type {
 	ProductPublicationAdapter,
@@ -739,10 +740,7 @@ function createDispatchPackets(input: {
 			producerSkillReceipt: input.producerSkills.receipt,
 			prompt,
 			reportPath: join(
-				input.repoRoot,
-				".codewiki",
-				"runtime",
-				"workers",
+				projectServerStatePaths({repoRoot: input.repoRoot}).workerReportsRoot,
 				`${reportKey}.json`,
 			),
 			isolation: {

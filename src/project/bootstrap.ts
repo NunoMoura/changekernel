@@ -31,7 +31,6 @@ export interface BootstrapAudit {
 		config: boolean;
 		kb: boolean;
 		traces: boolean;
-		views: boolean;
 	};
 	staleRoots: string[];
 }
@@ -61,15 +60,14 @@ const TARGET_DIRECTORIES = [
 	".codewiki/kb/system/flows",
 	".codewiki/kb/system/diagrams",
 	".codewiki/traces",
-	".codewiki/views",
 	...defaultCheckPackDirectories().map((entry) => entry.relativePath),
 ];
 const TARGET_CODEWIKI_ROOTS = new Set([
 	"config.json",
 	"check-packs",
+	"check-packs.lock.json",
 	"kb",
 	"traces",
-	"views",
 ]);
 
 const SOURCE_ROOT_CANDIDATES = [
@@ -153,7 +151,6 @@ export async function auditBootstrapState(
 		config: await pathExists(join(repoRoot, WIKI_CONFIG_PATH)),
 		kb: await isDirectory(join(repoRoot, ".codewiki", "kb")),
 		traces: await isDirectory(join(repoRoot, ".codewiki", "traces")),
-		views: await isDirectory(join(repoRoot, ".codewiki", "views")),
 	};
 	return {
 		projectKind:
@@ -171,7 +168,6 @@ function preservedBootstrapPaths(
 		audit.existing.config && !force ? WIKI_CONFIG_PATH : "",
 		audit.existing.kb ? ".codewiki/kb" : "",
 		audit.existing.traces ? ".codewiki/traces" : "",
-		audit.existing.views ? ".codewiki/views" : "",
 	].filter(Boolean);
 }
 

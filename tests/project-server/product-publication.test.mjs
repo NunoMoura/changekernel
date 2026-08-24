@@ -16,7 +16,11 @@ import { productPublicationJob } from "../../src/project-server/effects/product-
 import { ProjectServerReactor } from "../../src/project-server/coordinator/reactor.ts";
 import { appendProjectServerTraceRecords } from "../../src/project-server/persistence/trace.ts";
 import { buildProjectWorkState } from "../../src/work-state/project.ts";
-import { seedProjectServerImplementation } from "../helpers/project-server-implementation.mjs";
+import {seedProjectServerImplementation} from "../helpers/project-server-implementation.mjs";
+import {
+	projectServerStatePaths,
+	projectStateRef,
+} from "../../src/project/private-state.ts";
 
 async function publicationFixture(suffix) {
 	const root = await mkdtemp(`${tmpdir()}/codewiki-publication-${suffix}-`);
@@ -43,13 +47,8 @@ async function publicationFixture(suffix) {
 		},
 	};
 	await appendProjectServerTraceRecords(root, [pushEvent], seeded.expectedBytes);
-	const artifactDirectory = join(
-		root,
-		".codewiki",
-		"runtime",
-		"publications",
-		"artifacts",
-	);
+	const privateState = projectServerStatePaths({repoRoot: root});
+	const artifactDirectory = privateState.publicationArtifactsRoot;
 	await mkdir(artifactDirectory, { recursive: true });
 	const artifactPath = join(artifactDirectory, `${suffix}.tgz`);
 	const artifactBytes = Buffer.from(`publication artifact ${suffix}\n`, "utf8");
@@ -63,7 +62,7 @@ async function publicationFixture(suffix) {
 	};
 	const artifact = {
 		artifactId: `package:${suffix}:1.0.0`,
-		path: `.codewiki/runtime/publications/artifacts/${suffix}.tgz`,
+		path: projectStateRef(privateState, artifactPath),
 		digest: artifactDigest,
 		sizeBytes: artifactBytes.length,
 		mediaType: "application/gzip",
@@ -396,7 +395,13 @@ test("scheduled publication identity is immutable after job creation", async () 
 		};
 		const job = publicationJob(context, { plan, pushEvent });
 		plan.target.destinationRef = "registry:@attacker/package";
-		plan.artifact.path = ".codewiki/runtime/publications/artifacts/foreign.tgz";
+		plan.artifact.path = projectStateRef(
+			projectServerStatePaths({repoRoot: context.root}),
+			join(
+				projectServerStatePaths({repoRoot: context.root}).publicationArtifactsRoot,
+				"foreign.tgz",
+			),
+		);
 		plan.authority.actor = "user:attacker";
 		pushEvent.data.contentProof = "git-tree:forged";
 		const receipt = await job.run(new AbortController().signal);

@@ -6,6 +6,7 @@ import { startCodewikiAppServer } from "../src/project-server/app/server.ts";
 import { openPreviewBrowser } from "../src/preview/browser-adapter.ts";
 import { createPreviewCoordinator } from "../src/preview/coordinator.ts";
 import { createDashboardPreviewControl } from "../src/preview/dashboard-control.ts";
+import {defaultCodeWikiStateRoot} from "../src/project/private-state.ts";
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -63,7 +64,7 @@ export async function runDashboardDev(options) {
 		keepAlive: true,
 		persistent: false,
 		inProcess: true,
-		projectServerStateRoot: join(projectRoot, ".codewiki", "dashboard-dev-state"),
+		stateRoot: defaultCodeWikiStateRoot(),
 		previewControl: createDashboardPreviewControl(projectRoot, previewCoordinator),
 	}).catch(async (error) => {
 		await previewCoordinator.close();

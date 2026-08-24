@@ -11,6 +11,7 @@ import {
 	pushSynchronizedGitStateCommit,
 	synchronizeGitState,
 } from "../../../src/changes/trace/index.ts";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 import {allowAllReplayPolicy} from "../../helpers/change-trace-replay-v1.mjs";
 import {
 	buildOpenChangeRecords,
@@ -111,7 +112,10 @@ describe("read-only Git synchronization", () => {
 			);
 			const pointer = JSON.parse(
 				await readFile(
-					join(fixture.cloneB, ".codewiki/runtime/synchronization.json"),
+					join(
+						projectServerStatePaths({repoRoot: fixture.cloneB}).synchronizationRoot,
+						"status.json",
+					),
 					"utf8",
 				),
 			);

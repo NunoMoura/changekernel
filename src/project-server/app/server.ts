@@ -91,7 +91,7 @@ interface CodewikiAppServerOptions {
 	sessionBinding?: ProjectServerSessionBinding;
 	endpointAuthorizationAdapter?: ProjectServerEndpointAuthorizationAdapter;
 	sessionLifetimeSeconds?: number;
-	projectServerStateRoot?: string;
+	stateRoot?: string;
 }
 
 interface CodewikiAppServerHandle {
@@ -488,7 +488,7 @@ async function startInProcessAppServer(
 			sessionBinding: options.sessionBinding,
 			endpointAuthorizationAdapter: options.endpointAuthorizationAdapter,
 			sessionLifetimeSeconds: options.sessionLifetimeSeconds,
-			projectServerStateRoot: options.projectServerStateRoot,
+			stateRoot: options.stateRoot,
 		},
 	);
 	appServers.set(options.repoRoot, runtime);
@@ -667,7 +667,7 @@ async function createProjectServerApp(
 		sessionBinding?: ProjectServerSessionBinding;
 		endpointAuthorizationAdapter?: ProjectServerEndpointAuthorizationAdapter;
 		sessionLifetimeSeconds?: number;
-		projectServerStateRoot?: string;
+		stateRoot?: string;
 	} = {},
 ): Promise<ProjectServerApp> {
 	const sessionAuthorization = await openAppServerSessionAuthorization({
@@ -675,7 +675,7 @@ async function createProjectServerApp(
 		binding: options.sessionBinding,
 		adapter: options.endpointAuthorizationAdapter,
 		lifetimeSeconds: options.sessionLifetimeSeconds,
-		projectServerStateRoot: options.projectServerStateRoot,
+		stateRoot: options.stateRoot,
 	});
 	const clients = new Map<ServerResponse, ClientProjectServerRequestContext>();
 	let runtime: ProjectServerApp;

@@ -119,6 +119,7 @@ export interface ProjectCoordinatorServiceOptions
 		"maxConcurrentJobs" | "maxCompletedJobs"
 	> {
 	generationId?: string;
+	stateRoot?: string;
 	executionPolicy?: ProjectCoordinatorExecutionPolicy;
 	clientLeaseMs?: number;
 	port?: number;
@@ -222,6 +223,7 @@ export interface ProjectCoordinatorRemoteClient {
 
 export interface ProjectCoordinatorClientRequestOptions {
 	timeoutMs?: number;
+	stateRoot?: string;
 }
 
 interface RemoteClientLease {
@@ -235,6 +237,7 @@ interface RemoteClientLease {
 interface ProjectServerService {
 	endpoint: ProjectCoordinatorEndpoint;
 	ownership: ProjectCoordinatorOwnership;
+	stateRoot?: string;
 	coordinator: ProjectCoordinator;
 	eventJournal: ProjectCoordinatorEventJournal;
 	reactor: ProjectServerReactor;
@@ -289,8 +292,9 @@ export async function startProjectCoordinatorService(
 			repoRoot: canonicalRoot,
 			generationId,
 			startedAt,
+			stateRoot: options.stateRoot,
 		});
-		await removeProjectCoordinatorEndpoint(canonicalRoot);
+		await removeProjectCoordinatorEndpoint(canonicalRoot, undefined, options.stateRoot);
 		const token = projectCoordinatorBearerToken();
 		const clients = new Map<string, RemoteClientLease>();
 		const runtime = {} as ProjectServerService;
@@ -318,7 +322,7 @@ export async function startProjectCoordinatorService(
 		await listenLoopback(server, boundedPort(options.port));
 		const address = server.address() as AddressInfo | null;
 		if (!address || typeof address === "string") {
-			throw new Error("Project coordinator did not receive a TCP address.");
+			throw new Error("Project Server did not receive a TCP address.");
 		}
 		const endpoint: ProjectCoordinatorEndpoint = {
 			schemaVersion: PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION,
@@ -350,6 +354,7 @@ export async function startProjectCoordinatorService(
 		Object.assign(runtime, {
 			endpoint,
 			ownership,
+			stateRoot: options.stateRoot,
 			coordinator,
 			eventJournal,
 			reactor,
@@ -376,7 +381,7 @@ export async function startProjectCoordinatorService(
 			server,
 			closing: false,
 		});
-		await writeProjectCoordinatorEndpoint(endpoint);
+		await writeProjectCoordinatorEndpoint(endpoint, options.stateRoot);
 		const sweep = setInterval(
 			() => sweepExpiredClients(runtime),
 			Math.min(Math.max(Math.floor(runtime.clientLeaseMs / 2), 250), 5_000),
@@ -393,13 +398,14 @@ export async function startProjectCoordinatorService(
 				const serverClosed = closeServer(server as Server);
 				(server as Server).closeAllConnections();
 				await coordinator.cancelJobs(
-					`Project coordinator generation ${generationId} is stopping.`,
+					`Project Server generation ${generationId} is stopping.`,
 				);
 				await serverClosed;
 				eventJournal.close();
 				coordinator.close();
 				await releaseProjectCoordinatorOwnership(
 					ownership as ProjectCoordinatorOwnership,
+					options.stateRoot,
 				);
 			})();
 			return closePromise;
@@ -436,7 +442,7 @@ export async function startProjectCoordinatorService(
 		} catch {
 			// No externally reachable service remains after startup failure.
 		}
-		if (ownership) await releaseProjectCoordinatorOwnership(ownership);
+		if (ownership) await releaseProjectCoordinatorOwnership(ownership, options.stateRoot);
 		throw error;
 	}
 }
@@ -446,7 +452,7 @@ export async function connectProjectCoordinatorClient(
 	input: ProjectCoordinatorClientInput,
 	options: ProjectCoordinatorClientRequestOptions = {},
 ): Promise<ProjectCoordinatorRemoteClient> {
-	const endpoint = await requiredEndpoint(repoRoot);
+	const endpoint = await requiredEndpoint(repoRoot, options.stateRoot);
 	const response = await requestCoordinatorJson<{
 		clientId: string;
 		connectionId: string;
@@ -645,7 +651,7 @@ export async function stopProjectCoordinatorService(
 	repoRoot: string,
 	options: ProjectCoordinatorClientRequestOptions = {},
 ): Promise<void> {
-	const endpoint = await requiredEndpoint(repoRoot);
+	const endpoint = await requiredEndpoint(repoRoot, options.stateRoot);
 	await requestCoordinatorJson(endpoint, "/v1/shutdown", {
 		method: "POST",
 		body: {},
@@ -654,6 +660,7 @@ export async function stopProjectCoordinatorService(
 	await waitForCoordinatorStop(
 		endpoint,
 		Date.now() + boundedRequestTimeout(options.timeoutMs),
+		options.stateRoot,
 	);
 }
 
@@ -661,7 +668,7 @@ export async function readProjectCoordinatorServiceState(
 	repoRoot: string,
 	options: ProjectCoordinatorClientRequestOptions = {},
 ): Promise<ProjectCoordinatorSnapshot> {
-	const endpoint = await requiredEndpoint(repoRoot);
+	const endpoint = await requiredEndpoint(repoRoot, options.stateRoot);
 	return requestCoordinatorJson(endpoint, "/v1/state", {
 		timeoutMs: options.timeoutMs,
 	});
@@ -694,7 +701,7 @@ async function routeServiceRequest(
 		writeJson(response, 403, { error: "forbidden" });
 		return;
 	}
-	if (!(await projectCoordinatorOwnershipIsCurrent(runtime.ownership))) {
+	if (!(await projectCoordinatorOwnershipIsCurrent(runtime.ownership, runtime.stateRoot))) {
 		writeJson(response, 409, {
 			error: "stale_generation",
 			generationId: runtime.endpoint.generationId,
@@ -1160,7 +1167,7 @@ function candidateAdapters(
 }
 
 async function assertCurrentGeneration(runtime: ProjectServerService): Promise<void> {
-	if (!(await projectCoordinatorOwnershipIsCurrent(runtime.ownership))) {
+	if (!(await projectCoordinatorOwnershipIsCurrent(runtime.ownership, runtime.stateRoot))) {
 		throw new HttpError(409, "stale_generation");
 	}
 }
@@ -1210,11 +1217,12 @@ function authorized(
 
 async function requiredEndpoint(
 	repoRoot: string,
+	stateRoot?: string,
 ): Promise<ProjectCoordinatorEndpoint> {
 	const canonicalRoot = realpathSync(repoRoot);
-	const endpoint = await readProjectCoordinatorEndpoint(canonicalRoot);
+	const endpoint = await readProjectCoordinatorEndpoint(canonicalRoot, stateRoot);
 	if (!endpoint) {
-		throw new Error(`No project coordinator endpoint exists for ${canonicalRoot}.`);
+		throw new Error(`No Project Server endpoint exists for ${canonicalRoot}.`);
 	}
 	return endpoint;
 }
@@ -1250,17 +1258,17 @@ async function requestCoordinatorJson<T>(
 		});
 		const declaredLength = Number(response.headers.get("content-length") || 0);
 		if (declaredLength > MAX_RESPONSE_BYTES) {
-			throw new Error("Project coordinator response exceeds 1 MiB.");
+			throw new Error("Project Server response exceeds 1 MiB.");
 		}
 		const body = await response.text();
 		if (Buffer.byteLength(body) > MAX_RESPONSE_BYTES) {
-			throw new Error("Project coordinator response exceeds 1 MiB.");
+			throw new Error("Project Server response exceeds 1 MiB.");
 		}
 		let parsed: unknown;
 		try {
 			parsed = body ? JSON.parse(body) : undefined;
 		} catch {
-			throw new Error("Project coordinator returned invalid JSON.");
+			throw new Error("Project Server returned invalid JSON.");
 		}
 		if (!response.ok) {
 			const message =
@@ -1345,7 +1353,7 @@ function runtimeTrigger(value: unknown, observedAt: number): ProjectServerTrigge
 		throw new HttpError(400, "invalid_runtime_trigger_kind");
 	}
 	if (!Number.isFinite(observedAt) || observedAt < 0) {
-		throw new Error("Project coordinator clock returned an invalid time.");
+		throw new Error("Project Server clock returned an invalid time.");
 	}
 	if (trigger.refs !== undefined && !Array.isArray(trigger.refs)) {
 		throw new HttpError(400, "invalid_runtime_trigger_refs");
@@ -1502,23 +1510,22 @@ function assertRemoteClientConnected(
 	clientId: string,
 ): void {
 	if (disconnected) {
-		throw new Error(`Project coordinator client ${clientId} is disconnected.`);
+		throw new Error(`Project Server client ${clientId} is disconnected.`);
 	}
 }
 
 async function waitForCoordinatorStop(
 	endpoint: ProjectCoordinatorEndpoint,
 	deadline: number,
+	stateRoot?: string,
 ): Promise<void> {
-	const current = await readProjectCoordinatorEndpoint(endpoint.repoRoot).catch(
-		() => undefined,
-	);
+	const current = await readProjectCoordinatorEndpoint(endpoint.repoRoot, stateRoot);
 	if (!current || current.generationId !== endpoint.generationId) return;
 	if (Date.now() >= deadline) {
-		throw new Error("Project coordinator service did not stop before timeout.");
+		throw new Error("Project Server service did not stop before timeout.");
 	}
 	await new Promise((resolve) => setTimeout(resolve, 25));
-	return waitForCoordinatorStop(endpoint, deadline);
+	return waitForCoordinatorStop(endpoint, deadline, stateRoot);
 }
 
 function compareText(left: string, right: string): number {

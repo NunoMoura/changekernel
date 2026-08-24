@@ -23,7 +23,7 @@ export interface ProjectCoordinatorEventPoll {
 
 interface EventWaiter {
 	resolve(): void;
-	timer: NodeJS.Timeout;
+	timer?: NodeJS.Timeout;
 }
 
 export class ProjectCoordinatorEventJournal {
@@ -48,9 +48,9 @@ export class ProjectCoordinatorEventJournal {
 	}
 
 	append(event: ProjectCoordinatorEvent): ProjectCoordinatorStreamEvent {
-		if (this.closed) throw new Error("Project coordinator event journal is closed.");
+		if (this.closed) throw new Error("Project Server event journal is closed.");
 		if (event.generationId !== this.generationId) {
-			throw new Error("Project coordinator event generation does not match journal.");
+			throw new Error("Project Server event generation does not match journal.");
 		}
 		const streamed = Object.freeze({ ...event, cursor: this.nextCursor++ });
 		this.events.push(streamed);
@@ -61,7 +61,7 @@ export class ProjectCoordinatorEventJournal {
 	}
 
 	async poll(input: ProjectCoordinatorEventPoll): Promise<ProjectCoordinatorEventBatch> {
-		if (this.closed) throw new Error("Project coordinator event journal is closed.");
+		if (this.closed) throw new Error("Project Server event journal is closed.");
 		const afterCursor = boundedInteger(
 			input.afterCursor,
 			0,
@@ -79,7 +79,7 @@ export class ProjectCoordinatorEventJournal {
 		) {
 			await this.wait(waitMs);
 			if (this.closed) {
-				throw new Error("Project coordinator event journal is closed.");
+				throw new Error("Project Server event journal is closed.");
 			}
 			batch = this.batch(afterCursor, maxEvents);
 		}
@@ -114,13 +114,12 @@ export class ProjectCoordinatorEventJournal {
 
 	private wait(waitMs: number): Promise<void> {
 		return new Promise((resolve) => {
-			const waiter = {
+			const waiter: EventWaiter = {
 				resolve: () => {
-					clearTimeout(waiter.timer);
+					if (waiter.timer) clearTimeout(waiter.timer);
 					this.waiters.delete(waiter);
 					resolve();
 				},
-				timer: undefined as unknown as NodeJS.Timeout,
 			};
 			waiter.timer = setTimeout(waiter.resolve, waitMs);
 			this.waiters.add(waiter);

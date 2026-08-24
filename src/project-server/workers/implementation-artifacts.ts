@@ -21,6 +21,7 @@ import {
 	type ImplementationWorkerAssignment,
 	type ImplementationWorkerReport,
 } from "./implementation-adapter.ts";
+import {projectServerStatePaths} from "../operations/paths.ts";
 
 export const IMPLEMENTATION_WORKER_DISPATCH_PACKET_SCHEMA_VERSION = 2 as const;
 
@@ -176,7 +177,7 @@ export async function cleanupImplementationWorkerArtifacts(
 }
 
 function implementationWorkerPacketDirectory(repoRoot: string): string {
-	return join(repoRoot, ".codewiki", "runtime", "worker-assignments");
+	return projectServerStatePaths({repoRoot}).workerAssignmentsRoot;
 }
 
 function implementationWorkerPacketPath(
@@ -279,9 +280,9 @@ async function cleanupPacketWorktree(
 ): Promise<boolean> {
 	const worktreePath = packet.worktreePlan.worktree?.path;
 	if (!worktreePath) return true;
-	if (!isWithinProjectServerTmp(input.repoRoot, worktreePath)) {
+	if (!isWithinProjectWorkbenches(input.repoRoot, worktreePath)) {
 		blockers.add(
-			`implementation_worker_cleanup_worktree_outside_runtime:${packet.assignment.claimId}`,
+			`implementation_worker_cleanup_worktree_outside_private_state:${packet.assignment.claimId}`,
 		);
 		return false;
 	}
@@ -443,11 +444,11 @@ function safeReportPath(repoRoot: string, path: string): string | undefined {
 }
 
 function workerReportDirectory(repoRoot: string): string {
-	return resolve(repoRoot, ".codewiki", "runtime", "workers");
+	return projectServerStatePaths({repoRoot}).workerReportsRoot;
 }
 
-function isWithinProjectServerTmp(repoRoot: string, path: string): boolean {
-	const root = `${resolve(repoRoot, ".codewiki", "runtime", "tmp")}${sep}`;
+function isWithinProjectWorkbenches(repoRoot: string, path: string): boolean {
+	const root = `${projectServerStatePaths({repoRoot}).workbenchesRoot}${sep}`;
 	return resolve(path).startsWith(root);
 }
 
@@ -455,7 +456,7 @@ async function assertNoSymlinkPath(
 	repoRoot: string,
 	path: string,
 ): Promise<void> {
-	const root = resolve(repoRoot);
+	const root = projectServerStatePaths({repoRoot}).projectStateRoot;
 	const target = resolve(path);
 	const pathFromRoot = relative(root, target);
 	if (
@@ -463,7 +464,7 @@ async function assertNoSymlinkPath(
 		pathFromRoot === ".." ||
 		pathFromRoot.startsWith(`..${sep}`)
 	) {
-		throw new Error("Implementation worker artifact path escapes repository root.");
+		throw new Error("Implementation worker artifact path escapes private project state.");
 	}
 	let current = root;
 	for (const segment of pathFromRoot.split(/[\\/]+/).filter(Boolean)) {

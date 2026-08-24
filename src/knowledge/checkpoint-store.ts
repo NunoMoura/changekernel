@@ -10,6 +10,10 @@ import {
 import {dirname, join, relative, resolve, sep} from "node:path";
 import {randomUUID} from "node:crypto";
 import {
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+} from "../project/private-state.ts";
+import {
 	assertKnowledgeCandidateCheckpoint,
 	applyKnowledgeApplicationPlan,
 	type KnowledgeCandidateCheckpoint,
@@ -51,8 +55,9 @@ export async function applyKnowledgeCandidateCheckpoint(
 	input: ApplyKnowledgeCandidateCheckpointInput,
 ): Promise<KnowledgeCheckpoint> {
 	assertKnowledgeCandidateCheckpoint(input.checkpoint, input.transition);
-	const lockPath = resolve(input.repoRoot, ".codewiki/runtime/knowledge-apply.lock");
-	await mkdir(dirname(lockPath), {recursive: true});
+	const privateState = projectServerStatePaths({repoRoot: input.repoRoot});
+	const lockPath = join(privateState.locksRoot, "knowledge-apply.lock");
+	await ensureCodeWikiStateDirectory(privateState, privateState.locksRoot);
 	try {
 		await mkdir(lockPath);
 	} catch (error) {

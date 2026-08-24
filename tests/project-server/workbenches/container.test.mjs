@@ -19,10 +19,12 @@ import {
 } from "../../../src/project-server/workbenches/container/adapter.ts";
 import { IMPLEMENTATION_WORKER_ASSIGNMENT_SCHEMA_VERSION } from "../../../src/project-server/workers/implementation-adapter.ts";
 import {producerSkills} from "../../helpers/checks.mjs";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 
 const IMAGE = `registry.example/codewiki-worker@sha256:${"a".repeat(64)}`;
 
 function assignment(root) {
+	const privateState = projectServerStatePaths({repoRoot: root});
 	return {
 		schemaVersion: IMPLEMENTATION_WORKER_ASSIGNMENT_SCHEMA_VERSION,
 		repoRoot: root,
@@ -40,16 +42,10 @@ function assignment(root) {
 		contextDigest: "sha256:context",
 		producerSkillReceipt: producerSkills().receipt,
 		prompt: "Implement the assigned container-isolated change.",
-		reportPath: join(
-			root,
-			".codewiki",
-			"runtime",
-			"workers",
-			"container-worker.json",
-		),
+		reportPath: join(privateState.workerReportsRoot, "container-worker.json"),
 		isolation: { kind: "container", ref: "container:container-worker" },
 		worktree: {
-			path: join(root, ".tmp-worktrees", "container-worker"),
+			path: join(privateState.workbenchesRoot, "container-worker"),
 			branch: "codewiki/container-worker",
 			baseRef: "abc123",
 		},

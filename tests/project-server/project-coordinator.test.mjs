@@ -36,7 +36,7 @@ function decisionJob(id, changeId, run) {
 	};
 }
 
-test("project coordinator shares one supervised generation across Pi and dashboard clients", () => {
+test("Project Server shares one supervised generation across Pi and dashboard clients", () => {
 	const root = mkdtempSync(join(tmpdir(), "codewiki-coordinator-clients-"));
 	try {
 		const events = [];
@@ -90,7 +90,7 @@ test("project coordinator shares one supervised generation across Pi and dashboa
 	}
 });
 
-test("project coordinator runs unrelated Decisions concurrently and serializes one Change", async () => {
+test("Project Server runs unrelated Decisions concurrently and serializes one Change", async () => {
 	const root = mkdtempSync(join(tmpdir(), "codewiki-coordinator-decisions-"));
 	try {
 		const coordinator = new ProjectCoordinator(root, {
@@ -148,7 +148,7 @@ test("project coordinator runs unrelated Decisions concurrently and serializes o
 	}
 });
 
-test("project coordinator serializes Planning and overlapping target resources", async () => {
+test("Project Server serializes Planning and overlapping target resources", async () => {
 	const root = mkdtempSync(join(tmpdir(), "codewiki-coordinator-lanes-"));
 	try {
 		const coordinator = new ProjectCoordinator(root, {
@@ -214,7 +214,7 @@ test("project coordinator serializes Planning and overlapping target resources",
 	}
 });
 
-test("project coordinator holds conflicting Work Units while starting independent work", async () => {
+test("Project Server holds conflicting Work Units while starting independent work", async () => {
 	const root = mkdtempSync(join(tmpdir(), "codewiki-coordinator-workers-"));
 	try {
 		const coordinator = new ProjectCoordinator(root, {
@@ -438,7 +438,7 @@ test("coordinator validates external inputs and keeps observation non-authoritat
 				new ProjectCoordinator(root, {
 					executionPolicy: "unsupported",
 				}),
-			/Unsupported project coordinator execution policy/,
+			/Unsupported Project Server execution policy/,
 		);
 		const coordinator = new ProjectCoordinator(root, {
 			generationId: "generation:validation",
@@ -453,7 +453,7 @@ test("coordinator validates external inputs and keeps observation non-authoritat
 					clientId: "invalid",
 					kind: "unsupported",
 				}),
-			/Unsupported project coordinator client kind/,
+			/Unsupported Project Server client kind/,
 		);
 		assert.throws(
 			() =>
@@ -462,7 +462,7 @@ test("coordinator validates external inputs and keeps observation non-authoritat
 					lane: {kind: "unsupported"},
 					run: () => "never",
 				}),
-			/Unsupported project coordinator lane/,
+			/Unsupported Project Server lane/,
 		);
 		assert.throws(
 			() =>

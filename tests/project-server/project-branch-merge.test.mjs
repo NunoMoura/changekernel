@@ -15,7 +15,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 
-import { createShellWorktreeCommandRunner } from "../../src/git/worktree-shell-runner.ts";
+import {createShellWorktreeCommandRunner} from "../../src/git/worktree-shell-runner.ts";
+import {projectServerStatePaths} from "../../src/project/private-state.ts";
 import { projectBranchMergeJob } from "../../src/project-server/effects/project-branch-merge.ts";
 import { ProjectServerReactor } from "../../src/project-server/coordinator/reactor.ts";
 import { appendProjectServerTraceRecords } from "../../src/project-server/persistence/trace.ts";
@@ -383,12 +384,11 @@ test("failed or malformed structured merge execution leaves target unchanged", a
 test("symbolic disabled-hooks path fails closed before branch mutation", async () => {
 	const context = await mergeFixture("hook-symlink");
 	try {
-		await mkdir(join(context.root, ".codewiki", "runtime"), {
-			recursive: true,
-		});
+		const privateTmpRoot = projectServerStatePaths({repoRoot: context.root}).tmpRoot;
+		await mkdir(privateTmpRoot, {recursive: true});
 		await symlink(
 			join(context.root, ".git", "hooks"),
-			join(context.root, ".codewiki", "runtime", "empty-hooks"),
+			join(privateTmpRoot, "empty-hooks"),
 			"dir",
 		);
 		await assert.rejects(

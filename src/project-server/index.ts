@@ -184,12 +184,72 @@ export {
 	type SessionRolloverReason,
 } from "./sessions/continuity.ts";
 export {
-	appendStoredSessionContinuity,
-	createStoredSessionContinuity,
-	readStoredSessionContinuity,
-} from "./sessions/continuity-store.ts";
+	appendProjectSessionContinuity,
+	createProjectSessionContinuity,
+	readProjectSessionContinuity,
+} from "./sessions/project-continuity-store.ts";
 export * from "./admission/external-candidate.ts";
 export * from "./harness/contracts.ts";
 export * from "./harness/service.ts";
 export * from "./mcp/binding.ts";
 export * from "./queries/operational-status.ts";
+export {
+	BACKEND_BUILD_PROTOCOL,
+	CODEWIKI_PACKAGE_LOCK_DIGEST,
+	DEFAULT_BACKEND_BUILD,
+	assertBackendBuildBinding,
+	backendBuildSupportsStateSchema,
+	createBackendBuildBinding,
+	type BackendBuildBinding,
+	type BackendDomainPluginBinding,
+	type BackendDshProfileBinding,
+	type BackendVersionBinding,
+} from "./operations/build.ts";
+export {
+	BACKEND_BACKUP_PROTOCOL,
+	BACKEND_BUILD_TRANSITION_PROTOCOL,
+	BACKEND_STATE_MIGRATION_PROTOCOL,
+	BACKEND_STATE_PROTOCOL,
+	BACKEND_STATE_RECOVERY_PROTOCOL,
+	BACKEND_STATE_RESTORE_PROTOCOL,
+	activateBackendBuild,
+	bootstrapBackendState,
+	canonicalProjectSnapshotDigest,
+	createBackendStateBackup,
+	legacyProjectStateSnapshotDigest,
+	migrateBackendState,
+	pruneBackendStateBackups,
+	readBackendStateBackup,
+	readBackendStateManifest,
+	recoverBackendStateManifest,
+	restoreBackendStateBackup,
+	type BackendBackupEntry,
+	type BackendBackupScope,
+	type BackendBuildTransitionReceipt,
+	type BackendStateBackupManifest,
+	type BackendStateManifest,
+	type BackendStateMigrationReceipt,
+	type BackendStateRecoveryReceipt,
+	type BackendStateRestoreReceipt,
+	type LegacyProjectStateEntry,
+} from "./operations/state.ts";
+export {
+	DSH_AGENT_SESSION_CUSTODY_PROTOCOL,
+	authorizeDshAgentSessionCustody,
+	type DshAgentSessionCustodyBinding,
+} from "./operations/session-custody.ts";
+export {
+	bootstrapStandaloneProjectServer,
+	readStandaloneProjectServerStatus,
+	restartStandaloneProjectServer,
+	rollbackStandaloneBackend,
+	startStandaloneProjectServer,
+	stopStandaloneProjectServer,
+	uninstallStandaloneBackendState,
+	upgradeStandaloneBackend,
+	type BackendRollbackResult,
+	type BackendUninstallResult,
+	type BackendUpgradeResult,
+	type StandaloneProjectServerOptions,
+	type StandaloneProjectServerStatus,
+} from "./operations/lifecycle.ts";

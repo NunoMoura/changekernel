@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdir, open, readdir, rm, stat, truncate } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import {open, readdir, rm, stat, truncate} from "node:fs/promises";
+import {join} from "node:path";
 import { readTraceFileSnapshot } from "./reader.ts";
 import {knowledgeTransitionSubjectIds} from "./knowledge-transition.ts";
 import { isTraceId, traceFilePath } from "./schema.ts";
@@ -16,6 +16,11 @@ import {
 	type ChangeWriteResult,
 } from "../store.ts";
 import { stableJson } from "../digest.ts";
+import {
+	assertCodeWikiStatePath,
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+} from "../../project/private-state.ts";
 import {
 	changeRecordFromTrace,
 	changeTraceId,
@@ -200,14 +205,10 @@ export class ChangeTraceStore implements ChangeStore {
 	}
 
 	private async withWriteLock<T>(run: () => Promise<T>): Promise<T> {
-		const lockPath = join(
-			this.repoRoot,
-			".codewiki",
-			"runtime",
-			"locks",
-			"change-traces.lock",
-		);
-		await mkdir(dirname(lockPath), { recursive: true });
+		const privateState = projectServerStatePaths({repoRoot: this.repoRoot});
+		const lockPath = join(privateState.locksRoot, "change-traces.lock");
+		await ensureCodeWikiStateDirectory(privateState, privateState.locksRoot);
+		await assertCodeWikiStatePath(privateState, lockPath);
 		for (let attempt = 0; attempt < LOCK_WAIT_ATTEMPTS; attempt += 1) {
 			try {
 				const handle = await open(lockPath, "wx", 0o600);

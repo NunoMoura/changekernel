@@ -46,7 +46,7 @@ const testServerStateRoot = join(
 	tmpdir(),
 	`codewiki-extension-server-state-${process.pid}`,
 );
-process.env.CODEWIKI_PROJECT_SERVER_STATE_ROOT = testServerStateRoot;
+process.env.CODEWIKI_STATE_ROOT = testServerStateRoot;
 after(() => rm(testServerStateRoot, {recursive: true, force: true}));
 
 function registerTestExtension(pi) {
@@ -138,7 +138,7 @@ async function fixture() {
 			"codewiki_test_patterns:",
 			"  - tests/project-server/**",
 			"codewiki_generated_views:",
-			"  - .codewiki/views/status.json",
+			"  - project-status",
 			"codewiki_trace_events:",
 			"  - decision.change_approved",
 			"---",

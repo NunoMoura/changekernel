@@ -65,11 +65,15 @@ function assertToolResult(result, pattern) {
 const root = mkdtempSync(
 	join(tmpdir(), "codewiki-external-package-lifecycle-"),
 );
-process.env.CODEWIKI_PROJECT_SERVER_STATE_ROOT = join(root, "server-state");
+const stateRoot = join(root, "server-state");
+process.env.CODEWIKI_STATE_ROOT = stateRoot;
+let lifecycleApi;
+let projectRoot;
+let secondProjectRoot;
 try {
 	const packRoot = join(root, "pack");
 	const installRoot = join(root, "install");
-	const projectRoot = join(root, "external-project");
+	projectRoot = join(root, "external-project");
 	mkdirSync(packRoot);
 	mkdirSync(installRoot);
 	mkdirSync(projectRoot);
@@ -96,6 +100,8 @@ try {
 	const tarball = pack.stdout.trim().split(/\r?\n/).at(-1);
 	assert.match(tarball, /^nunomoura-codewiki-.*\.tgz$/);
 	run("npm", ["install", "--prefix", installRoot, join(packRoot, tarball)]);
+	assert.equal(existsSync(join(projectRoot, ".codewiki")), false);
+	assert.equal(existsSync(stateRoot), false);
 	const packageRoot = join(
 		installRoot,
 		"node_modules",
@@ -107,8 +113,11 @@ try {
 		true,
 	);
 
-	const { default: codewikiExtension } = await import(
+	const {default: codewikiExtension} = await import(
 		pathToFileURL(join(packageRoot, "dist", "pi-extension.js")).href
+	);
+	lifecycleApi = await import(
+		pathToFileURL(join(packageRoot, "dist", "project-server", "index.js")).href
 	);
 
 	const pi = mockPi();
@@ -142,6 +151,83 @@ try {
 		ctx,
 	);
 	assert.equal(bootstrap.data.created.includes(".codewiki/config.json"), true);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "runtime")), false);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "views")), false);
+	const initialState = await lifecycleApi.bootstrapStandaloneProjectServer({
+		repoRoot: projectRoot,
+		stateRoot,
+		createdAt: "2026-06-18T08:00:00.000Z",
+	});
+	assert.equal(
+		(await lifecycleApi.readStandaloneProjectServerStatus({repoRoot: projectRoot, stateRoot})).lifecycle,
+		"stopped",
+	);
+	const firstStart = await lifecycleApi.startStandaloneProjectServer(projectRoot, {
+		stateRoot,
+		timeoutMs: 10_000,
+	});
+	assert.equal(firstStart.lifecycle, "running");
+	const restarted = await lifecycleApi.restartStandaloneProjectServer(projectRoot, {
+		stateRoot,
+		timeoutMs: 10_000,
+	});
+	assert.equal(restarted.lifecycle, "running");
+	assert.notEqual(restarted.process.generationId, firstStart.process.generationId);
+	await lifecycleApi.stopStandaloneProjectServer(projectRoot, {stateRoot, timeoutMs: 10_000});
+	secondProjectRoot = join(root, "external-project-two");
+	mkdirSync(join(secondProjectRoot, ".codewiki"), {recursive: true});
+	writeFileSync(join(secondProjectRoot, ".codewiki", "config.json"), "{}\n");
+	await lifecycleApi.bootstrapStandaloneProjectServer({
+		repoRoot: secondProjectRoot,
+		stateRoot,
+		createdAt: "2026-06-18T08:02:00.000Z",
+	});
+	const [firstMultiProject, secondMultiProject] = await Promise.all([
+		lifecycleApi.startStandaloneProjectServer(projectRoot, {stateRoot, timeoutMs: 10_000}),
+		lifecycleApi.startStandaloneProjectServer(secondProjectRoot, {stateRoot, timeoutMs: 10_000}),
+	]);
+	assert.notEqual(firstMultiProject.repositoryIdentity, secondMultiProject.repositoryIdentity);
+	await lifecycleApi.stopStandaloneProjectServer(projectRoot, {stateRoot, timeoutMs: 10_000});
+	assert.equal(
+		(await lifecycleApi.readStandaloneProjectServerStatus({
+			repoRoot: secondProjectRoot,
+			stateRoot,
+		})).lifecycle,
+		"running",
+	);
+	await lifecycleApi.stopStandaloneProjectServer(secondProjectRoot, {
+		stateRoot,
+		timeoutMs: 10_000,
+	});
+	const targetBuild = lifecycleApi.createBackendBuildBinding({
+		packageVersion: "0.4.0",
+		packageLockDigest: `sha256:${"b".repeat(64)}`,
+		dshProfiles: lifecycleApi.DEFAULT_BACKEND_BUILD.dshProfiles,
+		domainPlugins: lifecycleApi.DEFAULT_BACKEND_BUILD.domainPlugins,
+		fileSchemas: lifecycleApi.DEFAULT_BACKEND_BUILD.fileSchemas,
+		protocols: lifecycleApi.DEFAULT_BACKEND_BUILD.protocols,
+	});
+	const upgraded = await lifecycleApi.upgradeStandaloneBackend({
+		repoRoot: projectRoot,
+		stateRoot,
+		expectedStateDigest: initialState.stateDigest,
+		targetBuild,
+		transitionedAt: "2026-06-18T08:05:00.000Z",
+	});
+	assert.equal(upgraded.state.activeBuild.backendBuildDigest, targetBuild.backendBuildDigest);
+	const rolledBack = await lifecycleApi.rollbackStandaloneBackend({
+		repoRoot: projectRoot,
+		stateRoot,
+		backupId: upgraded.transition.backupId,
+		expectedStateDigest: upgraded.state.stateDigest,
+		expectedCanonicalSnapshotDigest:
+			await lifecycleApi.canonicalProjectSnapshotDigest({repoRoot: projectRoot, stateRoot}),
+		restoredAt: "2026-06-18T08:10:00.000Z",
+	});
+	assert.equal(
+		rolledBack.state.activeBuild.backendBuildDigest,
+		lifecycleApi.DEFAULT_BACKEND_BUILD.backendBuildDigest,
+	);
 	const emptyState = await stateTool.execute(
 		"post-bootstrap-state",
 		{ view: "board" },
@@ -205,38 +291,46 @@ try {
 		),
 		/decision_attention_projection_unavailable/,
 	);
+	await lifecycleApi.stopStandaloneProjectServer(projectRoot, {
+		stateRoot,
+		timeoutMs: 10_000,
+	});
+	const finalState = await lifecycleApi.readBackendStateManifest({repoRoot: projectRoot, stateRoot});
+	const uninstall = await lifecycleApi.uninstallStandaloneBackendState({
+		repoRoot: projectRoot,
+		stateRoot,
+		expectedStateDigest: finalState.stateDigest,
+		expectedCanonicalSnapshotDigest:
+			await lifecycleApi.canonicalProjectSnapshotDigest({repoRoot: projectRoot, stateRoot}),
+		uninstalledAt: "2026-06-18T10:00:00.000Z",
+	});
+	assert.equal(uninstall.privateStateRemoved, false);
+	run("npm", ["uninstall", "--prefix", installRoot, "@nunomoura/codewiki"]);
+	assert.equal(existsSync(packageRoot), false);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "config.json")), true);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "runtime")), false);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "views")), false);
 	console.log(
 		JSON.stringify(
 			{
 				ok: true,
 				projectRoot,
-				packageRoot,
 				traceId,
 				semanticToolsAbsent: true,
+				lifecycle: ["install", "bootstrap", "start", "restart", "stop", "upgrade", "rollback", "uninstall"],
 			},
 			null,
 			2,
 		),
 	);
 } finally {
-	const coordinatorApi = join(
-		root,
-		"install",
-		"node_modules",
-		"@nunomoura",
-		"codewiki",
-		"dist",
-		"runtime",
-		"coordinator",
-		"service.js",
-	);
-	if (existsSync(coordinatorApi)) {
-		const { stopProjectCoordinatorService } = await import(
-			pathToFileURL(coordinatorApi).href
-		);
-		await stopProjectCoordinatorService(join(root, "external-project"), {
-			timeoutMs: 2_000,
-		}).catch(() => undefined);
+	if (lifecycleApi) {
+		for (const repoRoot of [projectRoot, secondProjectRoot].filter(Boolean)) {
+			await lifecycleApi.stopStandaloneProjectServer(repoRoot, {
+				stateRoot,
+				timeoutMs: 2_000,
+			}).catch(() => undefined);
+		}
 	}
-	rmSync(root, { recursive: true, force: true });
+	rmSync(root, {recursive: true, force: true});
 }

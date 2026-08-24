@@ -65,7 +65,7 @@ function assertToolResult(result, pattern) {
 }
 
 const root = mkdtempSync(join(tmpdir(), "codewiki-project-local-install-"));
-process.env.CODEWIKI_PROJECT_SERVER_STATE_ROOT = join(root, "server-state");
+process.env.CODEWIKI_STATE_ROOT = join(root, "server-state");
 try {
 	const packRoot = join(root, "pack");
 	const projectRoot = join(root, "project");
@@ -234,7 +234,7 @@ try {
 		),
 	);
 } finally {
-	const coordinatorApi = join(
+	const lifecycleApi = join(
 		root,
 		"project",
 		".pi",
@@ -243,15 +243,15 @@ try {
 		"@nunomoura",
 		"codewiki",
 		"dist",
-		"runtime",
-		"coordinator",
-		"service.js",
+		"project-server",
+		"index.js",
 	);
-	if (existsSync(coordinatorApi)) {
-		const { stopProjectCoordinatorService } = await import(
-			pathToFileURL(coordinatorApi).href
+	if (existsSync(lifecycleApi)) {
+		const {stopStandaloneProjectServer} = await import(
+			pathToFileURL(lifecycleApi).href
 		);
-		await stopProjectCoordinatorService(join(root, "project"), {
+		await stopStandaloneProjectServer(join(root, "project"), {
+			stateRoot: join(root, "server-state"),
 			timeoutMs: 2_000,
 		}).catch(() => undefined);
 	}

@@ -1,7 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
 	chmod,
-	mkdir,
 	open,
 	readFile,
 	rename,
@@ -10,6 +9,11 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import {
+	assertCodeWikiStatePath,
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+} from "../operations/paths.ts";
 
 export const PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION = 1;
 const MALFORMED_LOCK_STALE_MS = 10_000;
@@ -38,24 +42,28 @@ export interface AcquireProjectCoordinatorOwnershipInput {
 	generationId: string;
 	startedAt: string;
 	pid?: number;
+	stateRoot?: string;
 }
 
-export function projectCoordinatorProjectServerDirectory(repoRoot: string): string {
-	return join(repoRoot, ".codewiki", "runtime", "coordinator");
+function projectServerProcessControlDirectory(
+	repoRoot: string,
+	stateRoot?: string,
+): string {
+	return projectServerStatePaths({repoRoot, stateRoot}).processControlRoot;
 }
 
-export function projectCoordinatorEndpointPath(repoRoot: string): string {
-	return join(projectCoordinatorProjectServerDirectory(repoRoot), "endpoint.json");
+export function projectCoordinatorEndpointPath(repoRoot: string, stateRoot?: string): string {
+	return join(projectServerProcessControlDirectory(repoRoot, stateRoot), "endpoint.json");
 }
 
-export function projectCoordinatorOwnershipPath(repoRoot: string): string {
-	return join(projectCoordinatorProjectServerDirectory(repoRoot), "owner.lock");
+export function projectCoordinatorOwnershipPath(repoRoot: string, stateRoot?: string): string {
+	return join(projectServerProcessControlDirectory(repoRoot, stateRoot), "owner.lock");
 }
 
 export async function acquireProjectCoordinatorOwnership(
 	input: AcquireProjectCoordinatorOwnershipInput,
 ): Promise<ProjectCoordinatorOwnership> {
-	await ensurePrivateProjectServerDirectory(input.repoRoot);
+	await ensurePrivateProjectServerDirectory(input.repoRoot, input.stateRoot);
 	const ownership: ProjectCoordinatorOwnership = {
 		schemaVersion: PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION,
 		repoRoot: input.repoRoot,
@@ -64,7 +72,7 @@ export async function acquireProjectCoordinatorOwnership(
 		ownerNonce: randomBytes(24).toString("base64url"),
 		startedAt: requiredText(input.startedAt, "startedAt"),
 	};
-	const path = projectCoordinatorOwnershipPath(input.repoRoot);
+	const path = projectCoordinatorOwnershipPath(input.repoRoot, input.stateRoot);
 	for (let attempt = 0; attempt < 3; attempt += 1) {
 		try {
 			const handle = await open(path, "wx", 0o600);
@@ -78,37 +86,42 @@ export async function acquireProjectCoordinatorOwnership(
 			return ownership;
 		} catch (error) {
 			if (!isAlreadyExists(error)) throw error;
-			const existing = await readProjectCoordinatorOwnership(input.repoRoot);
+			const existing = await readProjectCoordinatorOwnership(input.repoRoot, input.stateRoot);
 			if (existing && processIsAlive(existing.pid)) {
 				throw new Error(
-					`Project coordinator generation ${existing.generationId} is already running as pid ${existing.pid}.`,
+					`Project Server generation ${existing.generationId} is already running as pid ${existing.pid}.`,
 				);
 			}
 			if (!existing && !(await malformedLockIsStale(path))) {
 				throw new Error(
-					"Project coordinator ownership lock is malformed and not stale.",
+					"Project Server ownership lock is malformed and not stale.",
 				);
 			}
 			if (!(await quarantineStaleLock(path))) continue;
 		}
 	}
-	throw new Error("Could not acquire project coordinator ownership.");
+	throw new Error("Could not acquire Project Server ownership.");
 }
 
 export async function readProjectCoordinatorEndpoint(
 	repoRoot: string,
+	stateRoot?: string,
 ): Promise<ProjectCoordinatorEndpoint | undefined> {
-	const value = await readJsonFile(projectCoordinatorEndpointPath(repoRoot));
+	const paths = projectServerStatePaths({repoRoot, stateRoot});
+	const path = projectCoordinatorEndpointPath(repoRoot, stateRoot);
+	await assertCodeWikiStatePath(paths, path);
+	const value = await readJsonFile(path);
 	if (value === undefined) return undefined;
 	return parseEndpoint(value, repoRoot);
 }
 
 export async function writeProjectCoordinatorEndpoint(
 	endpoint: ProjectCoordinatorEndpoint,
+	stateRoot?: string,
 ): Promise<void> {
 	const normalized = parseEndpoint(endpoint, endpoint.repoRoot);
-	await ensurePrivateProjectServerDirectory(normalized.repoRoot);
-	const path = projectCoordinatorEndpointPath(normalized.repoRoot);
+	await ensurePrivateProjectServerDirectory(normalized.repoRoot, stateRoot);
+	const path = projectCoordinatorEndpointPath(normalized.repoRoot, stateRoot);
 	const temporary = `${path}.${process.pid}.${Date.now()}.tmp`;
 	await writeFile(temporary, `${JSON.stringify(normalized)}\n`, {
 		encoding: "utf8",
@@ -120,9 +133,13 @@ export async function writeProjectCoordinatorEndpoint(
 
 export async function readProjectCoordinatorOwnership(
 	repoRoot: string,
+	stateRoot?: string,
 ): Promise<ProjectCoordinatorOwnership | undefined> {
+	const paths = projectServerStatePaths({repoRoot, stateRoot});
+	const path = projectCoordinatorOwnershipPath(repoRoot, stateRoot);
+	await assertCodeWikiStatePath(paths, path);
 	try {
-		const value = await readJsonFile(projectCoordinatorOwnershipPath(repoRoot));
+		const value = await readJsonFile(path);
 		if (value === undefined) return undefined;
 		return parseOwnership(value, repoRoot);
 	} catch {
@@ -132,8 +149,9 @@ export async function readProjectCoordinatorOwnership(
 
 export async function projectCoordinatorOwnershipIsCurrent(
 	ownership: ProjectCoordinatorOwnership,
+	stateRoot?: string,
 ): Promise<boolean> {
-	const current = await readProjectCoordinatorOwnership(ownership.repoRoot);
+	const current = await readProjectCoordinatorOwnership(ownership.repoRoot, stateRoot);
 	return Boolean(
 		current &&
 			current.pid === ownership.pid &&
@@ -144,21 +162,27 @@ export async function projectCoordinatorOwnershipIsCurrent(
 
 export async function releaseProjectCoordinatorOwnership(
 	ownership: ProjectCoordinatorOwnership,
+	stateRoot?: string,
 ): Promise<void> {
-	if (!(await projectCoordinatorOwnershipIsCurrent(ownership))) return;
+	if (!(await projectCoordinatorOwnershipIsCurrent(ownership, stateRoot))) return;
 	await removeProjectCoordinatorEndpoint(
 		ownership.repoRoot,
 		ownership.generationId,
+		stateRoot,
 	);
-	await rm(projectCoordinatorOwnershipPath(ownership.repoRoot), { force: true });
+	await rm(projectCoordinatorOwnershipPath(ownership.repoRoot, stateRoot), { force: true });
 }
 
 export async function removeProjectCoordinatorEndpoint(
 	repoRoot: string,
 	expectedGenerationId?: string,
+	stateRoot?: string,
 ): Promise<void> {
+	const paths = projectServerStatePaths({repoRoot, stateRoot});
+	const path = projectCoordinatorEndpointPath(repoRoot, stateRoot);
+	await assertCodeWikiStatePath(paths, path);
 	if (expectedGenerationId) {
-		const endpoint = await readProjectCoordinatorEndpoint(repoRoot).catch(
+		const endpoint = await readProjectCoordinatorEndpoint(repoRoot, stateRoot).catch(
 			() => undefined,
 		);
 		if (
@@ -168,7 +192,7 @@ export async function removeProjectCoordinatorEndpoint(
 			return;
 		}
 	}
-	await rm(projectCoordinatorEndpointPath(repoRoot), { force: true });
+	await rm(path, {force: true});
 }
 
 export function projectCoordinatorBearerToken(): string {
@@ -184,10 +208,9 @@ export function safeEqual(left: string, right: string): boolean {
 	);
 }
 
-async function ensurePrivateProjectServerDirectory(repoRoot: string): Promise<void> {
-	const path = projectCoordinatorProjectServerDirectory(repoRoot);
-	await mkdir(path, { recursive: true, mode: 0o700 });
-	if (process.platform !== "win32") await chmod(path, 0o700);
+async function ensurePrivateProjectServerDirectory(repoRoot: string, stateRoot?: string): Promise<void> {
+	const paths = projectServerStatePaths({repoRoot, stateRoot});
+	await ensureCodeWikiStateDirectory(paths, paths.processControlRoot);
 }
 
 async function quarantineStaleLock(path: string): Promise<boolean> {
@@ -235,19 +258,19 @@ function parseEndpoint(
 	value: unknown,
 	repoRoot: string,
 ): ProjectCoordinatorEndpoint {
-	const record = objectRecord(value, "Project coordinator endpoint");
+	const record = objectRecord(value, "Project Server endpoint");
 	if (record.schemaVersion !== PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION) {
-		throw new Error("Project coordinator endpoint schema is unsupported.");
+		throw new Error("Project Server endpoint schema is unsupported.");
 	}
 	if (record.repoRoot !== repoRoot) {
-		throw new Error("Project coordinator endpoint belongs to another project.");
+		throw new Error("Project Server endpoint belongs to another project.");
 	}
 	const origin = requiredText(record.origin, "origin");
 	let url: URL;
 	try {
 		url = new URL(origin);
 	} catch {
-		throw new Error("Project coordinator endpoint origin is invalid.");
+		throw new Error("Project Server endpoint origin is invalid.");
 	}
 	if (
 		url.protocol !== "http:" ||
@@ -260,7 +283,7 @@ function parseEndpoint(
 		url.search ||
 		url.hash
 	) {
-		throw new Error("Project coordinator endpoint must use loopback HTTP.");
+		throw new Error("Project Server endpoint must use loopback HTTP.");
 	}
 	return {
 		schemaVersion: PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION,
@@ -277,12 +300,12 @@ function parseOwnership(
 	value: unknown,
 	repoRoot: string,
 ): ProjectCoordinatorOwnership {
-	const record = objectRecord(value, "Project coordinator ownership");
+	const record = objectRecord(value, "Project Server ownership");
 	if (record.schemaVersion !== PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION) {
-		throw new Error("Project coordinator ownership schema is unsupported.");
+		throw new Error("Project Server ownership schema is unsupported.");
 	}
 	if (record.repoRoot !== repoRoot) {
-		throw new Error("Project coordinator ownership belongs to another project.");
+		throw new Error("Project Server ownership belongs to another project.");
 	}
 	return {
 		schemaVersion: PROJECT_COORDINATOR_ENDPOINT_SCHEMA_VERSION,
@@ -303,7 +326,7 @@ function objectRecord(value: unknown, label: string): Record<string, unknown> {
 
 function requiredText(value: unknown, field: string): string {
 	if (typeof value !== "string" || !value.trim() || value.length > 1_024) {
-		throw new Error(`Project coordinator ${field} is invalid.`);
+		throw new Error(`Project Server ${field} is invalid.`);
 	}
 	return value.trim();
 }
@@ -315,7 +338,7 @@ function validPort(value: string): boolean {
 
 function positiveInteger(value: unknown, field: string): number {
 	if (!Number.isInteger(value) || (value as number) <= 0) {
-		throw new Error(`Project coordinator ${field} is invalid.`);
+		throw new Error(`Project Server ${field} is invalid.`);
 	}
 	return value as number;
 }

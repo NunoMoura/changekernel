@@ -179,7 +179,6 @@ function preservedReason(path: string): string {
 	if (path === ".codewiki/config.json") return "Existing project config";
 	if (path === ".codewiki/kb") return "Local knowledge base";
 	if (path === ".codewiki/traces") return "Workflow trace history";
-	if (path === ".codewiki/views") return "Disposable generated views";
 	return "Existing local project file";
 }
 

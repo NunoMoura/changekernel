@@ -1,8 +1,13 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import {chmod, readFile, rm, writeFile} from "node:fs/promises";
+import { join } from "node:path";
 import type { TraceRecord } from "../changes/trace/types.ts";
+import {
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+	projectStateRef,
+} from "../project/private-state.ts";
 import type { TraceUiPreviewTargetBinding } from "./binding.ts";
 import { normalizePreviewSessionId } from "./browser-adapter.ts";
 import type { PreviewIntegrationState } from "./integration.ts";
@@ -115,11 +120,9 @@ export async function capturePreviewEvidence(
 	}
 	const capturedAt = (input.now || (() => new Date()))().toISOString();
 	const id = `capture-${capturedAt.replace(/[^0-9]/g, "").slice(0, 17)}-${randomUUID().slice(0, 8)}`;
+	const privateState = projectServerStatePaths({repoRoot: input.repoRoot});
 	const captureDir = join(
-		input.repoRoot,
-		".codewiki",
-		"runtime",
-		"preview-evidence",
+		privateState.previewEvidenceRoot,
 		safeSegment(input.target.id),
 		safeSegment(input.profile.id),
 		id,
@@ -127,8 +130,7 @@ export async function capturePreviewEvidence(
 	const runner = input.commandRunner || runPlaywrightCli;
 	const session = normalizePreviewSessionId(input.sessionId);
 	const url = previewTargetUrl(input.profile.url, input.target);
-	await mkdir(captureDir, { recursive: true, mode: 0o700 });
-	await chmod(captureDir, 0o700);
+	await ensureCodeWikiStateDirectory(privateState, captureDir);
 	try {
 		await runner([`-s=${session}`, "goto", url], input.repoRoot);
 		const screenshots: PreviewEvidenceScreenshot[] = [];
@@ -153,7 +155,7 @@ export async function capturePreviewEvidence(
 			screenshots.push({
 				viewport,
 				...dimensions,
-				path: projectPath(input.repoRoot, screenshotPath),
+				path: projectStateRef(privateState, screenshotPath),
 				digest: sha256(screenshot),
 			});
 		}
@@ -189,7 +191,7 @@ export async function capturePreviewEvidence(
 			screenshots,
 			console: boundedObservation(consoleResult.stdout, input.repoRoot),
 			network: boundedObservation(networkResult.stdout, input.repoRoot),
-			manifestPath: projectPath(input.repoRoot, manifestPath),
+			manifestPath: projectStateRef(privateState, manifestPath),
 		};
 		const manifestDigest = sha256(JSON.stringify(manifest));
 		const capture = { ...manifest, manifestDigest };
@@ -242,9 +244,9 @@ function implementationCorrelations(
 			...(implementation
 				? { implementationIterationId: implementation.id }
 				: {}),
-			...(iteration !== undefined
-				? { implementationIteration: iteration }
-				: {}),
+			...(iteration === undefined
+				? {}
+				: { implementationIteration: iteration }),
 		};
 	});
 }
@@ -353,10 +355,6 @@ async function runCommand(
 
 function appendBounded(current: string, next: string): string {
 	return `${current}${next}`.slice(-MAX_COMMAND_OUTPUT_BYTES);
-}
-
-function projectPath(repoRoot: string, path: string): string {
-	return relative(repoRoot, path).split("\\").join("/");
 }
 
 function safeSegment(value: string): string {

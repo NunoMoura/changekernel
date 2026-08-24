@@ -43,13 +43,13 @@ export async function openAppServerSessionAuthorization(input: {
 	readonly binding?: ProjectServerSessionBinding;
 	readonly adapter?: ProjectServerEndpointAuthorizationAdapter;
 	readonly lifetimeSeconds?: number;
-	readonly projectServerStateRoot?: string;
+	readonly stateRoot?: string;
 }): Promise<AppServerSessionAuthorization> {
 	let binding = input.binding;
 	if (!binding) {
 		const connection = await resolveLocalAppServerConnection({
 			repoRoot: input.repoRoot,
-			projectServerStateRoot: input.projectServerStateRoot,
+			stateRoot: input.stateRoot,
 		});
 		binding = Object.freeze({
 			actor: connection.actor,

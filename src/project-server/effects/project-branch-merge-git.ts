@@ -8,6 +8,7 @@ import type {
 	WorktreeCommandRunner,
 } from "../../git/worktrees.ts";
 import type { TraceEvent } from "../../changes/trace/types.ts";
+import {projectServerStatePaths} from "../operations/paths.ts";
 
 const GIT_OBJECT_ID = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/u;
 const MAX_GIT_OUTPUT_BYTES = 8 * 1024 * 1024;
@@ -72,10 +73,12 @@ export async function promoteProjectBranch(
 }
 
 async function prepareDisabledHooksDirectory(repoRoot: string): Promise<string> {
-	const hooksPath = resolve(repoRoot, ".codewiki", "runtime", "empty-hooks");
+	const privateState = projectServerStatePaths({repoRoot});
+	const hooksPath = resolve(privateState.tmpRoot, "empty-hooks");
 	for (const path of [
-		resolve(repoRoot, ".codewiki"),
-		resolve(repoRoot, ".codewiki", "runtime"),
+		privateState.stateRoot,
+		privateState.projectStateRoot,
+		privateState.tmpRoot,
 		hooksPath,
 	]) {
 		try {
@@ -215,9 +218,7 @@ async function readProjectCheckout(
 	const unsafeDirtyPaths = parseGitPorcelainPaths(status).filter(
 		(path) =>
 			path !== ".codewiki/traces" &&
-			!path.startsWith(".codewiki/traces/") &&
-			path !== ".codewiki/runtime" &&
-			!path.startsWith(".codewiki/runtime/"),
+			!path.startsWith(".codewiki/traces/"),
 	);
 	if (unsafeDirtyPaths.length > 0) {
 		throw new Error(

@@ -1,7 +1,6 @@
 import {randomBytes, timingSafeEqual} from "node:crypto";
 import {realpath} from "node:fs/promises";
 import {homedir} from "node:os";
-import {join} from "node:path";
 import {CLIENT_PAIRING_PROTOCOL} from "../../protocol/client-pairing.ts";
 import {canonicalJsonDigest} from "../../utils/canonical-json.ts";
 import {
@@ -9,6 +8,12 @@ import {
 	type ProjectServerAuthenticationAssertion,
 } from "../authentication/proof.ts";
 import {issueClientPairing} from "../pairing/commands.ts";
+import {
+	defaultCodeWikiStateRoot,
+	ensureCodeWikiStateDirectory,
+	projectRepositoryIdentity,
+	projectServerStatePaths,
+} from "../operations/paths.ts";
 import {
 	PROJECT_SERVER_REGISTRY_PROTOCOL,
 	normalizeProjectServerRegistrySnapshot,
@@ -19,17 +24,12 @@ import {
 	type ProjectServerRegistrySnapshot,
 } from "./state.ts";
 
-const PROJECT_SERVER_STATE_ROOT_ENV = "CODEWIKI_PROJECT_SERVER_STATE_ROOT";
-
 export async function resolveLocalAppServerConnection(input: {
 	readonly repoRoot: string;
-	readonly projectServerStateRoot?: string;
+	readonly stateRoot?: string;
 }): Promise<ResolvedProjectServerConnection> {
 	const projectRoot = await realpath(input.repoRoot);
-	const repositoryIdentity = canonicalJsonDigest({
-		kind: "codewiki.local-project",
-		repoRoot: projectRoot,
-	});
+	const repositoryIdentity = projectRepositoryIdentity(projectRoot);
 	const identityKey = digestKey({
 		kind: "codewiki.local-os-identity",
 		home: homedir(),
@@ -67,15 +67,18 @@ export async function resolveLocalAppServerConnection(input: {
 			},
 		},
 	});
-	const projectServerStateRoot = input.projectServerStateRoot || defaultProjectServerStateRoot();
+	const stateRoot = input.stateRoot || defaultCodeWikiStateRoot();
+	const privateState = projectServerStatePaths({repoRoot: projectRoot, stateRoot});
+	const registryRoot = privateState.registryRoot;
+	await ensureCodeWikiStateDirectory(privateState, registryRoot);
 	let registry = await ensureLocalActorAndProject({
-		projectServerStateRoot,
+		registryRoot,
 		projectRoot,
 		repositoryIdentity,
 		local,
 	});
 	registry = await ensureLocalPairing({
-		projectServerStateRoot,
+		registryRoot,
 		registry,
 		authentication,
 		pairingId: local.pairingId,
@@ -90,7 +93,7 @@ export async function resolveLocalAppServerConnection(input: {
 }
 
 async function ensureLocalActorAndProject(input: {
-	readonly projectServerStateRoot: string;
+	readonly registryRoot: string;
 	readonly projectRoot: string;
 	readonly repositoryIdentity: `sha256:${string}`;
 	readonly local: {
@@ -101,7 +104,7 @@ async function ensureLocalActorAndProject(input: {
 	};
 }): Promise<ProjectServerRegistrySnapshot> {
 	for (let attempt = 0; attempt < 4; attempt += 1) {
-		const current = await readProjectServerRegistrySnapshot(input.projectServerStateRoot);
+		const current = await readProjectServerRegistrySnapshot(input.registryRoot);
 		const actor = current?.actors.find((record) =>
 			record.authenticatedIdentities.some(
 				(identity) => identity.identityRef === input.local.authenticatedIdentityRef,
@@ -156,7 +159,7 @@ async function ensureLocalActorAndProject(input: {
 		});
 		try {
 			return await writeProjectServerRegistrySnapshot({
-				projectServerStateRoot: input.projectServerStateRoot,
+				registryRoot: input.registryRoot,
 				expectedGeneration: current?.generation ?? 0,
 				snapshot: next,
 			});
@@ -168,7 +171,7 @@ async function ensureLocalActorAndProject(input: {
 }
 
 async function ensureLocalPairing(input: {
-	readonly projectServerStateRoot: string;
+	readonly registryRoot: string;
 	readonly registry: ProjectServerRegistrySnapshot;
 	readonly authentication: ProjectServerAuthenticationAssertion;
 	readonly pairingId: string;
@@ -197,35 +200,18 @@ async function ensureLocalPairing(input: {
 		});
 		try {
 			return await writeProjectServerRegistrySnapshot({
-				projectServerStateRoot: input.projectServerStateRoot,
+				registryRoot: input.registryRoot,
 				expectedGeneration: registry.generation,
 				snapshot: issued,
 			});
 		} catch (error) {
 			if (!isRegistryConflict(error) || attempt === 3) throw error;
-			const current = await readProjectServerRegistrySnapshot(input.projectServerStateRoot);
+			const current = await readProjectServerRegistrySnapshot(input.registryRoot);
 			if (!current) throw new Error("Local App Registry disappeared during Pairing.");
 			registry = current;
 		}
 	}
 	throw new Error("Local App Pairing did not converge.");
-}
-
-function defaultProjectServerStateRoot(): string {
-	const configured = process.env[PROJECT_SERVER_STATE_ROOT_ENV];
-	if (configured) return configured;
-	if (process.platform === "win32") {
-		return join(
-			process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local"),
-			"CodeWiki",
-			"Server",
-		);
-	}
-	return join(
-		process.env.XDG_STATE_HOME || join(homedir(), ".local", "state"),
-		"codewiki",
-		"server",
-	);
 }
 
 function digestKey(value: unknown): string {

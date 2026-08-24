@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { pathMatchesPattern } from "../domains/project-server.ts";
-import { traceTmpPath } from "../project-server/persistence/tmp.ts";
+import {projectServerStatePaths} from "../project/private-state.ts";
 import type { WikiConfigWorktreeIsolation } from "../project/config.ts";
 import type { ProjectServerWorkUnitClaimCandidate } from "../project-server/claims/work-unit-selection.ts";
 
@@ -316,7 +316,11 @@ function defaultWorktreeRoot(
 	item: ProjectServerWorkUnitClaimCandidate,
 ): string {
 	const repoRoot = resolve(options.repoRoot || ".");
-	return resolve(repoRoot, traceTmpPath(item.traceId, "worktree"));
+	return resolve(
+		projectServerStatePaths({repoRoot}).workbenchesRoot,
+		safeSegment(item.traceId, "trace"),
+		"worktree",
+	);
 }
 
 function commandPlan(

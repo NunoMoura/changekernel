@@ -11,12 +11,14 @@ import {
 import { scheduleImplementationWorkerAssignments } from "../../../src/project-server/workers/jobs.ts";
 import { ProjectCoordinator } from "../../../src/project-server/coordinator/project.ts";
 import {producerSkills} from "../../helpers/checks.mjs";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 import {
 	connectProjectCoordinatorClient,
 	startProjectCoordinatorService,
 } from "../../../src/project-server/coordinator/service.ts";
 
 function assignment(root, id, pathScope) {
+	const privateState = projectServerStatePaths({repoRoot: root});
 	return {
 		schemaVersion: IMPLEMENTATION_WORKER_ASSIGNMENT_SCHEMA_VERSION,
 		repoRoot: root,
@@ -34,10 +36,10 @@ function assignment(root, id, pathScope) {
 		contextDigest: `sha256:context-${id}`,
 		producerSkillReceipt: producerSkills().receipt,
 		prompt: `Implement ${id}.`,
-		reportPath: join(root, ".codewiki", "runtime", "workers", `${id}.json`),
+		reportPath: join(privateState.workerReportsRoot, `${id}.json`),
 		isolation: { kind: "worktree", ref: `worktree:${id}` },
 		worktree: {
-			path: join(root, ".codewiki", "runtime", "worktrees", id),
+			path: join(privateState.workbenchesRoot, id),
 			branch: `codewiki/${id}`,
 			baseRef: "abc123",
 		},

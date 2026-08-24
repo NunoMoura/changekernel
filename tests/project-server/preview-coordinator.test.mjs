@@ -379,7 +379,7 @@ describe("preview coordinator", () => {
 							truncated: false,
 							digest: `sha256:${"c".repeat(64)}`,
 						},
-						manifestPath: ".codewiki/runtime/preview-evidence/manifest.json",
+						manifestPath: "codewiki-state://project/runtime/preview-evidence/manifest.json",
 						manifestDigest: `sha256:${"d".repeat(64)}`,
 					};
 				},

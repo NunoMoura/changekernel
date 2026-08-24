@@ -8,6 +8,7 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import {projectServerStatePaths} from "../operations/paths.ts";
 
 const PRODUCT_RELEASE_MANIFEST_SCHEMA_VERSION = 1 as const;
 
@@ -122,11 +123,7 @@ function releaseManifestPath(
 	identity: ProductReleaseManifestIdentity,
 ): string {
 	return join(
-		repoRoot,
-		".codewiki",
-		"runtime",
-		"releases",
-		"manifests",
+		projectServerStatePaths({repoRoot}).releaseManifestsRoot,
 		`${identity.jobId.slice(-64)}.json`,
 	);
 }
@@ -135,17 +132,19 @@ async function assertPrivateReleasePath(
 	repoRoot: string,
 	path: string,
 ): Promise<void> {
+	const privateState = projectServerStatePaths({repoRoot});
 	for (const candidate of [
-		join(repoRoot, ".codewiki"),
-		join(repoRoot, ".codewiki", "runtime"),
-		join(repoRoot, ".codewiki", "runtime", "releases"),
-		join(repoRoot, ".codewiki", "runtime", "releases", "manifests"),
+		privateState.stateRoot,
+		privateState.projectStateRoot,
+		privateState.projectServerRoot,
+		privateState.effectsRoot,
+		privateState.releaseManifestsRoot,
 		path,
 	]) {
 		try {
 			const metadata = await lstat(candidate);
 			if (metadata.isSymbolicLink()) {
-				throw new Error("Product release runtime path cannot be symbolic.");
+				throw new Error("Product release private path cannot be symbolic.");
 			}
 		} catch (error) {
 			if (!isNotFound(error)) throw error;

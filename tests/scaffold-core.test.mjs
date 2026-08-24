@@ -5,7 +5,6 @@ import { CODEWIKI_EXTENSION_AVAILABLE } from "../src/index.ts";
 import * as packageApi from "../src/index.ts";
 import * as projectServerApi from "../src/project-server/index.ts";
 import * as runtimeApi from "../src/runtime/index.ts";
-import { traceTmpPath } from "../src/project-server/persistence/tmp.ts";
 import packageJson from "../package.json" with { type: "json" };
 import tsconfig from "../tsconfig.json" with { type: "json" };
 import buildTsconfig from "../tsconfig.build.json" with { type: "json" };
@@ -96,24 +95,42 @@ describe("fresh scaffold", () => {
 
 	it("publishes one curated Project Server command and query surface", () => {
 		assert.deepEqual(Object.keys(projectServerApi).sort(), [
+			"BACKEND_BACKUP_PROTOCOL",
+			"BACKEND_BUILD_PROTOCOL",
+			"BACKEND_BUILD_TRANSITION_PROTOCOL",
+			"BACKEND_STATE_MIGRATION_PROTOCOL",
+			"BACKEND_STATE_PROTOCOL",
+			"BACKEND_STATE_RECOVERY_PROTOCOL",
+			"BACKEND_STATE_RESTORE_PROTOCOL",
 			"CHANGE_INTAKE_RUNTIME_PROTOCOL",
 			"CODEWIKI_MCP_NAMESPACE",
 			"CODEWIKI_MCP_OPERATIONS",
+			"CODEWIKI_PACKAGE_LOCK_DIGEST",
+			"DEFAULT_BACKEND_BUILD",
+			"DSH_AGENT_SESSION_CUSTODY_PROTOCOL",
 			"EXTERNAL_CANDIDATE_CAPTURE_PROTOCOL",
 			"HARNESS_OBSERVER_PROJECTION_PROTOCOL",
 			"SCHEDULING_PLAN_PROTOCOL",
 			"SESSION_CONTINUITY_PROTOCOL",
 			"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
 			"acquireSessionLease",
+			"activateBackendBuild",
 			"admitExternalCandidateCapture",
-			"appendStoredSessionContinuity",
+			"appendProjectSessionContinuity",
+			"assertBackendBuildBinding",
 			"assertCurrentAggregateReviewAttempt",
 			"assertExternalCandidateCapture",
 			"assertHarnessInteractionBinding",
 			"assertHarnessObserverProjection",
 			"assertSessionContinuityRecord",
+			"authorizeDshAgentSessionCustody",
+			"backendBuildSupportsStateSchema",
+			"backendOperationalBinding",
+			"bootstrapBackendState",
+			"bootstrapStandaloneProjectServer",
 			"buildProjectWikiState",
 			"buildWikiState",
+			"canonicalProjectSnapshotDigest",
 			"commitGuardedDelivery",
 			"commitImplementationAggregate",
 			"commitPrivateIntegrationAdmission",
@@ -121,6 +138,8 @@ describe("fresh scaffold", () => {
 			"commitSessionRunReceipt",
 			"connectProjectServerApi",
 			"createAggregateReviewAttempt",
+			"createBackendBuildBinding",
+			"createBackendStateBackup",
 			"createChangeIntakeProjectServer",
 			"createCodeWikiLoopExecutionPorts",
 			"createCodewikiMcpBinding",
@@ -137,19 +156,29 @@ describe("fresh scaffold", () => {
 			"createPrivateIntegrationAdmission",
 			"createProjectSchedulingPlan",
 			"createProjectServerApi",
+			"createProjectSessionContinuity",
 			"createSchedulingOperationSequence",
 			"createSessionContinuity",
-			"createStoredSessionContinuity",
 			"createWorkUnitModelAssignment",
 			"deriveReadyWorkUnits",
 			"executionFailureFromProviderReceipt",
 			"expireSessionLease",
+			"legacyProjectStateSnapshotDigest",
+			"migrateBackendState",
 			"normalizeCodewikiMcpRequest",
 			"privateChangeIntegrationRef",
 			"projectOperationalStatus",
-			"readStoredSessionContinuity",
+			"pruneBackendStateBackups",
+			"readBackendStateBackup",
+			"readBackendStateManifest",
+			"readProjectSessionContinuity",
+			"readStandaloneProjectServerStatus",
+			"recoverBackendStateManifest",
 			"requestSessionLeaseCancellation",
 			"resolveExecutionRecovery",
+			"restartStandaloneProjectServer",
+			"restoreBackendStateBackup",
+			"rollbackStandaloneBackend",
 			"rolloverSessionContinuity",
 			"runHarnessProducerTurn",
 			"runModelRouteForAssignment",
@@ -161,7 +190,11 @@ describe("fresh scaffold", () => {
 			"runWikiDecide",
 			"runWikiOkf",
 			"runWikiPlan",
+			"startStandaloneProjectServer",
 			"stopProjectServer",
+			"stopStandaloneProjectServer",
+			"uninstallStandaloneBackendState",
+			"upgradeStandaloneBackend",
 			"wikiChangeOperationMutates",
 		]);
 	});
@@ -177,10 +210,4 @@ describe("fresh scaffold", () => {
 		assert.equal("createProjectServerApi" in runtimeApi, false);
 	});
 
-	it("keeps temporary trace scratch under runtime tmp", () => {
-		assert.equal(
-			traceTmpPath("TRACE-20260611-example", "planning"),
-			".codewiki/runtime/tmp/TRACE-20260611-example/planning",
-		);
-	});
 });

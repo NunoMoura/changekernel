@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import {join} from "node:path";
+import {pathToFileURL} from "node:url";
 
 function run(command, args, options = {}) {
 	const result = spawnSync(command, args, {
@@ -38,9 +39,12 @@ async function waitFor(messages, predicate, stderrRef, timeoutMs = 15_000) {
 
 const root = mkdtempSync(join(tmpdir(), "codewiki-pi-rpc-smoke-"));
 let child;
+let packageRoot;
+let projectRoot;
+let stateRoot;
 try {
 	const packRoot = join(root, "pack");
-	const projectRoot = join(root, "project");
+	projectRoot = join(root, "project");
 	const installRoot = join(root, "npm-install");
 	mkdirSync(packRoot);
 	mkdirSync(projectRoot);
@@ -51,18 +55,19 @@ try {
 	assert.match(tarball, /^nunomoura-codewiki-.*\.tgz$/);
 
 	run("npm", ["install", "--prefix", installRoot, join(packRoot, tarball)]);
-	const packageRoot = join(
+	packageRoot = join(
 		installRoot,
 		"node_modules",
 		"@nunomoura",
 		"codewiki",
 	);
+	stateRoot = join(root, "server-state");
 	const env = {
 		...process.env,
 		PI_CODING_AGENT_DIR: join(root, "agent"),
 		PI_CODING_AGENT_SESSION_DIR: join(root, "sessions"),
 		PI_OFFLINE: "1",
-		CODEWIKI_PROJECT_SERVER_STATE_ROOT: join(root, "server-state"),
+		CODEWIKI_STATE_ROOT: stateRoot,
 	};
 	run("pi", ["install", "-l", packageRoot, "--approve"], {
 		cwd: projectRoot,
@@ -148,7 +153,8 @@ try {
 	assert.equal(existsSync(join(projectRoot, ".codewiki", "config.json")), true);
 	assert.equal(existsSync(join(projectRoot, ".codewiki", "kb")), true);
 	assert.equal(existsSync(join(projectRoot, ".codewiki", "traces")), true);
-	assert.equal(existsSync(join(projectRoot, ".codewiki", "views")), true);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "views")), false);
+	assert.equal(existsSync(join(projectRoot, ".codewiki", "runtime")), false);
 	messages.length = 0;
 
 	send({
@@ -200,6 +206,16 @@ try {
 		),
 	);
 } finally {
+	if (packageRoot && projectRoot && stateRoot) {
+		const lifecyclePath = join(packageRoot, "dist", "project-server", "index.js");
+		if (existsSync(lifecyclePath)) {
+			const lifecycle = await import(pathToFileURL(lifecyclePath).href);
+			await lifecycle.stopStandaloneProjectServer(projectRoot, {
+				stateRoot,
+				timeoutMs: 2_000,
+			}).catch(() => undefined);
+		}
+	}
 	if (child && !child.killed) child.kill("SIGTERM");
-	rmSync(root, { recursive: true, force: true });
+	rmSync(root, {recursive: true, force: true});
 }

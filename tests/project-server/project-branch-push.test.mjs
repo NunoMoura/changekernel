@@ -21,7 +21,8 @@ import { projectBranchPushJob } from "../../src/project-server/effects/project-b
 import { ProjectServerReactor } from "../../src/project-server/coordinator/reactor.ts";
 import { appendProjectServerTraceRecords } from "../../src/project-server/persistence/trace.ts";
 import { buildProjectWorkState } from "../../src/work-state/project.ts";
-import { seedProjectServerImplementation } from "../helpers/project-server-implementation.mjs";
+import {seedProjectServerImplementation} from "../helpers/project-server-implementation.mjs";
+import {projectServerStatePaths} from "../../src/project/private-state.ts";
 
 const execFile = promisify(execFileCallback);
 
@@ -175,7 +176,10 @@ async function remoteCommit(context) {
 }
 
 async function advanceRemote(context, suffix) {
-	const path = join(context.root, ".codewiki", "runtime", `remote-${suffix}`);
+	const path = join(
+		projectServerStatePaths({repoRoot: context.root}).tmpRoot,
+		`remote-${suffix}`,
+	);
 	await git(context.root, ["worktree", "add", "-q", "-b", `remote-${suffix}`, path, context.baseCommit]);
 	await git(path, ["config", "user.name", "Remote Test"]);
 	await git(path, ["config", "user.email", "remote@example.test"]);
@@ -464,12 +468,12 @@ test("dirty checkout, credential URL, and malformed runner fail closed", async (
 test("symbolic push recovery path fails closed before remote mutation", async () => {
 	const context = await pushFixture("manifest-symlink");
 	try {
-		const pushesPath = join(context.root, ".codewiki", "runtime", "pushes");
-		await mkdir(dirname(pushesPath), { recursive: true });
+		const pushesPath = projectServerStatePaths({repoRoot: context.root}).pushManifestsRoot;
+		await mkdir(dirname(pushesPath), {recursive: true});
 		await symlink(context.remoteRoot, pushesPath, "dir");
 		await assert.rejects(
 			pushJob(context).run(new AbortController().signal),
-			/runtime path cannot be symbolic/i,
+			/private path cannot be symbolic/i,
 		);
 		assert.equal(await remoteCommit(context), context.baseCommit);
 	} finally {

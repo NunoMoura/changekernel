@@ -1,9 +1,14 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 
 import type { ProductPublicationArtifact } from "./product-publication-contract.ts";
+import {
+	projectServerStatePaths,
+	resolveProjectStateRef,
+	type ProjectServerStatePaths,
+} from "../operations/paths.ts";
 
 const MAX_PUBLICATION_ARTIFACT_BYTES = 128 * 1024 * 1024;
 
@@ -14,24 +19,15 @@ export async function verifyProductPublicationArtifact(
 ): Promise<string> {
 	signal.throwIfAborted();
 	assertArtifactShape(artifact);
-	const artifactRoot = resolve(
-		repoRoot,
-		".codewiki",
-		"runtime",
-		"publications",
-		"artifacts",
-	);
-	const artifactPath = resolve(repoRoot, artifact.path);
-	if (
-		isAbsolute(artifact.path) ||
-		!isWithin(artifactRoot, artifactPath) ||
-		artifactPath === artifactRoot
-	) {
+	const paths = projectServerStatePaths({repoRoot});
+	const artifactRoot = paths.publicationArtifactsRoot;
+	const artifactPath = resolveProjectStateRef(paths, artifact.path);
+	if (!isWithin(artifactRoot, artifactPath) || artifactPath === artifactRoot) {
 		throw new Error(
-			"Product publication artifact must be a file under .codewiki/runtime/publications/artifacts/.",
+			"Product publication artifact must reference private publication artifacts.",
 		);
 	}
-	await assertNonSymbolicPath(repoRoot, artifactPath);
+	await assertNonSymbolicPath(paths, artifactPath);
 	const canonicalRoot = await realpath(artifactRoot);
 	const canonicalPath = await realpath(artifactPath);
 	if (!isWithin(canonicalRoot, canonicalPath)) {
@@ -80,20 +76,15 @@ function assertArtifactShape(artifact: ProductPublicationArtifact): void {
 }
 
 async function assertNonSymbolicPath(
-	repoRoot: string,
+	paths: ProjectServerStatePaths,
 	artifactPath: string,
 ): Promise<void> {
-	const artifactRoot = join(
-		repoRoot,
-		".codewiki",
-		"runtime",
-		"publications",
-		"artifacts",
-	);
+	const artifactRoot = paths.publicationArtifactsRoot;
 	const candidates = [
-		join(repoRoot, ".codewiki"),
-		join(repoRoot, ".codewiki", "runtime"),
-		join(repoRoot, ".codewiki", "runtime", "publications"),
+		paths.stateRoot,
+		paths.projectStateRoot,
+		paths.runtimeRoot,
+		join(paths.runtimeRoot, "publications"),
 		artifactRoot,
 	];
 	let current = artifactPath;

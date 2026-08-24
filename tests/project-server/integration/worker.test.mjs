@@ -17,7 +17,8 @@ import { implementationWorkerIntegrationJob } from "../../../src/project-server/
 import { ProjectServerReactor } from "../../../src/project-server/coordinator/reactor.ts";
 import { appendProjectServerTraceRecords } from "../../../src/project-server/persistence/trace.ts";
 import {producerSkills} from "../../helpers/checks.mjs";
-import { seedProjectServerImplementation } from "../../helpers/project-server-implementation.mjs";
+import {seedProjectServerImplementation} from "../../helpers/project-server-implementation.mjs";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 
 const execFile = promisify(execFileCallback);
 
@@ -40,13 +41,8 @@ async function integrationFixture(suffix, pathScopes = ["src/**"]) {
 		suffix,
 		pathScopes,
 	});
-	const workerPath = join(
-		root,
-		".codewiki",
-		"runtime",
-		"tmp",
-		`worker-${suffix}`,
-	);
+	const privateState = projectServerStatePaths({repoRoot: root});
+	const workerPath = join(privateState.workbenchesRoot, `worker-${suffix}`);
 	await mkdir(join(workerPath, ".."), { recursive: true });
 	await git(root, [
 		"worktree",
@@ -80,13 +76,7 @@ async function integrationFixture(suffix, pathScopes = ["src/**"]) {
 		contextDigest: `sha256:${"b".repeat(64)}`,
 		producerSkillReceipt: producerSkills().receipt,
 		prompt: "Implement exact fixture.",
-		reportPath: join(
-			root,
-			".codewiki",
-			"runtime",
-			"workers",
-			`${"c".repeat(32)}.json`,
-		),
+		reportPath: join(privateState.workerReportsRoot, `${"c".repeat(32)}.json`),
 		isolation: { kind: "worktree", ref: workerPath },
 		worktree: {
 			path: workerPath,

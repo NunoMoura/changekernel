@@ -21,7 +21,7 @@ const binding = {
 };
 
 describe("preview integration checkout state", () => {
-	it("binds evidence to exact clean and dirty Git trees while ignoring runtime artifacts", async () => {
+	it("binds evidence to exact Git trees and treats legacy runtime residue as dirty", async () => {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-preview-integration-"));
 		try {
 			await writeFile(join(root, "app.ts"), "export const value = 1;\n");
@@ -56,8 +56,9 @@ describe("preview integration checkout state", () => {
 				repoRoot: root,
 				binding,
 			});
-			assert.equal(runtimeOnly.dirty, false);
-			assert.equal(runtimeOnly.workingTreeDigest, clean.workingTreeDigest);
+			assert.equal(runtimeOnly.dirty, true);
+			assert.deepEqual(runtimeOnly.dirtyPaths, [".codewiki/"]);
+			assert.notEqual(runtimeOnly.workingTreeDigest, clean.workingTreeDigest);
 
 			await writeFile(join(root, "app.ts"), "export const value = 2;\n");
 			await writeFile(join(root, "new.ts"), "export const added = true;\n");
@@ -66,7 +67,7 @@ describe("preview integration checkout state", () => {
 				binding,
 			});
 			assert.equal(dirty.dirty, true);
-			assert.deepEqual(dirty.dirtyPaths, ["app.ts", "new.ts"]);
+			assert.deepEqual(dirty.dirtyPaths, [".codewiki/", "app.ts", "new.ts"]);
 			assert.notEqual(dirty.workingTreeDigest, clean.workingTreeDigest);
 
 			const conflicted = await readPreviewIntegrationState({

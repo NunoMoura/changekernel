@@ -229,6 +229,7 @@ export function ingestProviderCheckReceiptEvidence(
 			? {stdoutDigest: receipt.providerPayloadDigest}
 			: {}),
 	});
+	// SAFETY: canonical conversion preserves this validated JSON-compatible receipt shape.
 	const body = toCanonicalJsonValue({
 		protocol: PROVIDER_CHECK_RECEIPT_EVIDENCE_ADAPTER_PROTOCOL,
 		artifact,

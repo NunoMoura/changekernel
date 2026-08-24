@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import {spawnSync} from "node:child_process";
+import {pathToFileURL} from "node:url";
 
 function run(command, args, options = {}) {
 	const result = spawnSync(command, args, {
@@ -19,6 +20,9 @@ function run(command, args, options = {}) {
 }
 
 const root = mkdtempSync(join(tmpdir(), "codewiki-package-smoke-"));
+const previousStateRoot = process.env.CODEWIKI_STATE_ROOT;
+const stateRoot = join(root, "state");
+process.env.CODEWIKI_STATE_ROOT = stateRoot;
 try {
 	const pack = run("npm", ["pack", "--pack-destination", root]);
 	const tarball = pack.stdout.trim().split(/\r?\n/).at(-1);
@@ -168,7 +172,10 @@ assert.equal(existsSync(join(packageRoot, "dist", "project-server", "reactor.js"
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "semantic-job-id.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "semantic-executor.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "persistence", "dev-log.js")), true);
-assert.equal(existsSync(join(packageRoot, "dist", "project-server", "persistence", "tmp.js")), true);
+assert.equal(existsSync(join(packageRoot, "dist", "project-server", "persistence", "tmp.js")), false);
+assert.equal(existsSync(join(packageRoot, "dist", "project-server", "operations", "state.js")), true);
+assert.equal(existsSync(join(packageRoot, "dist", "project-server", "operations", "lifecycle.js")), true);
+assert.equal(existsSync(join(packageRoot, "dist", "project", "private-state.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "persistence", "trace.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "pairing", "authorization.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "pairing", "authorization.d.ts")), true);
@@ -497,24 +504,42 @@ assert.equal(typeof checksModule.prepareCheckPackTransport, "function");
 assert.equal(typeof checksModule.installCheckPackTransport, "function");
 const projectServerModule = await import("@nunomoura/codewiki/project-server");
 assert.deepEqual(Object.keys(projectServerModule).sort(), [
+	"BACKEND_BACKUP_PROTOCOL",
+	"BACKEND_BUILD_PROTOCOL",
+	"BACKEND_BUILD_TRANSITION_PROTOCOL",
+	"BACKEND_STATE_MIGRATION_PROTOCOL",
+	"BACKEND_STATE_PROTOCOL",
+	"BACKEND_STATE_RECOVERY_PROTOCOL",
+	"BACKEND_STATE_RESTORE_PROTOCOL",
 	"CHANGE_INTAKE_RUNTIME_PROTOCOL",
 	"CODEWIKI_MCP_NAMESPACE",
 	"CODEWIKI_MCP_OPERATIONS",
+	"CODEWIKI_PACKAGE_LOCK_DIGEST",
+	"DEFAULT_BACKEND_BUILD",
+	"DSH_AGENT_SESSION_CUSTODY_PROTOCOL",
 	"EXTERNAL_CANDIDATE_CAPTURE_PROTOCOL",
 	"HARNESS_OBSERVER_PROJECTION_PROTOCOL",
 	"SCHEDULING_PLAN_PROTOCOL",
 	"SESSION_CONTINUITY_PROTOCOL",
 	"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
 	"acquireSessionLease",
+	"activateBackendBuild",
 	"admitExternalCandidateCapture",
-	"appendStoredSessionContinuity",
+	"appendProjectSessionContinuity",
+	"assertBackendBuildBinding",
 	"assertCurrentAggregateReviewAttempt",
 	"assertExternalCandidateCapture",
 	"assertHarnessInteractionBinding",
 	"assertHarnessObserverProjection",
 	"assertSessionContinuityRecord",
+	"authorizeDshAgentSessionCustody",
+	"backendBuildSupportsStateSchema",
+	"backendOperationalBinding",
+	"bootstrapBackendState",
+	"bootstrapStandaloneProjectServer",
 	"buildProjectWikiState",
 	"buildWikiState",
+	"canonicalProjectSnapshotDigest",
 	"commitGuardedDelivery",
 	"commitImplementationAggregate",
 	"commitPrivateIntegrationAdmission",
@@ -522,6 +547,8 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"commitSessionRunReceipt",
 	"connectProjectServerApi",
 	"createAggregateReviewAttempt",
+	"createBackendBuildBinding",
+	"createBackendStateBackup",
 	"createChangeIntakeProjectServer",
 	"createCodeWikiLoopExecutionPorts",
 	"createCodewikiMcpBinding",
@@ -538,19 +565,29 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"createPrivateIntegrationAdmission",
 	"createProjectSchedulingPlan",
 	"createProjectServerApi",
+	"createProjectSessionContinuity",
 	"createSchedulingOperationSequence",
 	"createSessionContinuity",
-	"createStoredSessionContinuity",
 	"createWorkUnitModelAssignment",
 	"deriveReadyWorkUnits",
 	"executionFailureFromProviderReceipt",
 	"expireSessionLease",
+	"legacyProjectStateSnapshotDigest",
+	"migrateBackendState",
 	"normalizeCodewikiMcpRequest",
 	"privateChangeIntegrationRef",
 	"projectOperationalStatus",
-	"readStoredSessionContinuity",
+	"pruneBackendStateBackups",
+	"readBackendStateBackup",
+	"readBackendStateManifest",
+	"readProjectSessionContinuity",
+	"readStandaloneProjectServerStatus",
+	"recoverBackendStateManifest",
 	"requestSessionLeaseCancellation",
 	"resolveExecutionRecovery",
+	"restartStandaloneProjectServer",
+	"restoreBackendStateBackup",
+	"rollbackStandaloneBackend",
 	"rolloverSessionContinuity",
 	"runHarnessProducerTurn",
 	"runModelRouteForAssignment",
@@ -562,7 +599,11 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"runWikiDecide",
 	"runWikiOkf",
 	"runWikiPlan",
+	"startStandaloneProjectServer",
 	"stopProjectServer",
+	"stopStandaloneProjectServer",
+	"uninstallStandaloneBackendState",
+	"upgradeStandaloneBackend",
 	"wikiChangeOperationMutates",
 ]);
 assert.equal(projectServerModule.WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL.version, "2.0.0");
@@ -578,6 +619,10 @@ const {spawnProjectCoordinatorDaemon} = await import(
 		),
 	).href,
 );
+const {bootstrapCodewiki} = await import(
+	pathToFileURL(join(packageRoot, "dist", "project", "bootstrap.js")).href,
+);
+await bootstrapCodewiki(process.cwd(), {projectName: "packed-project-server"});
 const projectServerApi = await connectProjectServerApi(
 	process.cwd(),
 	{
@@ -618,6 +663,8 @@ assert.equal(
 await projectServerApi.connection.heartbeat();
 await projectServerApi.connection.disconnect();
 await stopProjectServer(process.cwd());
+assert.equal(existsSync(join(process.cwd(), ".codewiki", "runtime")), false);
+assert.equal(existsSync(join(process.cwd(), ".codewiki", "views")), false);
 await assert.rejects(
 	import("@nunomoura/codewiki/coordinator"),
 	(error) => error?.code === "ERR_PACKAGE_PATH_NOT_EXPORTED",
@@ -780,7 +827,7 @@ assert.equal(statuses.length, 1);
 assert.equal(statuses[0].key, "codewiki");
 assert.match(
 	statuses[0].value,
-	/^CodeWiki \\S+ non-project · dashboard unavailable · \\/wiki-dashboard retry$/,
+	/^CodeWiki \\S+ non-project · dashboard live · \\/wiki-dashboard reopen$/,
 );
 assert.deepEqual(commands, [
 	"wiki-dashboard",
@@ -804,7 +851,26 @@ assert.equal(injected.systemPrompt.includes("/wiki or"), false);
 assert.deepEqual(await promptHook.handler({ systemPrompt: injected.systemPrompt }, { cwd: process.cwd() }), {});
 `,
 	);
-	run(process.execPath, [smokeScript], { cwd: installRoot });
+	run(process.execPath, [smokeScript], {cwd: installRoot});
 } finally {
-	rmSync(root, { recursive: true, force: true });
+	const lifecyclePath = join(
+		root,
+		"install",
+		"node_modules",
+		"@nunomoura",
+		"codewiki",
+		"dist",
+		"project-server",
+		"index.js",
+	);
+	if (existsSync(lifecyclePath)) {
+		const lifecycle = await import(pathToFileURL(lifecyclePath).href);
+		await lifecycle.stopStandaloneProjectServer(join(root, "install"), {
+			stateRoot,
+			timeoutMs: 2_000,
+		}).catch(() => undefined);
+	}
+	if (previousStateRoot === undefined) delete process.env.CODEWIKI_STATE_ROOT;
+	else process.env.CODEWIKI_STATE_ROOT = previousStateRoot;
+	rmSync(root, {recursive: true, force: true});
 }

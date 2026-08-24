@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,7 +9,8 @@ import { startProjectCoordinatorService } from "../../../src/project-server/coor
 
 test("Pi project-service clients reuse one leased supervised connection", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-pi-project-service-"));
-	await mkdir(join(root, ".codewiki", "kb"), { recursive: true });
+	await mkdir(join(root, ".codewiki", "kb"), {recursive: true});
+	await writeFile(join(root, ".codewiki", "config.json"), "{}\n");
 	let service;
 	let starts = 0;
 	let stops = 0;

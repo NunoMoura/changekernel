@@ -1,9 +1,32 @@
 import type {SynchronizationObservation} from "../../changes/trace/synchronization.ts";
 import type {Sha256Digest} from "../../utils/canonical-json.ts";
 import {canonicalJsonDigest} from "../../utils/canonical-json.ts";
+import {
+	assertBackendBuildBinding,
+	type BackendBuildBinding,
+} from "../operations/build.ts";
+import {BACKEND_STATE_PROTOCOL} from "../operations/state.ts";
 import type {ExecutionRecoveryDecision} from "../workers/execution-recovery.ts";
 
+export interface BackendOperationalBinding {
+	readonly stateSchema: typeof BACKEND_STATE_PROTOCOL;
+	readonly stateGeneration: number;
+	readonly backendBuildDigest: Sha256Digest;
+	readonly package: Readonly<{
+		name: BackendBuildBinding["packageName"];
+		version: string;
+		lockDigest: Sha256Digest;
+	}>;
+	readonly dshProfiles: BackendBuildBinding["dshProfiles"];
+	readonly domainPluginClosureDigest: Sha256Digest;
+	readonly domainPlugins: BackendBuildBinding["domainPlugins"];
+	readonly fileSchemas: BackendBuildBinding["fileSchemas"];
+	readonly protocols: BackendBuildBinding["protocols"];
+	readonly activeRuntimeBuildDigest: Sha256Digest | null;
+}
+
 export interface ProjectOperationalStatus {
+	readonly backend: BackendOperationalBinding;
 	readonly synchronization: Readonly<{
 		state: "current" | "stale" | "offline";
 		canMutate: boolean;
@@ -24,9 +47,15 @@ export interface ProjectOperationalStatus {
 
 /** Deterministic dashboard/Client projection; carries no recovery effect port. */
 export function projectOperationalStatus(input: {
+	readonly backend: {
+		readonly stateGeneration: number;
+		readonly activeBuild: BackendBuildBinding;
+		readonly activeRuntimeBuildDigest: Sha256Digest | null;
+	};
 	readonly synchronization: SynchronizationObservation;
 	readonly recovery: readonly ExecutionRecoveryDecision[];
 }): ProjectOperationalStatus {
+	const backend = backendOperationalBinding(input.backend);
 	const synchronization = synchronizationStatus(input.synchronization);
 	const recovery = Object.freeze(input.recovery.map((decision) => Object.freeze({
 		failureKind: decision.failureKind,
@@ -37,8 +66,41 @@ export function projectOperationalStatus(input: {
 	})).sort((left, right) =>
 		`${left.owner}/${left.failureKind}`.localeCompare(`${right.owner}/${right.failureKind}`),
 	));
-	const body = {synchronization, recovery};
+	const body = {backend, synchronization, recovery};
 	return Object.freeze({...body, statusDigest: canonicalJsonDigest(body)});
+}
+
+export function backendOperationalBinding(input: {
+	readonly stateGeneration: number;
+	readonly activeBuild: BackendBuildBinding;
+	readonly activeRuntimeBuildDigest: Sha256Digest | null;
+}): BackendOperationalBinding {
+	assertBackendBuildBinding(input.activeBuild);
+	if (!Number.isSafeInteger(input.stateGeneration) || input.stateGeneration < 1) {
+		throw new Error("Backend operational state generation is invalid.");
+	}
+	if (
+		input.activeRuntimeBuildDigest !== null &&
+		!/^sha256:[a-f0-9]{64}$/u.test(input.activeRuntimeBuildDigest)
+	) {
+		throw new Error("Active Runtime Build digest is invalid.");
+	}
+	return Object.freeze({
+		stateSchema: BACKEND_STATE_PROTOCOL,
+		stateGeneration: input.stateGeneration,
+		backendBuildDigest: input.activeBuild.backendBuildDigest,
+		package: Object.freeze({
+			name: input.activeBuild.packageName,
+			version: input.activeBuild.packageVersion,
+			lockDigest: input.activeBuild.packageLockDigest,
+		}),
+		dshProfiles: input.activeBuild.dshProfiles,
+		domainPluginClosureDigest: input.activeBuild.domainPluginClosureDigest,
+		domainPlugins: input.activeBuild.domainPlugins,
+		fileSchemas: input.activeBuild.fileSchemas,
+		protocols: input.activeBuild.protocols,
+		activeRuntimeBuildDigest: input.activeRuntimeBuildDigest,
+	});
 }
 
 function synchronizationStatus(value: SynchronizationObservation): ProjectOperationalStatus["synchronization"] {

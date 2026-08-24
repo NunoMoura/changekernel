@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 import { link, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
+	assertCodeWikiStatePath,
+	ensureCodeWikiStateDirectory,
+	projectServerStatePaths,
+} from "../../project/private-state.ts";
+import {
 	createGitStateCommit,
 	gitStateManifestPath,
 	gitStateRecordPath,
@@ -364,23 +369,30 @@ async function materializeSynchronization(
 			),
 		]),
 	);
+	const privateState = projectServerStatePaths({repoRoot: root});
 	const snapshotDirectory = join(
-		root,
-		".codewiki/runtime/snapshots",
+		privateState.snapshotsRoot,
 		digestHex(observation.teamSnapshot.snapshotDigest),
 	);
+	await ensureCodeWikiStateDirectory(privateState, snapshotDirectory);
+	await assertCodeWikiStatePath(privateState, snapshotDirectory);
 	await writeImmutable(
 		join(snapshotDirectory, "work-state.json"),
 		canonicalJson(observation.workState),
+		0o600,
 	);
 	if (observation.alignmentGraph) {
 		await writeImmutable(
 			join(snapshotDirectory, "alignment-graph.json"),
 			canonicalJson(observation.alignmentGraph),
+			0o600,
 		);
 	}
+	const statusPath = join(privateState.synchronizationRoot, "status.json");
+	await ensureCodeWikiStateDirectory(privateState, privateState.synchronizationRoot);
+	await assertCodeWikiStatePath(privateState, statusPath);
 	await writeAtomic(
-		join(root, ".codewiki/runtime/synchronization.json"),
+		statusPath,
 		canonicalJson({
 			status: observation.status,
 			canMutate: observation.canMutate,
@@ -428,7 +440,11 @@ function offlineObservation(
 	});
 }
 
-async function writeImmutable(path: string, bytes: string): Promise<void> {
+async function writeImmutable(
+	path: string,
+	bytes: string,
+	mode = 0o644,
+): Promise<void> {
 	await mkdir(dirname(path), {recursive: true});
 	try {
 		const existing = await readFile(path, "utf8");
@@ -441,7 +457,11 @@ async function writeImmutable(path: string, bytes: string): Promise<void> {
 	}
 	const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
 	try {
-		await writeFile(temporary, bytes, {encoding: "utf8", flag: "wx"});
+		await writeFile(temporary, bytes, {
+			encoding: "utf8",
+			flag: "wx",
+			mode,
+		});
 		await link(temporary, path);
 	} catch (error) {
 		if (!isAlreadyExists(error)) throw error;
@@ -458,7 +478,11 @@ async function writeAtomic(path: string, bytes: string): Promise<void> {
 	await mkdir(dirname(path), {recursive: true});
 	const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
 	try {
-		await writeFile(temporary, bytes, {encoding: "utf8", flag: "wx"});
+		await writeFile(temporary, bytes, {
+			encoding: "utf8",
+			flag: "wx",
+			mode: 0o600,
+		});
 		await rename(temporary, path);
 	} finally {
 		await rm(temporary, {force: true});
@@ -512,5 +536,6 @@ function compareText(left: string, right: string): number {
 }
 
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: callers supply validated protocol values; canonicalization only deep-freezes JSON shape.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

@@ -17,6 +17,17 @@ import { CODEWIKI_TOOL_NAMES } from "../../src/clients/pi/tools/index.ts";
 import {SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN} from "../../src/domains/software-development/plugin.ts";
 import {FRONTEND_CAPABILITIES} from "../../src/protocol/frontend.ts";
 import {DSH_CLIENT_SLOT_QUALIFICATION} from "../../src/clients/dsh/client-slot-qualification.ts";
+import {
+	BACKEND_BUILD_PROTOCOL,
+	DEFAULT_BACKEND_BUILD,
+} from "../../src/project-server/operations/build.ts";
+import {BACKEND_STATE_PROTOCOL} from "../../src/project-server/operations/state.ts";
+import {
+	startStandaloneProjectServer,
+	upgradeStandaloneBackend,
+	rollbackStandaloneBackend,
+	uninstallStandaloneBackendState,
+} from "../../src/project-server/operations/lifecycle.ts";
 
 const packageJson = jsonFile("package.json");
 const buildTsconfig = jsonFile("tsconfig.build.json");
@@ -273,13 +284,9 @@ describe("install readiness checklist", () => {
 
 	it("keeps the active .codewiki top level in the target shape", () => {
 		const entries = readdirSync(".codewiki").sort();
-		assert.deepEqual(
-			entries.filter((entry) => entry !== "runtime"),
-			["config.json", "kb", "traces", "views"],
-		);
-		if (entries.includes("runtime")) {
-			assert.deepEqual(readdirSync(".codewiki/runtime").sort(), ["tmp"]);
-		}
+		assert.deepEqual(entries, ["config.json", "kb", "traces"]);
+		assert.equal(entries.includes("runtime"), false);
+		assert.equal(entries.includes("views"), false);
 	});
 
 	it("keeps trace truth in TRACE files without central index files", () => {
@@ -307,6 +314,34 @@ describe("install readiness checklist", () => {
 			pluginVersion: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginVersion,
 			admissionDigest: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.admissionDigest,
 		});
+	});
+
+	it("freezes Backend v1 lifecycle and state evolution without project-local runtime residue", () => {
+		assert.equal(BACKEND_BUILD_PROTOCOL.version, "1.0.0");
+		assert.equal(BACKEND_STATE_PROTOCOL.version, "1.0.0");
+		assert.equal(DEFAULT_BACKEND_BUILD.packageVersion, packageJson.version);
+		assert.deepEqual(
+			DEFAULT_BACKEND_BUILD.dshProfiles.map(({id}) => id),
+			["codewiki.dsh.broker-host", "codewiki.dsh.managed-run"],
+		);
+		assert.equal(typeof startStandaloneProjectServer, "function");
+		assert.equal(typeof upgradeStandaloneBackend, "function");
+		assert.equal(typeof rollbackStandaloneBackend, "function");
+		assert.equal(typeof uninstallStandaloneBackendState, "function");
+		assert.equal(existsSync(".codewiki/runtime"), false);
+		assert.equal(existsSync(".codewiki/views"), false);
+		for (const file of filesUnder("src")) {
+			if (file === "src/project-server/operations/state.ts") continue;
+			assert.doesNotMatch(
+				readFileSync(file, "utf8"),
+				/\.codewiki\/(?:runtime|views)|["']\.codewiki["']\s*,\s*["'](?:runtime|views)["']/u,
+				file,
+			);
+		}
+		assert.match(
+			readFileSync("BACKEND_V1_PLAN.md", "utf8"),
+			/B7 — Backend packaging, lifecycle, and state evolution — complete/,
+		);
 	});
 
 	it("freezes the authenticated frontend contract without adopting unsafe DSH authority", () => {

@@ -2,14 +2,15 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import {dirname, join} from "node:path";
 import test from "node:test";
 
 import { productReleaseJob } from "../../src/project-server/effects/product-release.ts";
 import { ProjectServerReactor } from "../../src/project-server/coordinator/reactor.ts";
 import { appendProjectServerTraceRecords } from "../../src/project-server/persistence/trace.ts";
 import { buildProjectWorkState } from "../../src/work-state/project.ts";
-import { seedProjectServerImplementation } from "../helpers/project-server-implementation.mjs";
+import {seedProjectServerImplementation} from "../helpers/project-server-implementation.mjs";
+import {projectServerStatePaths} from "../../src/project/private-state.ts";
 
 async function releaseFixture(suffix) {
 	const root = await mkdtemp(`${tmpdir()}/codewiki-release-${suffix}-`);
@@ -324,14 +325,14 @@ test("symbolic release recovery path fails before channel mutation", async () =>
 	const context = await releaseFixture("symbolic-runtime");
 	try {
 		const external = await mkdtemp(`${tmpdir()}/codewiki-release-external-`);
-		await mkdir(join(context.root, ".codewiki", "runtime"), { recursive: true });
-		await symlink(
-			external,
-			join(context.root, ".codewiki", "runtime", "releases"),
-		);
+		const releaseManifestsRoot = projectServerStatePaths({
+			repoRoot: context.root,
+		}).releaseManifestsRoot;
+		await mkdir(dirname(releaseManifestsRoot), {recursive: true});
+		await symlink(external, releaseManifestsRoot);
 		await assert.rejects(
 			releaseJob(context).run(new AbortController().signal),
-			/runtime path cannot be symbolic/i,
+			/private path cannot be symbolic/i,
 		);
 		assert.equal(
 			context.calls.filter((call) => call.kind === "release").length,

@@ -56,9 +56,7 @@ export async function assertPushCheckout(
 	const unsafeDirtyPaths = parseGitPorcelainPaths(status).filter(
 		(path) =>
 			path !== ".codewiki/traces" &&
-			!path.startsWith(".codewiki/traces/") &&
-			path !== ".codewiki/runtime" &&
-			!path.startsWith(".codewiki/runtime/"),
+			!path.startsWith(".codewiki/traces/"),
 	);
 	if (unsafeDirtyPaths.length > 0) {
 		throw new Error(

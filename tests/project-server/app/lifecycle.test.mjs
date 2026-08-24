@@ -198,7 +198,7 @@ describe("Server App lifecycle", () => {
 						keepAlive: false,
 						inProcess: true,
 						persistent: false,
-						projectServerStateRoot: join(root, ".server-state"),
+						stateRoot: join(tmpdir(), `codewiki-app-lifecycle-state-${process.pid}`),
 					}),
 				/did not serve pipeline state/,
 			);
@@ -498,15 +498,16 @@ describe("Server registry, Client pairing, and Sessions", () => {
 
 	it("persists and resolves personal App Authentication, Pairing, and project routing", async () => {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-local-app-pairing-"));
-		const projectServerStateRoot = join(root, "server-state");
+		const stateRoot = await mkdtemp(join(tmpdir(), "codewiki-local-app-state-"));
+		const registryRoot = join(stateRoot, "registry");
 		try {
-			const first = await resolveLocalAppServerConnection({repoRoot: root, projectServerStateRoot});
+			const first = await resolveLocalAppServerConnection({repoRoot: root, stateRoot});
 			assert.match(first.actor.actorId, /^user:local:/);
 			assert.match(first.actor.authenticatedIdentityRef, /^identity:local-os:/);
 			assert.equal(first.client.clientKind, "app");
 			assert.match(first.client.authenticationRef, /^auth:local-app:/);
 			assert.equal(first.project.projectRoot, root);
-			const stored = await readProjectServerRegistrySnapshot(projectServerStateRoot);
+			const stored = await readProjectServerRegistrySnapshot(registryRoot);
 			assert.equal(stored.actors.length, 1);
 			assert.equal(stored.pairings.length, 1);
 			assert.equal(stored.projects.length, 1);
@@ -532,16 +533,17 @@ describe("Server registry, Client pairing, and Sessions", () => {
 				now: new Date(Date.parse(stored.generatedAt) + 1),
 			});
 			await writeProjectServerRegistrySnapshot({
-				projectServerStateRoot,
+				registryRoot,
 				expectedGeneration: stored.generation,
 				snapshot: revoked,
 			});
 			await assert.rejects(
-				() => resolveLocalAppServerConnection({repoRoot: root, projectServerStateRoot}),
+				() => resolveLocalAppServerConnection({repoRoot: root, stateRoot}),
 				/pairing is not active/,
 			);
 		} finally {
 			await rm(root, {recursive: true, force: true});
+			await rm(stateRoot, {recursive: true, force: true});
 		}
 	});
 
@@ -551,7 +553,7 @@ describe("Server registry, Client pairing, and Sessions", () => {
 			assert.equal(await readProjectServerRegistrySnapshot(root), undefined);
 			const first = normalizeProjectServerRegistrySnapshot(registry({generation: 1}));
 			await writeProjectServerRegistrySnapshot({
-				projectServerStateRoot: root,
+				registryRoot: root,
 				expectedGeneration: 0,
 				snapshot: first,
 			});
@@ -562,7 +564,7 @@ describe("Server registry, Client pairing, and Sessions", () => {
 			await assert.rejects(
 				() =>
 					writeProjectServerRegistrySnapshot({
-						projectServerStateRoot: root,
+						registryRoot: root,
 						expectedGeneration: 0,
 						snapshot: first,
 					}),
@@ -573,7 +575,7 @@ describe("Server registry, Client pairing, and Sessions", () => {
 				await assert.rejects(
 					() =>
 						writeProjectServerRegistrySnapshot({
-							projectServerStateRoot: root,
+							registryRoot: root,
 							expectedGeneration: 1,
 							snapshot: normalizeProjectServerRegistrySnapshot(
 								registry({generation: 2}),
@@ -589,7 +591,7 @@ describe("Server registry, Client pairing, and Sessions", () => {
 			await assert.rejects(
 				() =>
 					writeProjectServerRegistrySnapshot({
-						projectServerStateRoot: root,
+						registryRoot: root,
 						expectedGeneration: 1,
 						snapshot: normalizeProjectServerRegistrySnapshot(
 							registry({
@@ -615,14 +617,14 @@ describe("Server registry, Client pairing, and Sessions", () => {
 				}),
 			);
 			await writeProjectServerRegistrySnapshot({
-				projectServerStateRoot: root,
+				registryRoot: root,
 				expectedGeneration: 1,
 				snapshot: disabled,
 			});
 			await assert.rejects(
 				() =>
 					writeProjectServerRegistrySnapshot({
-						projectServerStateRoot: root,
+						registryRoot: root,
 						expectedGeneration: 2,
 						snapshot: normalizeProjectServerRegistrySnapshot(
 							registry({

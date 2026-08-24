@@ -173,6 +173,7 @@ export function ingestSarif21Evidence(
 			],
 		},
 	});
+	// SAFETY: canonical conversion preserves this validated JSON-compatible SARIF result shape.
 	const body = toCanonicalJsonValue({
 		protocol: SARIF_EVIDENCE_ADAPTER_PROTOCOL,
 		artifact,

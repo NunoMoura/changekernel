@@ -10,7 +10,7 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import {dirname, join} from "node:path";
 import test from "node:test";
 
 import {
@@ -18,33 +18,26 @@ import {
 	cleanupImplementationWorkerArtifacts,
 	writeImplementationWorkerDispatchPacket,
 } from "../../src/project-server/workers/implementation-artifacts.ts";
-import { IMPLEMENTATION_WORKER_ASSIGNMENT_SCHEMA_VERSION } from "../../src/project-server/workers/implementation-adapter.ts";
+import {IMPLEMENTATION_WORKER_ASSIGNMENT_SCHEMA_VERSION} from "../../src/project-server/workers/implementation-adapter.ts";
+import {projectServerStatePaths} from "../../src/project/private-state.ts";
 import {producerSkills} from "../helpers/checks.mjs";
 
 function packetDirectory(root) {
-	return join(root, ".codewiki", "runtime", "worker-assignments");
+	return projectServerStatePaths({repoRoot: root}).workerAssignmentsRoot;
 }
 
 function packet(root, suffix, status) {
 	const claimId = `claim:${suffix}`;
 	const workUnitId = `WU-${suffix}`;
+	const paths = projectServerStatePaths({repoRoot: root});
 	const worktreePath = join(
-		root,
-		".codewiki",
-		"runtime",
-		"tmp",
+		paths.workbenchesRoot,
 		`TRACE-${suffix}`,
 		"worktree",
 		suffix,
 	);
 	const reportKey = createHash("sha256").update(suffix).digest("hex").slice(0, 32);
-	const reportPath = join(
-		root,
-		".codewiki",
-		"runtime",
-		"workers",
-		`${reportKey}.json`,
-	);
+	const reportPath = join(paths.workerReportsRoot, `${reportKey}.json`);
 	const worktree = {
 		path: worktreePath,
 		branch: `codewiki/${suffix}`,
@@ -109,7 +102,7 @@ async function seedArtifacts(root, fixture) {
 		"candidate",
 		"utf8",
 	);
-	await mkdir(join(root, ".codewiki", "runtime", "workers"), {
+	await mkdir(dirname(fixture.packet.assignment.reportPath), {
 		recursive: true,
 	});
 	await writeFile(
@@ -230,7 +223,7 @@ test("worker artifact cleanup removes pre-claim scratch and partial worktrees id
 
 test("worker artifact cleanup removes unreferenced terminal reports", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-worker-artifact-report-"));
-	const directory = join(root, ".codewiki", "runtime", "workers");
+	const directory = projectServerStatePaths({repoRoot: root}).workerReportsRoot;
 	const failedPath = join(directory, `${"d".repeat(32)}.json`);
 	const completedPath = join(directory, `${"e".repeat(32)}.json`);
 	const malformedPacket = join(packetDirectory(root), "unknown.json");
@@ -277,12 +270,13 @@ test("worker artifact cleanup rejects runtime directory symlinks", async () => {
 	const external = await mkdtemp(join(tmpdir(), "codewiki-worker-artifact-external-"));
 	const reportPath = join(external, `${"f".repeat(32)}.json`);
 	try {
-		await mkdir(join(root, ".codewiki", "runtime"), { recursive: true });
+		const workerReportsRoot = projectServerStatePaths({repoRoot: root}).workerReportsRoot;
+		await mkdir(dirname(workerReportsRoot), {recursive: true});
 		await writeFile(
 			reportPath,
 			JSON.stringify({ assignmentId: "claim:outside", status: "failed" }),
 		);
-		await symlink(external, join(root, ".codewiki", "runtime", "workers"));
+		await symlink(external, workerReportsRoot);
 
 		await assert.rejects(
 			cleanupImplementationWorkerArtifacts({

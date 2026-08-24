@@ -12,6 +12,7 @@ tags: [system, vocabulary]
 | Term | Definition | Owner |
 | --- | --- | --- |
 | CodeWiki | Complete product containing Backend, Clients, Domain Plugins, package assets, and Runtime Builds. | [Package](system/components/package.md) |
+| Backend Build | Package, DSH profiles, Domain closure, schemas, and protocols. | [Package](system/components/package.md) |
 | Project Server | Sole authoritative long-lived owner for one governed project: transport, AuthN, project AuthZ, canonical state, Stage Loops, Checks, Workbenches, transitions, effects, and its subordinate Runtime. | [Project Server](system/components/project-server.md) |
 | Runtime | Project Server-owned execution subsystem that executes bounded Run Requests and creates Run Receipts without project or lifecycle authority. | [Runtime](system/components/runtime.md) |
 | Run | One bounded execution attempt for a Stage Producer, Implementation Worker, Check, or delegated harness under one immutable Run Request. | [Runtime](system/components/runtime.md) |
@@ -24,13 +25,13 @@ tags: [system, vocabulary]
 | Executable Plugin Admission Closure | Trust-plane capability ceiling. | [Package](system/components/package.md) |
 | Runtime Bridge | CodeWiki-owned boundary mapping one Run Request to exact DSH composition and mapping DSH events and output to Runtime facts. | [Runtime](system/components/runtime.md) |
 | DSH AgentLoop | Upstream DSH model-request, tool-execution, streaming, and continuation mechanism used inside a model-driven Run. | [Runtime](system/components/runtime.md) |
-| DSH Agent Session | Persistent isolated DSH state for one producer continuity or fresh Model Check. | [Runtime](system/components/runtime.md) |
+| DSH Agent Session | Persistent DSH-owned state under Runtime byte custody and Project Server continuity authority. | [Runtime](system/components/runtime.md) |
 | Session Continuity | Persistent binding of logical work to current Session, head, Build, lease, Receipt, and rollover. | [Project Server](system/components/project-server.md) |
 | Session Lease | Exclusive grant for one Run to write one expected Session head until commit, cancellation, or expiry. | [Project Server](system/components/project-server.md) |
 | DeepSeek Harness | Exact pinned upstream Plugin ecosystem used behind CodeWiki contracts; it owns execution mechanics but no CodeWiki lifecycle or authority. | [Runtime](system/components/runtime.md) |
 | Client Session | Temporary authenticated Client connection, distinct from Pairing and DSH Agent Session. | [Project Server](system/components/project-server.md) |
 | Check Run Process | Runtime-controlled isolated process for a Code Check or tool-free Model Check; it reports bounded facts without owning Check Result or Gate authority. | [Runtime](system/components/runtime.md) |
-| Accountability closure | Condition where one accepted transition can identify its exact prior state, proposed state, producer and custody, judged subject, Checks and Evidence, authority, applied effects, and resulting state without requiring a record of every incidental activity. | [Project Server](system/components/project-server.md) |
+| Accountability closure | Ability to identify exact prior and proposed state, custody, Checks, Evidence, authority, effects, and resulting state. | [Project Server](system/components/project-server.md) |
 | Actor | Accountable authenticated principal, either a User or service, whose identity remains separate from Client, Stage Producer, Implementation Worker, Run Process, delegated harness, and model identity. | [Project Server](system/components/project-server.md) |
 | Actor Profile | Non-authoritative description of disciplines, skills, components, interests, contribution preferences, and availability used only to suggest fit. | [Project Server](system/components/project-server.md) |
 | Alignment | Condition where accepted desired Knowledge and realized source, tests, Git, and delivery state are connected through exact Change lineage, resolved, or explicitly unknown. | [Alignment](system/components/alignment.md) |
