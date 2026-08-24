@@ -144,6 +144,7 @@ export function configFileToPartialWikiConfig(
 function validateConfigFileKeys(value: unknown): Record<string, unknown> {
 	const record = requiredObjectRecord(value, WIKI_CONFIG_PATH);
 	assertKnownKeys(record, WIKI_CONFIG_PATH, [
+		"domain",
 		"project",
 		"preview",
 		"runtime",

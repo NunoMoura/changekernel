@@ -113,7 +113,12 @@ export interface WikiQualityConfig {
 	review: WikiQualityReviewConfig;
 }
 
+export interface WikiConfigDomain {
+	pluginId: string | null;
+}
+
 export interface WikiConfig {
+	domain: WikiConfigDomain;
 	project: string;
 	preview: WikiPreviewConfig;
 	runtime: WikiRuntimeConfig;
@@ -135,6 +140,7 @@ export interface RunWikiConfigResult {
 }
 
 export type PartialWikiConfig = {
+	domain?: Partial<WikiConfigDomain>;
 	project?: string;
 	preview?: PartialWikiPreviewConfig;
 	runtime?: PartialRuntimeConfig;
@@ -164,6 +170,7 @@ export type PartialQualityConfig = {
 };
 
 export const DEFAULT_WIKI_CONFIG: WikiConfig = {
+	domain: { pluginId: null },
 	project: "codewiki",
 	preview: DEFAULT_WIKI_PREVIEW_CONFIG,
 	runtime: {
@@ -273,6 +280,7 @@ export function resolveWikiConfig(input: PartialWikiConfig = {}): WikiConfig {
 		input.userStandards ?? [],
 	);
 	const config: WikiConfig = {
+		domain: resolveWikiDomainConfig(input.domain),
 		project: text(input.project) || DEFAULT_WIKI_CONFIG.project,
 		preview: resolveWikiPreviewConfig(input.preview),
 		runtime: {
@@ -401,6 +409,7 @@ export function validateWikiConfig(config: WikiConfig): WikiConfig {
 	];
 	const preview = resolveWikiPreviewConfig(config.preview);
 	return {
+		domain: { pluginId: config.domain.pluginId },
 		project: config.project.trim(),
 		preview,
 		runtime: {
@@ -445,6 +454,12 @@ function mergeWikiConfigPatch(
 	patch: PartialWikiConfig = {},
 ): PartialWikiConfig {
 	return {
+		domain: {
+			pluginId:
+				patch.domain?.pluginId !== undefined
+					? patch.domain.pluginId
+					: current.domain.pluginId,
+		},
 		project: patch.project ?? current.project,
 		preview: patch.preview ?? current.preview,
 		runtime: {
@@ -751,6 +766,7 @@ function assertOptionalPositiveInteger(value: unknown, path: string): void {
 function validatePartialWikiConfigKeys(value: unknown, path: string): void {
 	const config = assertConfigObject(value, path);
 	assertKnownKeys(config, path, [
+		"domain",
 		"project",
 		"preview",
 		"runtime",
@@ -762,6 +778,9 @@ function validatePartialWikiConfigKeys(value: unknown, path: string): void {
 	]);
 	if (config.preview !== undefined) {
 		resolveWikiPreviewConfig(config.preview as PartialWikiPreviewConfig);
+	}
+	if (config.domain !== undefined) {
+		resolveWikiDomainConfig(config.domain as PartialWikiConfig["domain"]);
 	}
 	const userStandards = normalizeUserStandardDefinitions(
 		(config.userStandards as UserStandardDefinition[] | undefined) ?? [],
@@ -948,6 +967,28 @@ function uniqueStringList(values: string[]): string[] {
 	return Array.from(
 		new Set(values.map((value) => text(value)).filter(Boolean)),
 	);
+}
+
+function resolveWikiDomainConfig(
+	input: Partial<WikiConfigDomain> | undefined,
+): WikiConfigDomain {
+	if (input === undefined) {
+		return {pluginId: DEFAULT_WIKI_CONFIG.domain.pluginId};
+	}
+	assertConfigObject(input, "wiki_config.domain");
+	assertKnownKeys(input, "wiki_config.domain", ["pluginId"]);
+	const pluginId = input.pluginId;
+	if (pluginId !== null && pluginId !== undefined) {
+		if (typeof pluginId !== "string" || !pluginId.trim()) {
+			throw createCodewikiConfigError({
+				path: "wiki_config.domain.pluginId",
+				code: "invalid_value",
+				message: "wiki_config domain.pluginId must be a nonempty string or null.",
+			});
+		}
+		return {pluginId};
+	}
+	return {pluginId: null};
 }
 
 function text(value: unknown): string {

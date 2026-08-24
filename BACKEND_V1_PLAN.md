@@ -195,7 +195,7 @@ Success: CodeWiki owns route authority and custody evidence while DSH plugins ow
 - [x] Define Domain Plugin manifest and deterministic Project Server contribution contract (`codewiki.domain-plugin-admission@1.0.0`; admission digest, unique registry, fail-closed unknown selection).
 - [x] Extract current software-specific Knowledge vocabulary, relationship rules, context compilation, source/test realization, Checks, Git integration, and delivery bindings into the built-in Software Development Domain Plugin (`src/domains/software-development/**`; kernel modules no longer host domain meaning).
 - Keep the governance kernel, four Stage Loops, authority, Gate reduction, and effect application fixed.
-- Bind exact Domain Plugin identity to Knowledge checkpoints, Candidates, Gate Evaluation Packages, Runtime Builds where applicable, and frontend projections.
+- Bind exact Domain Plugin identity to Knowledge checkpoints (done: compiler-identity derivation, checkpoint guard, `wiki_config.domain.pluginId` selection with fail-closed resolution), Candidates, Gate Evaluation Packages, Runtime Builds where applicable, and frontend projections.
 - Treat Domain Plugin upgrades as explicit migrations with recomputation and compatibility checks, never hot mutation.
 - Keep connector-derived observations non-authoritative until exact policy admits their proposed Knowledge Effects.
 

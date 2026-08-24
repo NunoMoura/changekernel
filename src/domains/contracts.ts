@@ -2,6 +2,11 @@ import {
 	canonicalJsonDigest,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
+import {
+	createKnowledgeCompilerIdentity,
+	type KnowledgeCheckpoint,
+	type KnowledgeCompilerIdentity,
+} from "../knowledge/state.ts";
 
 export const DOMAIN_PLUGIN_ADMISSION_PROTOCOL = Object.freeze({
 	id: "codewiki.domain-plugin-admission",
@@ -135,4 +140,68 @@ function contributions(
 		throw new Error("Domain Plugin contributions must not contain duplicates.");
 	}
 	return sorted;
+}
+
+const DOMAIN_COMPILER_RENDERERS = Object.freeze({
+	markdownRenderer: "codewiki.markdown-splice/1.0.0",
+	yamlRenderer: "codewiki.yaml-splice/1.0.0",
+});
+
+/**
+ * Derives the deterministic Knowledge compiler identity bound to an admitted
+ * Domain Plugin. The plugin's declared compilerId and version become the
+ * compiler identity, so every Knowledge checkpoint compiled by this plugin is
+ * transitively bound to the exact admission.
+ */
+export function domainCompilerIdentity(
+	admission: DomainPluginAdmission,
+): KnowledgeCompilerIdentity {
+	return createKnowledgeCompilerIdentity({
+		compilerId: admission.manifest.compilerId,
+		compilerVersion: admission.manifest.pluginVersion,
+		...DOMAIN_COMPILER_RENDERERS,
+	});
+}
+
+/**
+ * Fails closed unless the checkpoint was compiled by the exact compiler
+ * identity derived from the admitted Domain Plugin.
+ */
+export function assertCheckpointBoundToDomain(
+	checkpoint: KnowledgeCheckpoint,
+	admission: DomainPluginAdmission,
+): void {
+	const expected = domainCompilerIdentity(admission);
+	const actual = checkpoint.projection.compiler;
+	const fields: Array<keyof KnowledgeCompilerIdentity> = [
+		"compilerId",
+		"compilerVersion",
+		"markdownRenderer",
+		"yamlRenderer",
+		"digest",
+	];
+	for (const field of fields) {
+		if (actual[field] !== expected[field]) {
+			throw new Error(
+				`Knowledge checkpoint ${field} ${String(actual[field])} does not match admitted Domain Plugin ${admission.manifest.pluginId}.`,
+			);
+		}
+	}
+}
+
+export interface WikiConfigDomainSelection {
+	readonly pluginId: string | null;
+}
+
+/**
+ * Resolves a project's Domain selection against the release registry.
+ * A null selection means the release default (the built-in plugin); an
+ * unadmitted ID fails closed.
+ */
+export function resolveDomainPluginSelection(
+	domain: WikiConfigDomainSelection | undefined,
+	registry: DomainRegistry,
+): DomainPluginAdmission {
+	const pluginId = domain?.pluginId ?? DEFAULT_DOMAIN_PLUGIN_ID;
+	return registry.requireDomainPlugin(pluginId);
 }

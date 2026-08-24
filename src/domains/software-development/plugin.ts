@@ -1,6 +1,8 @@
 import {
 	createDomainPluginAdmission,
+	createDomainRegistry,
 	DEFAULT_DOMAIN_PLUGIN_ID,
+	domainCompilerIdentity,
 	type DomainPluginAdmission,
 } from "../contracts.ts";
 
@@ -33,3 +35,16 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 
 export const BUILTIN_DOMAIN_PLUGIN_ADMISSIONS: readonly DomainPluginAdmission[] =
 	Object.freeze([SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN]);
+
+export const DEFAULT_DOMAIN_REGISTRY = createDomainRegistry(
+	BUILTIN_DOMAIN_PLUGIN_ADMISSIONS,
+);
+
+/**
+ * The exact Knowledge compiler identity bound to the built-in Software
+ * Development Domain Plugin. Equal to the historical kernel default, proving
+ * existing checkpoints are already bound to the built-in admission.
+ */
+export const SOFTWARE_DEVELOPMENT_COMPILER_IDENTITY = domainCompilerIdentity(
+	SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN,
+);
