@@ -31,6 +31,7 @@ import {
 	resolveExecutionCapabilities,
 	resolveRuntimeBuildForResume,
 } from "../../src/runtime/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 import {
 	canonicalJsonDigest,
 	sha256Digest,
@@ -161,7 +162,11 @@ describe("execution ports", () => {
 			qualificationEvidenceDigest: sha256Digest("conformance-and-restart"),
 			qualifiedAt: "2026-08-16T10:00:00.000Z",
 		});
-		assert.equal(manifest.schemaVersion, "2.0.0");
+		assert.equal(manifest.schemaVersion, "3.0.0");
+		assert.equal(
+			manifest.domainPlugin.identityDigest,
+			DEFAULT_DOMAIN_PLUGIN_IDENTITY.identityDigest,
+		);
 		assert.equal(qualified.buildDigest, canonicalJsonDigest(manifest));
 		assert.equal(
 			qualified.qualificationEvidenceDigest,
@@ -743,7 +748,8 @@ function runReceiptInput(handle, runtimeBuildDigest, overrides = {}) {
 
 function runnerManifest(dshSourceCommit, dshVersion) {
 	return createRuntimeBuildManifest({
-		schemaVersion: "2.0.0",
+		schemaVersion: "3.0.0",
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		runProtocolVersion: RUN_PROTOCOL.version,
 		nodeVersion: "26.1.0",
 		dshSourceCommit,

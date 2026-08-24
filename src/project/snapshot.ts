@@ -1,6 +1,6 @@
 import { lstat, readdir } from "node:fs/promises";
 import { resolve, relative } from "node:path";
-import { pathMatchesPattern } from "../domains/software-development/source-map.ts";
+import { pathMatchesPattern } from "../domains/project-server.ts";
 
 export const DEFAULT_PROJECT_SNAPSHOT_ROOTS = [
 	"src",

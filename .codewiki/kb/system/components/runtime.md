@@ -55,7 +55,7 @@ Run failure cannot mutate accepted state. Project Server alone chooses canonical
 
 ## Runtime Builds
 
-Runtime Build Manifest `2.0.0` binds protocol, Node, packages, Plugin admissions, bytes, suite, and Evidence. Pins are 33 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, `pi-ai` `0.82.1`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`; package integrity is locked and source equivalence unattested.
+Runtime Build Manifest `3.0.0` binds protocol, exact Domain Plugin identity, Node, packages, executable Plugin admission closure, bytes, suite, and Evidence. Pins are 33 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, `pi-ai` `0.82.1`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`; package integrity is locked and source equivalence unattested.
 
 Runtime privately stores qualified builds; CAS activates new-Run selection. Requests and Session resume bind the original build and protocol. Missing, changed, unqualified, or incompatible artifacts stop; rollback affects future Runs only.
 

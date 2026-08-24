@@ -174,7 +174,7 @@ describe("Decision accepted active Changes binding", () => {
 		state = await acceptDecision(state, "CHG-unrelated", 2);
 
 		const decisionCandidate = candidate(state, "CHG-subject");
-		assert.equal(decisionCandidate.schemaVersion, "7.0.0");
+		assert.equal(decisionCandidate.schemaVersion, "8.0.0");
 		const acceptedChanges = decisionCandidate.content.acceptedActiveChanges;
 		assert.equal(acceptedChanges.schemaVersion, "2.0.0");
 		assert.equal(acceptedChanges.requiredCheckId, "active_change_compatibility");

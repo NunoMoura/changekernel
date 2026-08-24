@@ -16,6 +16,7 @@ import {
 	type KnowledgeCandidateCheckpoint,
 } from "../../knowledge/materialization.ts";
 import type {KnowledgeCheckpoint} from "../../knowledge/state.ts";
+import {domainPluginIdentityFromCheckpoint} from "../../domains/binding.ts";
 import {
 	bindDecisionAcceptedActiveChanges,
 	type DecisionAcceptedActiveChangesBinding,
@@ -28,7 +29,7 @@ import {
 	type DecisionDisposition,
 } from "./candidate-proposal.ts";
 
-const DECISION_CANDIDATE_SCHEMA_VERSION = "7.0.0" as const;
+const DECISION_CANDIDATE_SCHEMA_VERSION = "8.0.0" as const;
 
 export interface DecisionOverlapBinding {
 	readonly changeId: string;
@@ -82,6 +83,7 @@ export function createDecisionCandidate(
 	return createLoopCandidate<"decision", DecisionCandidateContent>({
 		loop: "decision",
 		schemaVersion: DECISION_CANDIDATE_SCHEMA_VERSION,
+		domainPlugin: domainPluginIdentityFromCheckpoint(input.knowledgeBase),
 		content,
 		observedBase: decisionObservedBase({state: input.state, change}),
 	});

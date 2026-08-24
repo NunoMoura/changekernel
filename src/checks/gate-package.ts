@@ -6,11 +6,13 @@ import {
 	type CheckStage,
 	type CheckSubject,
 } from "./contracts.ts";
+import {assertCheckSubject} from "./identity.ts";
 import {
 	assertCheckPackSnapshot,
 	packagedChecks,
 	type CheckPackSnapshot,
 } from "./packs/contracts.ts";
+import type {DomainPluginIdentity} from "../domains/contracts.ts";
 import {
 	assertSha256Digest,
 	canonicalJson,
@@ -21,7 +23,7 @@ import {
 
 export const GATE_EVALUATION_PACKAGE_PROTOCOL = Object.freeze({
 	id: "codewiki.gate-evaluation-package",
-	version: "1.0.0",
+	version: "2.0.0",
 	canonicalJson: "codewiki.canonical-json/1.0.0",
 } as const);
 
@@ -93,6 +95,7 @@ export interface GateEvaluationCheckBinding {
 export interface GateEvaluationPackage {
 	readonly protocol: typeof GATE_EVALUATION_PACKAGE_PROTOCOL;
 	readonly stage: CheckStage;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly subject: CheckSubject;
 	readonly checkPackSnapshot: CheckPackSnapshot;
 	readonly sources: GateEvaluationSourceHeads;
@@ -113,6 +116,7 @@ export interface CreateGateEvaluationPackageInput {
 export function createGateEvaluationPackage(
 	input: CreateGateEvaluationPackageInput,
 ): Readonly<GateEvaluationPackage> {
+	assertCheckSubject(input.subject);
 	assertCheckPackSnapshot(input.checkPackSnapshot, input.subject.stage);
 	if (input.stageBindings.stage !== input.subject.stage) {
 		throw new Error("Gate Evaluation Package stage binding is inconsistent.");
@@ -155,6 +159,7 @@ export function createGateEvaluationPackage(
 	const body = {
 		protocol: GATE_EVALUATION_PACKAGE_PROTOCOL,
 		stage: input.subject.stage,
+		domainPlugin: input.subject.domainPlugin,
 		subject: input.subject,
 		checkPackSnapshot: input.checkPackSnapshot,
 		sources,
@@ -183,6 +188,7 @@ export function assertGateEvaluationPackage(value: GateEvaluationPackage): void 
 	if (
 		canonicalJson(value.protocol) !== canonicalJson(GATE_EVALUATION_PACKAGE_PROTOCOL) ||
 		value.coverage !== "complete" ||
+		value.domainPlugin.identityDigest !== value.subject.domainPlugin.identityDigest ||
 		value.stage !== value.subject.stage ||
 		value.stageBindings.stage !== value.stage
 	) {

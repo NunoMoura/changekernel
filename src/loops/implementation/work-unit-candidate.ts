@@ -21,8 +21,9 @@ import {
 	type RunRequest,
 } from "../../runtime/contracts.ts";
 import type {KnowledgeTargetRef} from "../../changes/trace/contracts.ts";
+import {domainPluginIdentityFromCheckpoint} from "../../domains/binding.ts";
 
-export const WORK_UNIT_CANDIDATE_SCHEMA_VERSION = "1.0.0" as const;
+export const WORK_UNIT_CANDIDATE_SCHEMA_VERSION = "2.0.0" as const;
 export const MAXIMUM_IMPLEMENTATION_ATTEMPTS = 8 as const;
 
 export type WorkUnitAcceptanceSlice = CanonicalJsonValue & {
@@ -162,6 +163,9 @@ export function createWorkUnitCandidate(
 	const candidate = createLoopCandidate<"implementation", WorkUnitCandidateContent>({
 		loop: "implementation",
 		schemaVersion: WORK_UNIT_CANDIDATE_SCHEMA_VERSION,
+		domainPlugin: domainPluginIdentityFromCheckpoint(
+			input.state.knowledgeHead?.checkpoint,
+		),
 		content,
 		observedBase: {
 			workStateDigest: input.state.workStateDigest,
@@ -192,6 +196,7 @@ export function assertWorkUnitCandidate(
 	const expected = createLoopCandidate({
 		loop: candidate.loop,
 		schemaVersion: candidate.schemaVersion,
+		domainPlugin: candidate.domainPlugin,
 		content: candidate.content,
 		observedBase: candidate.observedBase,
 	});
@@ -220,6 +225,12 @@ function assertCandidateStateBinding(
 	}
 	if (candidate.observedBase.knowledgeSnapshotDigest !== state.knowledgeHead?.stateDigest) {
 		throw new Error("Work Unit Candidate Knowledge base is stale.");
+	}
+	const expectedDomainPlugin = domainPluginIdentityFromCheckpoint(
+		state.knowledgeHead?.checkpoint,
+	);
+	if (candidate.domainPlugin.identityDigest !== expectedDomainPlugin.identityDigest) {
+		throw new Error("Work Unit Candidate Domain Plugin binding is stale or foreign.");
 	}
 	const graphUnit = state.workGraph.workUnits.find(
 		(entry) => entry.workUnit.id === candidate.content.workUnitId,

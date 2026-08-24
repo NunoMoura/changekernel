@@ -75,7 +75,7 @@ export type {
 	SourceMapValidationInput,
 	SourceMapValidationIssue,
 	SourceMapValidationIssueCode,
-} from "./domains/software-development/source-map.ts";
+} from "./domains/project-server.ts";
 export type { ContentProof } from "./git/content-proof.ts";
 export type {
 	ApprovalReceiptPayload,
@@ -324,6 +324,12 @@ export * from "./alignment/graph.ts";
 export * from "./alignment/knowledge.ts";
 export * from "./alignment/query.ts";
 export * from "./loops/decision/accepted-effect-index.ts";
+export * from "./domains/contracts.ts";
+export * from "./domains/binding.ts";
+export * from "./domains/migration.ts";
+export * from "./domains/defaults.ts";
+export * from "./domains/project-server.ts";
+export * from "./domains/software-development/plugin.ts";
 export * from "./domains/software-development/fact-classification.ts";
 export * from "./domains/software-development/codewiki-kb-profile.ts";
 export * from "./domains/software-development/system-diagrams.ts";

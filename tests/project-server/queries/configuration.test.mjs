@@ -27,6 +27,12 @@ describe("Project Server configuration query", () => {
 			assert.match(state.configDigest, /^sha256:[a-f0-9]{64}$/);
 			assert.equal(state.activeConfigDigest, state.configDigest);
 			assert.equal(state.restartRequired, false);
+			assert.equal(
+				state.effective.domain.pluginId,
+				"codewiki.domain.software-development",
+			);
+			assert.match(state.effective.domain.admissionDigest, /^sha256:[a-f0-9]{64}$/);
+			assert.match(state.effective.domain.identityDigest, /^sha256:[a-f0-9]{64}$/);
 			assert.equal(state.effective.runtime.automation, "manual");
 			assert.equal(state.effective.runtime.agency, "delegate");
 			assert.equal(state.effective.hosts.pi.enabled, true);

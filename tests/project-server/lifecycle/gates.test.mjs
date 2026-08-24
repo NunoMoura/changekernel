@@ -6,6 +6,7 @@ import {
 	deriveDecisionLifecycleTransition,
 } from "../../../src/project-server/lifecycle/gates.ts";
 import {createReviewAttempt} from "../../../src/loops/review/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 import {EVIDENCE_SCHEMA_VERSION} from "../../../src/evidence/contracts.ts";
 import {materializeEvidenceRecord} from "../../../src/evidence/materialize.ts";
 import {canonicalJsonDigest} from "../../../src/utils/canonical-json.ts";
@@ -25,6 +26,7 @@ const digest = (value) => `sha256:${value.repeat(64)}`;
 
 function reviewAttempt(snapshot, overrides = {}) {
 	return createReviewAttempt({
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		changeId: "change:CHG-review",
 		changeRevisionId: digest("1"),
 		knowledgeTransitionDigest: digest("2"),

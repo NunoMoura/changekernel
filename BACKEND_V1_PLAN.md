@@ -190,16 +190,16 @@ Success: CodeWiki uses one current, pinned, replay-qualified DSH plugin baseline
 
 Success: CodeWiki owns route authority and custody evidence while DSH plugins own provider and authorization protocols.
 
-### B5 — Domains kernel and Software Development plugin
+### B5 — Domains kernel and Software Development plugin — complete
 
-- [x] Define Domain Plugin manifest and deterministic Project Server contribution contract (`codewiki.domain-plugin-admission@1.0.0`; admission digest, unique registry, fail-closed unknown selection).
-- [x] Extract current software-specific Knowledge vocabulary, relationship rules, context compilation, source/test realization, Checks, Git integration, and delivery bindings into the built-in Software Development Domain Plugin (`src/domains/software-development/**`; kernel modules no longer host domain meaning).
-- Keep the governance kernel, four Stage Loops, authority, Gate reduction, and effect application fixed.
-- Bind exact Domain Plugin identity to Knowledge checkpoints (done: compiler-identity derivation, checkpoint guard, `wiki_config.domain.pluginId` selection with fail-closed resolution), Candidates, Gate Evaluation Packages, Runtime Builds where applicable, and frontend projections.
-- Treat Domain Plugin upgrades as explicit migrations with recomputation and compatibility checks, never hot mutation.
-- Keep connector-derived observations non-authoritative until exact policy admits their proposed Knowledge Effects.
+- [x] Define exact Domain Plugin admission `2.0.0` and identity `1.0.0`, including immutable package/implementation/dependency/contract/data-limit/qualification bindings, canonical digest revalidation, unique registry admission, and fail-closed exact selection.
+- [x] Extract software-specific Knowledge vocabulary, relationships, context/source realization, ownership, diagrams, and classification into `src/domains/software-development/**`; route non-domain Project Server consumers through the exact identity-bound `DomainProjectServerContribution` seam instead of direct implementation imports.
+- [x] Keep the governance kernel, four Stage Loops, authority, Gate reduction, Git/effect custody, and protected effect application fixed.
+- [x] Persist exact project selection (`pluginId`, `pluginVersion`, `admissionDigest`) and bind exact Domain identity into Knowledge Compiler/Projection/Checkpoint `2.0.0`, Decision Candidate `8.0.0`, Planning Candidate `3.0.0`, Work Unit Candidate `2.0.0`, Review Attempt `5.0.0`, Check Invocation `4.0.0`, Gate Evaluation Package `2.0.0`, Runtime Build Manifest `3.0.0`, and bounded frontend effective configuration.
+- [x] Treat Domain Plugin upgrades as explicit deterministic migrations with old/new identities, checkpoint recomputation, semantic compatibility validation, exact compiler/projection differences, and fail-closed active Candidate/Gate/Run/Session hot-swap rejection.
+- [x] Keep connector-derived observations non-authoritative until exact policy admits their proposed Knowledge Effects.
 
-Success: software behavior remains unchanged while domain meaning becomes one exact admitted plugin rather than hard-coded generic-engine assumptions.
+Success: software behavior remains unchanged while domain meaning is one exact admitted plugin rather than a hard-coded generic-engine assumption.
 
 ### B6 — Frontend contract freeze and DSH client-slot qualification
 

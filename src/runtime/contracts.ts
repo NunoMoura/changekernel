@@ -1,5 +1,9 @@
 import type {CheckStage} from "../checks/contracts.ts";
 import {
+	assertDomainPluginIdentity,
+	type DomainPluginIdentity,
+} from "../domains/contracts.ts";
+import {
 	assertRunContinuationBinding,
 	createSingleRunContinuationBinding,
 	type RunContinuationBinding,
@@ -248,11 +252,12 @@ export const RUN_PROTOCOL = Object.freeze({
 	version: "6.0.0",
 } as const);
 
-export const RUNTIME_BUILD_SCHEMA_VERSION = "2.0.0" as const;
+export const RUNTIME_BUILD_SCHEMA_VERSION = "3.0.0" as const;
 export const RUNTIME_BUILD_REGISTRY_SCHEMA_VERSION = "1.0.0" as const;
 
 export interface RuntimeBuildManifest {
 	readonly schemaVersion: typeof RUNTIME_BUILD_SCHEMA_VERSION;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly runProtocolVersion: string;
 	readonly nodeVersion: string;
 	readonly dshSourceCommit: string;
@@ -1843,6 +1848,7 @@ export function createRuntimeBuildManifest(
 	if (input.schemaVersion !== RUNTIME_BUILD_SCHEMA_VERSION) {
 		throw new Error("Runtime Build manifest schemaVersion is invalid.");
 	}
+	assertDomainPluginIdentity(input.domainPlugin);
 	assertVersion(input.runProtocolVersion, "Run protocol version");
 	assertVersion(input.nodeVersion, "Runtime Build Node version");
 	if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(input.dshSourceCommit)) {
@@ -2158,6 +2164,7 @@ function assertVersion(value: unknown, field: string): asserts value is string {
 
 const RUNTIME_BUILD_MANIFEST_KEYS = [
 	"schemaVersion",
+	"domainPlugin",
 	"runProtocolVersion",
 	"nodeVersion",
 	"dshSourceCommit",

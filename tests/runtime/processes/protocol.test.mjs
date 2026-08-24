@@ -29,6 +29,7 @@ import {
 	sealRunProcessEnvelope,
 } from "../../../src/runtime/processes/protocol.ts";
 import {sha256Digest} from "../../../src/utils/canonical-json.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 
 const NOW = "2026-08-16T10:00:00.000Z";
 const EXPIRES = "2026-08-16T10:01:00.000Z";
@@ -268,7 +269,8 @@ function processChallenge(binding, request) {
 function fixture() {
 	const build = createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "2.0.0",
+			schemaVersion: "3.0.0",
+			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion: "26.1.0",
 			dshSourceCommit: "a".repeat(40),

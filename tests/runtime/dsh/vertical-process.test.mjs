@@ -8,6 +8,7 @@ import {fileURLToPath} from "node:url";
 import {after, describe, it} from "node:test";
 
 import {buildDshRuntimeCandidate} from "../../../scripts/build-dsh-runtime.mjs";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 
 import {createExecutablePluginAdmissionClosure} from "../../../src/plugins/executable.ts";
 import {createTestProjectContextSnapshot} from "../../helpers/project-context.mjs";
@@ -97,7 +98,8 @@ const admissionClosure = createExecutablePluginAdmissionClosure({
 });
 const qualifiedBuild = createQualifiedRuntimeBuild({
 	manifest: createRuntimeBuildManifest({
-		schemaVersion: "2.0.0",
+		schemaVersion: "3.0.0",
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		runProtocolVersion: RUN_PROTOCOL.version,
 		nodeVersion: process.version.slice(1),
 		dshSourceCommit: provenance.reviewedSource.commit,

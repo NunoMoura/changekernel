@@ -8,6 +8,7 @@ import { runCodewikiCli } from "../../../src/clients/cli/index.ts";
 import { planningQualityStandards } from "../../helpers/canonical-loop-events.mjs";
 import { seedProjectServerImplementation } from "../../helpers/project-server-implementation.mjs";
 import { createTraceHead, formatTraceText } from "../../../src/changes/trace/writer.ts";
+import {DEFAULT_WIKI_CONFIG} from "../../../src/project/config.ts";
 
 const cliPath = resolve("src/clients/cli/index.ts");
 
@@ -141,7 +142,10 @@ describe("CLI adapter", () => {
 		try {
 			await writeFile(
 				join(root, ".codewiki", "config.json"),
-				JSON.stringify({ runtime: { automation: "assist" } }),
+				JSON.stringify({
+					domain: DEFAULT_WIKI_CONFIG.domain,
+					runtime: { automation: "assist" },
+				}),
 			);
 			const head = createTraceHead({
 				traceId: "TRACE-cli",

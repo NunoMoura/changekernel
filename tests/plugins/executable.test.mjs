@@ -8,6 +8,7 @@ import {
 	createExecutablePluginAdmissionClosure,
 } from "../../src/plugins/executable.ts";
 import {createRuntimeBuildManifest} from "../../src/runtime/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 import {sha256Digest} from "../../src/utils/canonical-json.ts";
 
 function admission(overrides = {}) {
@@ -54,7 +55,8 @@ describe("executable Plugin admission", () => {
 			assert.match(closure.closureDigest, /^sha256:[0-9a-f]{64}$/);
 			assert.equal(mirror.closureDigest, closure.closureDigest);
 			const build = createRuntimeBuildManifest({
-				schemaVersion: "2.0.0",
+				schemaVersion: "3.0.0",
+				domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 				runProtocolVersion: "5.0.0",
 				nodeVersion: process.version.slice(1),
 				dshSourceCommit: "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",

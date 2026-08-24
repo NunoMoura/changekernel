@@ -14,6 +14,7 @@ import {
 	renderCodewikiPromptInstructions,
 } from "../../src/clients/pi/prompt/index.ts";
 import { CODEWIKI_TOOL_NAMES } from "../../src/clients/pi/tools/index.ts";
+import {SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN} from "../../src/domains/software-development/plugin.ts";
 
 const packageJson = jsonFile("package.json");
 const buildTsconfig = jsonFile("tsconfig.build.json");
@@ -296,6 +297,14 @@ describe("install readiness checklist", () => {
 				.map((line, index) => parseJson(line, `${path}:${index + 1}`));
 			for (const record of records) assertValidTraceRecord(record);
 		}
+	});
+
+	it("pins source configuration to exact admitted Domain Plugin", () => {
+		assert.deepEqual(codewikiConfig.domain, {
+			pluginId: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginId,
+			pluginVersion: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginVersion,
+			admissionDigest: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.admissionDigest,
+		});
 	});
 
 	it("keeps only Pi and MCP product host config keys", () => {

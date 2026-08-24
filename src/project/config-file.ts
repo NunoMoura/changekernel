@@ -8,6 +8,7 @@ import {
 } from "../changes/trace/git-command.ts";
 import {canonicalJsonDigest, type Sha256Digest} from "../utils/canonical-json.ts";
 import {
+	DEFAULT_WIKI_CONFIG,
 	runWikiConfig,
 	resolveWikiConfig,
 	type PartialWikiConfig,
@@ -27,7 +28,9 @@ export async function loadWikiConfigFile(
 	repoRoot: string,
 ): Promise<WikiConfig> {
 	const raw = await readOptionalJson(configPath(repoRoot));
-	return resolveWikiConfig(configFileToPartialWikiConfig(raw));
+	return raw === null
+		? resolveWikiConfig()
+		: resolveWikiConfig(configFileToPartialWikiConfig(raw));
 }
 
 export async function loadProtectedWikiConfigFile(input: {
@@ -105,6 +108,32 @@ export async function updateWikiConfigFile(
 	return { ...result, written: true };
 }
 
+export function migrateLegacyWikiConfigDomainSelection(
+	value: unknown,
+): Record<string, unknown> {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw createCodewikiConfigError({
+			path: WIKI_CONFIG_PATH,
+			code: "invalid_type",
+			message: `${WIKI_CONFIG_PATH} must contain a JSON object.`,
+		});
+	}
+	const record = structuredClone(value) as Record<string, unknown>;
+	const existing = objectRecord(record.domain);
+	for (const [field, expected] of Object.entries(DEFAULT_WIKI_CONFIG.domain)) {
+		const current = existing[field];
+		if (current !== undefined && current !== null && current !== expected) {
+			throw createCodewikiConfigError({
+				path: `${WIKI_CONFIG_PATH}.domain.${field}`,
+				code: "invalid_value",
+				message: "Legacy Domain migration cannot replace an explicit foreign or drifted selection.",
+			});
+		}
+	}
+	record.domain = {...DEFAULT_WIKI_CONFIG.domain};
+	return record;
+}
+
 export function configFileToPartialWikiConfig(
 	value: unknown,
 ): PartialWikiConfig {
@@ -116,6 +145,7 @@ export function configFileToPartialWikiConfig(
 	const approvalCadence = text(agency.approval_cadence);
 	const stopConditions = stringList(agency.stop_gates);
 	return {
+		domain: objectRecord(record.domain),
 		project: text(record.project) || text(record.project_name) || undefined,
 		preview: objectRecord(record.preview),
 		runtime: {
@@ -156,6 +186,25 @@ function validateConfigFileKeys(value: unknown): Record<string, unknown> {
 		"project_name",
 		"codewiki",
 	]);
+	const domain = optionalObjectRecord(
+		record.domain,
+		`${WIKI_CONFIG_PATH}.domain`,
+	);
+	if (!domain) {
+		throw exactDomainSelectionRequired();
+	}
+	assertKnownKeys(domain, `${WIKI_CONFIG_PATH}.domain`, [
+		"pluginId",
+		"pluginVersion",
+		"admissionDigest",
+	]);
+	if (
+		!text(domain.pluginId) ||
+		!text(domain.pluginVersion) ||
+		!text(domain.admissionDigest)
+	) {
+		throw exactDomainSelectionRequired();
+	}
 	const codewiki = optionalObjectRecord(
 		record.codewiki,
 		`${WIKI_CONFIG_PATH}.codewiki`,
@@ -227,6 +276,15 @@ function assertKnownKeys(
 	}
 }
 
+function exactDomainSelectionRequired(): Error {
+	return createCodewikiConfigError({
+		path: `${WIKI_CONFIG_PATH}.domain`,
+		code: "invalid_value",
+		message:
+			"Persisted wiki_config requires exact Domain Plugin ID, version, and admission digest; migrate configuration explicitly.",
+	});
+}
+
 function configPath(repoRoot: string): string {
 	return join(repoRoot, WIKI_CONFIG_PATH);
 }
@@ -235,7 +293,7 @@ async function readOptionalJson(path: string): Promise<unknown> {
 	try {
 		return JSON.parse(await readFile(path, "utf8"));
 	} catch (error) {
-		if (isNotFound(error)) return {};
+		if (isNotFound(error)) return null;
 		throw createCodewikiConfigError({
 			path,
 			message: `wiki_config file ${path} must contain valid JSON.`,

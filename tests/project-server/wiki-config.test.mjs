@@ -11,6 +11,7 @@ import {
 } from "../../src/project/config.ts";
 import {
 	loadWikiConfigFile,
+	migrateLegacyWikiConfigDomainSelection,
 	resolveWikiConfigFile,
 	updateWikiConfigFile,
 } from "../../src/project/config-file.ts";
@@ -184,18 +185,32 @@ describe("wiki_config core facade", () => {
 			assert.equal(missing.project, "codewiki");
 
 			await mkdir(join(root, ".codewiki"), { recursive: true });
-			await writeFile(
-				join(root, ".codewiki", "config.json"),
-				JSON.stringify({
-					project_name: "legacy-demo",
-					codewiki: {
-						agency: {
-							parallelism: { max_sessions: 4 },
-							approval_cadence: "risk",
-							stop_gates: ["semantic_decision", "risk_escalation"],
-						},
+			const legacy = {
+				project_name: "legacy-demo",
+				codewiki: {
+					agency: {
+						parallelism: { max_sessions: 4 },
+						approval_cadence: "risk",
+						stop_gates: ["semantic_decision", "risk_escalation"],
 					},
+				},
+			};
+			const configPath = join(root, ".codewiki", "config.json");
+			await writeFile(configPath, JSON.stringify(legacy));
+			await assert.rejects(
+				() => loadWikiConfigFile(root),
+				/requires exact Domain Plugin ID, version, and admission digest/,
+			);
+			assert.throws(
+				() => migrateLegacyWikiConfigDomainSelection({
+					...legacy,
+					domain: {pluginId: "codewiki.domain.foreign"},
 				}),
+				/cannot replace an explicit foreign or drifted selection/,
+			);
+			await writeFile(
+				configPath,
+				JSON.stringify(migrateLegacyWikiConfigDomainSelection(legacy)),
 			);
 			const loaded = await loadWikiConfigFile(root);
 			assert.equal(loaded.project, "legacy-demo");

@@ -278,6 +278,7 @@ async function runGate(context: {
 		stage: context.input.subject.stage,
 		id: context.input.subject.id,
 		schemaVersion: context.input.subject.schemaVersion,
+		domainPlugin: context.input.subject.domainPlugin,
 		content: context.input.subject.content,
 	}) && !context.input.subject.id.startsWith("candidate:")) {
 		throw new Error("Gate subject digest does not match its content.");

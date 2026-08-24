@@ -1,10 +1,8 @@
-import {
-	componentsForRefs,
+import { componentsForRefs,
 	componentSupportsSourcePath,
 	componentSupportsTestPath,
 	unknownComponentRefs,
-	type SourceMapComponent,
-} from "../../domains/software-development/source-map.ts";
+	type SourceMapComponent, } from "../../domains/project-server.ts";
 import {
 	loopQualityRunnerSummary,
 	type RunLoopQualityGraphResult,

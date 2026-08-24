@@ -1,5 +1,10 @@
 {
 	"project": "codewiki",
+	"domain": {
+		"pluginId": "codewiki.domain.software-development",
+		"pluginVersion": "1.0.0",
+		"admissionDigest": "sha256:473591828f2f5763d2e2bd88bb556556fa0b4239f71930e0c4b66038992e0ff2"
+	},
 	"runtime": {
 		"maxWorkers": 1,
 		"worktreeIsolation": "none",

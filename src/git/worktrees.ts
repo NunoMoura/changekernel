@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { pathMatchesPattern } from "../domains/software-development/source-map.ts";
+import { pathMatchesPattern } from "../domains/project-server.ts";
 import { traceTmpPath } from "../project-server/persistence/tmp.ts";
 import type { WikiConfigWorktreeIsolation } from "../project/config.ts";
 import type { ProjectServerWorkUnitClaimCandidate } from "../project-server/claims/work-unit-selection.ts";

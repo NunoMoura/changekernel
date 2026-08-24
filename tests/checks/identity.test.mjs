@@ -7,11 +7,13 @@ import {
 	createLoopCandidate,
 } from "../../src/checks/identity.ts";
 import {digest} from "../helpers/checks.mjs";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 
 function candidate(overrides = {}) {
 	return createLoopCandidate({
 		loop: overrides.loop ?? "decision",
 		schemaVersion: "1.0.0",
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		content: overrides.content ?? {answer: "approve"},
 		observedBase: {
 			workStateDigest: digest({work: 1}),
@@ -28,6 +30,10 @@ test("Loop Candidate identity remains canonical for work-producing Loops", () =>
 	assert.equal(first.id, second.id);
 	assert.equal(canonicalJson(first), canonicalJson(second));
 	assert.match(first.id, /^candidate:decision:[a-f0-9]{64}$/);
+	assert.equal(
+		first.domainPlugin.identityDigest,
+		DEFAULT_DOMAIN_PLUGIN_IDENTITY.identityDigest,
+	);
 	assert.throws(() => candidate({loop: "review"}), /loop review is invalid/);
 });
 
@@ -38,6 +44,10 @@ test("Candidate becomes exact Check subject without changing Candidate bytes", (
 	assert.equal(subject.stage, "decision");
 	assert.equal(subject.id, value.id);
 	assert.equal(subject.digest, value.digest);
+	assert.equal(
+		subject.domainPlugin.identityDigest,
+		value.domainPlugin.identityDigest,
+	);
 	assert.equal(canonicalJson(value), before);
 });
 
@@ -46,18 +56,20 @@ test("Review and other Gate subjects use deterministic stage identity", () => {
 		stage: "review",
 		id: "review-attempt:one",
 		schemaVersion: "1.0.0",
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		content: {integratedHead: "a".repeat(40)},
 	});
 	const second = createCheckSubject({
 		stage: "review",
 		id: "review-attempt:one",
 		schemaVersion: "1.0.0",
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		content: {integratedHead: "a".repeat(40)},
 	});
 	assert.deepEqual(first, second);
 	assert.equal(first.stage, "review");
 	assert.throws(
-		() => createCheckSubject({stage: "verification", id: "x", schemaVersion: "1.0.0", content: {}}),
+		() => createCheckSubject({stage: "verification", id: "x", schemaVersion: "1.0.0", domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY, content: {}}),
 		/stage is invalid/,
 	);
 });

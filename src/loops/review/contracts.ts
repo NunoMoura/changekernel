@@ -4,6 +4,10 @@ import type {
 	GateReport,
 } from "../../checks/contracts.ts";
 import type {EvidenceRecord} from "../../evidence/contracts.ts";
+import {
+	assertDomainPluginIdentity,
+	type DomainPluginIdentity,
+} from "../../domains/contracts.ts";
 import {assertValidEvidenceRecord} from "../../evidence/materialize.ts";
 import {
 	assertSha256Digest,
@@ -13,9 +17,10 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export const REVIEW_ATTEMPT_SCHEMA_VERSION = "4.0.0" as const;
+export const REVIEW_ATTEMPT_SCHEMA_VERSION = "5.0.0" as const;
 
 const REVIEW_ATTEMPT_FIELDS = [
+	"domainPlugin",
 	"changeId",
 	"changeRevisionId",
 	"knowledgeTransitionDigest",
@@ -49,6 +54,7 @@ const MAX_BOUND_IDENTITIES = 4_096;
 const MAX_IDENTITY_LENGTH = 512;
 
 export interface CreateReviewAttemptInput {
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly changeId: string;
 	readonly changeRevisionId: Sha256Digest;
 	readonly knowledgeTransitionDigest: Sha256Digest;
@@ -144,8 +150,10 @@ export function createReviewAttempt(input: CreateReviewAttemptInput): ReviewAtte
 	if (continuityKey !== reviewContinuityKey(changeId, lineageDigest)) {
 		throw new Error("Review continuity key must bind the exact Change and implementation lineage.");
 	}
+	assertDomainPluginIdentity(input.domainPlugin);
 	const body = Object.freeze({
 		schemaVersion: REVIEW_ATTEMPT_SCHEMA_VERSION,
+		domainPlugin: input.domainPlugin,
 		changeId,
 		changeRevisionId,
 		knowledgeTransitionDigest: digest(input.knowledgeTransitionDigest, "knowledgeTransitionDigest"),
@@ -210,6 +218,7 @@ export function reviewSubjectFromAttempt(attempt: ReviewAttempt): CheckSubject {
 		stage: "review" as const,
 		id: `review-attempt:${attempt.attemptDigest.slice("sha256:".length)}`,
 		schemaVersion: attempt.schemaVersion,
+		domainPlugin: attempt.domainPlugin,
 		content: toCanonicalJsonValue(attempt),
 	};
 	return Object.freeze({...subject, digest: canonicalJsonDigest(subject)});

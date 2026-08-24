@@ -4,6 +4,7 @@ import {
 	CHECK_OUTPUT_PROTOCOL_VERSION,
 } from "../../src/checks/contracts.ts";
 import {createCheckSubject} from "../../src/checks/identity.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 import {
 	createCheckPack,
 	createCheckPackSnapshot,
@@ -94,6 +95,7 @@ export function checkSubject(overrides = {}) {
 		stage: overrides.stage ?? "decision",
 		id: overrides.id ?? "subject:one",
 		schemaVersion: overrides.schemaVersion ?? "1.0.0",
+		domainPlugin: overrides.domainPlugin ?? DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		content: overrides.content ?? {value: "subject"},
 	});
 }

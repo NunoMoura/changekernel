@@ -7,6 +7,7 @@ import {
 	planningContinuityKey,
 } from "../../src/loops/planning/candidate-content.ts";
 import { createReviewAttempt } from "../../src/loops/review/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 
 function planningCandidate() {
 	return {
@@ -220,6 +221,7 @@ describe("Loop-owned candidate content admission", () => {
 describe("Review attempt identity", () => {
 	const digest = (value) => `sha256:${value.repeat(64)}`;
 	const input = () => ({
+		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		changeId: "change:CHG-1",
 		changeRevisionId: digest("1"),
 		knowledgeTransitionDigest: digest("2"),
@@ -264,7 +266,7 @@ describe("Review attempt identity", () => {
 			providerReceiptDigests: [...input().providerReceiptDigests].reverse(),
 		});
 
-		assert.equal(attempt.schemaVersion, "4.0.0");
+		assert.equal(attempt.schemaVersion, "5.0.0");
 		assert.equal(attempt.changeId, "change:CHG-1");
 		assert.deepEqual(attempt.workUnitIds, ["WI-1", "WI-2"]);
 		assert.equal(attempt.attemptDigest, reordered.attemptDigest);

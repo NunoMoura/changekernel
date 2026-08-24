@@ -7,6 +7,7 @@ import {
 } from "../../changes/trace/state.ts";
 import {createLoopCandidate, type LoopCandidate} from "../../checks/identity.ts";
 import {knowledgeEffectId} from "../../knowledge/materialization.ts";
+import {domainPluginIdentityFromCheckpoint} from "../../domains/binding.ts";
 import {knowledgeTargetKey} from "../../knowledge/state.ts";
 import {
 	canonicalJsonDigest,
@@ -28,7 +29,7 @@ import {
 	type PlanningGraphDelta,
 } from "./work-graph.ts";
 
-export const PLANNING_CANDIDATE_SCHEMA_VERSION = "2.0.0" as const;
+export const PLANNING_CANDIDATE_SCHEMA_VERSION = "3.0.0" as const;
 
 export type PlanningCandidateContent = CanonicalJsonValue & {
 	readonly changeId: string;
@@ -67,6 +68,9 @@ export function createPlanningCandidate(input: CreatePlanningCandidateInput): Pl
 	return createLoopCandidate<"planning", PlanningCandidateContent>({
 		loop: "planning",
 		schemaVersion: PLANNING_CANDIDATE_SCHEMA_VERSION,
+		domainPlugin: domainPluginIdentityFromCheckpoint(
+			input.state.knowledgeHead?.checkpoint,
+		),
 		content: toCanonicalJsonValue({
 			changeId: change.changeId,
 			changeRevisionId: revision.revisionId,

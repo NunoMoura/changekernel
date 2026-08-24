@@ -8,7 +8,7 @@ import type { ImplementationEvidencePolicy } from "../../loops/implementation/ev
 import { resolveLoopQualityJudgeExecutionOptions } from "../../checks/quality/judge-provider.ts";
 import { uniqueStrings } from "../../checks/quality/standards.ts";
 import type { ContentProof } from "../../git/content-proof.ts";
-import type { SourceMapContract } from "../../domains/software-development/source-map.ts";
+import type { SourceMapContract } from "../../domains/project-server.ts";
 import {
 	changedPaths,
 	normalizeImplementationChanges,
@@ -232,6 +232,7 @@ async function runWikiImplementFromObservation(
 	observation?: ProjectServerObservation,
 	beforeAppend?: () => void | Promise<void>,
 ): Promise<RunWikiImplementResult> {
+	// SAFETY: command input is a declared object contract; key validator needs an indexable view only.
 	assertKnownInputKeys(
 		"wiki_implement",
 		input as unknown as Record<string, unknown>,
@@ -587,6 +588,7 @@ function runtimeOwnedChangeInput(
 	}
 	const evidence = { ...source } as Record<string, unknown>;
 	for (const key of RUNTIME_OWNED_CHANGE_INPUT_KEYS) delete evidence[key];
+	// SAFETY: evidence starts as ImplementationChangeInput; only runtime-owned keys are replaced below.
 	return {
 		...(evidence as unknown as ImplementationChangeInput),
 		id: `implementation:${item.id}:${assignment?.id || "unassigned"}`,

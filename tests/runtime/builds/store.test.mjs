@@ -16,6 +16,7 @@ import {
 	qualifyStoredRuntimeBuild,
 	readStoredRuntimeBuildRegistry,
 } from "../../../src/runtime/builds/store.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 import {
 	canonicalJson,
 	sha256Digest,
@@ -36,14 +37,17 @@ describe("durable Runtime Build registry", () => {
 			});
 
 			assert.equal(registry.generation, 1);
-			assert.deepEqual(registry.builds, [build]);
+			assert.equal(canonicalJson(registry.builds), canonicalJson([build]));
 			assert.equal(registry.activeBuildDigest, null);
 			const persisted = await readFile(
 				join(stateRoot, "runtime-builds", "registry.json"),
 				"utf8",
 			);
 			assert.equal(persisted, canonicalJson(registry));
-			assert.deepEqual(await readStoredRuntimeBuildRegistry({stateRoot}), registry);
+			assert.equal(
+				canonicalJson(await readStoredRuntimeBuildRegistry({stateRoot})),
+				canonicalJson(registry),
+			);
 
 			await writeFile(sourcePath, "changed source");
 			assert.deepEqual(await readFile(storedArtifactPath(stateRoot, build)), artifact);
@@ -252,7 +256,8 @@ function qualifiedBundle(
 ) {
 	return createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "2.0.0",
+			schemaVersion: "3.0.0",
+			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion,
 			dshSourceCommit,

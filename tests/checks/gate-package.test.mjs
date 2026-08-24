@@ -63,6 +63,11 @@ describe("Gate Evaluation Package", () => {
 	it("freezes complete Candidate, Check, source, execution, and stage bindings", () => {
 		const value = createGateEvaluationPackage(packageInput());
 		assert.equal(value.protocol.id, "codewiki.gate-evaluation-package");
+		assert.equal(value.protocol.version, "2.0.0");
+		assert.equal(
+			value.domainPlugin.identityDigest,
+			value.subject.domainPlugin.identityDigest,
+		);
 		assert.equal(value.coverage, "complete");
 		assert.equal(value.checks.length, 1);
 		assert.equal(Object.isFrozen(value.subject.content), true);
@@ -96,6 +101,13 @@ describe("Gate Evaluation Package", () => {
 		assert.throws(
 			() => assertGateEvaluationPackage({...value, packageDigest: digest("tampered")}),
 			/digest or binding is invalid/u,
+		);
+		assert.throws(
+			() => assertGateEvaluationPackage({
+				...value,
+				domainPlugin: {...value.domainPlugin, identityDigest: digest("foreign-domain")},
+			}),
+			/protocol or stage is invalid/u,
 		);
 		assert.throws(
 			() => createGateEvaluationPackage({...packageInput(), checks: []}),

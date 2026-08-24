@@ -10,6 +10,11 @@ import {
 	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../utils/canonical-json.ts";
+import {
+	assertDomainPluginIdentity,
+	type DomainPluginIdentity,
+} from "../domains/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../domains/defaults.ts";
 import {parseOkfDocument} from "./okf-frontmatter.ts";
 import {
 	isKnowledgeSubjectId,
@@ -37,15 +42,15 @@ export const KNOWLEDGE_STATE_PROTOCOL = Object.freeze({
 } as const);
 export const KNOWLEDGE_PROJECTION_PROTOCOL = Object.freeze({
 	id: "codewiki.knowledge-projection",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 export const KNOWLEDGE_CHECKPOINT_PROTOCOL = Object.freeze({
 	id: "codewiki.knowledge-checkpoint",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 export const KNOWLEDGE_COMPILER_PROTOCOL = Object.freeze({
 	id: "codewiki.knowledge-compiler",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 
 const KNOWLEDGE_PROJECTION_MAX_FILES = 512;
@@ -55,6 +60,7 @@ export interface KnowledgeCompilerIdentity {
 	readonly protocol: typeof KNOWLEDGE_COMPILER_PROTOCOL;
 	readonly compilerId: string;
 	readonly compilerVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly markdownRenderer: string;
 	readonly yamlRenderer: string;
 	readonly digest: Sha256Digest;
@@ -114,6 +120,7 @@ export type KnowledgeFacetLocator =
 export const DEFAULT_KNOWLEDGE_COMPILER = createKnowledgeCompilerIdentity({
 	compilerId: "codewiki.project-server.knowledge",
 	compilerVersion: "1.0.0",
+	domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 	markdownRenderer: "codewiki.markdown-splice/1.0.0",
 	yamlRenderer: "codewiki.yaml-splice/1.0.0",
 });
@@ -121,18 +128,26 @@ export const DEFAULT_KNOWLEDGE_COMPILER = createKnowledgeCompilerIdentity({
 export function createKnowledgeCompilerIdentity(input: {
 	readonly compilerId: string;
 	readonly compilerVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly markdownRenderer: string;
 	readonly yamlRenderer: string;
 }): KnowledgeCompilerIdentity {
-	for (const [field, value] of Object.entries(input)) {
+	for (const [field, value] of Object.entries({
+		compilerId: input.compilerId,
+		compilerVersion: input.compilerVersion,
+		markdownRenderer: input.markdownRenderer,
+		yamlRenderer: input.yamlRenderer,
+	})) {
 		if (!value.trim() || value.length > 128) {
 			throw new Error(`Knowledge compiler ${field} must be bounded non-empty text.`);
 		}
 	}
+	assertDomainPluginIdentity(input.domainPlugin);
 	const body = {
 		protocol: KNOWLEDGE_COMPILER_PROTOCOL,
 		compilerId: input.compilerId,
 		compilerVersion: input.compilerVersion,
+		domainPlugin: input.domainPlugin,
 		markdownRenderer: input.markdownRenderer,
 		yamlRenderer: input.yamlRenderer,
 	};
@@ -544,6 +559,7 @@ function assertKnowledgeCompilerIdentity(value: KnowledgeCompilerIdentity): void
 	const recreated = createKnowledgeCompilerIdentity({
 		compilerId: value.compilerId,
 		compilerVersion: value.compilerVersion,
+		domainPlugin: value.domainPlugin,
 		markdownRenderer: value.markdownRenderer,
 		yamlRenderer: value.yamlRenderer,
 	});

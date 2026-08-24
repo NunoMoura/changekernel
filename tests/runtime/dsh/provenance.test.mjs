@@ -10,6 +10,7 @@ import {
 	readDshRuntimeProvenance,
 } from "../../../src/runtime/dsh/provenance.ts";
 import {createRuntimeBuildManifest} from "../../../src/runtime/contracts.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 import {sha256Digest} from "../../../src/utils/canonical-json.ts";
 
 const packageLockPath = fileURLToPath(
@@ -55,7 +56,8 @@ describe("DSH Runtime Build provenance", () => {
 		assert.match(provenance.cordisClosureDigest, /^sha256:[0-9a-f]{64}$/);
 
 		const manifest = createRuntimeBuildManifest({
-			schemaVersion: "2.0.0",
+			schemaVersion: "3.0.0",
+			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: "2.0.0",
 			nodeVersion: process.version.slice(1),
 			dshSourceCommit: provenance.reviewedSource.commit,

@@ -9,6 +9,7 @@ import {
 import {
 	createKnowledgeCheckpoint,
 	createKnowledgeCompilerIdentity,
+	DEFAULT_KNOWLEDGE_COMPILER,
 	knowledgeCellByTarget,
 } from "../../src/knowledge/state.ts";
 
@@ -49,6 +50,7 @@ describe("deterministic Knowledge transition materialization", () => {
 		const compiler = createKnowledgeCompilerIdentity({
 			compilerId: "codewiki.project-server.knowledge",
 			compilerVersion: "1.0.1",
+			domainPlugin: DEFAULT_KNOWLEDGE_COMPILER.domainPlugin,
 			markdownRenderer: "codewiki.markdown-splice/1.0.1",
 			yamlRenderer: "codewiki.yaml-splice/1.0.0",
 		});
@@ -260,6 +262,7 @@ describe("deterministic Knowledge transition materialization", () => {
 		const compiler = createKnowledgeCompilerIdentity({
 			compilerId: "other",
 			compilerVersion: "1.0.0",
+			domainPlugin: DEFAULT_KNOWLEDGE_COMPILER.domainPlugin,
 			markdownRenderer: "other",
 			yamlRenderer: "other",
 		});

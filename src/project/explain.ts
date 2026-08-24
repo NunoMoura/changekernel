@@ -1,13 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import { basename, join } from "node:path";
-import {
-	pathMatchesPattern,
+import { pathMatchesPattern,
 	sourceMapComponentById,
 	sourceMapOwnerForPath,
 	type SourceMapComponent,
-	type SourceMapContract,
-} from "../domains/software-development/source-map.ts";
-import { sourceOwnershipMapFromOkfBundle } from "../domains/software-development/source-ownership.ts";
+	type SourceMapContract, } from "../domains/project-server.ts";
+import { sourceOwnershipMapFromOkfBundle } from "../domains/project-server.ts";
 import type { OkfBundleFile } from "../knowledge/okf-validation.ts";
 import { foldProjectTraceRecords } from "../changes/trace/project.ts";
 import type { TraceEvent, TraceRecord } from "../changes/trace/types.ts";

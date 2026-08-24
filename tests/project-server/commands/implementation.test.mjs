@@ -15,6 +15,7 @@ import { buildProjectWorkState } from "../../../src/work-state/project.ts";
 import { seedProjectServerImplementation as seedProjectServerImplementationProject } from "../../helpers/project-server-implementation.mjs";
 import { buildWorkQueueView } from "../../../src/work-state/work-queue.ts";
 import { implementationQualityFields } from "../../helpers/implementation-change.mjs";
+import {DEFAULT_WIKI_CONFIG} from "../../../src/project/config.ts";
 
 async function fixture() {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-wiki-implement-"));
@@ -266,6 +267,7 @@ describe("wiki_implement core facade", () => {
 			await writeFile(
 				join(root, ".codewiki", "config.json"),
 				JSON.stringify({
+					domain: DEFAULT_WIKI_CONFIG.domain,
 					quality: { review: { autoEvidence: false } },
 				}),
 			);
@@ -313,6 +315,7 @@ describe("wiki_implement core facade", () => {
 			await writeFile(
 				join(root, ".codewiki", "config.json"),
 				JSON.stringify({
+					domain: DEFAULT_WIKI_CONFIG.domain,
 					quality: {
 						review: {
 							enabledPacks: ["tsjs.typescript"],

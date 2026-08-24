@@ -1,5 +1,9 @@
 import {isCheckStage, type CheckStage, type CheckSubject, type SemanticLoop} from "./contracts.ts";
 import {
+	assertDomainPluginIdentity,
+	type DomainPluginIdentity,
+} from "../domains/contracts.ts";
+import {
 	assertSha256Digest,
 	canonicalJson,
 	canonicalJsonDigest,
@@ -39,6 +43,7 @@ export interface LoopCandidate<
 	readonly digest: Sha256Digest;
 	readonly loop: TLoop;
 	readonly schemaVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly content: TContent;
 	readonly observedBase: CandidateObservedBase;
 }
@@ -49,6 +54,7 @@ export interface CreateLoopCandidateInput<
 > {
 	readonly loop: TLoop;
 	readonly schemaVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly content: TContent;
 	readonly observedBase: CandidateObservedBase;
 }
@@ -61,7 +67,7 @@ export function createLoopCandidate<
 ): LoopCandidate<TLoop, TContent> {
 	assertExactKeys(
 		input,
-		["loop", "schemaVersion", "content", "observedBase"],
+		["loop", "schemaVersion", "domainPlugin", "content", "observedBase"],
 		"Candidate input",
 	);
 	if (!isSemanticLoop(input.loop)) {
@@ -81,14 +87,17 @@ export function createLoopCandidate<
 		],
 		"Candidate observedBase",
 	);
+	assertDomainPluginIdentity(input.domainPlugin);
 	const observedBase = normalizedObservedBase(input.observedBase);
 	const body = toCanonicalJsonValue({
 		loop: input.loop,
 		schemaVersion: input.schemaVersion,
+		domainPlugin: input.domainPlugin,
 		content: input.content,
 		observedBase,
 	});
 	const digest = canonicalJsonDigest(body);
+	// SAFETY: validated body plus derived ID/digest form exact immutable Candidate shape.
 	return toCanonicalJsonValue({
 		...(body as Record<string, CanonicalJsonValue>),
 		id: `candidate:${input.loop}:${digest.slice("sha256:".length)}`,
@@ -102,16 +111,19 @@ export function checkSubjectFromCandidate(
 	const expected = createLoopCandidate({
 		loop: candidate.loop,
 		schemaVersion: candidate.schemaVersion,
+		domainPlugin: candidate.domainPlugin,
 		content: candidate.content,
 		observedBase: candidate.observedBase,
 	});
 	if (canonicalJson(candidate) !== canonicalJson(expected)) {
 		throw new Error("Check subject Candidate identity is invalid.");
 	}
+	// SAFETY: Candidate validation above establishes exact immutable Check subject fields.
 	return toCanonicalJsonValue({
 		stage: candidate.loop,
 		id: candidate.id,
 		schemaVersion: candidate.schemaVersion,
+		domainPlugin: candidate.domainPlugin,
 		digest: candidate.digest,
 		content: candidate.content,
 	}) as unknown as CheckSubject;
@@ -121,9 +133,14 @@ export function createCheckSubject(input: {
 	readonly stage: CheckStage;
 	readonly id: string;
 	readonly schemaVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly content: CanonicalJsonValue;
 }): CheckSubject {
-	assertExactKeys(input, ["stage", "id", "schemaVersion", "content"], "Check subject input");
+	assertExactKeys(
+		input,
+		["stage", "id", "schemaVersion", "domainPlugin", "content"],
+		"Check subject input",
+	);
 	if (!isCheckStage(input.stage)) throw new Error("Check subject stage is invalid.");
 	if (!input.id.trim() || input.id !== input.id.trim()) {
 		throw new Error("Check subject id must be trimmed non-empty text.");
@@ -131,12 +148,15 @@ export function createCheckSubject(input: {
 	if (!/^\d+\.\d+\.\d+$/.test(input.schemaVersion)) {
 		throw new Error("Check subject schemaVersion must be a semantic version.");
 	}
+	assertDomainPluginIdentity(input.domainPlugin);
 	const body = {
 		stage: input.stage,
 		id: input.id,
 		schemaVersion: input.schemaVersion,
+		domainPlugin: input.domainPlugin,
 		content: input.content,
 	};
+	// SAFETY: body fields are validated and digest binds exact canonical subject bytes.
 	return toCanonicalJsonValue({
 		...body,
 		digest: canonicalJsonDigest(body),
@@ -146,10 +166,11 @@ export function createCheckSubject(input: {
 export function assertCheckSubject(subject: CheckSubject): void {
 	assertExactKeys(
 		subject,
-		["stage", "id", "schemaVersion", "digest", "content"],
+		["stage", "id", "schemaVersion", "domainPlugin", "digest", "content"],
 		"Check subject",
 	);
 	if (!isCheckStage(subject.stage)) throw new Error("Check subject stage is invalid.");
+	assertDomainPluginIdentity(subject.domainPlugin);
 	assertSha256Digest(subject.digest, "Check subject digest");
 	if (!subject.id.trim() || subject.id !== subject.id.trim()) {
 		throw new Error("Check subject id must be trimmed non-empty text.");
@@ -207,7 +228,7 @@ function normalizedRefs(refs: readonly string[]): string[] {
 }
 
 function assertExactKeys(
-	value: object,
+	value: unknown,
 	allowed: readonly string[],
 	label: string,
 ): void {

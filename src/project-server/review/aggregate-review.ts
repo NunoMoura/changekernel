@@ -1,4 +1,5 @@
 import type {ChangeWorkState, ProjectWorkState} from "../../changes/trace/state.ts";
+import {domainPluginIdentityFromCheckpoint} from "../../domains/binding.ts";
 import {
 	createReviewAttempt,
 	reviewContinuityKey,
@@ -48,6 +49,7 @@ export function createAggregateReviewAttempt(
 	assertExactSet(artifacts.candidateDigests, aggregate.contributingCandidateDigests, "Candidate digest");
 	assertExactSet(artifacts.gateReportDigests, aggregate.gateReportDigests, "Implementation Gate Report digest");
 	return createReviewAttempt({
+		domainPlugin: domainPluginIdentityFromCheckpoint(knowledgeHead.checkpoint),
 		changeId: change.changeId,
 		changeRevisionId: change.currentRevision.revisionId,
 		knowledgeTransitionDigest: canonicalJsonDigest(change.currentRevision.content.knowledge),

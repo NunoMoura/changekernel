@@ -1,5 +1,6 @@
 import {Type} from "typebox";
 import {assertTypeboxSchema} from "../utils/json.ts";
+import type {DomainPluginIdentity} from "../domains/contracts.ts";
 import {
 	assertSha256Digest,
 	canonicalJsonDigest,
@@ -10,7 +11,7 @@ import {
 
 export const CHECK_DEFINITION_SCHEMA_VERSION = "1.0.0" as const;
 export const CHECK_INVOCATION_PROTOCOL_ID = "codewiki.check-invocation" as const;
-export const CHECK_INVOCATION_PROTOCOL_VERSION = "3.0.0" as const;
+export const CHECK_INVOCATION_PROTOCOL_VERSION = "4.0.0" as const;
 export const CHECK_OUTPUT_PROTOCOL_ID = "codewiki.check-output" as const;
 export const CHECK_OUTPUT_PROTOCOL_VERSION = "1.0.0" as const;
 export const CHECK_RESULT_SCHEMA_VERSION = "2.0.0" as const;
@@ -97,6 +98,7 @@ export interface CheckSubject {
 	readonly stage: CheckStage;
 	readonly id: string;
 	readonly schemaVersion: string;
+	readonly domainPlugin: DomainPluginIdentity;
 	readonly digest: Sha256Digest;
 	readonly content: CanonicalJsonValue;
 }
@@ -443,7 +445,24 @@ export const CheckInvocationSchema = Type.Object(
 			{
 				stage: StageSchema,
 				id: Type.String({minLength: 1, maxLength: 512}),
-				schemaVersion: VersionSchema,
+					schemaVersion: VersionSchema,
+				domainPlugin: Type.Object(
+					{
+						protocol: Type.Object(
+							{
+								id: Type.Literal("codewiki.domain-plugin-identity"),
+								version: Type.Literal("1.0.0"),
+							},
+							{additionalProperties: false},
+						),
+						pluginId: Type.String({minLength: 1, maxLength: 128}),
+						pluginVersion: VersionSchema,
+						admissionDigest: DigestSchema,
+						implementationDigest: DigestSchema,
+						identityDigest: DigestSchema,
+					},
+					{additionalProperties: false},
+				),
 				digest: DigestSchema,
 				content: Type.Unknown(),
 			},

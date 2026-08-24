@@ -36,7 +36,10 @@ it("loads a protected bound triage context and appends one selected Decision att
 	});
 	try {
 		await mkdir(join(fixture.cloneA, ".codewiki"), {recursive: true});
-		await writeFile(join(fixture.cloneA, ".codewiki", "config.json"), "{}\n");
+		await writeFile(
+			join(fixture.cloneA, ".codewiki", "config.json"),
+			`${JSON.stringify(resolveWikiConfig({}), null, 2)}\n`,
+		);
 		await git(fixture.cloneA, ["add", ".codewiki/config.json"]);
 		await git(fixture.cloneA, [
 			"-c",

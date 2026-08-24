@@ -1,5 +1,5 @@
 import type { WorktreeRef } from "../../git/worktrees.ts";
-import { pathMatchesPattern } from "../../domains/software-development/source-map.ts";
+import { pathMatchesPattern } from "../../domains/project-server.ts";
 import type { WorkQueueItem, WorkQueueView } from "../../work-state/projection-types.ts";
 
 type ProjectServerWorkUnitClaimHoldReason = "capacity" | "path_conflict";

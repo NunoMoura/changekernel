@@ -1,5 +1,11 @@
 import { createCodewikiConfigError } from "./config-errors.ts";
 import {
+	domainPluginIdentity,
+	resolveDomainPluginSelection,
+	type DomainPluginIdentity,
+} from "../domains/contracts.ts";
+import {DEFAULT_DOMAIN_REGISTRY} from "../domains/defaults.ts";
+import {
 	normalizeTriagePreferenceBindings,
 	type TriagePreferenceBinding,
 } from "../changes/triage/policy.ts";
@@ -113,9 +119,10 @@ export interface WikiQualityConfig {
 	review: WikiQualityReviewConfig;
 }
 
-export interface WikiConfigDomain {
-	pluginId: string | null;
-}
+export type WikiConfigDomain = Pick<
+	DomainPluginIdentity,
+	"pluginId" | "pluginVersion" | "admissionDigest"
+>;
 
 export interface WikiConfig {
 	domain: WikiConfigDomain;
@@ -169,8 +176,16 @@ export type PartialQualityConfig = {
 	review?: Partial<WikiQualityReviewConfig>;
 };
 
+const DEFAULT_DOMAIN_IDENTITY = domainPluginIdentity(
+	resolveDomainPluginSelection(undefined, DEFAULT_DOMAIN_REGISTRY),
+);
+
 export const DEFAULT_WIKI_CONFIG: WikiConfig = {
-	domain: { pluginId: null },
+	domain: {
+		pluginId: DEFAULT_DOMAIN_IDENTITY.pluginId,
+		pluginVersion: DEFAULT_DOMAIN_IDENTITY.pluginVersion,
+		admissionDigest: DEFAULT_DOMAIN_IDENTITY.admissionDigest,
+	},
 	project: "codewiki",
 	preview: DEFAULT_WIKI_PREVIEW_CONFIG,
 	runtime: {
@@ -409,7 +424,7 @@ export function validateWikiConfig(config: WikiConfig): WikiConfig {
 	];
 	const preview = resolveWikiPreviewConfig(config.preview);
 	return {
-		domain: { pluginId: config.domain.pluginId },
+		domain: resolveWikiDomainConfig(config.domain),
 		project: config.project.trim(),
 		preview,
 		runtime: {
@@ -454,12 +469,15 @@ function mergeWikiConfigPatch(
 	patch: PartialWikiConfig = {},
 ): PartialWikiConfig {
 	return {
-		domain: {
-			pluginId:
-				patch.domain?.pluginId !== undefined
-					? patch.domain.pluginId
-					: current.domain.pluginId,
-		},
+		domain: patch.domain
+			? {
+					pluginId: patch.domain.pluginId ?? current.domain.pluginId,
+					pluginVersion:
+						patch.domain.pluginVersion ?? current.domain.pluginVersion,
+					admissionDigest:
+						patch.domain.admissionDigest ?? current.domain.admissionDigest,
+				}
+			: {...current.domain},
 		project: patch.project ?? current.project,
 		preview: patch.preview ?? current.preview,
 		runtime: {
@@ -972,23 +990,39 @@ function uniqueStringList(values: string[]): string[] {
 function resolveWikiDomainConfig(
 	input: Partial<WikiConfigDomain> | undefined,
 ): WikiConfigDomain {
-	if (input === undefined) {
-		return {pluginId: DEFAULT_WIKI_CONFIG.domain.pluginId};
+	if (input !== undefined) {
+		assertConfigObject(input, "wiki_config.domain");
+		assertKnownKeys(input, "wiki_config.domain", [
+			"pluginId",
+			"pluginVersion",
+			"admissionDigest",
+		]);
 	}
-	assertConfigObject(input, "wiki_config.domain");
-	assertKnownKeys(input, "wiki_config.domain", ["pluginId"]);
-	const pluginId = input.pluginId;
-	if (pluginId !== null && pluginId !== undefined) {
-		if (typeof pluginId !== "string" || !pluginId.trim()) {
-			throw createCodewikiConfigError({
-				path: "wiki_config.domain.pluginId",
-				code: "invalid_value",
-				message: "wiki_config domain.pluginId must be a nonempty string or null.",
-			});
-		}
-		return {pluginId};
+	try {
+		const admission = resolveDomainPluginSelection(
+			{
+				pluginId: input?.pluginId ?? null,
+				pluginVersion: input?.pluginVersion,
+				admissionDigest: input?.admissionDigest,
+			},
+			DEFAULT_DOMAIN_REGISTRY,
+		);
+		const identity = domainPluginIdentity(admission);
+		return {
+			pluginId: identity.pluginId,
+			pluginVersion: identity.pluginVersion,
+			admissionDigest: identity.admissionDigest,
+		};
+	} catch (error) {
+		throw createCodewikiConfigError({
+			path: "wiki_config.domain",
+			code: "invalid_value",
+			message:
+				error instanceof Error
+					? error.message
+					: "wiki_config Domain Plugin is invalid.",
+		});
 	}
-	return {pluginId: null};
 }
 
 function text(value: unknown): string {

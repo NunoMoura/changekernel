@@ -20,8 +20,15 @@ import type {
 	WikiModelRoutingConfig,
 } from "../../project/config.ts";
 import {canonicalJsonDigest} from "../../utils/canonical-json.ts";
+import {
+	domainPluginIdentity,
+	resolveDomainPluginSelection,
+	type DomainPluginIdentity,
+} from "../../domains/contracts.ts";
+import {DEFAULT_DOMAIN_REGISTRY} from "../../domains/defaults.ts";
 
 export interface ProjectServerEffectiveConfiguration {
+	domain: DomainPluginIdentity;
 	runtime: {
 		maxWorkers: number;
 		worktreeIsolation: WikiConfigWorktreeIsolation;
@@ -147,7 +154,9 @@ export function runtimeConfigurationDigest(config: WikiConfig): string {
 }
 
 function effectiveConfig(config: WikiConfig): ProjectServerEffectiveConfiguration {
+	const admission = resolveDomainPluginSelection(config.domain, DEFAULT_DOMAIN_REGISTRY);
 	return {
+		domain: domainPluginIdentity(admission),
 		runtime: {
 			maxWorkers: config.runtime.maxWorkers,
 			worktreeIsolation: config.runtime.worktreeIsolation,
