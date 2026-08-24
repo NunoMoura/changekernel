@@ -201,14 +201,14 @@ Success: CodeWiki owns route authority and custody evidence while DSH plugins ow
 
 Success: software behavior remains unchanged while domain meaning is one exact admitted plugin rather than a hard-coded generic-engine assumption.
 
-### B6 — Frontend contract freeze and DSH client-slot qualification
+### B6 — Frontend-facing backend contract freeze and DSH client-slot qualification
 
 - Freeze authenticated frontend API `1.0.0`, event ordering, resumability, idempotency, redaction, error taxonomy, and capability discovery.
 - Expose only canonical CodeWiki commands, queries, operations, and projections; no raw DSH or Project Server storage handles.
-- Build a disposable DSH web/client plugin spike for Change navigation, one stage view, provider settings reuse, and authorization interaction.
+- Build a disposable, non-product DSH web/client plugin spike for Change navigation, one stage view, provider settings reuse, and authorization interaction; the spike creates no frontend compatibility surface.
 - Decide from evidence whether frontend v1 uses DSH web profile composition; do not retain a second shell if DSH slots satisfy accessibility, lifecycle, and security requirements.
 
-Success: frontend implementation can begin without driving backend contract churn or duplicating generic DSH UI infrastructure.
+Success: the frontend-facing backend contract and client-substrate decision are ready for B7–B9 qualification. Product frontend implementation remains blocked until every Backend v1 release gate passes.
 
 ### B7 — Backend packaging, lifecycle, and state evolution
 
