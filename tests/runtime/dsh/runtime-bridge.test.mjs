@@ -8,7 +8,7 @@ import {fileURLToPath} from "node:url";
 import {after, describe, it} from "node:test";
 
 import {createTestProjectContextSnapshot} from "../../helpers/project-context.mjs";
-import {runDshAgent} from "../../../src/runtime/dsh/adapter.ts";
+import {runDshRuntimeBridge} from "../../../src/runtime/dsh/runtime-bridge.ts";
 import {
 	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
 } from "../../../src/runtime/dsh/project-context-tools.ts";
@@ -57,14 +57,14 @@ after(async () => {
 	);
 });
 
-describe("CodeWiki DSH Adapter", () => {
+describe("CodeWiki Runtime Bridge", () => {
 	it("runs one isolated DSH Agent Session with replay and persists its exact JSONL", async () => {
 		const root = await temporaryRoot();
 		const request = runRequest("run-dsh-1", "session-dsh-1");
-		const result = await runDshAgent({
+		const result = await runDshRuntimeBridge({
 			request,
 			artifacts: artifacts(root),
-			installModelAdapter: createDshReplayModelInstaller({
+			installModelProvider: createDshReplayModelInstaller({
 				fixturePath,
 				fixtureDigest,
 			}),
@@ -96,12 +96,12 @@ describe("CodeWiki DSH Adapter", () => {
 		assert.match(rawLog, /DSH vertical slice complete\./);
 	});
 
-	it("resumes one exact persisted Session head in a fresh adapter context", async () => {
+	it("resumes one exact persisted Session head in a fresh Runtime Bridge context", async () => {
 		const root = await temporaryRoot();
-		const first = await runDshAgent({
+		const first = await runDshRuntimeBridge({
 			request: runRequest("run-dsh-resume-1", "session-dsh-resume"),
 			artifacts: artifacts(root),
-			installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+			installModelProvider: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
 		});
 		const secondRequest = runRequest(
 			"run-dsh-resume-2",
@@ -109,10 +109,10 @@ describe("CodeWiki DSH Adapter", () => {
 			null,
 			first.rawLog,
 		);
-		const second = await runDshAgent({
+		const second = await runDshRuntimeBridge({
 			request: secondRequest,
 			artifacts: artifacts(root),
-			installModelAdapter: createDshReplayModelInstaller({
+			installModelProvider: createDshReplayModelInstaller({
 				fixturePath: turnTwoFixturePath,
 				fixtureDigest: turnTwoFixtureDigest,
 			}),
@@ -154,14 +154,14 @@ describe("CodeWiki DSH Adapter", () => {
 			const root = await temporaryRoot();
 			const sessionId = `session-dsh-${stage}`;
 			const initialPrompt = `Produce the ${stage} Candidate.`;
-			const first = await runDshAgent({
+			const first = await runDshRuntimeBridge({
 				request: runRequest(`run-${stage}-1`, sessionId, null, null, {
 					prompt: initialPrompt,
 					stage,
 					role,
 				}),
 				artifacts: artifacts(root, initialPrompt),
-				installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+				installModelProvider: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
 			});
 			const feedbackDigest = digest(`${stage}-gate-feedback`);
 			const feedbackPrompt = `Revise the ${stage} Candidate from canonical Gate feedback.`;
@@ -171,10 +171,10 @@ describe("CodeWiki DSH Adapter", () => {
 				role,
 				feedbackDigest,
 			});
-			const second = await runDshAgent({
+			const second = await runDshRuntimeBridge({
 				request,
 				artifacts: artifacts(root, feedbackPrompt),
-				installModelAdapter: createDshReplayModelInstaller({
+				installModelProvider: createDshReplayModelInstaller({
 					fixturePath: turnTwoFixturePath,
 					fixtureDigest: turnTwoFixtureDigest,
 				}),
@@ -191,7 +191,7 @@ describe("CodeWiki DSH Adapter", () => {
 	it("compacts pressured continuation without deleting exact retained history", async () => {
 		const root = await temporaryRoot();
 		const longPrompt = "Preserve this unresolved observation until canonical admission. ".repeat(500);
-		const first = await runDshAgent({
+		const first = await runDshRuntimeBridge({
 			request: runRequest(
 				"run-dsh-compact-1",
 				"session-dsh-compact",
@@ -200,10 +200,10 @@ describe("CodeWiki DSH Adapter", () => {
 				{prompt: longPrompt},
 			),
 			artifacts: artifacts(root, longPrompt),
-			installModelAdapter: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
+			installModelProvider: createDshReplayModelInstaller({fixturePath, fixtureDigest}),
 		});
 		const nextPrompt = "Continue from canonical state and return qualification text.";
-		const second = await runDshAgent({
+		const second = await runDshRuntimeBridge({
 			request: runRequest(
 				"run-dsh-compact-2",
 				"session-dsh-compact",
@@ -212,7 +212,7 @@ describe("CodeWiki DSH Adapter", () => {
 				{prompt: nextPrompt},
 			),
 			artifacts: artifacts(root, nextPrompt),
-			installModelAdapter: createDshReplayModelInstaller({
+			installModelProvider: createDshReplayModelInstaller({
 				fixturePath: turnTwoFixturePath,
 				fixtureDigest: turnTwoFixtureDigest,
 			}),
@@ -237,15 +237,15 @@ describe("CodeWiki DSH Adapter", () => {
 		const installer = () =>
 			createDshReplayModelInstaller({fixturePath, fixtureDigest});
 		const [left, right] = await Promise.all([
-			runDshAgent({
+			runDshRuntimeBridge({
 				request: runRequest("run-dsh-left", "session-dsh-left"),
 				artifacts: artifacts(leftRoot),
-				installModelAdapter: installer(),
+				installModelProvider: installer(),
 			}),
-			runDshAgent({
+			runDshRuntimeBridge({
 				request: runRequest("run-dsh-right", "session-dsh-right"),
 				artifacts: artifacts(rightRoot),
-				installModelAdapter: installer(),
+				installModelProvider: installer(),
 			}),
 		]);
 
@@ -263,11 +263,11 @@ describe("CodeWiki DSH Adapter", () => {
 			"session-dsh-context",
 			projectContextSnapshot,
 		);
-		const result = await runDshAgent({
+		const result = await runDshRuntimeBridge({
 			request,
 			artifacts: artifacts(root),
 			projectContextSnapshot,
-			installModelAdapter: createDshReplayModelInstaller({
+			installModelProvider: createDshReplayModelInstaller({
 				fixturePath: projectContextFixturePath,
 				fixtureDigest: projectContextFixtureDigest,
 			}),
@@ -304,7 +304,7 @@ describe("CodeWiki DSH Adapter", () => {
 		const root = await temporaryRoot();
 		const projectContextSnapshot = contextSnapshot();
 		const codeMode = liveCodeMode();
-		const result = await runDshAgent({
+		const result = await runDshRuntimeBridge({
 			request: runRequest(
 				"run-dsh-context",
 				"session-dsh-code-mode",
@@ -313,7 +313,7 @@ describe("CodeWiki DSH Adapter", () => {
 			artifacts: artifacts(root),
 			projectContextSnapshot,
 			codeMode,
-			installModelAdapter: createDshReplayModelInstaller({
+			installModelProvider: createDshReplayModelInstaller({
 				fixturePath: codeModeFixturePath,
 				fixtureDigest: codeModeFixtureDigest,
 			}),
@@ -339,10 +339,10 @@ describe("CodeWiki DSH Adapter", () => {
 	it("rejects model-visible bytes that do not match the Run Request", async () => {
 		const root = await temporaryRoot();
 		await assert.rejects(
-			runDshAgent({
+			runDshRuntimeBridge({
 				request: runRequest("run-dsh-tampered", "session-dsh-tampered"),
 				artifacts: {...artifacts(root), prompt: "tampered"},
-				installModelAdapter: createDshReplayModelInstaller({
+				installModelProvider: createDshReplayModelInstaller({
 					fixturePath,
 					fixtureDigest,
 				}),
@@ -353,7 +353,7 @@ describe("CodeWiki DSH Adapter", () => {
 });
 
 async function temporaryRoot() {
-	const path = await mkdtemp(join(tmpdir(), "codewiki-dsh-adapter-"));
+	const path = await mkdtemp(join(tmpdir(), "codewiki-runtime-bridge-"));
 	temporaryDirectories.push(path);
 	return path;
 }

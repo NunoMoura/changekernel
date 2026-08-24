@@ -1,4 +1,5 @@
 export * from "./contracts.ts";
+export * from "../plugins/executable.ts";
 export * from "./efficiency-metrics.ts";
 export * from "./builds/store.ts";
 export * from "./context/contracts.ts";
@@ -13,7 +14,7 @@ export * from "./providers/contracts.ts";
 export * from "./providers/broker-server.ts";
 export * from "./sandbox/bubblewrap.ts";
 export * from "./sandbox/run-process.ts";
-export * from "./dsh/adapter.ts";
+export * from "./dsh/runtime-bridge.ts";
 export * from "./dsh/secure-code-runtime.ts";
 export * from "./checks/secure-code-sandbox.ts";
 export * from "./dsh/private-provider-broker.ts";

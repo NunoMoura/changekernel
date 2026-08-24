@@ -11,7 +11,7 @@ import {
 	createRunSessionLeaseBinding,
 } from "../../../src/runtime/contracts.ts";
 import {createStageRunContinuationBinding} from "../../../src/runtime/continuation.ts";
-import {runDshAgent} from "../../../src/runtime/dsh/adapter.ts";
+import {runDshRuntimeBridge} from "../../../src/runtime/dsh/runtime-bridge.ts";
 import {createDshPrivateProviderBrokerInstaller} from "../../../src/runtime/dsh/private-provider-broker.ts";
 import {
 	createPrivateProviderBrokerBinding,
@@ -166,7 +166,7 @@ describe("private provider broker", () => {
 		try {
 			const systemPrompt = "Private broker qualification system prompt";
 			const prompt = "Return broker qualification text.";
-			const result = await runDshAgent({
+			const result = await runDshRuntimeBridge({
 				request: request(runId, modelRoute, systemPrompt, prompt),
 				artifacts: {
 					systemPrompt,
@@ -174,7 +174,7 @@ describe("private provider broker", () => {
 					workspacePath: root,
 					sessionRoot: join(root, "sessions"),
 				},
-				installModelAdapter: createDshPrivateProviderBrokerInstaller({
+				installModelProvider: createDshPrivateProviderBrokerInstaller({
 					access: broker.access,
 				}),
 			});
@@ -238,7 +238,7 @@ describe("private provider broker", () => {
 		try {
 			const systemPrompt = "Private broker cancellation system prompt";
 			const prompt = "Wait for cancellation.";
-			const running = runDshAgent({
+			const running = runDshRuntimeBridge({
 				request: request(runId, modelRoute, systemPrompt, prompt),
 				artifacts: {
 					systemPrompt,
@@ -246,7 +246,7 @@ describe("private provider broker", () => {
 					workspacePath: root,
 					sessionRoot: join(root, "sessions"),
 				},
-				installModelAdapter: createDshPrivateProviderBrokerInstaller({access: broker.access}),
+				installModelProvider: createDshPrivateProviderBrokerInstaller({access: broker.access}),
 				signal: controller.signal,
 			});
 			await started;
@@ -292,7 +292,7 @@ describe("private provider broker", () => {
 			const systemPrompt = "Private broker route qualification system prompt";
 			const prompt = "Reject route drift.";
 			await assert.rejects(
-				runDshAgent({
+				runDshRuntimeBridge({
 					request: request(runId, modelRoute, systemPrompt, prompt),
 					artifacts: {
 						systemPrompt,
@@ -300,7 +300,7 @@ describe("private provider broker", () => {
 						workspacePath: root,
 						sessionRoot: join(root, "sessions"),
 					},
-					installModelAdapter: createDshPrivateProviderBrokerInstaller({access: broker.access}),
+					installModelProvider: createDshPrivateProviderBrokerInstaller({access: broker.access}),
 				}),
 				/no authenticated receipt|does not match its exact Run route/,
 			);

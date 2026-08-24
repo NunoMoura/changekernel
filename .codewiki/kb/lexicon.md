@@ -21,6 +21,7 @@ tags: [system, vocabulary]
 | Run Receipt | Immutable CodeWiki-authored account of one Run and only the inputs, outputs, custody, evidence, and gaps CodeWiki can prove. | [Runtime](system/components/runtime.md) |
 | Runtime Build | Content-addressed DSH execution closure binding protocol, Node, Plugins, Providers, bytes, and qualification Evidence. | [Runtime](system/components/runtime.md) |
 | DSH Plugin | Trusted release-managed DSH capability admitted for one exact trust plane; project files cannot install it or extend its authority. | [Runtime](system/components/runtime.md) |
+| Executable Plugin Inventory | Exact manifests and external roots. | [Package](system/components/package.md) |
 | Runtime Bridge | CodeWiki-owned boundary mapping one Run Request to exact DSH composition and mapping DSH events and output to Runtime facts. | [Runtime](system/components/runtime.md) |
 | DSH AgentLoop | Upstream DSH model-request, tool-execution, streaming, and continuation mechanism used inside a model-driven Run. | [Runtime](system/components/runtime.md) |
 | DSH Agent Session | Persistent isolated DSH state for one producer continuity or fresh Model Check. | [Runtime](system/components/runtime.md) |

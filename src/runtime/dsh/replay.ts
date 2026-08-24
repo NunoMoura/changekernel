@@ -3,7 +3,7 @@ import {isAbsolute} from "node:path";
 
 import {installLlmReplay} from "@deepseek-ai/dsh-llm-replay";
 
-import type {DshModelAdapterInstaller} from "./adapter.ts";
+import type {DshModelProviderInstaller} from "./runtime-bridge.ts";
 import {
 	assertSha256Digest,
 	sha256Digest,
@@ -17,7 +17,7 @@ interface DshReplayModelOptions {
 
 export function createDshReplayModelInstaller(
 	options: DshReplayModelOptions,
-): DshModelAdapterInstaller {
+): DshModelProviderInstaller {
 	if (!options || typeof options.fixturePath !== "string" || !isAbsolute(options.fixturePath)) {
 		throw new Error("DSH replay fixture path must be absolute.");
 	}

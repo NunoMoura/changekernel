@@ -8,6 +8,7 @@ export const CURRENT_SOURCE_ROOTS = [
 	"git",
 	"knowledge",
 	"loops",
+	"plugins",
 	"preview",
 	"project",
 	"project-server",

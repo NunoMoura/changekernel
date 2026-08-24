@@ -48,15 +48,13 @@ describe("DSH Runtime Build provenance", () => {
 		assert.match(provenance.cordisClosureDigest, /^sha256:[0-9a-f]{64}$/);
 
 		const manifest = createRuntimeBuildManifest({
-			schemaVersion: "1.0.0",
+			schemaVersion: "2.0.0",
 			runProtocolVersion: "2.0.0",
 			nodeVersion: process.version.slice(1),
 			dshSourceCommit: provenance.reviewedSource.commit,
 			dshPackageClosureDigest: provenance.dshPackageClosureDigest,
 			cordisClosureDigest: provenance.cordisClosureDigest,
-			runtimePluginClosureDigest: digest("runtime-plugins"),
-			modelAdapterClosureDigest: digest("replay-model-adapter"),
-			delegateAdapterClosureDigest: digest("no-delegates"),
+			executablePluginClosureDigest: digest("executable-plugins"),
 			runtimeArtifactDigest: digest("runtime-artifact"),
 		});
 		assert.equal(manifest.dshSourceCommit, DSH_REVIEWED_SOURCE.commit);

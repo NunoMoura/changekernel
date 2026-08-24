@@ -161,6 +161,7 @@ describe("execution ports", () => {
 			qualificationEvidenceDigest: sha256Digest("conformance-and-restart"),
 			qualifiedAt: "2026-08-16T10:00:00.000Z",
 		});
+		assert.equal(manifest.schemaVersion, "2.0.0");
 		assert.equal(qualified.buildDigest, canonicalJsonDigest(manifest));
 		assert.equal(
 			qualified.qualificationEvidenceDigest,
@@ -169,6 +170,17 @@ describe("execution ports", () => {
 		assert.notEqual(
 			qualified.buildDigest,
 			canonicalJsonDigest(runnerManifest("a".repeat(40), "0.1.0-rc.6")),
+		);
+		assert.notEqual(
+			qualified.buildDigest,
+			canonicalJsonDigest(createRuntimeBuildManifest({
+				...manifest,
+				executablePluginClosureDigest: sha256Digest("different-plugin-closure"),
+			})),
+		);
+		assert.throws(
+			() => createRuntimeBuildManifest({...manifest, schemaVersion: "1.0.0"}),
+			/schemaVersion is invalid/,
 		);
 		assert.equal(Object.isFrozen(qualified), true);
 		assert.equal(Object.isFrozen(qualified.manifest), true);
@@ -729,15 +741,13 @@ function runReceiptInput(handle, runtimeBuildDigest, overrides = {}) {
 
 function runnerManifest(dshSourceCommit, dshVersion) {
 	return createRuntimeBuildManifest({
-		schemaVersion: "1.0.0",
+		schemaVersion: "2.0.0",
 		runProtocolVersion: RUN_PROTOCOL.version,
 		nodeVersion: "26.1.0",
 		dshSourceCommit,
 		dshPackageClosureDigest: sha256Digest(`dsh:${dshVersion}`),
 		cordisClosureDigest: sha256Digest("cordis:4.0.0-rc.7"),
-		runtimePluginClosureDigest: sha256Digest("backend-plugins:v1"),
-		modelAdapterClosureDigest: sha256Digest("model-adapters:v1"),
-		delegateAdapterClosureDigest: sha256Digest("delegate-adapters:v1"),
+		executablePluginClosureDigest: sha256Digest("executable-plugins:v1"),
 		runtimeArtifactDigest: sha256Digest(`artifact:${dshVersion}`),
 	});
 }

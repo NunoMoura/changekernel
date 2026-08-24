@@ -57,7 +57,7 @@ Run failure cannot mutate accepted project state. Runtime returns a bounded stop
 
 ## Runtime Builds
 
-A Runtime Build is the immutable content-addressed DSH execution closure. Its manifest binds protocol, Node, reviewed source commit, DSH profile and Cordis closure, DSH Plugins and Providers, Runtime Bridge, and artifact bytes. Reviewed source and package closure remain distinct without attestation.
+Runtime Build Manifest `2.0.0` binds protocol, Node, reviewed source, DSH/Cordis and executable Plugin closures, and artifact bytes. Roots stay outside Run state; source and package closure remain distinct.
 
 Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
 
@@ -65,7 +65,7 @@ There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implem
 
 ## DSH composition and Runtime Bridge
 
-Runtime Bridge constructs the exact DSH Agent and release-managed profile for one Request, then translates DSH events and output into Runtime facts.
+Public `runDshRuntimeBridge` constructs the exact DSH Agent and release-managed profile for one Request, then translates output into Runtime facts. Its model Provider installer is a narrow seam; translation objects remain private.
 
 DSH owns AgentLoop, Plugin and Provider registration, streaming, tools, continuation, cancellation, Session events, and compaction mechanics. Project Server owns route and lifecycle policy; private broker owns credential custody, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority inside a Run Process.
 

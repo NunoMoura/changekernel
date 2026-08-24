@@ -23,9 +23,9 @@ import {
 	toCanonicalJsonValue,
 } from "../../utils/canonical-json.ts";
 import type {
-	DshModelAdapterInstaller,
-	DshModelAdapterLease,
-} from "./adapter.ts";
+	DshModelProviderInstaller,
+	DshModelProviderLease,
+} from "./runtime-bridge.ts";
 import {
 	assertProviderBrokerReceiptForRequest,
 	createPrivateProviderBrokerAccess,
@@ -47,7 +47,7 @@ export interface DshPrivateProviderBrokerOptions {
 
 export function createDshPrivateProviderBrokerInstaller(
 	options: DshPrivateProviderBrokerOptions,
-): DshModelAdapterInstaller {
+): DshModelProviderInstaller {
 	const access = createPrivateProviderBrokerAccess(options.access);
 	return ({context, request}) => installPrivateProviderBroker(context, request, access);
 }
@@ -56,7 +56,7 @@ function installPrivateProviderBroker(
 	context: Context,
 	request: RunRequest,
 	access: PrivateProviderBrokerAccess,
-): DshModelAdapterLease {
+): DshModelProviderLease {
 	if (Date.parse(access.expiresAt) <= Date.parse(request.createdAt)) {
 		throw new Error("Private provider broker capability expires before the Run starts.");
 	}

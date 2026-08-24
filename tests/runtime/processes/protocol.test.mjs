@@ -268,15 +268,13 @@ function processChallenge(binding, request) {
 function fixture() {
 	const build = createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "1.0.0",
+			schemaVersion: "2.0.0",
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion: "26.1.0",
 			dshSourceCommit: "a".repeat(40),
 			dshPackageClosureDigest: sha256Digest("dsh-closure"),
 			cordisClosureDigest: sha256Digest("cordis-closure"),
-			runtimePluginClosureDigest: sha256Digest("backend-plugin-closure"),
-			modelAdapterClosureDigest: sha256Digest("model-adapter-closure"),
-			delegateAdapterClosureDigest: sha256Digest("delegate-adapter-closure"),
+			executablePluginClosureDigest: sha256Digest("executable-plugin-closure"),
 			runtimeArtifactDigest: sha256Digest("runner-artifact"),
 		}),
 		qualificationSuiteDigest: sha256Digest("suite"),

@@ -143,15 +143,17 @@ Success: intended architecture and active roadmap agree before executable migrat
 
 Success: one provider path remains and no dormant dynamic router can widen exact Run authorization.
 
-### B2 — Executable plugin vocabulary and trust planes
+### B2 — Executable Plugin vocabulary and trust planes — complete
 
-- Replace public CodeWiki Runtime Plugin, Core Adapter, and DSH Adapter categories with DSH Plugin, Infrastructure Provider, and Runtime Bridge contracts.
-- Define exact plugin manifest identity, version, integrity, trust plane, capabilities, dependencies, and entrypoints.
-- Separate Project Server, broker-host, Run Process, and future client-plugin trust planes.
-- Keep upstream/private translator class names internal where renaming adds no product value.
-- Reject repository-local executable plugin loading.
+- [x] Replace fragmented legacy executable categories with DSH Plugin, Infrastructure Provider, Runtime Bridge, and Client Plugin contracts.
+- [x] Define Executable Plugin Manifest `1.0.0` over exact identity, version, integrity, trust plane, capabilities, dependencies, entrypoints, and manifest digest.
+- [x] Define Backend-owned Executable Plugin Inventory `1.0.0` across Project Server, broker-host, Run Process, and client trust planes.
+- [x] Reject repository-local executable Plugin roots after realpath resolution, including symlink aliases; reject local entrypoints in project configuration.
+- [x] Keep upstream names and private translator classes internal.
+- [x] Advance Runtime Build Manifest to `2.0.0`, replace fragmented closure fields with one executable Plugin closure digest, and bind receipts transitively through the immutable Runtime Build digest.
+- [x] Clean-cut the public Runtime Bridge API to `runDshRuntimeBridge`, `DshModelProviderInstaller`, and related Runtime Bridge types.
 
-Success: package, configuration, receipts, and public APIs describe one coherent plugin model without granting plugin lifecycle authority over canonical state.
+Success: package, configuration, receipts, and public APIs describe one coherent Plugin model without granting Plugin lifecycle authority over canonical state.
 
 ### B3 — Qualified DSH baseline migration
 

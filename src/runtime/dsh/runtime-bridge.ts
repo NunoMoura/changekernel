@@ -40,23 +40,23 @@ import {
 } from "./plugins.ts";
 import type {ProviderBrokerReceipt} from "../providers/contracts.ts";
 
-export interface DshRunArtifacts {
+export interface DshRuntimeBridgeArtifacts {
 	readonly systemPrompt: string;
 	readonly prompt: string;
 	readonly workspacePath: string;
 	readonly sessionRoot: string;
 }
 
-export interface DshModelAdapterLease {
+export interface DshModelProviderLease {
 	readonly assertComplete?: () => void;
 	readonly providerReceipts?: () => readonly ProviderBrokerReceipt[];
 	readonly dispose: () => void | Promise<void>;
 }
 
-export type DshModelAdapterInstaller = (input: {
+export type DshModelProviderInstaller = (input: {
 	readonly context: Context;
 	readonly request: RunRequest;
-}) => DshModelAdapterLease | Promise<DshModelAdapterLease>;
+}) => DshModelProviderLease | Promise<DshModelProviderLease>;
 
 export interface DshSessionEventFact {
 	readonly sequence: number;
@@ -64,7 +64,7 @@ export interface DshSessionEventFact {
 	readonly digest: Sha256Digest;
 }
 
-export interface DshRunResult {
+export interface DshRuntimeBridgeResult {
 	readonly outcome: RunOutcome;
 	readonly startedAt: string;
 	readonly finishedAt: string;
@@ -78,26 +78,26 @@ export interface DshRunResult {
 	readonly sessionEvents: readonly DshSessionEventFact[];
 }
 
-export interface RunDshAgentOptions {
+export interface RunDshRuntimeBridgeOptions {
 	readonly request: RunRequest;
-	readonly artifacts: DshRunArtifacts;
+	readonly artifacts: DshRuntimeBridgeArtifacts;
 	readonly projectContextSnapshot?: ProjectContextSnapshot | null;
-	readonly installModelAdapter: DshModelAdapterInstaller;
+	readonly installModelProvider: DshModelProviderInstaller;
 	readonly codeMode?: DshCodeModeConfig | null;
 	readonly signal?: AbortSignal;
 	readonly now?: () => string;
 }
 
-export async function runDshAgent(
-	options: RunDshAgentOptions,
-): Promise<Readonly<DshRunResult>> {
+export async function runDshRuntimeBridge(
+	options: RunDshRuntimeBridgeOptions,
+): Promise<Readonly<DshRuntimeBridgeResult>> {
 	assertDshRunOptions(options);
 	const now = options.now ?? (() => new Date().toISOString());
 	const startedAt = now();
 	const execution = await createDshExecution(options, startedAt, now);
 	try {
 		const snapshot = await executeDshSession(execution, options, now);
-		return buildDshRunResult({
+		return buildDshRuntimeBridgeResult({
 			options,
 			execution,
 			snapshot,
@@ -117,7 +117,7 @@ interface DshExecutionLedger {
 interface DshExecution {
 	readonly context: Context;
 	readonly fibers: readonly Fiber[];
-	readonly modelLease: DshModelAdapterLease;
+	readonly modelLease: DshModelProviderLease;
 	readonly agentHandle: AgentHandle;
 	readonly ledger: DshExecutionLedger;
 	readonly toolRegistration?: DshProjectContextToolRegistration;
@@ -132,7 +132,7 @@ interface DshSessionSnapshot {
 }
 
 function createDshExecutionLedger(
-	options: RunDshAgentOptions,
+	options: RunDshRuntimeBridgeOptions,
 	startedAt: string,
 ): DshExecutionLedger {
 	let ledger = createExecutionLedger(createExecutionLedgerHeader({
@@ -198,7 +198,7 @@ function recordModelFacts(
 }
 
 async function createDshExecution(
-	options: RunDshAgentOptions,
+	options: RunDshRuntimeBridgeOptions,
 	startedAt: string,
 	now: () => string,
 ): Promise<DshExecution> {
@@ -211,7 +211,7 @@ async function createDshExecution(
 		codeMode: options.codeMode ?? null,
 	});
 	const ledger = createDshExecutionLedger(options, startedAt);
-	let modelLease: DshModelAdapterLease | undefined;
+	let modelLease: DshModelProviderLease | undefined;
 	let agentHandle: AgentHandle | undefined;
 	let toolRegistration: DshProjectContextToolRegistration | undefined;
 	try {
@@ -225,7 +225,7 @@ async function createDshExecution(
 				now,
 			});
 		}
-		modelLease = await options.installModelAdapter({context, request: options.request});
+		modelLease = await options.installModelProvider({context, request: options.request});
 		const agentOptions = {
 			provider: options.request.inputs.modelRoute.provider,
 			model: options.request.inputs.modelRoute.model,
@@ -298,7 +298,7 @@ function bindDshCancellation(
 
 async function executeDshSession(
 	execution: DshExecution,
-	options: RunDshAgentOptions,
+	options: RunDshRuntimeBridgeOptions,
 	now: () => string,
 ): Promise<DshSessionSnapshot> {
 	const goal = await prepareDshContinuation({
@@ -352,13 +352,13 @@ async function executeDshSession(
 	};
 }
 
-function buildDshRunResult(input: {
-	readonly options: RunDshAgentOptions;
+function buildDshRuntimeBridgeResult(input: {
+	readonly options: RunDshRuntimeBridgeOptions;
 	readonly execution: DshExecution;
 	readonly snapshot: DshSessionSnapshot;
 	readonly startedAt: string;
 	readonly finishedAt: string;
-}): Readonly<DshRunResult> {
+}): Readonly<DshRuntimeBridgeResult> {
 	const {options, snapshot} = input;
 	const sessionEvents = Object.freeze(snapshot.events.map((event) => Object.freeze({
 		sequence: event.seq,
@@ -428,9 +428,9 @@ async function disposeFibers(fibers: readonly Fiber[]): Promise<void> {
 	}
 }
 
-function assertDshRunOptions(options: RunDshAgentOptions): void {
-	if (!options || typeof options.installModelAdapter !== "function") {
-		throw new Error("DSH Adapter requires a model adapter installer.");
+function assertDshRunOptions(options: RunDshRuntimeBridgeOptions): void {
+	if (!options || typeof options.installModelProvider !== "function") {
+		throw new Error("Runtime Bridge requires a model Provider installer.");
 	}
 	if (options.request.custody !== "backend-owned") {
 		throw new Error("DSH-backed Runs require backend-owned custody.");
@@ -444,7 +444,7 @@ function assertDshRunOptions(options: RunDshAgentOptions): void {
 	}
 }
 
-function assertDshProjectContextOptions(options: RunDshAgentOptions): void {
+function assertDshProjectContextOptions(options: RunDshRuntimeBridgeOptions): void {
 	if (options.request.inputs.toolMode === "none") {
 		if (options.request.budget.maxToolCalls !== 0) {
 			throw new Error("Tool-free DSH Runs require a zero tool-call budget.");
@@ -470,7 +470,7 @@ function assertDshProjectContextOptions(options: RunDshAgentOptions): void {
 	}
 }
 
-function assertDshArtifactBindings(options: RunDshAgentOptions): void {
+function assertDshArtifactBindings(options: RunDshRuntimeBridgeOptions): void {
 	if (
 		canonicalJsonDigest(options.artifacts.systemPrompt) !==
 		options.request.inputs.systemPromptDigest

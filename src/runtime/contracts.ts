@@ -248,7 +248,7 @@ export const RUN_PROTOCOL = Object.freeze({
 	version: "5.0.0",
 } as const);
 
-export const RUNTIME_BUILD_SCHEMA_VERSION = "1.0.0" as const;
+export const RUNTIME_BUILD_SCHEMA_VERSION = "2.0.0" as const;
 export const RUNTIME_BUILD_REGISTRY_SCHEMA_VERSION = "1.0.0" as const;
 
 export interface RuntimeBuildManifest {
@@ -258,9 +258,7 @@ export interface RuntimeBuildManifest {
 	readonly dshSourceCommit: string;
 	readonly dshPackageClosureDigest: Sha256Digest;
 	readonly cordisClosureDigest: Sha256Digest;
-	readonly runtimePluginClosureDigest: Sha256Digest;
-	readonly modelAdapterClosureDigest: Sha256Digest;
-	readonly delegateAdapterClosureDigest: Sha256Digest;
+	readonly executablePluginClosureDigest: Sha256Digest;
 	readonly runtimeArtifactDigest: Sha256Digest;
 }
 
@@ -2142,18 +2140,14 @@ const RUNTIME_BUILD_MANIFEST_KEYS = [
 	"dshSourceCommit",
 	"dshPackageClosureDigest",
 	"cordisClosureDigest",
-	"runtimePluginClosureDigest",
-	"modelAdapterClosureDigest",
-	"delegateAdapterClosureDigest",
+	"executablePluginClosureDigest",
 	"runtimeArtifactDigest",
 ] as const;
 
 const RUNTIME_BUILD_DIGEST_FIELDS = [
 	"dshPackageClosureDigest",
 	"cordisClosureDigest",
-	"runtimePluginClosureDigest",
-	"modelAdapterClosureDigest",
-	"delegateAdapterClosureDigest",
+	"executablePluginClosureDigest",
 	"runtimeArtifactDigest",
 ] as const;
 

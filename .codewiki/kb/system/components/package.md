@@ -10,9 +10,10 @@ codewiki_source_patterns:
   - "src/index.ts"
   - "src/main.ts"
   - "src/pi-extension.ts"
+  - "src/plugins/**"
   - "src/error-handling/codewiki-error.ts"
   - "src/error-handling/operation-errors.ts"
-codewiki_test_patterns: ["tests/project-server/package-*.mjs", "tests/scaffold*.test.mjs"]
+codewiki_test_patterns: ["tests/plugins/**", "tests/project-server/package-*.mjs", "tests/scaffold*.test.mjs"]
 codewiki_relationships:
   - type: realizes
     target: cw:story:maintainer.automate-safe-work
@@ -46,7 +47,11 @@ CodeWiki exposes five distinct categories:
 
 The Project Server governance kernel is not extensible by Plugins. A Domain Plugin may define bounded domain meaning but cannot add a stage, alter fixed transitions, authenticate itself, grant authority, bypass expected-head compare-and-swap, create a Check Result outside Checks, or apply a protected effect outside Project Server. DSH's reversible Plugin lifecycle applies only to in-process resources and registrations; it cannot reverse committed history or external effects.
 
-Runtime Builds are release artifacts, not project extensions. Every build binds the exact Runtime Bridge, DSH and Cordis package closure, DSH Plugins and Providers, protocol, Node version, executable bytes, and qualification Evidence. Domain Plugin and DSH profile identities remain explicit even when bundled first-party. Project files cannot install Runtime code. Activation uses CodeWiki-owned expected-generation compare-and-swap and affects new Runs only.
+Executable Plugin Manifest `1.0.0` binds one exact DSH Plugin, Infrastructure Provider, Runtime Bridge, or Client Plugin identity, semantic version, package integrity, trust plane, sorted capabilities, exact dependency manifest identities, and package-export entrypoints. Allowed trust planes are Project Server, broker host, Run Process, and client. Kind-to-plane admission is closed: Infrastructure Providers may enter Project Server or broker-host planes, DSH Plugins may enter broker-host or Run Process planes, Runtime Bridge enters only Run Process, and Client Plugins enter only client. Dependencies cannot cross planes.
+
+Executable Plugin Inventory `1.0.0` is Backend-owned operational state. It records release- or operator-installed package roots after realpath resolution, rejects roots inside the governed repository including symlink aliases, verifies every dependency's exact version, integrity, and manifest digest, and emits separate installation-sensitive inventory and path-independent Plugin-closure digests. Project configuration contains no executable package path or entrypoint. Loading must revalidate the admitted real path and integrity before import; inventory admission alone grants no capability.
+
+Runtime Builds are release artifacts, not project extensions. Runtime Build Manifest `2.0.0` binds one exact executable Plugin-closure digest in place of fragmented legacy closure categories, alongside DSH and Cordis package closure, protocol, Node version, reviewed DSH source, Runtime artifact bytes, and qualification Evidence. Run Requests and Receipts transitively bind that closure through the immutable Runtime Build digest. Domain Plugin and DSH profile identities remain explicit even when bundled first-party. Project files cannot install Runtime code. Activation uses CodeWiki-owned expected-generation compare-and-swap and affects new Runs only.
 
 Shared error handling stays lean under `src/error-handling/**`: CodeWiki error envelope, serialization, type guards, and stable cross-owner operation-failure contracts belong to Package. Configuration and Change Trace define specialized errors with their owners rather than growing a cross-domain error catalog.
 

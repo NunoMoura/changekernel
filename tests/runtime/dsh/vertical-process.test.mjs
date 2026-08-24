@@ -87,15 +87,13 @@ const candidateBytes = await readFile(candidate.artifactPath);
 const provenance = readDshRuntimeProvenance(packageLockPath);
 const qualifiedBuild = createQualifiedRuntimeBuild({
 	manifest: createRuntimeBuildManifest({
-		schemaVersion: "1.0.0",
+		schemaVersion: "2.0.0",
 		runProtocolVersion: RUN_PROTOCOL.version,
 		nodeVersion: process.version.slice(1),
 		dshSourceCommit: provenance.reviewedSource.commit,
 		dshPackageClosureDigest: provenance.dshPackageClosureDigest,
 		cordisClosureDigest: provenance.cordisClosureDigest,
-		runtimePluginClosureDigest: digest("runtime-plugins"),
-		modelAdapterClosureDigest: digest("replay-model-adapter"),
-		delegateAdapterClosureDigest: digest("no-delegates"),
+		executablePluginClosureDigest: digest("executable-plugins"),
 		runtimeArtifactDigest: sha256Digest(candidateBytes),
 	}),
 	qualificationSuiteDigest: digest("dsh-qualification-suite"),

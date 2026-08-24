@@ -21,9 +21,9 @@ import {
 	mountProjectContextSnapshot,
 } from "../context/project-context-mount.ts";
 import {
-	runDshAgent,
-	type DshModelAdapterInstaller,
-} from "../dsh/adapter.ts";
+	runDshRuntimeBridge,
+	type DshModelProviderInstaller,
+} from "../dsh/runtime-bridge.ts";
 import {createDshPrivateProviderBrokerInstaller} from "../dsh/private-provider-broker.ts";
 import {createDshReplayModelInstaller} from "../dsh/replay.ts";
 import {
@@ -165,7 +165,7 @@ function normalizeModelAdapter(value: DshProcessModelAdapter): DshProcessModelAd
 
 function modelAdapterInstaller(
 	adapter: DshProcessModelAdapter,
-): DshModelAdapterInstaller {
+): DshModelProviderInstaller {
 	return adapter.kind === "replay"
 		? createDshReplayModelInstaller({
 			fixturePath: adapter.fixturePath,
@@ -357,7 +357,7 @@ async function executeDshProcessRun(input: {
 	} else if (input.manifest.projectContextAuthorization !== null) {
 		throw new Error("Project Context authorization cannot exist without a snapshot mount.");
 	}
-	const result = await runDshAgent({
+	const result = await runDshRuntimeBridge({
 		request: input.request,
 		artifacts: {
 			systemPrompt: input.manifest.systemPrompt,
@@ -366,7 +366,7 @@ async function executeDshProcessRun(input: {
 			sessionRoot: input.manifest.sessionRoot,
 		},
 		projectContextSnapshot,
-		installModelAdapter: modelAdapterInstaller(input.manifest.modelAdapter),
+		installModelProvider: modelAdapterInstaller(input.manifest.modelAdapter),
 		codeMode: input.manifest.codeMode,
 		signal: cancellationController.signal,
 	});
@@ -410,7 +410,7 @@ async function executeDshProcessRun(input: {
 
 async function sendDshEvidence(
 	sender: DshProcessSender,
-	result: Awaited<ReturnType<typeof runDshAgent>>,
+	result: Awaited<ReturnType<typeof runDshRuntimeBridge>>,
 ): Promise<void> {
 	await sender.send({
 		kind: "ledger-header",

@@ -252,15 +252,13 @@ function qualifiedBundle(
 ) {
 	return createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "1.0.0",
+			schemaVersion: "2.0.0",
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion,
 			dshSourceCommit,
 			dshPackageClosureDigest: sha256Digest(`dsh:${dshSourceCommit}`),
 			cordisClosureDigest: sha256Digest("cordis"),
-			runtimePluginClosureDigest: sha256Digest("plugins"),
-			modelAdapterClosureDigest: sha256Digest("models"),
-			delegateAdapterClosureDigest: sha256Digest("delegates"),
+			executablePluginClosureDigest: sha256Digest("executable-plugins"),
 			runtimeArtifactDigest: sha256Digest(artifact),
 		}),
 		qualificationSuiteDigest: sha256Digest("suite-v1"),

@@ -238,6 +238,10 @@ describe("wiki_config core facade", () => {
 			() => runWikiConfig({ patch: { runtime: { maxWorker: 4 } } }),
 			/wiki_config\.patch\.runtime\.maxWorker.*unknown/i,
 		);
+		assert.throws(
+			() => resolveWikiConfig({plugins: [{entrypoint: "./local-plugin.mjs"}]}),
+			/wiki_config\.plugins.*unknown/i,
+		);
 
 		const root = await mkdtemp(join(tmpdir(), "codewiki-config-unknown-"));
 		try {
