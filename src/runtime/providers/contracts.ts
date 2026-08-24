@@ -2,6 +2,7 @@ import {createHmac, timingSafeEqual} from "node:crypto";
 import {isAbsolute} from "node:path";
 import {
 	createRunModelRouteBinding,
+	type RunBudget,
 	type RunModelRouteBinding,
 } from "../contracts.ts";
 import {
@@ -14,7 +15,7 @@ import {
 
 export const PRIVATE_PROVIDER_BROKER_PROTOCOL = Object.freeze({
 	id: "codewiki.private-provider-broker",
-	version: "2.0.0",
+	version: "3.0.0",
 } as const);
 export type ProviderBrokerOutcome = "completed" | "failed" | "cancelled";
 export type ProviderBrokerFailureKind =
@@ -27,6 +28,14 @@ export type ProviderBrokerFailureKind =
 	| "malformed-response"
 	| "cancelled";
 
+export interface ProviderBrokerRunAuthorization {
+	readonly schemaVersion: "1.0.0";
+	readonly runId: string;
+	readonly route: RunModelRouteBinding;
+	readonly budget: RunBudget;
+	readonly authorizationDigest: Sha256Digest;
+}
+
 export interface PrivateProviderBrokerBinding {
 	readonly protocol: typeof PRIVATE_PROVIDER_BROKER_PROTOCOL;
 	readonly brokerId: string;
@@ -34,6 +43,7 @@ export interface PrivateProviderBrokerBinding {
 	readonly implementationVersion: string;
 	readonly implementationDigest: Sha256Digest;
 	readonly configurationDigest: Sha256Digest;
+	readonly authorization: ProviderBrokerRunAuthorization;
 	readonly maxRetries: number;
 	readonly bindingDigest: Sha256Digest;
 }
@@ -47,7 +57,7 @@ export interface PrivateProviderBrokerAccess {
 }
 
 export interface ProviderBrokerRequest {
-	readonly schemaVersion: "1.0.0";
+	readonly schemaVersion: "2.0.0";
 	readonly callId: string;
 	readonly runId: string;
 	readonly callIndex: number;
@@ -59,12 +69,13 @@ export interface ProviderBrokerRequest {
 }
 
 export interface ProviderBrokerReceipt {
-	readonly schemaVersion: "1.0.0";
+	readonly schemaVersion: "2.0.0";
 	readonly brokerBindingDigest: Sha256Digest;
 	readonly callId: string;
 	readonly requestDigest: Sha256Digest;
 	readonly routeDigest: Sha256Digest;
 	readonly selectedProvider: string;
+	readonly selectedAccountId: string;
 	readonly selectedModel: string;
 	readonly providerRequestId: string | null;
 	readonly transportAttempts: number;
@@ -85,6 +96,18 @@ export interface ProviderBrokerReceiptEnvelope {
 export type ProviderBrokerWireMessage =
 	| {readonly kind: "chunk"; readonly chunk: CanonicalJsonValue}
 	| ({readonly kind: "receipt"} & ProviderBrokerReceiptEnvelope);
+
+export function createProviderBrokerRunAuthorization(
+	input: Omit<ProviderBrokerRunAuthorization, "schemaVersion" | "authorizationDigest">,
+): Readonly<ProviderBrokerRunAuthorization> {
+	const body = Object.freeze({
+		schemaVersion: "1.0.0" as const,
+		runId: identifier(input.runId, "Provider broker authorization Run id"),
+		route: recreateRoute(input.route),
+		budget: normalizeRunBudget(input.budget),
+	});
+	return Object.freeze({...body, authorizationDigest: canonicalJsonDigest(body)});
+}
 
 export function createPrivateProviderBrokerBinding(
 	input: Omit<PrivateProviderBrokerBinding, "protocol" | "bindingDigest">,
@@ -111,6 +134,7 @@ export function createPrivateProviderBrokerBinding(
 			input.configurationDigest,
 			"Private provider broker configuration digest",
 		),
+		authorization: createProviderBrokerRunAuthorization(input.authorization),
 		maxRetries: nonNegativeInteger(input.maxRetries, "Private provider broker retries", 8),
 	});
 	return Object.freeze({...body, bindingDigest: canonicalJsonDigest(body)});
@@ -152,7 +176,7 @@ export function createProviderBrokerRequest(input: {
 	const identity = {runId, callIndex, routeDigest: route.routeDigest, payloadDigest};
 	const callId = `provider-call:${canonicalJsonDigest(identity).slice(7)}`;
 	const body = Object.freeze({
-		schemaVersion: "1.0.0" as const,
+		schemaVersion: "2.0.0" as const,
 		callId,
 		runId,
 		callIndex,
@@ -190,7 +214,7 @@ export function createProviderBrokerReceipt(
 		throw new Error("Provider broker receipt finish precedes its start.");
 	}
 	const body = Object.freeze({
-		schemaVersion: "1.0.0" as const,
+		schemaVersion: "2.0.0" as const,
 		brokerBindingDigest: assertSha256Digest(
 			input.brokerBindingDigest,
 			"Provider broker binding digest",
@@ -199,6 +223,10 @@ export function createProviderBrokerReceipt(
 		requestDigest: assertSha256Digest(input.requestDigest, "Provider broker request digest"),
 		routeDigest: assertSha256Digest(input.routeDigest, "Provider broker route digest"),
 		selectedProvider: identifier(input.selectedProvider, "Provider broker selected provider"),
+		selectedAccountId: identifier(
+			input.selectedAccountId,
+			"Provider broker selected account id",
+		),
 		selectedModel: boundedText(input.selectedModel, "Provider broker selected model", 256),
 		providerRequestId: input.providerRequestId === null
 			? null
@@ -246,6 +274,7 @@ export function assertProviderBrokerReceiptForRequest(
 		receipt.requestDigest !== request.requestDigest ||
 		receipt.routeDigest !== request.route.routeDigest ||
 		receipt.selectedProvider !== request.route.provider ||
+		receipt.selectedAccountId !== request.route.accountId ||
 		receipt.selectedModel !== request.route.model
 	) {
 		throw new Error("Provider broker receipt does not match its exact Run route and request.");
@@ -287,9 +316,35 @@ function recreateRoute(route: RunModelRouteBinding): RunModelRouteBinding {
 
 function receiptMac(receipt: ProviderBrokerReceipt, capabilityToken: string): string {
 	return createHmac("sha256", capabilityToken)
-		.update("codewiki.private-provider-broker/receipt/1\0")
+		.update("codewiki.private-provider-broker/receipt/2\0")
 		.update(canonicalJson(receipt))
 		.digest("hex");
+}
+
+function normalizeRunBudget(value: RunBudget): Readonly<RunBudget> {
+	return Object.freeze({
+		timeoutMs: positiveInteger(value.timeoutMs, "Provider broker budget timeout", 86_400_000),
+		maxModelRequests: positiveInteger(
+			value.maxModelRequests,
+			"Provider broker budget model requests",
+			1_000,
+		),
+		maxToolCalls: nonNegativeInteger(
+			value.maxToolCalls,
+			"Provider broker budget tool calls",
+			1_000_000,
+		),
+		maxInputTokens: positiveInteger(
+			value.maxInputTokens,
+			"Provider broker budget input tokens",
+			1_000_000_000,
+		),
+		maxOutputTokens: positiveInteger(
+			value.maxOutputTokens,
+			"Provider broker budget output tokens",
+			1_000_000_000,
+		),
+	});
 }
 
 function privateBrokerEndpoint(value: string): string {

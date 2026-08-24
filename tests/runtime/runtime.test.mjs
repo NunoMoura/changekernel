@@ -518,6 +518,8 @@ function modelRoute(provider, model) {
 	return createRunModelRouteBinding({
 		routeId: "test-route",
 		provider,
+		accountId: "test-account",
+		credentialRef: "TEST_PROVIDER_API_KEY",
 		model,
 		reasoningEffort: null,
 		contextWindowTokens: 128_000,

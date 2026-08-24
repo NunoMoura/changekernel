@@ -21,6 +21,8 @@ export interface WikiModelPricingConfig {
 export interface WikiModelRouteConfig {
 	id: string;
 	provider: string;
+	accountId: string;
+	credentialRef: string | null;
 	model: string;
 	thinking: WikiModelThinking;
 	quality: WikiModelQuality;
@@ -288,6 +290,8 @@ export function validatePartialWikiModelRoutingKeys(
 		knownKeys(route, routePath, [
 			"id",
 			"provider",
+			"accountId",
+			"credentialRef",
 			"model",
 			"thinking",
 			"quality",
@@ -358,6 +362,10 @@ function validateRoute(
 	const path = `runtime.modelRouting.routes[${index}]`;
 	const id = identifier(route.id, `${path}.id`);
 	const provider = identifier(route.provider, `${path}.provider`);
+	const accountId = identifier(route.accountId, `${path}.accountId`);
+	const credentialRef = route.credentialRef === null
+		? null
+		: credentialReference(route.credentialRef, `${path}.credentialRef`);
 	const model = modelIdentifier(route.model, `${path}.model`);
 	if (!isThinking(route.thinking)) {
 		throw configError(`${path}.thinking`, "is invalid.", route.thinking);
@@ -389,6 +397,8 @@ function validateRoute(
 	return {
 		id,
 		provider,
+		accountId,
+		credentialRef,
 		model,
 		thinking: route.thinking,
 		quality: route.quality,
@@ -455,6 +465,17 @@ function modelIdentifier(value: unknown, path: string): string {
 		!/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/.test(value)
 	) {
 		throw configError(path, "contains an invalid model id.", value);
+	}
+	return value;
+}
+
+function credentialReference(value: unknown, path: string): string {
+	if (
+		typeof value !== "string" ||
+		value.length > 128 ||
+		!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)
+	) {
+		throw configError(path, "contains an invalid credential reference.", value);
 	}
 	return value;
 }

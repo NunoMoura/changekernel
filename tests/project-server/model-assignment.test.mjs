@@ -4,6 +4,7 @@ import {describe, it} from "node:test";
 import {resolveWikiConfig} from "../../src/project/config.ts";
 import {createImplementationRunRequest} from "../../src/project-server/workers/implementation-run.ts";
 import {
+	WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL,
 	createWorkUnitModelAssignment,
 	runModelRouteForAssignment,
 } from "../../src/project-server/workers/model-assignment.ts";
@@ -20,6 +21,8 @@ function route(id, quality, contextWindowTokens) {
 	return {
 		id,
 		provider: "test-provider",
+		accountId: "test-account",
+		credentialRef: "TEST_PROVIDER_API_KEY",
 		model: `test-${id}`,
 		thinking: quality === "standard" ? "off" : "high",
 		quality,
@@ -89,9 +92,12 @@ describe("Work Unit model Assignment", () => {
 			risk: "medium",
 		});
 		const modelRoute = runModelRouteForAssignment(modelAssignment);
+		assert.equal(WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL.version, "2.0.0");
 		assert.equal(modelAssignment.policy.route.routeId, "economy");
 		assert.notEqual(modelAssignment.policy.route.routeId, "harness-main");
 		assert.equal(modelRoute.modelAssignmentDigest, modelAssignment.assignmentDigest);
+		assert.equal(modelRoute.accountId, "test-account");
+		assert.equal(modelRoute.credentialRef, "TEST_PROVIDER_API_KEY");
 		assert.equal(modelRoute.policyDigest, modelAssignment.policy.digest);
 		assert.equal(modelRoute.policyAttempt, 0);
 

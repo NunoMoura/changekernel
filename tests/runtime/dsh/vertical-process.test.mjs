@@ -33,7 +33,10 @@ import {
 } from "../../../src/runtime/dsh/project-context-tools.ts";
 import {DSH_MANAGED_EXECUTABLE_ADMISSIONS} from "../../../src/runtime/dsh/managed-loader.ts";
 import {readDshRuntimeProvenance} from "../../../src/runtime/dsh/provenance.ts";
-import {createPrivateProviderBrokerBinding} from "../../../src/runtime/providers/contracts.ts";
+import {
+	createPrivateProviderBrokerBinding,
+	createProviderBrokerRunAuthorization,
+} from "../../../src/runtime/providers/contracts.ts";
 import {BUBBLEWRAP_SANDBOX_SCHEMA_VERSION} from "../../../src/runtime/sandbox/bubblewrap.ts";
 import {createBubblewrapRunProcessSandbox} from "../../../src/runtime/sandbox/run-process.ts";
 import {startPrivateProviderBrokerServer} from "../../../src/runtime/providers/broker-server.ts";
@@ -120,6 +123,12 @@ describe("DSH Runtime vertical process", () => {
 		assert.equal(fixture.binding.buildDigest, qualifiedBuild.buildDigest);
 		assert.ok(
 			candidate.inputPaths.some((path) => path.includes("dsh-agent-loop")),
+		);
+		assert.equal(
+			candidate.inputPaths.some((path) =>
+				/dsh-(?:authorization|credentials|llm-pi-ai)|@earendil-works\/pi-ai/.test(path)
+			),
+			false,
 		);
 		assert.doesNotMatch(
 			candidateBytes.toString("utf8"),
@@ -222,16 +231,20 @@ describe("DSH Runtime vertical process", () => {
 				implementationVersion: "1.0.0",
 				implementationDigest: digest("vertical-broker-implementation"),
 				configurationDigest: digest("vertical-broker-configuration"),
+				authorization: createProviderBrokerRunAuthorization({
+					runId,
+					route: modelRoute,
+					budget: processBudget(null),
+				}),
 				maxRetries: 0,
 			}),
 			capabilityId: "capability-vertical-private-broker",
 			capabilityToken: "v".repeat(64),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
-			runId,
-			routeDigest: modelRoute.routeDigest,
 			transport: {
 				open: async () => ({
 					selectedProvider: "mock-provider",
+					selectedAccountId: "mock-account",
 					selectedModel: "mock-model",
 					providerRequestId: "provider-request-vertical",
 					chunks: liveProcessChunks(),
@@ -547,6 +560,16 @@ async function runtimeFixture(suffix, options = {}) {
 	};
 }
 
+function processBudget(projectContextSnapshot) {
+	return {
+		timeoutMs: 30_000,
+		maxModelRequests: projectContextSnapshot ? 2 : 1,
+		maxToolCalls: projectContextSnapshot ? 2 : 0,
+		maxInputTokens: 1_024,
+		maxOutputTokens: 64,
+	};
+}
+
 function runRequest({
 	runId,
 	sessionId,
@@ -613,13 +636,7 @@ function runRequest({
 			kind: "immutable",
 			repositorySnapshotDigest: digest("repository"),
 		},
-		budget: {
-			timeoutMs: 30_000,
-			maxModelRequests: projectContextSnapshot ? 2 : 1,
-			maxToolCalls: projectContextSnapshot ? 2 : 0,
-			maxInputTokens: 1_024,
-			maxOutputTokens: 64,
-		},
+		budget: processBudget(projectContextSnapshot),
 		createdAt,
 		deadlineAt,
 	});
@@ -645,6 +662,8 @@ function processModelRoute(
 	return createRunModelRouteBinding({
 		routeId,
 		provider,
+		accountId: provider === "codewiki-replay" ? "replay-account" : "mock-account",
+		credentialRef: provider === "codewiki-replay" ? null : "MOCK_PROVIDER_API_KEY",
 		model,
 		reasoningEffort: null,
 		contextWindowTokens: 128_000,

@@ -9,6 +9,8 @@ function route(id, quality, overrides = {}) {
 	return {
 		id,
 		provider: "test-provider",
+		accountId: "test-account",
+		credentialRef: "TEST_PROVIDER_API_KEY",
 		model: `test/${id}`,
 		thinking: quality === "standard" ? "medium" : "high",
 		quality,

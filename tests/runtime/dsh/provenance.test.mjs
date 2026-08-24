@@ -30,7 +30,10 @@ describe("DSH Runtime Build provenance", () => {
 		);
 		assert.deepEqual(
 			provenance.dshSupportPackages.map(({name, version}) => ({name, version})),
-			[{name: "@deepseek-ai/cordis-plugin-loader", version: "1.0.2"}],
+			[
+				{name: "@deepseek-ai/cordis-plugin-loader", version: "1.0.2"},
+				{name: "@earendil-works/pi-ai", version: "0.82.1"},
+			],
 		);
 		assert.equal(provenance.cordisPackage.version, "4.0.1");
 		assert.deepEqual(
@@ -83,6 +86,16 @@ describe("DSH Runtime Build provenance", () => {
 		assert.match(
 			captureError(() => createDshRuntimeProvenance(lock)).message,
 			/@deepseek-ai\/cordis-plugin-loader must be pinned to 1\.0\.2/,
+		);
+	});
+
+	it("fails closed when the provider protocol support package drifts", async () => {
+		const lock = JSON.parse(await readFile(packageLockPath, "utf8"));
+		lock.packages["node_modules/@earendil-works/pi-ai"].version = "0.84.2";
+
+		assert.match(
+			captureError(() => createDshRuntimeProvenance(lock)).message,
+			/@earendil-works\/pi-ai must be pinned to 0\.82\.1/,
 		);
 	});
 

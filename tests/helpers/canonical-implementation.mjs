@@ -220,6 +220,8 @@ function implementationModelConfig() {
 				routes: [{
 					id: "test-implementation",
 					provider: "test-provider",
+					accountId: "test-account",
+					credentialRef: "TEST_PROVIDER_API_KEY",
 					model: "test-model",
 					thinking: "off",
 					quality: "standard",

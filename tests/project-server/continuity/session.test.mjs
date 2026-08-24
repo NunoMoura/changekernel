@@ -274,6 +274,8 @@ function completedReceipt(session, runId, rawContent) {
 			modelRoute: createRunModelRouteBinding({
 				routeId: "implementation",
 				provider: "provider",
+				accountId: "provider-account",
+				credentialRef: "PROVIDER_API_KEY",
 				model: "model",
 				reasoningEffort: null,
 				contextWindowTokens: 128_000,

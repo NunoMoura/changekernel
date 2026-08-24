@@ -12,6 +12,7 @@ import type {ExecutablePluginAdmission} from "../../plugins/executable.ts";
 export interface ManagedDshPluginDefinition {
 	readonly entryId: string;
 	readonly moduleName: string;
+	readonly admissionId?: string;
 	readonly plugin: Plugin;
 	readonly config?: unknown;
 }
@@ -79,8 +80,9 @@ export const DSH_MANAGED_EXECUTABLE_ADMISSIONS = Object.freeze([
 export async function mountReleaseManagedDshPlugins(
 	context: Context,
 	definitions: readonly ManagedDshPluginDefinition[],
+	admissions: readonly ExecutablePluginAdmission[] = DSH_MANAGED_EXECUTABLE_ADMISSIONS,
 ): Promise<Fiber> {
-	assertManagedDefinitions(definitions);
+	assertManagedDefinitions(definitions, admissions);
 	const releaseModules = new Map(
 		definitions.map((definition) => [definition.moduleName, definition.plugin]),
 	);
@@ -97,21 +99,20 @@ export async function mountReleaseManagedDshPlugins(
 
 function assertManagedDefinitions(
 	definitions: readonly ManagedDshPluginDefinition[],
+	admissions: readonly ExecutablePluginAdmission[],
 ): void {
 	if (definitions.length < 1) {
-		throw new Error("DSH managed Run composition has no Plugin entries.");
+		throw new Error("DSH release-managed composition has no Plugin entries.");
 	}
-	const admissionIds = new Set(
-		DSH_MANAGED_EXECUTABLE_ADMISSIONS.map(({pluginId}) => pluginId),
-	);
+	const admissionIds = new Set(admissions.map(({pluginId}) => pluginId));
 	const entryIds = new Set<string>();
 	const moduleNames = new Set<string>();
 	for (const definition of definitions) {
 		if (entryIds.has(definition.entryId) || moduleNames.has(definition.moduleName)) {
 			throw new Error("DSH managed Run Plugin identities are duplicated.");
 		}
-		if (!admissionIds.has(definition.moduleName)) {
-			throw new Error("DSH managed Run composition contains an unadmitted Plugin.");
+		if (!admissionIds.has(definition.admissionId ?? definition.moduleName)) {
+			throw new Error("DSH release-managed composition contains an unadmitted Plugin.");
 		}
 		entryIds.add(definition.entryId);
 		moduleNames.add(definition.moduleName);
@@ -120,7 +121,7 @@ function assertManagedDefinitions(
 		definitions.at(-1)?.moduleName !==
 		"@deepseek-ai/dsh-host-plugin-inventory"
 	) {
-		throw new Error("DSH managed Run composition must end with the live inventory Plugin.");
+		throw new Error("DSH release-managed composition must end with the live inventory Plugin.");
 	}
 }
 
@@ -151,7 +152,7 @@ function assertLiveInventory(
 	definitions: readonly ManagedDshPluginDefinition[],
 ): void {
 	if (snapshot.entries.length !== definitions.length) {
-		throw new Error("DSH live Plugin inventory does not match managed Run composition.");
+		throw new Error("DSH live Plugin inventory does not match release-managed composition.");
 	}
 	for (const [index, definition] of definitions.entries()) {
 		const observed = snapshot.entries[index];
@@ -161,7 +162,7 @@ function assertLiveInventory(
 			!observed.enabled ||
 			observed.fiberPhase !== "active"
 		) {
-			throw new Error("DSH live Plugin inventory does not match managed Run composition.");
+			throw new Error("DSH live Plugin inventory does not match release-managed composition.");
 		}
 	}
 }

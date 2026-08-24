@@ -245,7 +245,7 @@ export interface SessionIsolationPort {
 
 export const RUN_PROTOCOL = Object.freeze({
 	id: "codewiki.run-process",
-	version: "5.0.0",
+	version: "6.0.0",
 } as const);
 
 export const RUNTIME_BUILD_SCHEMA_VERSION = "2.0.0" as const;
@@ -334,7 +334,7 @@ export function admitRunProcessHandshake(
 	});
 }
 
-export const RUN_REQUEST_SCHEMA_VERSION = "5.0.0" as const;
+export const RUN_REQUEST_SCHEMA_VERSION = "6.0.0" as const;
 
 export type RunCustody = "backend-owned" | "backend-delegated";
 export type RunRole =
@@ -412,6 +412,8 @@ export function createRunSessionLeaseBinding(input: Omit<RunSessionLeaseBinding,
 export interface RunModelRouteBinding {
 	readonly routeId: string;
 	readonly provider: string;
+	readonly accountId: string;
+	readonly credentialRef: string | null;
 	readonly model: string;
 	readonly reasoningEffort: string | null;
 	readonly contextWindowTokens: number;
@@ -1590,6 +1592,8 @@ function normalizeRunModelRoute(
 	if (!hasExactKeys(value, [
 		"routeId",
 		"provider",
+		"accountId",
+		"credentialRef",
 		"model",
 		"reasoningEffort",
 		"contextWindowTokens",
@@ -1604,6 +1608,10 @@ function normalizeRunModelRoute(
 	}
 	assertIdentifier(value.routeId, "Run model route id");
 	assertBoundedText(value.provider, "Run model provider", 128);
+	assertIdentifier(value.accountId, "Run model account id");
+	if (value.credentialRef !== null) {
+		assertCredentialReference(value.credentialRef, "Run model credential reference");
+	}
 	assertBoundedText(value.model, "Run model", 256);
 	if (value.reasoningEffort !== null) {
 		assertBoundedText(value.reasoningEffort, "Run model reasoning effort", 64);
@@ -1624,6 +1632,8 @@ function normalizeRunModelRoute(
 	const body = {
 		routeId: value.routeId,
 		provider: value.provider,
+		accountId: value.accountId,
+		credentialRef: value.credentialRef,
 		model: value.model,
 		reasoningEffort: value.reasoningEffort,
 		contextWindowTokens: value.contextWindowTokens,
@@ -1731,6 +1741,19 @@ function assertIdentifier(value: unknown, field: string): asserts value is strin
 	if (
 		typeof value !== "string" ||
 		!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(value)
+	) {
+		throw new Error(`${field} is invalid.`);
+	}
+}
+
+function assertCredentialReference(
+	value: unknown,
+	field: string,
+): asserts value is string {
+	if (
+		typeof value !== "string" ||
+		value.length > 128 ||
+		!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)
 	) {
 		throw new Error(`${field} is invalid.`);
 	}

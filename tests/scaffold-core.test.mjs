@@ -41,7 +41,7 @@ describe("fresh scaffold", () => {
 	});
 
 	it("declares runtime requirements for generated package output", () => {
-		assert.equal(packageJson.engines.node, ">=20.6.0");
+		assert.equal(packageJson.engines.node, ">=22.19.0");
 		assert.equal(packageJson.bin, undefined);
 		assert.deepEqual(packageJson.pi, {
 			extensions: ["dist/pi-extension.js"],

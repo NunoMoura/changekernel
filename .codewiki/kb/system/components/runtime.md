@@ -47,19 +47,17 @@ Run Request and Run Receipt form the semantic boundary between Project Server an
 
 ## Run lifecycle
 
-Run Process `5.0.0` accepts exact snapshot and replay or broker bindings. Run Request `5.0.0` binds subject, Build, Session lease, inputs, exact model route, workspace, budgets, and Run Continuation `1.0.0`; Project Server decides why it exists and what follows. Run Receipt `4.0.0` binds execution, route, raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
+Run Process and Run Request `6.0.0` bind snapshot or replay/broker inputs, subject, Build, Session lease, provider/account/credential/model route, workspace, budgets, and Run Continuation `1.0.0`. Run Receipt `4.0.0` binds execution, route, raw-log head, ledger, output, and custody. Sessions span Runs under one writer; each Candidate has one producing Run.
 
-Runtime owns acceptance, authenticated process binding, ordered events, cancellation, deadline, quiescence, exit proof, forced termination, evidence, and final receipt. Internal `codewiki.run-process@3.0.0` uses shell-free spawn, private pipes, an empty environment, bounded frames, and observed termination.
+Runtime owns authenticated acceptance, ordered events, cancellation, deadline, quiescence, exit proof, evidence, and receipt. Internal channel protocol `3.0.0` uses shell-free spawn, private pipes, empty environment, bounded frames, and observed termination. A terminal process result is not a receipt: only complete validated closure can become `completed`; delegated custody records gaps.
 
-A Run Process sends one authenticated terminal result after its final event and before quiescence. It is not a receipt. Runtime issues a receipt only after validating request, result, events, custody, logs, ledger, quiescence, and exit. Missing required proof prevents `completed`; delegated custody records visibility gaps.
-
-Run failure cannot mutate accepted project state. Runtime returns a bounded stopped receipt or operational fact; Project Server decides whether to retry from canonical state, resume the exact Agent Session at its expected head under a new lease, roll logical continuity into a new Session with deterministic rehydration, or stop the Stage Loop attempt.
+Run failure cannot mutate accepted state. Project Server alone chooses canonical retry, exact-head Session resume under a new lease, explicit rollover with rehydration, or stop.
 
 ## Runtime Builds
 
-Runtime Build Manifest `2.0.0` binds protocol, Node, packages, Plugin admissions, and bytes. Current pins are 26 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. Package-lock binds artifact integrity; package/source equivalence remains unattested. Roots stay outside Runs.
+Runtime Build Manifest `2.0.0` binds protocol, Node, packages, Plugin admissions, bytes, suite, and Evidence. Pins are 33 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, `pi-ai` `0.82.1`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`; package integrity is locked and source equivalence unattested.
 
-Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
+Runtime privately stores qualified builds; CAS activates new-Run selection. Requests and Session resume bind the original build and protocol. Missing, changed, unqualified, or incompatible artifacts stop; rollback affects future Runs only.
 
 There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implementation. DSH is the sole first-party engine; Pi remains Client-only and cannot execute Runs.
 
@@ -67,7 +65,7 @@ There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implem
 
 Public `runDshRuntimeBridge` maps one Request to the exact DSH Agent and release composition, then returns Runtime facts. Stable Loader entry IDs and module specifiers compile into Runtime bytes. Loader owns lifecycle and Fiber state; startup requires every expected upstream inventory entry enabled and active. The model Provider installer remains a narrow seam.
 
-DSH owns execution mechanics and live inventory. CodeWiki owns release selection, trust planes, and capability ceilings without another inventory. Project Server owns route and lifecycle policy; private broker owns credentials, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority in a Run Process.
+DSH owns mechanics and live inventory; CodeWiki owns release admission and capability ceilings. Project Server owns route, account, budget, and lifecycle policy. Private Provider Broker `3.0.0` binds exact Run authorization, account route, request/token budgets, host composition, retry, and receipt. Broker Host mounts official DSH LLM, authorization, local credential, and inventory seams; Run Processes receive neither credentials nor project authority. Local files qualify only for isolated single-user deployment outside project/Run roots. OAuth, ambient credentials, secret headers, unsupported protocols, and multi-user local files fail closed.
 
 Managed Runs disable ambient settings, discovery, installation, UI/Host APIs, product MCP, self-modification, and uncontrolled drivers. Trusted broker and future client profiles remain outside Run sandboxes and gain no Project Server authority.
 
@@ -91,7 +89,7 @@ Producer Runs mount immutable content-addressed Project Context Snapshot Protoco
 
 Project Server freezes a distinct immutable Gate Evaluation Package only after Candidate checkpoint. Checks receive only declared exact package inputs; Model Checks receive no live Project Server handle, producer context-query tools, producer Session, or memory. Production Run Processes require an exact unexpired authorization and read-only snapshot mount, then expose separate Knowledge, Alignment, Project State, repository, Evidence, Result, and Change-delta tools. `StageContextBundle` and `query_stage_context` remain isolated replay qualification evidence only.
 
-Every controlled model-visible input, context query, replacement, provider receipt, usage, output, and cancellation enters Execution Ledger `5.0.0`. Its header binds Request, Build, continuity, lease, material, feedback, route, tools, and Skills. Provider entries bind broker, request, response, selected target, attempts, request ID, usage, and outcome. Authenticated frames persist the digest chain under expected-head CAS.
+Every controlled model-visible input, context query, replacement, provider receipt, usage, output, and cancellation enters Execution Ledger `5.0.0`. Its header binds Request, Build, continuity, lease, material, feedback, route, tools, and Skills. Provider entries bind broker, request, response, selected provider, account and model, attempts, request ID, usage, budget-bound authorization, and outcome. Authenticated frames persist the digest chain under expected-head CAS.
 
 Stage Efficiency Metrics Protocol `1.0.0` records exact source, cached-input, model-output, and tool-result token accounting plus repeated and new output bytes, Candidate-to-edit amplification, active-Change expansion, and cache-hit rate for each Stage. Metrics bind exact caller-supplied observed inputs and outputs, reject impossible counts, and remain measurement Evidence rather than lifecycle authority.
 

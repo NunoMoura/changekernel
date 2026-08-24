@@ -476,12 +476,19 @@ assert.equal(runtimeModule.createExecutablePluginInventory, undefined);
 assert.equal(typeof runtimeModule.runDshRuntimeBridge, "function");
 assert.equal(typeof runtimeModule.createDshPrivateProviderBrokerInstaller, "function");
 assert.equal(typeof runtimeModule.createPrivateProviderBrokerBinding, "function");
+assert.equal(typeof runtimeModule.createProviderBrokerRunAuthorization, "function");
 assert.equal(typeof runtimeModule.startPrivateProviderBrokerServer, "function");
+assert.equal(typeof runtimeModule.createDshProviderHost, "function");
+assert.equal(runtimeModule.DSH_BROKER_HOST_EXECUTABLE_ADMISSIONS.length, 6);
 assert.equal(typeof runtimeModule.readDshRuntimeProvenance, "function");
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.version, "0.1.1-rc.2");
 assert.equal(
 	runtimeModule.DSH_SUPPORT_PACKAGE_VERSIONS["@deepseek-ai/cordis-plugin-loader"],
 	"1.0.2",
+);
+assert.equal(
+	runtimeModule.DSH_SUPPORT_PACKAGE_VERSIONS["@earendil-works/pi-ai"],
+	"0.82.1",
 );
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.commit.length, 40);
 const checksModule = await import("@nunomoura/codewiki/checks");
@@ -558,6 +565,7 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"stopProjectServer",
 	"wikiChangeOperationMutates",
 ]);
+assert.equal(projectServerModule.WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL.version, "2.0.0");
 assert.equal(typeof createProjectServerApi, "function");
 const {spawnProjectCoordinatorDaemon} = await import(
 	pathToFileURL(
@@ -627,8 +635,13 @@ assert.equal(existsSync(join(packageRoot, "dist", "project-server", "app", "auth
 assert.equal(existsSync(join(packageRoot, "dist", "project", "config-digest.js")), false);
 
 for (const dependency of Object.keys(packageJson.dependencies || {})) {
-	assert.equal(dependency.startsWith("@earendil-works/"), false);
+	assert.equal(
+		dependency.startsWith("@earendil-works/") &&
+		dependency !== "@earendil-works/pi-ai",
+		false,
+	);
 }
+assert.equal(packageJson.dependencies["@earendil-works/pi-ai"], "0.82.1");
 assert.equal(packageJson.dependencies["js-yaml"], undefined);
 assert.equal(packageJson.dependencies.yaml.startsWith("^2."), true);
 assert.equal(packageJson.dependencies.typebox, undefined);

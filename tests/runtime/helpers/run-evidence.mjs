@@ -20,6 +20,8 @@ export function runRequest(runId = "run-evidence", sessionId = "session-evidence
 	const modelRoute = createRunModelRouteBinding({
 		routeId: "codewiki-replay",
 		provider: "codewiki-replay",
+		accountId: "replay-account",
+		credentialRef: null,
 		model: "deterministic",
 		reasoningEffort: null,
 		contextWindowTokens: 128_000,

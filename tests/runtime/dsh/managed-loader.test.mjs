@@ -87,7 +87,7 @@ describe("release-managed DSH Loader composition", () => {
 					plugin: () => undefined,
 				},
 			]),
-			/DSH managed Run composition contains an unadmitted Plugin/,
+			/DSH release-managed composition contains an unadmitted Plugin/,
 		);
 		await context.fiber.dispose();
 	});

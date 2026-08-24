@@ -286,8 +286,8 @@ describe("execution ports", () => {
 		);
 		const spec = runRequest(build.buildDigest);
 		const {requestDigest, ...digestBody} = spec;
-		assert.equal(RUN_PROTOCOL.version, "5.0.0");
-		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "5.0.0");
+		assert.equal(RUN_PROTOCOL.version, "6.0.0");
+		assert.equal(RUN_REQUEST_SCHEMA_VERSION, "6.0.0");
 		assert.equal(RUN_RECEIPT_SCHEMA_VERSION, "4.0.0");
 		assert.equal(spec.schemaVersion, RUN_REQUEST_SCHEMA_VERSION);
 		assert.equal(requestDigest, canonicalJsonDigest(digestBody));
@@ -658,6 +658,8 @@ function runRequest(buildDigest, overrides = {}) {
 			modelRoute: createRunModelRouteBinding({
 				routeId: "test-route",
 				provider,
+				accountId: "test-account",
+				credentialRef: "TEST_PROVIDER_API_KEY",
 				model,
 				reasoningEffort: null,
 				contextWindowTokens: 128_000,

@@ -88,6 +88,8 @@ export interface WorkerExecutionPolicySnapshot {
 	readonly route: {
 		readonly routeId: string;
 		readonly provider: string;
+		readonly accountId: string;
+		readonly credentialRef: string | null;
 		readonly model: string;
 		readonly thinking: WikiModelRouteConfig["thinking"];
 		readonly quality: WikiModelQuality;
@@ -113,6 +115,8 @@ export interface ResolvedExecutionPolicy {
 	selected?: {
 		routeId: string;
 		provider: string;
+		accountId: string;
+		credentialRef: string | null;
 		model: string;
 		thinking: WikiModelRouteConfig["thinking"];
 		contextWindowTokens: number;
@@ -156,6 +160,8 @@ export function workerExecutionPolicySnapshot(
 		route: {
 			routeId: policy.selected.routeId,
 			provider: policy.selected.provider,
+			accountId: policy.selected.accountId,
+			credentialRef: policy.selected.credentialRef,
 			model: policy.selected.model,
 			thinking: policy.selected.thinking,
 			quality: policy.selected.quality,
@@ -455,6 +461,8 @@ function selectedRoute(evaluation: CandidateEvaluation) {
 	return {
 		routeId: route.id,
 		provider: route.provider,
+		accountId: route.accountId,
+		credentialRef: route.credentialRef,
 		model: route.model,
 		thinking: route.thinking,
 		contextWindowTokens: route.contextWindowTokens,

@@ -396,6 +396,8 @@ describe("wiki_config core facade", () => {
 		const modelRoute = {
 			id: "high-quality",
 			provider: "openai",
+			accountId: "personal-openai",
+			credentialRef: "OPENAI_API_KEY",
 			model: "gpt-5.4",
 			thinking: "high",
 			quality: "high",

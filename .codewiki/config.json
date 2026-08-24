@@ -43,6 +43,8 @@
 				{
 					"id": "openai-codex-gpt-5.4-mini",
 					"provider": "openai-codex",
+					"accountId": "maintainer-consumer-subscription",
+					"credentialRef": null,
 					"model": "gpt-5.4-mini",
 					"thinking": "medium",
 					"quality": "standard",
@@ -79,6 +81,8 @@
 				{
 					"id": "openai-codex-gpt-5.4",
 					"provider": "openai-codex",
+					"accountId": "maintainer-consumer-subscription",
+					"credentialRef": null,
 					"model": "gpt-5.4",
 					"thinking": "high",
 					"quality": "high",
@@ -115,6 +119,8 @@
 				{
 					"id": "openai-codex-gpt-5.5",
 					"provider": "openai-codex",
+					"accountId": "maintainer-consumer-subscription",
+					"credentialRef": null,
 					"model": "gpt-5.5",
 					"thinking": "xhigh",
 					"quality": "critical",

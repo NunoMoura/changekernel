@@ -16,6 +16,7 @@ import {createDshPrivateProviderBrokerInstaller} from "../../../src/runtime/dsh/
 import {
 	createPrivateProviderBrokerBinding,
 	createProviderBrokerRequest,
+	createProviderBrokerRunAuthorization,
 } from "../../../src/runtime/providers/contracts.ts";
 import {
 	PrivateProviderTransportError,
@@ -35,13 +36,18 @@ const chunks = Object.freeze([
 	{type: "finish", reason: {kind: "stop"}},
 ]);
 
-function binding(overrides = {}) {
+function binding(runRequest, overrides = {}) {
 	return createPrivateProviderBrokerBinding({
 		brokerId: "qualification-broker",
 		implementationId: "codewiki-mock-provider",
 		implementationVersion: "1.0.0",
 		implementationDigest: sha256Digest("mock-provider-implementation"),
 		configurationDigest: sha256Digest("mock-provider-configuration"),
+		authorization: createProviderBrokerRunAuthorization({
+			runId: runRequest.runId,
+			route: runRequest.inputs.modelRoute,
+			budget: runRequest.budget,
+		}),
 		maxRetries: 0,
 		...overrides,
 	});
@@ -51,6 +57,8 @@ function route() {
 	return createRunModelRouteBinding({
 		routeId: "mock-live",
 		provider: "mock-provider",
+		accountId: "mock-account",
+		credentialRef: "MOCK_PROVIDER_API_KEY",
 		model: "mock-model",
 		reasoningEffort: null,
 		contextWindowTokens: 128_000,
@@ -144,18 +152,20 @@ describe("private provider broker", () => {
 		const runId = "run-private-broker";
 		const capabilityToken = "c".repeat(64);
 		const seenRequests = [];
+		const systemPrompt = "Private broker qualification system prompt";
+		const prompt = "Return broker qualification text.";
+		const runRequest = request(runId, modelRoute, systemPrompt, prompt);
 		const broker = await startPrivateProviderBrokerServer({
-			binding: binding(),
+			binding: binding(runRequest),
 			capabilityId: "capability-private-broker",
 			capabilityToken,
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
-			runId,
-			routeDigest: modelRoute.routeDigest,
 			transport: {
 				open: async (brokerRequest) => {
 					seenRequests.push(brokerRequest);
 					return {
 						selectedProvider: "mock-provider",
+						selectedAccountId: "mock-account",
 						selectedModel: "mock-model",
 						providerRequestId: "provider-request-1",
 						chunks: streamChunks(),
@@ -164,10 +174,8 @@ describe("private provider broker", () => {
 			},
 		});
 		try {
-			const systemPrompt = "Private broker qualification system prompt";
-			const prompt = "Return broker qualification text.";
 			const result = await runDshRuntimeBridge({
-				request: request(runId, modelRoute, systemPrompt, prompt),
+				request: runRequest,
 				artifacts: {
 					systemPrompt,
 					prompt,
@@ -186,6 +194,7 @@ describe("private provider broker", () => {
 			const [hostReceipt] = broker.receipts();
 			assert.equal(hostReceipt.providerRequestId, "provider-request-1");
 			assert.equal(hostReceipt.selectedProvider, "mock-provider");
+			assert.equal(hostReceipt.selectedAccountId, "mock-account");
 			assert.equal(hostReceipt.selectedModel, "mock-model");
 			assert.equal(hostReceipt.transportAttempts, 1);
 			const providerEntry = result.executionLedger.entries.find(
@@ -209,18 +218,20 @@ describe("private provider broker", () => {
 		const started = new Promise((resolve) => {
 			transportStarted = resolve;
 		});
+		const systemPrompt = "Private broker cancellation system prompt";
+		const prompt = "Wait for cancellation.";
+		const runRequest = request(runId, modelRoute, systemPrompt, prompt);
 		const broker = await startPrivateProviderBrokerServer({
-			binding: binding(),
+			binding: binding(runRequest),
 			capabilityId: "capability-private-broker-cancel",
 			capabilityToken: "x".repeat(64),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
-			runId,
-			routeDigest: modelRoute.routeDigest,
 			transport: {
 				open: async (_brokerRequest, signal) => {
 					transportStarted();
 					return {
 						selectedProvider: "mock-provider",
+						selectedAccountId: "mock-account",
 						selectedModel: "mock-model",
 						providerRequestId: "provider-request-cancel",
 						chunks: (async function* cancelledStream() {
@@ -236,10 +247,8 @@ describe("private provider broker", () => {
 			},
 		});
 		try {
-			const systemPrompt = "Private broker cancellation system prompt";
-			const prompt = "Wait for cancellation.";
 			const running = runDshRuntimeBridge({
-				request: request(runId, modelRoute, systemPrompt, prompt),
+				request: runRequest,
 				artifacts: {
 					systemPrompt,
 					prompt,
@@ -272,16 +281,18 @@ describe("private provider broker", () => {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-private-broker-route-"));
 		const modelRoute = route();
 		const runId = "run-private-broker-route-mismatch";
+		const systemPrompt = "Private broker route qualification system prompt";
+		const prompt = "Reject route drift.";
+		const runRequest = request(runId, modelRoute, systemPrompt, prompt);
 		const broker = await startPrivateProviderBrokerServer({
-			binding: binding(),
+			binding: binding(runRequest),
 			capabilityId: "capability-private-broker-route-mismatch",
 			capabilityToken: "m".repeat(64),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
-			runId,
-			routeDigest: modelRoute.routeDigest,
 			transport: {
 				open: async () => ({
 					selectedProvider: "mock-provider",
+					selectedAccountId: "mock-account",
 					selectedModel: "unauthorized-model",
 					providerRequestId: "provider-request-route-mismatch",
 					chunks: streamChunks(),
@@ -289,11 +300,9 @@ describe("private provider broker", () => {
 			},
 		});
 		try {
-			const systemPrompt = "Private broker route qualification system prompt";
-			const prompt = "Reject route drift.";
 			await assert.rejects(
 				runDshRuntimeBridge({
-					request: request(runId, modelRoute, systemPrompt, prompt),
+					request: runRequest,
 					artifacts: {
 						systemPrompt,
 						prompt,
@@ -314,14 +323,13 @@ describe("private provider broker", () => {
 
 	it("owns bounded transport retry", async () => {
 		const modelRoute = route();
+		const runRequest = request("run-retry", modelRoute, "Retry system", "Retry prompt");
 		let attempts = 0;
 		const retrying = await startPrivateProviderBrokerServer({
-			binding: binding({maxRetries: 1}),
+			binding: binding(runRequest, {maxRetries: 1}),
 			capabilityId: "capability-retry",
 			capabilityToken: "r".repeat(64),
 			expiresAt: new Date(Date.now() + 60_000).toISOString(),
-			runId: "run-retry",
-			routeDigest: modelRoute.routeDigest,
 			transport: {
 				open: async () => {
 					attempts += 1;
@@ -330,6 +338,7 @@ describe("private provider broker", () => {
 					}
 					return {
 						selectedProvider: "mock-provider",
+						selectedAccountId: "mock-account",
 						selectedModel: "mock-model",
 						providerRequestId: "provider-request-retry",
 						chunks: streamChunks(),
@@ -337,7 +346,12 @@ describe("private provider broker", () => {
 				},
 			},
 		});
-		const payload = {provider: "mock-provider", model: "mock-model", messages: []};
+		const payload = {
+			provider: "mock-provider",
+			model: "mock-model",
+			messages: [],
+			maxTokens: 64,
+		};
 		try {
 			const response = await fetch(`${retrying.access.endpoint}/v1/model-calls`, {
 				method: "POST",
@@ -350,7 +364,7 @@ describe("private provider broker", () => {
 					runId: "run-retry",
 					callIndex: 0,
 					route: modelRoute,
-					deadlineAt: new Date(Date.now() + 30_000).toISOString(),
+					deadlineAt: runRequest.deadlineAt,
 					payload,
 				})),
 			});
@@ -363,13 +377,63 @@ describe("private provider broker", () => {
 		}
 	});
 
+	it("rejects model calls that exceed exact Run request and token budgets", async () => {
+		const modelRoute = route();
+		const runRequest = request("run-budget", modelRoute, "Budget system", "Budget prompt");
+		let opened = false;
+		const broker = await startPrivateProviderBrokerServer({
+			binding: binding(runRequest),
+			capabilityId: "capability-budget",
+			capabilityToken: "b".repeat(64),
+			expiresAt: new Date(Date.now() + 60_000).toISOString(),
+			transport: {
+				open: async () => {
+					opened = true;
+					throw new Error("transport must not open");
+				},
+			},
+		});
+		try {
+			const response = await fetch(`${broker.access.endpoint}/v1/model-calls`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"x-codewiki-capability-id": broker.access.capabilityId,
+					"x-codewiki-capability-token": broker.access.capabilityToken,
+				},
+				body: canonicalJson(createProviderBrokerRequest({
+					runId: runRequest.runId,
+					callIndex: 0,
+					route: modelRoute,
+					deadlineAt: runRequest.deadlineAt,
+					payload: {
+						provider: "mock-provider",
+						model: "mock-model",
+						messages: [],
+						maxTokens: runRequest.budget.maxOutputTokens + 1,
+					},
+				})),
+			});
+			assert.equal(response.status, 403);
+			assert.deepEqual(await response.json(), {error: "budget-exhausted"});
+			assert.equal(opened, false);
+			assert.equal(broker.receipts().length, 0);
+		} finally {
+			await broker.close();
+		}
+	});
+
 	it("binds one provider implementation without a backend selector", () => {
-		const brokerBinding = binding();
+		const runRequest = request("run-binding", route(), "Binding system", "Binding prompt");
+		const brokerBinding = binding(runRequest);
 		assert.deepEqual(brokerBinding.protocol, {
 			id: "codewiki.private-provider-broker",
-			version: "2.0.0",
+			version: "3.0.0",
 		});
 		assert.equal("mode" in brokerBinding, false);
-		assert.throws(() => binding({mode: "direct"}), /mode is unsupported/);
+		assert.throws(
+			() => binding(runRequest, {mode: "direct"}),
+			/mode is unsupported/,
+		);
 	});
 });

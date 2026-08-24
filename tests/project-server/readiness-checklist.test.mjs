@@ -235,17 +235,19 @@ describe("install readiness checklist", () => {
 		);
 	});
 
-	it("keeps Pi Client types optional and out of runtime dependencies", () => {
+	it("keeps Pi Client optional while pinning only DSH's provider protocol support", () => {
 		const runtimeDependencyNames = [
 			...Object.keys(packageJson.dependencies || {}),
 			...Object.keys(packageJson.bundledDependencies || {}),
 		];
 		assert.deepEqual(
 			runtimeDependencyNames.filter((name) =>
-				name.startsWith("@earendil-works/"),
+				name.startsWith("@earendil-works/") &&
+				name !== "@earendil-works/pi-ai",
 			),
 			[],
 		);
+		assert.equal(packageJson.dependencies["@earendil-works/pi-ai"], "0.82.1");
 		assert.equal(
 			packageJson.devDependencies["@earendil-works/pi-coding-agent"],
 			undefined,

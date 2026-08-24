@@ -22,7 +22,7 @@ import {
 
 export const WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL = Object.freeze({
 	id: "codewiki.work-unit-model-assignment",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 
 export interface WorkUnitModelAssignment {
@@ -124,6 +124,8 @@ export function runModelRouteForAssignment(
 	return createRunModelRouteBinding({
 		routeId: assignment.policy.route.routeId,
 		provider: assignment.policy.route.provider,
+		accountId: assignment.policy.route.accountId,
+		credentialRef: assignment.policy.route.credentialRef,
 		model: assignment.policy.route.model,
 		reasoningEffort: assignment.policy.route.thinking === "off"
 			? null

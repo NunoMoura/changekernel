@@ -26,6 +26,7 @@ const MAX_REQUEST_BYTES = 16 * 1_024 * 1_024;
 
 export interface PrivateProviderTransportResult {
 	readonly selectedProvider: string;
+	readonly selectedAccountId: string;
 	readonly selectedModel: string;
 	readonly providerRequestId: string | null;
 	readonly chunks: AsyncIterable<StreamChunk>;
@@ -59,8 +60,6 @@ export interface PrivateProviderBrokerServerOptions {
 	readonly capabilityId: string;
 	readonly capabilityToken: string;
 	readonly expiresAt: string;
-	readonly runId: string;
-	readonly routeDigest: string;
 	readonly transport: PrivateProviderTransportPort;
 	readonly socketPath?: string;
 	readonly now?: () => string;
@@ -73,6 +72,14 @@ export interface PrivateProviderBrokerServer {
 	readonly close: () => Promise<void>;
 }
 
+interface ProviderBrokerBudgetState {
+	nextCallIndex: number;
+	inputTokens: number;
+	outputTokens: number;
+	usageComplete: boolean;
+	readonly outputReservations: Map<string, number>;
+}
+
 interface BrokerHttpRequestContext {
 	readonly request: IncomingMessage;
 	readonly response: ServerResponse;
@@ -80,6 +87,7 @@ interface BrokerHttpRequestContext {
 	readonly access: () => PrivateProviderBrokerAccess;
 	readonly active: Map<string, AbortController>;
 	readonly consumed: Set<string>;
+	readonly budget: ProviderBrokerBudgetState;
 	readonly receipts: ProviderBrokerReceipt[];
 	readonly now: () => string;
 }
@@ -94,6 +102,13 @@ export async function startPrivateProviderBrokerServer(
 	const receipts: ProviderBrokerReceipt[] = [];
 	const active = new Map<string, AbortController>();
 	const consumed = new Set<string>();
+	const budget: ProviderBrokerBudgetState = {
+		nextCallIndex: 0,
+		inputTokens: 0,
+		outputTokens: 0,
+		usageComplete: true,
+		outputReservations: new Map(),
+	};
 	const now = options.now || (() => new Date().toISOString());
 	let access: PrivateProviderBrokerAccess | undefined;
 	const socketAccess = options.socketPath
@@ -116,6 +131,7 @@ export async function startPrivateProviderBrokerServer(
 			},
 			active,
 			consumed,
+			budget,
 			receipts,
 			now,
 		});
@@ -259,9 +275,10 @@ async function admitBrokerCall(
 	const brokerRequest = assertProviderBrokerRequest(
 		parseBrokerRequest(await readBoundedBody(input.request)),
 	);
+	const authorization = input.options.binding.authorization;
 	if (
-		brokerRequest.runId !== input.options.runId ||
-		brokerRequest.route.routeDigest !== input.options.routeDigest
+		brokerRequest.runId !== authorization.runId ||
+		brokerRequest.route.routeDigest !== authorization.route.routeDigest
 	) {
 		respond(input.response, 403, {error: "capability-scope-mismatch"});
 		return null;
@@ -270,14 +287,116 @@ async function admitBrokerCall(
 		respond(input.response, 409, {error: "duplicate-call"});
 		return null;
 	}
+	if (!reserveBrokerBudget(input, brokerRequest)) return null;
 	input.consumed.add(brokerRequest.callId);
 	return brokerRequest;
+}
+
+function reserveBrokerBudget(
+	input: BrokerHttpRequestContext,
+	request: ProviderBrokerRequest,
+): boolean {
+	const limit = input.options.binding.authorization.budget;
+	if (
+		!input.budget.usageComplete ||
+		input.budget.nextCallIndex >= limit.maxModelRequests ||
+		input.budget.inputTokens >= limit.maxInputTokens ||
+		input.budget.outputTokens >= limit.maxOutputTokens
+	) {
+		respond(input.response, 403, {error: "budget-exhausted"});
+		return false;
+	}
+	if (request.callIndex !== input.budget.nextCallIndex) {
+		respond(input.response, 409, {error: "call-sequence-mismatch"});
+		return false;
+	}
+	const requestedOutputTokens = brokerRequestedOutputTokens(request.payload);
+	if (requestedOutputTokens === null) {
+		respond(input.response, 400, {error: "invalid-model-budget"});
+		return false;
+	}
+	const reserved = [...input.budget.outputReservations.values()].reduce(
+		(total, value) => total + value,
+		0,
+	);
+	if (
+		requestedOutputTokens >
+		limit.maxOutputTokens - input.budget.outputTokens - reserved
+	) {
+		respond(input.response, 403, {error: "budget-exhausted"});
+		return false;
+	}
+	input.budget.outputReservations.set(request.callId, requestedOutputTokens);
+	input.budget.nextCallIndex += 1;
+	return true;
+}
+
+function commitBrokerBudget(
+	binding: PrivateProviderBrokerBinding,
+	state: ProviderBrokerBudgetState,
+	callId: string,
+	chunks: readonly CanonicalJsonValue[],
+): void {
+	state.outputReservations.delete(callId);
+	const usage = chunks.filter((chunk) => typeOfChunk(chunk) === "usage");
+	if (usage.length !== 1) {
+		state.usageComplete = false;
+		return;
+	}
+	const tokens = brokerTokenUsage(usage[0]);
+	if (!tokens) {
+		state.usageComplete = false;
+		return;
+	}
+	state.inputTokens += tokens.input;
+	state.outputTokens += tokens.output;
+	const limit = binding.authorization.budget;
+	if (
+		state.inputTokens > limit.maxInputTokens ||
+		state.outputTokens > limit.maxOutputTokens
+	) {
+		state.usageComplete = false;
+	}
+}
+
+function brokerRequestedOutputTokens(payload: CanonicalJsonValue): number | null {
+	if (!payload || Array.isArray(payload) || typeof payload !== "object") return null;
+	const value = (payload as Record<string, CanonicalJsonValue>).maxTokens;
+	return Number.isSafeInteger(value) && (value as number) > 0 ? value as number : null;
+}
+
+function brokerTokenUsage(
+	chunk: CanonicalJsonValue,
+): {readonly input: number; readonly output: number} | null {
+	if (!chunk || Array.isArray(chunk) || typeof chunk !== "object") return null;
+	const usage = (chunk as Record<string, CanonicalJsonValue>).usage;
+	if (!usage || Array.isArray(usage) || typeof usage !== "object") return null;
+	const values = usage as Record<string, CanonicalJsonValue>;
+	const inputTokens = tokenCount(values.inputTokens);
+	const outputTokens = tokenCount(values.outputTokens);
+	const cacheReadTokens = tokenCount(values.cacheReadTokens ?? 0);
+	const cacheWriteTokens = tokenCount(values.cacheWriteTokens ?? 0);
+	if (
+		inputTokens === null ||
+		outputTokens === null ||
+		cacheReadTokens === null ||
+		cacheWriteTokens === null
+	) return null;
+	return {
+		input: inputTokens + cacheReadTokens + cacheWriteTokens,
+		output: outputTokens,
+	};
+}
+
+function tokenCount(value: CanonicalJsonValue): number | null {
+	return Number.isSafeInteger(value) && (value as number) >= 0 ? value as number : null;
 }
 
 async function executeBrokerCall(input: {
 	readonly response: ServerResponse;
 	readonly options: PrivateProviderBrokerServerOptions;
 	readonly receipts: ProviderBrokerReceipt[];
+	readonly budget: ProviderBrokerBudgetState;
 	readonly now: () => string;
 	readonly brokerRequest: ProviderBrokerRequest;
 	readonly controller: AbortController;
@@ -285,6 +404,7 @@ async function executeBrokerCall(input: {
 	const startedAt = input.now();
 	let providerRequestId: string | null = null;
 	let selectedProvider = input.brokerRequest.route.provider;
+	let selectedAccountId = input.brokerRequest.route.accountId;
 	let selectedModel = input.brokerRequest.route.model;
 	let transportAttempts = 0;
 	let failureKind: ProviderBrokerFailureKind | null = null;
@@ -299,10 +419,12 @@ async function executeBrokerCall(input: {
 			);
 			providerRequestId = opened.providerRequestId;
 			selectedProvider = opened.selectedProvider;
+			selectedAccountId = opened.selectedAccountId;
 			selectedModel = opened.selectedModel;
 			assertSelectedTarget(
 				input.brokerRequest,
 				selectedProvider,
+				selectedAccountId,
 				selectedModel,
 				providerRequestId,
 			);
@@ -328,6 +450,7 @@ async function executeBrokerCall(input: {
 			break;
 		}
 	}
+	commitBrokerBudget(input.options.binding, input.budget, input.brokerRequest.callId, chunks);
 	const outcome = receiptOutcome(failureKind);
 	const usage = chunks.filter((chunk) =>
 		typeOfChunk(chunk) === "usage"
@@ -338,6 +461,7 @@ async function executeBrokerCall(input: {
 		requestDigest: input.brokerRequest.requestDigest,
 		routeDigest: input.brokerRequest.route.routeDigest,
 		selectedProvider,
+		selectedAccountId,
 		selectedModel,
 		providerRequestId,
 		transportAttempts,
@@ -359,11 +483,13 @@ async function executeBrokerCall(input: {
 function assertSelectedTarget(
 	request: ProviderBrokerRequest,
 	selectedProvider: string,
+	selectedAccountId: string,
 	selectedModel: string,
 	providerRequestId: string | null,
 ): void {
 	if (
 		selectedProvider !== request.route.provider ||
+		selectedAccountId !== request.route.accountId ||
 		selectedModel !== request.route.model
 	) {
 		throw new PrivateProviderTransportError(

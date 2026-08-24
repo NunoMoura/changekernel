@@ -16,22 +16,30 @@ export const CORDIS_VERSION = "4.0.1" as const;
 
 export const DSH_SUPPORT_PACKAGE_VERSIONS = Object.freeze({
 	"@deepseek-ai/cordis-plugin-loader": "1.0.2",
+	"@earendil-works/pi-ai": "0.82.1",
 } as const);
 
 export const DSH_PACKAGE_NAMES = Object.freeze([
 	"@deepseek-ai/dsh-agent",
 	"@deepseek-ai/dsh-agent-loop",
+	"@deepseek-ai/dsh-atomic-write",
 	"@deepseek-ai/dsh-attachment",
+	"@deepseek-ai/dsh-authorization",
 	"@deepseek-ai/dsh-brand",
 	"@deepseek-ai/dsh-code-runtime",
 	"@deepseek-ai/dsh-commands",
 	"@deepseek-ai/dsh-compaction",
 	"@deepseek-ai/dsh-compaction-basic",
 	"@deepseek-ai/dsh-compaction-tool-result-pruner",
+	"@deepseek-ai/dsh-credentials",
+	"@deepseek-ai/dsh-credentials-local",
 	"@deepseek-ai/dsh-goal",
+	"@deepseek-ai/dsh-home-paths",
 	"@deepseek-ai/dsh-host-plugin-inventory",
 	"@deepseek-ai/dsh-invariants",
+	"@deepseek-ai/dsh-launch-environment",
 	"@deepseek-ai/dsh-llm",
+	"@deepseek-ai/dsh-llm-pi-ai",
 	"@deepseek-ai/dsh-llm-replay",
 	"@deepseek-ai/dsh-scope",
 	"@deepseek-ai/dsh-session",

@@ -18,6 +18,8 @@ export * from "./dsh/runtime-bridge.ts";
 export * from "./dsh/secure-code-runtime.ts";
 export * from "./checks/secure-code-sandbox.ts";
 export * from "./dsh/private-provider-broker.ts";
+export * from "./dsh/broker-plugins.ts";
+export * from "./dsh/provider-host.ts";
 export * from "./dsh/context-tools.ts";
 export * from "./dsh/project-context-tools.ts";
 export * from "./dsh/provenance.ts";

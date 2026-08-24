@@ -53,7 +53,7 @@ The first and only Backend v1 Domain Plugin is Software Development. It owns the
 
 ## DSH upstream research baseline
 
-The initial capability review on 2026-08-23 inspected DeepSeek Harness repository commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and published packages at `0.1.1-rc.2`. A 2026-08-24 B3 refresh selected that exact published family: 26 DSH packages at `0.1.1-rc.2`, Cordis `4.0.1`, and Cordis Plugin Loader `1.0.2`. Every artifact URL and integrity is frozen by package-lock v3. npm does not attest that the tarballs were built from the reviewed commit, so Runtime provenance keeps the package/source relationship explicitly `unattested`.
+The initial capability review on 2026-08-23 inspected DeepSeek Harness repository commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and published packages at `0.1.1-rc.2`. A 2026-08-24 B3 refresh selected the 26-package managed-Run family at that exact version with Cordis `4.0.1` and Cordis Plugin Loader `1.0.2`. B4 added the seven exact DSH credential/provider packages required by the trusted Broker Host and pinned `@earendil-works/pi-ai` to `0.82.1`, producing one 33-package DSH closure. Every artifact URL and integrity is frozen by package-lock v3. npm does not attest that the tarballs were built from the reviewed commit, so Runtime provenance keeps the package/source relationship explicitly `unattested`.
 
 Primary upstream evidence:
 
@@ -69,6 +69,7 @@ Primary upstream evidence:
 - subagent providers: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/subagent/README.md>
 - process sandbox plugins: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sandbox/README.md>
 - current OAuth/provider defect report: <https://github.com/deepseek-ai/deepseek-harness/discussions/4006>
+- reported custom OpenAI-compatible credential-routing defect: <https://github.com/deepseek-ai/deepseek-harness/discussions/4252>
 - current MCP OAuth-refresh gap: <https://github.com/deepseek-ai/deepseek-harness/discussions/3997>
 
 The exact package lock and Runtime provenance are the executable pin. Research links remain qualification evidence, and every later DSH-facing slice must re-check registry state, source, defects, and closure before changing that pin.
@@ -104,7 +105,8 @@ The exact package lock and Runtime provenance are the executable pin. Research l
 ## Known upstream risks
 
 - DSH remains release-candidate software and may change package topology quickly.
-- `0.1.1-rc.2` has a reported OAuth grant-rotation serialization defect and model availability-filtering defect. No affected route qualifies until the selected release proves both paths.
+- `0.1.1-rc.2` has a reported OAuth grant-rotation serialization defect and model availability-filtering defect. OAuth remains unsupported until a selected release proves refresh, entitlement filtering, cancellation, redaction, account binding, forget, revocation posture, and failures.
+- A custom OpenAI-compatible report says `baseURL` can replace the bearer key. B4's exact `pi-ai@0.82.1` deterministic wire fixture proves the resolved key, never `baseURL`, on the pinned closure; package or request-wire drift must fail this gate.
 - Authorization attempts are process-local and not resumable after browser or host loss.
 - Current sign-out deletes local state but does not guarantee issuer-side revocation.
 - The local credential provider explicitly permits same-UID reads and therefore cannot be the model-isolation boundary.
@@ -174,14 +176,16 @@ Success: DSH owns executable lifecycle and composition mechanics, while CodeWiki
 
 Success: CodeWiki uses one current, pinned, replay-qualified DSH plugin baseline without importing DSH authority into Project Server.
 
-### B4 — Provider, authorization, and credential plugins
+### B4 — Provider, authorization, and credential plugins — complete
 
-- Compose official DSH LLM, authorization, and credential seams inside the trusted broker host.
-- Qualify API-key OpenAI, Anthropic, DeepSeek, and custom OpenAI-compatible routes first.
-- Qualify supported provider-owned OAuth flows only after refresh, cancellation, redaction, account binding, local forget, and failure tests pass.
-- Select credential Provider by deployment class; keep all records outside Run mounts, manifests, environments, Sessions, logs, and receipts.
-- Keep deterministic mock qualification mandatory and live-provider qualification opt-in.
-- Fail closed for unsupported Bedrock, Vertex, Azure, OAuth, revocation, or ambient-credential combinations.
+- [x] Compose official DSH LLM, authorization, local credential, and Host Plugin Inventory seams through DSH Loader inside the trusted Broker Host.
+- [x] Qualify API-key OpenAI, Anthropic, DeepSeek, and custom OpenAI-compatible wire paths against deterministic local provider fixtures under exact `@earendil-works/pi-ai@0.82.1`.
+- [x] Bind exact account and credential references into project route policy, Work Unit Model Assignments, Run routes, broker authorization, provider selection, and authenticated receipts without recording token bytes.
+- [x] Advance Work Unit Model Assignment to `2.0.0`, Run Process and Run Request to `6.0.0`, and Private Provider Broker to `3.0.0`; bind exact per-Run route and model-request/input/output budgets into the broker capability.
+- [x] Qualify the local credential Provider only for isolated single-user deployment, owner-only storage, no ambient shadow, and paths outside every declared project or Run root.
+- [x] Keep deterministic mock qualification mandatory and live-provider qualification opt-in and credential-free by default.
+- [x] Fail closed for Bedrock, Vertex, Azure, OAuth, revocation, ambient credentials, secret-bearing provider headers, unsupported protocols, account drift, repository/Run-root credential storage, and multi-user local-file custody.
+- [x] Retain OAuth as unsupported because refresh serialization, entitlement filtering, process-loss recovery, and issuer revocation are not qualified at `0.1.1-rc.2`.
 
 Success: CodeWiki owns route authority and custody evidence while DSH plugins own provider and authorization protocols.
 
