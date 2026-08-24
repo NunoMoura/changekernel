@@ -8,11 +8,15 @@ import {
 
 export const DSH_REVIEWED_SOURCE = Object.freeze({
 	repository: "https://github.com/deepseek-ai/deepseek-harness.git",
-	commit: "15148dbd9a1d1f1ef1a26e5749b32af0cd663935",
-	version: "0.1.0-rc.6",
+	commit: "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+	version: "0.1.1-rc.2",
 } as const);
 
 export const CORDIS_VERSION = "4.0.1" as const;
+
+export const DSH_SUPPORT_PACKAGE_VERSIONS = Object.freeze({
+	"@deepseek-ai/cordis-plugin-loader": "1.0.2",
+} as const);
 
 export const DSH_PACKAGE_NAMES = Object.freeze([
 	"@deepseek-ai/dsh-agent",
@@ -25,6 +29,7 @@ export const DSH_PACKAGE_NAMES = Object.freeze([
 	"@deepseek-ai/dsh-compaction-basic",
 	"@deepseek-ai/dsh-compaction-tool-result-pruner",
 	"@deepseek-ai/dsh-goal",
+	"@deepseek-ai/dsh-host-plugin-inventory",
 	"@deepseek-ai/dsh-invariants",
 	"@deepseek-ai/dsh-llm",
 	"@deepseek-ai/dsh-llm-replay",
@@ -53,6 +58,7 @@ export interface DshRuntimeProvenance {
 	readonly packageSourceRelationship: "unattested";
 	readonly packageSourceAttestation: null;
 	readonly dshPackages: readonly DshPackageArtifactProvenance[];
+	readonly dshSupportPackages: readonly DshPackageArtifactProvenance[];
 	readonly dshTransitivePackages: readonly DshPackageArtifactProvenance[];
 	readonly cordisPackage: DshPackageArtifactProvenance;
 	readonly cordisTransitivePackages: readonly DshPackageArtifactProvenance[];
@@ -97,6 +103,11 @@ export function createDshRuntimeProvenance(
 		),
 	);
 	assertNoUnpinnedDshPackages(packages);
+	const dshSupportPackages = Object.freeze(
+		Object.entries(DSH_SUPPORT_PACKAGE_VERSIONS).map(([name, version]) =>
+			packageArtifact(packages, name, version),
+		),
+	);
 	const cordisPackage = packageArtifact(
 		packages,
 		"@deepseek-ai/cordis",
@@ -112,16 +123,23 @@ export function createDshRuntimeProvenance(
 			name === cordisPackage.name ? [] : [packageArtifact(packages, name)],
 		),
 	);
-	const directDshSet = new Set<string>(DSH_PACKAGE_NAMES);
+	const directDshSet = new Set<string>([
+		...DSH_PACKAGE_NAMES,
+		...Object.keys(DSH_SUPPORT_PACKAGE_VERSIONS),
+	]);
 	const dshTransitivePackages = Object.freeze(
-		dependencyClosureNames(packages, DSH_PACKAGE_NAMES).flatMap((name) =>
+		dependencyClosureNames(packages, [...directDshSet]).flatMap((name) =>
 			directDshSet.has(name) || cordisClosureSet.has(name)
 				? []
 				: [packageArtifact(packages, name)],
 		),
 	);
 	const dshPackageClosureDigest = assertSha256Digest(
-		canonicalJsonDigest([...dshPackages, ...dshTransitivePackages]),
+		canonicalJsonDigest([
+			...dshPackages,
+			...dshSupportPackages,
+			...dshTransitivePackages,
+		]),
 		"DSH package closure digest",
 	);
 	const cordisClosureDigest = assertSha256Digest(
@@ -133,6 +151,7 @@ export function createDshRuntimeProvenance(
 		packageSourceRelationship: "unattested",
 		packageSourceAttestation: null,
 		dshPackages,
+		dshSupportPackages,
 		dshTransitivePackages,
 		cordisPackage,
 		cordisTransitivePackages,

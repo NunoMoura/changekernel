@@ -53,7 +53,7 @@ The first and only Backend v1 Domain Plugin is Software Development. It owns the
 
 ## DSH upstream research baseline
 
-The initial capability review on 2026-08-23 inspected DeepSeek Harness repository commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and published packages at `0.1.1-rc.2`. CodeWiki currently pins `0.1.0-rc.6`. The inspected repository contains a much larger decomposed plugin surface than the pinned release, so migration is a separately qualified slice rather than a dependency refresh.
+The initial capability review on 2026-08-23 inspected DeepSeek Harness repository commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and published packages at `0.1.1-rc.2`. A 2026-08-24 B3 refresh selected that exact published family: 26 DSH packages at `0.1.1-rc.2`, Cordis `4.0.1`, and Cordis Plugin Loader `1.0.2`. Every artifact URL and integrity is frozen by package-lock v3. npm does not attest that the tarballs were built from the reviewed commit, so Runtime provenance keeps the package/source relationship explicitly `unattested`.
 
 Primary upstream evidence:
 
@@ -71,7 +71,7 @@ Primary upstream evidence:
 - current OAuth/provider defect report: <https://github.com/deepseek-ai/deepseek-harness/discussions/4006>
 - current MCP OAuth-refresh gap: <https://github.com/deepseek-ai/deepseek-harness/discussions/3997>
 
-This snapshot is planning evidence, not a dependency pin. Every executable migration slice selects an exact published version and package closure again.
+The exact package lock and Runtime provenance are the executable pin. Research links remain qualification evidence, and every later DSH-facing slice must re-check registry state, source, defects, and closure before changing that pin.
 
 ## DSH capability ledger
 
@@ -162,14 +162,15 @@ Success: one provider path remains and no dormant dynamic router can widen exact
 
 Success: DSH owns executable lifecycle and composition mechanics, while CodeWiki binds only trust admission and capability ceilings without granting Plugin authority over canonical state.
 
-### B3 — Qualified DSH baseline migration
+### B3 — Qualified DSH baseline migration — complete
 
-- Re-run upstream research and select one exact published DSH baseline.
-- Migrate the current `0.1.0-rc.6` composition in bounded package-family cuts.
-- Preserve replay fixtures, Session continuity, controlled Goals, compaction provenance, secure Code Mode, process protocol, and receipt identity.
-- Add drift gates for upstream provider, compat, event, and plugin contract changes.
-- Bind exact profile and bundle bytes, then prove observed DSH Loader identities match the executable Plugin admission closure.
-- Record exact package and executable closure in Runtime Build qualification.
+- [x] Re-run upstream source, registry, release, defect, and community research; select exact DSH `0.1.1-rc.2` at reviewed commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`.
+- [x] Migrate the atomic 26-package DSH release family together; retain exact Cordis `4.0.1` and bind Cordis Plugin Loader `1.0.2` as DSH support provenance.
+- [x] Preserve replay fixtures, Session continuity, controlled Goals, compaction provenance, secure Code Mode, process protocol, broker evidence, and receipt identity.
+- [x] Gate exact package versions and integrity, build-time LLM pinning, TypeScript compatibility, replay/session events, provider brokerage, composition identities, Loader activation, and inventory state.
+- [x] Compile one release-managed Run composition into the Runtime artifact, delegate import/apply/dispose and Fiber state to DSH Loader, and fail closed unless the read-only DSH Host Plugin Inventory exactly matches every expected enabled entry.
+- [x] Bind all possible managed-Run Plugin identities to Executable Plugin Admission Closure policy; Runtime Build `2.0.0` binds that closure directly and the exact composition transitively through Runtime artifact bytes.
+- [x] Keep DSH package/source equivalence explicitly unattested and retain all Project Server authority boundaries.
 
 Success: CodeWiki uses one current, pinned, replay-qualified DSH plugin baseline without importing DSH authority into Project Server.
 

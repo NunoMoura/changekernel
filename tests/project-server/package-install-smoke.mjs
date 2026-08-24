@@ -478,7 +478,11 @@ assert.equal(typeof runtimeModule.createDshPrivateProviderBrokerInstaller, "func
 assert.equal(typeof runtimeModule.createPrivateProviderBrokerBinding, "function");
 assert.equal(typeof runtimeModule.startPrivateProviderBrokerServer, "function");
 assert.equal(typeof runtimeModule.readDshRuntimeProvenance, "function");
-assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.version, "0.1.0-rc.6");
+assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.version, "0.1.1-rc.2");
+assert.equal(
+	runtimeModule.DSH_SUPPORT_PACKAGE_VERSIONS["@deepseek-ai/cordis-plugin-loader"],
+	"1.0.2",
+);
 assert.equal(runtimeModule.DSH_REVIEWED_SOURCE.commit.length, 40);
 const checksModule = await import("@nunomoura/codewiki/checks");
 assert.equal(typeof checksModule.createCheckSdk, "function");

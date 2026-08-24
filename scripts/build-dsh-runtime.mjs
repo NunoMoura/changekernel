@@ -47,7 +47,7 @@ function inlineDshPackageVersion() {
 					const packageVersion = dshPackageVersion(
 						await readFile(resolve(dirname(path), "../package.json"), "utf8"),
 					);
-					if (packageVersion !== "0.1.0-rc.6") {
+					if (packageVersion !== "0.1.1-rc.2") {
 						throw new Error("DSH LLM package version is not the qualified pin.");
 					}
 					const statement =
@@ -58,7 +58,7 @@ function inlineDshPackageVersion() {
 					return {
 						contents: source.replace(
 							statement,
-							'const version = "0.1.0-rc.6";',
+							'const version = "0.1.1-rc.2";',
 						),
 						loader: "js",
 					};

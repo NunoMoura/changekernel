@@ -9,6 +9,7 @@ import {after, describe, it} from "node:test";
 
 import {buildDshRuntimeCandidate} from "../../../scripts/build-dsh-runtime.mjs";
 
+import {createExecutablePluginAdmissionClosure} from "../../../src/plugins/executable.ts";
 import {createTestProjectContextSnapshot} from "../../helpers/project-context.mjs";
 import {authorizeProjectContextSnapshot} from "../../../src/project-server/project-context/snapshot.ts";
 import {createProjectContextStore} from "../../../src/project-server/project-context/store.ts";
@@ -30,6 +31,7 @@ import {
 import {
 	DSH_PROJECT_CONTEXT_TOOL_SET_DIGEST,
 } from "../../../src/runtime/dsh/project-context-tools.ts";
+import {DSH_MANAGED_EXECUTABLE_ADMISSIONS} from "../../../src/runtime/dsh/managed-loader.ts";
 import {readDshRuntimeProvenance} from "../../../src/runtime/dsh/provenance.ts";
 import {createPrivateProviderBrokerBinding} from "../../../src/runtime/providers/contracts.ts";
 import {BUBBLEWRAP_SANDBOX_SCHEMA_VERSION} from "../../../src/runtime/sandbox/bubblewrap.ts";
@@ -85,6 +87,11 @@ const candidate = await buildDshRuntimeCandidate({
 });
 const candidateBytes = await readFile(candidate.artifactPath);
 const provenance = readDshRuntimeProvenance(packageLockPath);
+const admissionClosure = createExecutablePluginAdmissionClosure({
+	projectRoot: candidateRoot,
+	sourceRoots: [repositoryRoot],
+	admissions: DSH_MANAGED_EXECUTABLE_ADMISSIONS,
+});
 const qualifiedBuild = createQualifiedRuntimeBuild({
 	manifest: createRuntimeBuildManifest({
 		schemaVersion: "2.0.0",
@@ -93,7 +100,7 @@ const qualifiedBuild = createQualifiedRuntimeBuild({
 		dshSourceCommit: provenance.reviewedSource.commit,
 		dshPackageClosureDigest: provenance.dshPackageClosureDigest,
 		cordisClosureDigest: provenance.cordisClosureDigest,
-		executablePluginClosureDigest: digest("executable-plugins"),
+		executablePluginClosureDigest: admissionClosure.closureDigest,
 		runtimeArtifactDigest: sha256Digest(candidateBytes),
 	}),
 	qualificationSuiteDigest: digest("dsh-qualification-suite"),

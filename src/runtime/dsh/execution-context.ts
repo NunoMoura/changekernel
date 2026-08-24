@@ -1,4 +1,4 @@
-import type {Context, Fiber} from "@deepseek-ai/cordis";
+import type {Context} from "@deepseek-ai/cordis";
 import type {Agent} from "@deepseek-ai/dsh-agent";
 import GoalService, {type GoalView} from "@deepseek-ai/dsh-goal";
 import * as GoalInvariant from "@deepseek-ai/dsh-goal/invariant";
@@ -13,6 +13,7 @@ import {
 	compactForContinuation,
 	createCodeWikiCompactionPlugin,
 } from "./compaction.ts";
+import type {ManagedDshPluginDefinition} from "./managed-loader.ts";
 
 interface ControlledGoalRound {
 	readonly goalId: GoalView["id"];
@@ -20,13 +21,13 @@ interface ControlledGoalRound {
 	readonly round: number;
 }
 
-export async function mountDshContinuityPlugins(
-	context: Context,
+export function createDshContinuityPluginDefinitions(
 	continuation: RunContinuationBinding,
-	fibers: Fiber[],
-): Promise<void> {
-	await mountGoalContext(context, continuation, fibers);
-	await mountCompactionContext(context, continuation, fibers);
+): readonly ManagedDshPluginDefinition[] {
+	return Object.freeze([
+		...goalPluginDefinitions(continuation),
+		...compactionPluginDefinitions(continuation),
+	]);
 }
 
 export async function prepareDshContinuation(input: {
@@ -70,28 +71,51 @@ export function pauseGoalAtCandidateBoundary(input: {
 	input.context.goals.pause(input.agent, current);
 }
 
-async function mountGoalContext(
-	context: Context,
+function goalPluginDefinitions(
 	continuation: RunContinuationBinding,
-	fibers: Fiber[],
-): Promise<void> {
-	if (continuation.goal.mode !== "controlled") return;
-	fibers.push(await context.plugin(SessionProjectionRegistry));
-	fibers.push(await context.plugin(GoalService, {
-		defaultMaxGoalRounds: continuation.goal.maxRounds,
-	}));
-	fibers.push(await context.plugin(GoalInvariant));
+): readonly ManagedDshPluginDefinition[] {
+	if (continuation.goal.mode !== "controlled") return [];
+	return [
+		{
+			entryId: "session-projection",
+			moduleName: "@deepseek-ai/dsh-session-projection",
+			plugin: SessionProjectionRegistry,
+		},
+		{
+			entryId: "goal",
+			moduleName: "@deepseek-ai/dsh-goal",
+			plugin: GoalService,
+			config: {defaultMaxGoalRounds: continuation.goal.maxRounds},
+		},
+		{
+			entryId: "goal-invariant",
+			moduleName: "@deepseek-ai/dsh-goal/invariant",
+			plugin: GoalInvariant,
+		},
+	];
 }
 
-async function mountCompactionContext(
-	context: Context,
+function compactionPluginDefinitions(
 	continuation: RunContinuationBinding,
-	fibers: Fiber[],
-): Promise<void> {
-	if (continuation.compaction.mode !== "predictive") return;
-	fibers.push(await context.plugin(TokenMeter));
-	fibers.push(await context.plugin(ToolResultPruner));
-	fibers.push(await context.plugin(createCodeWikiCompactionPlugin(continuation)));
+): readonly ManagedDshPluginDefinition[] {
+	if (continuation.compaction.mode !== "predictive") return [];
+	return [
+		{
+			entryId: "token-meter",
+			moduleName: "@deepseek-ai/dsh-token-meter",
+			plugin: TokenMeter,
+		},
+		{
+			entryId: "tool-result-pruner",
+			moduleName: "@deepseek-ai/dsh-compaction-tool-result-pruner",
+			plugin: ToolResultPruner,
+		},
+		{
+			entryId: "stage-compaction",
+			moduleName: "@nunomoura/codewiki/stage-compaction",
+			plugin: createCodeWikiCompactionPlugin(continuation),
+		},
+	];
 }
 
 function prepareControlledGoal(input: {

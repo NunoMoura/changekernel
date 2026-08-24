@@ -17,7 +17,7 @@ const packageLockPath = fileURLToPath(
 );
 
 describe("DSH Runtime Build provenance", () => {
-	it("binds every exact rc.6 package integrity without claiming source equivalence", () => {
+	it("binds every exact rc.2 package integrity without claiming source equivalence", () => {
 		const provenance = readDshRuntimeProvenance(packageLockPath);
 
 		assert.equal(provenance.reviewedSource, DSH_REVIEWED_SOURCE);
@@ -26,7 +26,11 @@ describe("DSH Runtime Build provenance", () => {
 		assert.equal(provenance.dshPackages.length, DSH_PACKAGE_NAMES.length);
 		assert.deepEqual(
 			provenance.dshPackages.map(({name, version}) => ({name, version})),
-			DSH_PACKAGE_NAMES.map((name) => ({name, version: "0.1.0-rc.6"})),
+			DSH_PACKAGE_NAMES.map((name) => ({name, version: "0.1.1-rc.2"})),
+		);
+		assert.deepEqual(
+			provenance.dshSupportPackages.map(({name, version}) => ({name, version})),
+			[{name: "@deepseek-ai/cordis-plugin-loader", version: "1.0.2"}],
 		);
 		assert.equal(provenance.cordisPackage.version, "4.0.1");
 		assert.deepEqual(
@@ -63,11 +67,22 @@ describe("DSH Runtime Build provenance", () => {
 	it("fails closed when npm resolves any DSH package past the exact pin", async () => {
 		const lock = JSON.parse(await readFile(packageLockPath, "utf8"));
 		lock.packages["node_modules/@deepseek-ai/dsh-agent-loop"].version =
-			"0.1.0-rc.7";
+			"0.1.1-rc.3";
 
 		assert.match(
 			captureError(() => createDshRuntimeProvenance(lock)).message,
-			/@deepseek-ai\/dsh-agent-loop must be pinned to 0\.1\.0-rc\.6/,
+			/@deepseek-ai\/dsh-agent-loop must be pinned to 0\.1\.1-rc\.2/,
+		);
+	});
+
+	it("fails closed when the Loader support package drifts", async () => {
+		const lock = JSON.parse(await readFile(packageLockPath, "utf8"));
+		lock.packages["node_modules/@deepseek-ai/cordis-plugin-loader"].version =
+			"1.0.2-rc.4";
+
+		assert.match(
+			captureError(() => createDshRuntimeProvenance(lock)).message,
+			/@deepseek-ai\/cordis-plugin-loader must be pinned to 1\.0\.2/,
 		);
 	});
 

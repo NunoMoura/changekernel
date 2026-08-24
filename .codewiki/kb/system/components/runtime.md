@@ -27,7 +27,7 @@ codewiki_relationships:
 ---
 # Runtime
 
-Runtime is the Project Server-owned execution subsystem. It accepts immutable Run Requests, executes bounded Runs, controls Run Processes, and creates CodeWiki-authored Run Receipts. It owns no project meaning, Client authentication, project authorization, Stage Loop, Candidate admission, Check Result, Gate reduction, lifecycle transition, Workbench custody, or guarded effect.
+Runtime is the Project Server-owned execution subsystem. It accepts immutable Run Requests, executes bounded Runs, controls Run Processes, and creates CodeWiki-authored Run Receipts. It owns no project, lifecycle, Gate, Workbench, or effect authority.
 
 ```text
 Project Server
@@ -57,7 +57,7 @@ Run failure cannot mutate accepted project state. Runtime returns a bounded stop
 
 ## Runtime Builds
 
-Runtime Build Manifest `2.0.0` binds protocol, Node, reviewed source, DSH/Cordis packages, Plugin admissions, and bytes. Roots stay outside Runs.
+Runtime Build Manifest `2.0.0` binds protocol, Node, packages, Plugin admissions, and bytes. Current pins are 26 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. Package-lock binds artifact integrity; package/source equivalence remains unattested. Roots stay outside Runs.
 
 Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
 
@@ -65,11 +65,11 @@ There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implem
 
 ## DSH composition and Runtime Bridge
 
-Public `runDshRuntimeBridge` constructs the exact DSH Agent and release-managed profile for one Request, then translates output into Runtime facts. Its model Provider installer is a narrow seam; translation objects remain private.
+Public `runDshRuntimeBridge` maps one Request to the exact DSH Agent and release composition, then returns Runtime facts. Stable Loader entry IDs and module specifiers compile into Runtime bytes. Loader owns lifecycle and Fiber state; startup requires every expected upstream inventory entry enabled and active. The model Provider installer remains a narrow seam.
 
-DSH owns Loader/Cordis lifecycle, profiles, package closure, live inventory, AgentLoop, Providers, streaming, tools, continuation, cancellation, Session events, and compaction. CodeWiki binds trust planes and capability ceilings. Project Server owns route and lifecycle policy; private broker owns credential custody, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority inside a Run Process.
+DSH owns execution mechanics and live inventory. CodeWiki owns release selection, trust planes, and capability ceilings without another inventory. Project Server owns route and lifecycle policy; private broker owns credentials, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority in a Run Process.
 
-Managed Run profiles disable ambient settings, discovery, dynamic installation, UI/Host APIs, product MCP, self-modification, and uncontrolled drivers. Trusted broker profiles may compose provider, authorization, and credential Plugins outside Run sandboxes. Future client profiles use only authenticated CodeWiki frontend contracts. No profile gains Project Server authority.
+Managed Runs disable ambient settings, discovery, installation, UI/Host APIs, product MCP, self-modification, and uncontrolled drivers. Trusted broker and future client profiles remain outside Run sandboxes and gain no Project Server authority.
 
 Project Server authorizes each Run and mounts DSH Goal state without a model completion tool or autonomous driver. Candidate output pauses the Goal; Project Server and Gates determine completion. Replay is qualification, not fallback.
 
