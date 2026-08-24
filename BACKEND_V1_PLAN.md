@@ -58,7 +58,10 @@ The initial capability review on 2026-08-23 inspected DeepSeek Harness repositor
 Primary upstream evidence:
 
 - package hierarchy and capability seams: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/README.md>
+- Cordis-backed Loader lifecycle and configuration: <https://github.com/deepseek-ai/deepseek-harness/blob/master/vendor/loader/README.md>
+- profile boot and composition: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/boot/app-boot/README.md>
 - profile plugin bundles: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/README.md>
+- read-only Host Plugin Inventory: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/host/plugin-inventory/README.md>
 - authorization flows: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/credentials/authorization/README.md>
 - credentials and local-store security boundary: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/credentials/credentials-local/README.md>
 - multi-provider and OAuth-capable LLM plugin: <https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/llm/llm-pi-ai/README.md>
@@ -74,7 +77,11 @@ This snapshot is planning evidence, not a dependency pin. Every executable migra
 
 | Capability | Upstream state at research baseline | Disposition | CodeWiki boundary and required proof |
 | --- | --- | --- | --- |
-| Cordis plugin lifecycle and DSH Service Definition/Provider/Consumer seams | First-party product surface | Adopt | Exact package closure, deterministic composition, teardown, and failure tests; never extend Project Server authority. |
+| Cordis Plugin lifecycle, DSH Loader, and Service Definition/Provider/Consumer seams | First-party product surface | Adopt | DSH Loader remains the sole executable Plugin lifecycle authority. CodeWiki qualifies exact profile composition and failure behavior but does not duplicate import, dependency injection, update, disposal, rollback, or Fiber state. |
+| DSH profile and ordered bundle composition | First-party product surface | Adopt | Backend release or operator owns exact qualified profile bytes. Project files cannot patch profiles, install executable code, or select entrypoints. |
+| DSH Host Plugin Inventory and Settings inventory UI | First-party point-in-time projection | Adopt read-only | Use Loader entry ID, exact module specifier, effective enablement, and Fiber phase for observation. Do not create a competing live inventory; the upstream projection intentionally supplies no provenance, history, trust admission, or mutation path. |
+| `dsh plugin` package installation and package-manager closure | First-party CLI over pnpm and package metadata | Adopt outside governed projects | Installation and dependency resolution remain package-manager concerns. CodeWiki qualification binds exact lockfile provenance and rejects repository-local executable roots; it does not model dependencies or package entrypoints again. |
+| Community marketplaces, profile doctors, static audits, quarantine, and rollback tools | Community surfaces with varying maturity and trust | Qualify selectively | Use as discovery, test, or failure-fixture inputs only after exact source, integrity, maintenance, license, and security review. Do not add a second runtime manager or grant community code authority by default. |
 | Agent and AgentLoop mechanics | First-party product surface | Adopt | Keep behind Runtime Bridge; preserve Run Request, receipt, cancellation, Session lease, and Candidate boundaries. |
 | Sessions, Goals, and compaction mechanics | First-party product surface | Compose | DSH owns mechanics; CodeWiki retains logical continuity, authority promotion, deterministic rehydration, and rollover policy. |
 | `dsh-llm-pi-ai` and provider catalog | First-party product surface with API-key, native-provider, custom-gateway, and OAuth support | Adopt behind broker | Bind exact route and plugin identities; force SDK retries to zero where broker owns retry; no direct Run egress or credentials. |
@@ -146,14 +153,14 @@ Success: one provider path remains and no dormant dynamic router can widen exact
 ### B2 — Executable Plugin vocabulary and trust planes — complete
 
 - [x] Replace fragmented legacy executable categories with DSH Plugin, Infrastructure Provider, Runtime Bridge, and Client Plugin contracts.
-- [x] Define Executable Plugin Manifest `1.0.0` over exact identity, version, integrity, trust plane, capabilities, dependencies, entrypoints, and manifest digest.
-- [x] Define Backend-owned Executable Plugin Inventory `1.0.0` across Project Server, broker-host, Run Process, and client trust planes.
-- [x] Reject repository-local executable Plugin roots after realpath resolution, including symlink aliases; reject local entrypoints in project configuration.
+- [x] Define Executable Plugin Admission Closure `1.0.0` over exact Plugin identity, kind, trust plane, sorted capability ceiling, and closure digest.
+- [x] Keep DSH Loader/profile state, package versions, integrity, dependencies, entrypoints, installation, and live inventory with DSH and the package manager rather than duplicating them in CodeWiki.
+- [x] Reject repository-local executable Plugin source roots after realpath resolution, including symlink aliases; reject local entrypoints in project configuration.
 - [x] Keep upstream names and private translator classes internal.
-- [x] Advance Runtime Build Manifest to `2.0.0`, replace fragmented closure fields with one executable Plugin closure digest, and bind receipts transitively through the immutable Runtime Build digest.
+- [x] Advance Runtime Build Manifest to `2.0.0`, replace fragmented closure fields with one executable Plugin admission-closure digest, and bind receipts transitively through the immutable Runtime Build digest.
 - [x] Clean-cut the public Runtime Bridge API to `runDshRuntimeBridge`, `DshModelProviderInstaller`, and related Runtime Bridge types.
 
-Success: package, configuration, receipts, and public APIs describe one coherent Plugin model without granting Plugin lifecycle authority over canonical state.
+Success: DSH owns executable lifecycle and composition mechanics, while CodeWiki binds only trust admission and capability ceilings without granting Plugin authority over canonical state.
 
 ### B3 — Qualified DSH baseline migration
 
@@ -161,6 +168,7 @@ Success: package, configuration, receipts, and public APIs describe one coherent
 - Migrate the current `0.1.0-rc.6` composition in bounded package-family cuts.
 - Preserve replay fixtures, Session continuity, controlled Goals, compaction provenance, secure Code Mode, process protocol, and receipt identity.
 - Add drift gates for upstream provider, compat, event, and plugin contract changes.
+- Bind exact profile and bundle bytes, then prove observed DSH Loader identities match the executable Plugin admission closure.
 - Record exact package and executable closure in Runtime Build qualification.
 
 Success: CodeWiki uses one current, pinned, replay-qualified DSH plugin baseline without importing DSH authority into Project Server.

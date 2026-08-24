@@ -57,7 +57,7 @@ Run failure cannot mutate accepted project state. Runtime returns a bounded stop
 
 ## Runtime Builds
 
-Runtime Build Manifest `2.0.0` binds protocol, Node, reviewed source, DSH/Cordis and executable Plugin closures, and artifact bytes. Roots stay outside Run state; source and package closure remain distinct.
+Runtime Build Manifest `2.0.0` binds protocol, Node, reviewed source, DSH/Cordis packages, Plugin admissions, and bytes. Roots stay outside Runs.
 
 Qualification binds suite and Evidence digests. Runtime privately stores qualified builds; CAS selects one active build for new Runs. Requests permanently bind build and protocol. Same-Session resume requires the original build. Missing, altered, unqualified, or incompatible artifacts stop without fallback; rollback affects future Runs only.
 
@@ -67,7 +67,7 @@ There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implem
 
 Public `runDshRuntimeBridge` constructs the exact DSH Agent and release-managed profile for one Request, then translates output into Runtime facts. Its model Provider installer is a narrow seam; translation objects remain private.
 
-DSH owns AgentLoop, Plugin and Provider registration, streaming, tools, continuation, cancellation, Session events, and compaction mechanics. Project Server owns route and lifecycle policy; private broker owns credential custody, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority inside a Run Process.
+DSH owns Loader/Cordis lifecycle, profiles, package closure, live inventory, AgentLoop, Providers, streaming, tools, continuation, cancellation, Session events, and compaction. CodeWiki binds trust planes and capability ceilings. Project Server owns route and lifecycle policy; private broker owns credential custody, networking, retry, normalization, and provider request identity. DSH receives no credential or project authority inside a Run Process.
 
 Managed Run profiles disable ambient settings, discovery, dynamic installation, UI/Host APIs, product MCP, self-modification, and uncontrolled drivers. Trusted broker profiles may compose provider, authorization, and credential Plugins outside Run sandboxes. Future client profiles use only authenticated CodeWiki frontend contracts. No profile gains Project Server authority.
 
