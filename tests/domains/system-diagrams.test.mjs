@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { validateSystemDiagrams } from "../../src/knowledge/system-diagrams.ts";
+import { validateSystemDiagrams } from "../../src/domains/software-development/system-diagrams.ts";
 
 const components = [
 	"cw:component:project-server",

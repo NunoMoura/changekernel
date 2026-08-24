@@ -1,9 +1,9 @@
-import {knowledgeTargetKey, type KnowledgeCheckpoint} from "./state.ts";
+import {knowledgeTargetKey, type KnowledgeCheckpoint} from "../../knowledge/state.ts";
 import {
 	canonicalJsonDigest,
 	toCanonicalJsonValue,
 	type Sha256Digest,
-} from "../utils/canonical-json.ts";
+} from "../../utils/canonical-json.ts";
 
 export const KNOWLEDGE_FACT_INVENTORY_PROTOCOL = Object.freeze({
 	id: "codewiki.knowledge-fact-inventory",

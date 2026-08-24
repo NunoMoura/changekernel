@@ -2,8 +2,8 @@ import {
 	KNOWLEDGE_FACET_ID_PATTERN,
 	isKnowledgeSubjectId,
 	normalizeOkfPath,
-} from "./okf.ts";
-import type { OkfDocument, OkfFrontmatterValue } from "./okf-frontmatter.ts";
+} from "../../knowledge/okf.ts";
+import type { OkfDocument, OkfFrontmatterValue } from "../../knowledge/okf-frontmatter.ts";
 
 export const CODEWIKI_KB_DOCUMENT_TYPES = Object.freeze([
 	"Lexicon",

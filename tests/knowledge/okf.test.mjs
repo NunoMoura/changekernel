@@ -10,7 +10,7 @@ import {
 	parseOkfDocument,
 	serializeOkfDocument,
 } from "../../src/knowledge/okf-frontmatter.ts";
-import { sourceOwnershipMapFromOkfBundle } from "../../src/knowledge/source-ownership.ts";
+import { sourceOwnershipMapFromOkfBundle } from "../../src/domains/software-development/source-ownership.ts";
 import {
 	okfConceptDocuments,
 	validateOkfBundle,

@@ -1,5 +1,5 @@
-import { isOkfMarkdownPath, normalizeOkfPath } from "./okf.ts";
-import { parseOkfDocument } from "./okf-frontmatter.ts";
+import { isOkfMarkdownPath, normalizeOkfPath } from "../../knowledge/okf.ts";
+import { parseOkfDocument } from "../../knowledge/okf-frontmatter.ts";
 import {
 	sourceMapFromOkfSourceMapExtensions,
 	type CodeWikiOkfSourceMapComponent,
@@ -21,7 +21,7 @@ import {
 	type SourceMapValidationInput,
 	type SourceMapValidationIssue,
 } from "./source-map.ts";
-import type { OkfBundleFile } from "./okf-validation.ts";
+import type { OkfBundleFile } from "../../knowledge/okf-validation.ts";
 
 export interface SourceOwnershipOptions {
 	id?: string;

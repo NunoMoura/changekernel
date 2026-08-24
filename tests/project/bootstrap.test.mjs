@@ -15,11 +15,11 @@ import { bootstrapCodewiki } from "../../src/project/bootstrap.ts";
 import { loadWikiConfigFile } from "../../src/project/config-file.ts";
 import { parseOkfDocument } from "../../src/knowledge/okf-frontmatter.ts";
 import { validateOkfBundle } from "../../src/knowledge/okf-validation.ts";
-import { sourceOwnershipMapFromOkfBundle } from "../../src/knowledge/source-ownership.ts";
+import { sourceOwnershipMapFromOkfBundle } from "../../src/domains/software-development/source-ownership.ts";
 import {
 	sourceMapOwnerForPath,
 	validateSourceMap,
-} from "../../src/knowledge/source-map.ts";
+} from "../../src/domains/software-development/source-map.ts";
 
 async function fixture() {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-bootstrap-"));

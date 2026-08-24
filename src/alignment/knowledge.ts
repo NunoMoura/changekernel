@@ -23,7 +23,7 @@ import {
 	okfConceptDocuments,
 	type OkfBundleFile,
 } from "../knowledge/okf-validation.ts";
-import {okfSourceOwnershipExtensionsFromBundle} from "../knowledge/source-ownership.ts";
+import {okfSourceOwnershipExtensionsFromBundle} from "../domains/software-development/source-ownership.ts";
 import {
 	assertSha256Digest,
 	canonicalJsonDigest,

@@ -2,7 +2,7 @@ import {
 	createDomainPluginAdmission,
 	DEFAULT_DOMAIN_PLUGIN_ID,
 	type DomainPluginAdmission,
-} from "./contracts.ts";
+} from "../contracts.ts";
 
 /**
  * Built-in Software Development Domain Plugin.

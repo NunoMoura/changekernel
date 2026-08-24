@@ -6,8 +6,8 @@ import {
 	sourceMapOwnerForPath,
 	type SourceMapComponent,
 	type SourceMapContract,
-} from "../knowledge/source-map.ts";
-import { sourceOwnershipMapFromOkfBundle } from "../knowledge/source-ownership.ts";
+} from "../domains/software-development/source-map.ts";
+import { sourceOwnershipMapFromOkfBundle } from "../domains/software-development/source-ownership.ts";
 import type { OkfBundleFile } from "../knowledge/okf-validation.ts";
 import { foldProjectTraceRecords } from "../changes/trace/project.ts";
 import type { TraceEvent, TraceRecord } from "../changes/trace/types.ts";

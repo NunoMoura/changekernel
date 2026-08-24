@@ -4,8 +4,8 @@ import {
 	type SourceMapContract,
 	type SourceMapDefaults,
 } from "./source-map.ts";
-import type { OkfFrontmatterValue } from "./okf-frontmatter.ts";
-import { normalizeOkfPath } from "./okf.ts";
+import type { OkfFrontmatterValue } from "../../knowledge/okf-frontmatter.ts";
+import { normalizeOkfPath } from "../../knowledge/okf.ts";
 
 export const CODEWIKI_OKF_SOURCE_MAP_EXTENSION_KEYS = [
 	"codewiki_component",

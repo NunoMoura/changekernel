@@ -5,7 +5,7 @@ import {
 	CODEWIKI_KB_BODY_CHARACTER_LIMITS,
 	validateCodeWikiKbBundle,
 	validateCodeWikiKbDocument,
-} from "../../src/knowledge/codewiki-kb-profile.ts";
+} from "../../src/domains/software-development/codewiki-kb-profile.ts";
 
 function document(path, frontmatter, body = "# Concept\n") {
 	return parseOkfDocument(

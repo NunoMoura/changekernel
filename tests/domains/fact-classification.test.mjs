@@ -4,7 +4,7 @@ import {describe, it} from "node:test";
 import {
 	assertKnowledgeFactInventory,
 	createKnowledgeFactInventory,
-} from "../../src/knowledge/fact-classification.ts";
+} from "../../src/domains/software-development/fact-classification.ts";
 import {createKnowledgeCheckpoint} from "../../src/knowledge/state.ts";
 import {canonicalJsonDigest} from "../../src/utils/canonical-json.ts";
 

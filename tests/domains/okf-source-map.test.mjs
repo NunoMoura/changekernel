@@ -6,11 +6,11 @@ import {
 	okfSourceMapExtensionForDoc,
 	okfSourceMapOwnerForPath,
 	sourceMapFromOkfSourceMapExtensions,
-} from "../../src/knowledge/okf-source-map.ts";
+} from "../../src/domains/software-development/okf-source-map.ts";
 import {
 	sourceMapExcluded,
 	sourceMapOwnerForPath,
-} from "../../src/knowledge/source-map.ts";
+} from "../../src/domains/software-development/source-map.ts";
 
 const sourceMap = {
 	id: "spec.test.source-ownership",
@@ -51,7 +51,7 @@ const sourceMap = {
 		{
 			id: "knowledge",
 			doc: ".codewiki/kb/system/components/knowledge.md",
-			sourcePatterns: ["src/knowledge/**", ".codewiki/kb/**"],
+			sourcePatterns: ["src/knowledge/**", "src/domains/**", ".codewiki/kb/**"],
 			testPatterns: ["tests/knowledge/**"],
 			generatedViews: [],
 			traceEvents: [],
@@ -142,7 +142,7 @@ describe("OKF source ownership extension generation", () => {
 		}
 		assert.equal(sourceMapExcluded(reconstructed, "dist/index.js"), true);
 		assert.equal(
-			sourceMapOwnerForPath(reconstructed, "src/knowledge/okf-source-map.ts")
+			sourceMapOwnerForPath(reconstructed, "src/domains/software-development/okf-source-map.ts")
 				?.id,
 			"knowledge",
 		);
@@ -156,7 +156,7 @@ describe("OKF source ownership extension generation", () => {
 		const extensions = generateOkfSourceMapExtensions(sourceMap);
 
 		assert.equal(
-			okfSourceMapOwnerForPath(extensions, "src/knowledge/okf-source-map.ts", {
+			okfSourceMapOwnerForPath(extensions, "src/domains/software-development/okf-source-map.ts", {
 				defaults: sourceMap.defaults,
 			})?.id,
 			"knowledge",

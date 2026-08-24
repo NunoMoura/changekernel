@@ -1,7 +1,7 @@
 import {
 	KNOWLEDGE_FACET_ID_PATTERN,
 	isKnowledgeSubjectId,
-} from "./okf.ts";
+} from "../../knowledge/okf.ts";
 
 export const SYSTEM_CONNECTION_TYPES = Object.freeze([
 	"authorizes",

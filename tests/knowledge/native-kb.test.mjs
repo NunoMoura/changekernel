@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { parse as parseYaml } from "yaml";
-import {validateCodeWikiKbBundle} from "../../src/knowledge/codewiki-kb-profile.ts";
+import {validateCodeWikiKbBundle} from "../../src/domains/software-development/codewiki-kb-profile.ts";
 import {
 	assertKnowledgeFactInventory,
 	createKnowledgeFactInventory,
-} from "../../src/knowledge/fact-classification.ts";
+} from "../../src/domains/software-development/fact-classification.ts";
 import {createKnowledgeCheckpoint} from "../../src/knowledge/state.ts";
 import { parseOkfDocument } from "../../src/knowledge/okf-frontmatter.ts";
 import { analyzeOkfV02Document } from "../../src/knowledge/okf-v02.ts";
-import { validateSystemDiagrams } from "../../src/knowledge/system-diagrams.ts";
+import { validateSystemDiagrams } from "../../src/domains/software-development/system-diagrams.ts";
 
 const root = ".codewiki/kb";
 

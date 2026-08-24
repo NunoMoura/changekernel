@@ -8,7 +8,7 @@ import type { ImplementationEvidencePolicy } from "../../loops/implementation/ev
 import { resolveLoopQualityJudgeExecutionOptions } from "../../checks/quality/judge-provider.ts";
 import { uniqueStrings } from "../../checks/quality/standards.ts";
 import type { ContentProof } from "../../git/content-proof.ts";
-import type { SourceMapContract } from "../../knowledge/source-map.ts";
+import type { SourceMapContract } from "../../domains/software-development/source-map.ts";
 import {
 	changedPaths,
 	normalizeImplementationChanges,

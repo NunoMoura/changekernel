@@ -284,7 +284,7 @@ export interface ImplementationExitInput {
 	changes: ImplementationChange[];
 	acceptanceRequirements?: AcceptanceRequirement[];
 	planningScopes?: PlanningImplementationScope[];
-	componentMap?: import("../../knowledge/source-map.ts").SourceMapContract;
+	componentMap?: import("../../domains/software-development/source-map.ts").SourceMapContract;
 	existingPaths?: string[];
 	requireTddEvidence?: boolean;
 	aggregateContentProof?: ContentProof;

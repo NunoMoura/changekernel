@@ -12,7 +12,7 @@ import {
 	sourceOwnershipSupportsSourcePath,
 	sourceOwnershipSupportsTestPath,
 	validateSourceOwnershipFromOkfBundle,
-} from "../../src/knowledge/source-ownership.ts";
+} from "../../src/domains/software-development/source-ownership.ts";
 import {
 	LEGACY_SOURCE_FILES,
 	LEGACY_SOURCE_ROOTS,

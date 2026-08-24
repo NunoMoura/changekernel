@@ -9,7 +9,7 @@ import {
 import {
 	BUILTIN_DOMAIN_PLUGIN_ADMISSIONS,
 	SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN,
-} from "../../src/domains/software-development.ts";
+} from "../../src/domains/software-development/plugin.ts";
 
 const baseInput = {
 	pluginId: "codewiki.domain.software-development",

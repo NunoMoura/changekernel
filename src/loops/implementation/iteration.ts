@@ -1,7 +1,7 @@
 import {
 	componentKbRefs,
 	type SourceMapContract,
-} from "../../knowledge/source-map.ts";
+} from "../../domains/software-development/source-map.ts";
 import {
 	createLoopIterationEvent,
 	createLoopTailCheckpoint,

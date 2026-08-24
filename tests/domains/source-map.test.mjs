@@ -6,7 +6,7 @@ import {
 	sourceMapExcluded,
 	sourceMapOwnerForPath,
 	validateSourceMap,
-} from "../../src/knowledge/source-map.ts";
+} from "../../src/domains/software-development/source-map.ts";
 
 function collectFiles(root) {
 	const output = [];
