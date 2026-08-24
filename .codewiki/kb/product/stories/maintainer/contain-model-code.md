@@ -19,6 +19,8 @@ The trusted computing base is the host operating system and kernel; exact qualif
 
 Qualification does not claim protection from a compromised host or kernel, privileged host administration, hardware side channels, or a malicious explicitly admitted binding. Those risks require a stronger separately qualified substrate or removal of the binding.
 
+Backend also treats Client/provider/package/restore inputs, stale state, endpoints, and links as untrusted. Exact identity, CAS, quiescence, private state, bounds, containment, evidence-before-authority, and idempotency protect canonical meaning, effects, Builds, Sessions, credentials, receipts, backups, Workbenches, and child processes. Operations grant no mutation and exclude secrets, raw Sessions, logs, outputs, and reasoning.
+
 ## Acceptance signals
 
 - Production DSH execution uses two separately qualified operating-system boundaries: an outer sandbox around the whole authenticated Run Process and a fresh inner sandbox for each model-authored Code Mode invocation.
@@ -26,7 +28,7 @@ Qualification does not claim protection from a compromised host or kernel, privi
 - The inner sandbox receives only lossless-JSON typed async bindings selected by the host. It has no filesystem, network, ambient environment, credentials, child-process authority, inherited private descriptor, persistence, DSH Session, provider route, Project Server handle, canonical-storage handle, recursive model route, lifecycle operation, or protected effect.
 - Both boundaries isolate user, PID, network, IPC, and UTS namespaces, drop capabilities, expose only explicit read-only system mounts and private temporary state, close undeclared descriptors, and enforce CPU, address-space, file-size, open-file, and process ceilings.
 - Node's Permission Model is defense in depth for the inner worker and never substitutes for operating-system containment. A worker thread or ordinary child process is not a qualified security boundary.
-- Admission binds and revalidates real paths, versions, and SHA-256 digests for Bubblewrap, `prlimit`, and Node before every launch. Missing, unsupported, malformed, or drifted identity fails closed.
+- Runtime Build Manifest `4.0.0` binds the exact Node real path, version, SHA-256 digest, and required outer sandbox profile digest. Admission revalidates Node, Bubblewrap, and `prlimit` identities before launch and rejects retained `3.0.0` Builds until exact requalification. Missing, unsupported, malformed, or drifted identity fails closed.
 - Each Code Mode call binds program, frame, output, binding-call, binding-byte, wall-time, and V8 heap limits. Timeout, cancellation, malformed protocol traffic, oversized output, substrate death, or resource exhaustion hard-terminates the complete process group.
 - Nested user namespaces are denied by default. They are enabled only for the already-contained outer DSH process when it must create the separately qualified inner sandbox.
 - Provider credentials and unrestricted egress remain outside the outer network namespace. A contained live Run reaches only one authenticated host-side broker through an explicitly mounted absolute Unix-domain socket.

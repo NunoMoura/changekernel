@@ -3,22 +3,26 @@ import {createHash} from "node:crypto";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../../src/domains/defaults.ts";
 import {
 	assertBackendBuildBinding,
 	BACKEND_BUILD_PROTOCOL,
 	createBackendBuildBinding,
 	DEFAULT_BACKEND_BUILD,
+	LEGACY_BACKEND_BUILD_PROTOCOL,
 	DSH_BROKER_HOST_PROFILE_CLOSURE_DIGEST,
 	DSH_MANAGED_PROFILE_CLOSURE_DIGEST,
 } from "../../../src/project-server/operations/build.ts";
 import {DSH_BROKER_HOST_EXECUTABLE_ADMISSIONS} from "../../../src/runtime/dsh/broker-plugins.ts";
 import {DSH_MANAGED_EXECUTABLE_ADMISSIONS} from "../../../src/runtime/dsh/managed-loader.ts";
+import {BACKEND_V1_SUPPORT_MATRIX} from "../../../src/protocol/backend-production.ts";
 import {canonicalJsonDigest} from "../../../src/utils/canonical-json.ts";
 
 const DIGEST = `sha256:${"a".repeat(64)}`;
 
 test("default Backend Build binds package, DSH profiles, Domain closure, schemas, and protocols", async () => {
 	assert.equal(DEFAULT_BACKEND_BUILD.protocol.id, BACKEND_BUILD_PROTOCOL.id);
+	assert.equal(DEFAULT_BACKEND_BUILD.protocol.version, "2.0.0");
 	assert.equal(DEFAULT_BACKEND_BUILD.packageName, "@nunomoura/codewiki");
 	assert.equal(
 		DEFAULT_BACKEND_BUILD.packageLockDigest,
@@ -28,13 +32,23 @@ test("default Backend Build binds package, DSH profiles, Domain closure, schemas
 		DEFAULT_BACKEND_BUILD.dshProfiles.map(({id}) => id),
 		["codewiki.dsh.broker-host", "codewiki.dsh.managed-run"],
 	);
-	assert.deepEqual(
-		DEFAULT_BACKEND_BUILD.domainPlugins.map(({pluginId}) => pluginId),
-		["codewiki.domain.software-development"],
+	assert.equal(
+		canonicalJsonDigest(DEFAULT_BACKEND_BUILD.domainPlugins[0]),
+		canonicalJsonDigest(DEFAULT_DOMAIN_PLUGIN_IDENTITY),
+	);
+	assert.equal(
+		DEFAULT_BACKEND_BUILD.supportMatrixDigest,
+		BACKEND_V1_SUPPORT_MATRIX.matrixDigest,
 	);
 	assert.equal(
 		DEFAULT_BACKEND_BUILD.fileSchemas.some(
 			({id, version}) => id === "codewiki.backend-state" && version === "1.0.0",
+		),
+		true,
+	);
+	assert.equal(
+		DEFAULT_BACKEND_BUILD.fileSchemas.some(
+			({id, version}) => id === "codewiki.runtime-build-manifest" && version === "4.0.0",
 		),
 		true,
 	);
@@ -49,15 +63,50 @@ test("default Backend Build binds package, DSH profiles, Domain closure, schemas
 	assertBackendBuildBinding(DEFAULT_BACKEND_BUILD);
 });
 
+test("Backend Build v2 reads exact v1 state without inventing missing identity fields", () => {
+	const legacyDomainPlugins = DEFAULT_BACKEND_BUILD.domainPlugins.map((entry) => ({
+		pluginId: entry.pluginId,
+		pluginVersion: entry.pluginVersion,
+		admissionDigest: entry.admissionDigest,
+		identityDigest: entry.identityDigest,
+	}));
+	const body = {
+		protocol: LEGACY_BACKEND_BUILD_PROTOCOL,
+		packageName: "@nunomoura/codewiki",
+		packageVersion: "0.3.0",
+		packageLockDigest: DEFAULT_BACKEND_BUILD.packageLockDigest,
+		dshProfiles: DEFAULT_BACKEND_BUILD.dshProfiles,
+		domainPlugins: legacyDomainPlugins,
+		domainPluginClosureDigest: canonicalJsonDigest(legacyDomainPlugins),
+		fileSchemas: DEFAULT_BACKEND_BUILD.fileSchemas.map((entry) =>
+			entry.id === "codewiki.runtime-build-manifest"
+				? {id: entry.id, version: "3.0.0"}
+				: entry,
+		),
+		protocols: DEFAULT_BACKEND_BUILD.protocols.filter(
+			({id}) => !id.startsWith("codewiki.backend-") && id !== "codewiki.runtime-production-qualification",
+		),
+	};
+	const legacy = {...body, backendBuildDigest: canonicalJsonDigest(body)};
+	assertBackendBuildBinding(legacy);
+	assert.throws(
+		() => assertBackendBuildBinding({...legacy, domainPluginClosureDigest: DIGEST}),
+		/Backend Build binding digest or shape is invalid/,
+	);
+});
+
 test("Backend Build identity is canonical and rejects tampering", () => {
 	const input = {
 		packageVersion: "9.0.0",
 		packageLockDigest: DIGEST,
+		supportMatrixDigest: BACKEND_V1_SUPPORT_MATRIX.matrixDigest,
 		dshProfiles: [{id: "profile.z", version: "1.0.0", closureDigest: DIGEST}],
 		domainPlugins: [{
+			protocol: DEFAULT_DOMAIN_PLUGIN_IDENTITY.protocol,
 			pluginId: "domain.z",
 			pluginVersion: "1.0.0",
 			admissionDigest: DIGEST,
+			implementationDigest: DIGEST,
 			identityDigest: DIGEST,
 		}],
 		fileSchemas: [{id: "schema.z", version: "1.0.0"}],

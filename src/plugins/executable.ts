@@ -73,25 +73,37 @@ export function createExecutablePluginAdmissionClosure(input: {
 			throw new Error("Repository-local executable Plugin loading is prohibited.");
 		}
 	}
-	if (
-		!Array.isArray(input.admissions) ||
-		input.admissions.length < 1 ||
-		input.admissions.length > 256
-	) {
+	const body = normalizedAdmissionBody(input.admissions);
+	return Object.freeze({...body, closureDigest: canonicalJsonDigest(body)});
+}
+
+/** Path-independent digest for revalidating one already-admitted release composition. */
+export function executablePluginAdmissionClosureDigest(
+	admissions: readonly ExecutablePluginAdmission[],
+): Sha256Digest {
+	return canonicalJsonDigest(normalizedAdmissionBody(admissions));
+}
+
+function normalizedAdmissionBody(
+	values: readonly ExecutablePluginAdmission[],
+): Readonly<{
+	readonly protocol: typeof EXECUTABLE_PLUGIN_ADMISSION_PROTOCOL;
+	readonly admissions: readonly Readonly<ExecutablePluginAdmission>[];
+}> {
+	if (!Array.isArray(values) || values.length < 1 || values.length > 256) {
 		throw new Error("Executable Plugin admissions are invalid.");
 	}
-	const admissions = input.admissions
+	const admissions = values
 		.map(normalizeAdmission)
 		.sort((left, right) => compareText(left.pluginId, right.pluginId));
 	assertUnique(
 		admissions.map((entry) => entry.pluginId),
 		"Executable Plugin admission id",
 	);
-	const body = Object.freeze({
+	return Object.freeze({
 		protocol: EXECUTABLE_PLUGIN_ADMISSION_PROTOCOL,
 		admissions: Object.freeze(admissions),
 	});
-	return Object.freeze({...body, closureDigest: canonicalJsonDigest(body)});
 }
 
 function normalizeAdmission(

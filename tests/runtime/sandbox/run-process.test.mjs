@@ -62,6 +62,7 @@ test("outer Bubblewrap Run Process preserves private protocol descriptors and de
 		const artifact = await sandbox.prepare({
 			runtimeBuildDigest: `sha256:${"1".repeat(64)}`,
 			runProtocolVersion: "test",
+			outerSandboxProfileDigest: sandbox.profileDigest,
 			executable: node,
 			args: [script],
 			cwd: directory,
@@ -86,6 +87,52 @@ test("outer Bubblewrap Run Process preserves private protocol descriptors and de
 		assert.notEqual(observed.write, "allowed");
 		assert.notEqual(observed.nested, 0);
 		await assert.rejects(readFile(join(directory, "escape")), /ENOENT/);
+	} finally {
+		await rm(directory, {recursive: true, force: true});
+	}
+});
+
+test("outer Bubblewrap teardown kills descendant processes before they become orphans", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "codewiki-outer-orphan-"));
+	try {
+		const script = join(directory, "orphan-parent.mjs");
+		const sentinel = join(directory, "orphan-survived");
+		await writeFile(script, `
+			import {writeFileSync} from "node:fs";
+			import {spawn} from "node:child_process";
+			spawn(process.execPath, ["-e", ${JSON.stringify(
+				`setTimeout(() => require("node:fs").writeFileSync(${JSON.stringify(sentinel)}, "survived"), 1000); setInterval(() => {}, 1000);`,
+			)}], {stdio: "ignore"});
+			writeFileSync(5, "ready");
+			process.on("SIGTERM", () => {});
+			setInterval(() => {}, 1000);
+		`);
+		const sandbox = createBubblewrapRunProcessSandbox({
+			profile: liveProfile(),
+			readOnlyPaths: [],
+			writablePaths: [directory],
+			allowNestedUserNamespaces: false,
+		});
+		const node = await realpath(process.execPath);
+		const artifact = await sandbox.prepare({
+			runtimeBuildDigest: `sha256:${"2".repeat(64)}`,
+			runProtocolVersion: "test",
+			outerSandboxProfileDigest: sandbox.profileDigest,
+			executable: node,
+			args: [script],
+			cwd: directory,
+		});
+		const child = spawn(artifact.executable, artifact.args, {
+			cwd: artifact.cwd,
+			env: {},
+			stdio: ["ignore", "ignore", "ignore", "pipe", "pipe", "pipe"],
+		});
+		const eventReader = child.stdio[5];
+		await once(eventReader, "data");
+		child.kill("SIGKILL");
+		await once(child, "exit");
+		await new Promise((resolvePromise) => setTimeout(resolvePromise, 1_300));
+		await assert.rejects(readFile(sentinel), /ENOENT/);
 	} finally {
 		await rm(directory, {recursive: true, force: true});
 	}

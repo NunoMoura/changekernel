@@ -6,6 +6,7 @@ import {describe, it} from "node:test";
 
 import {
 	createExecutablePluginAdmissionClosure,
+	executablePluginAdmissionClosureDigest,
 } from "../../src/plugins/executable.ts";
 import {createRuntimeBuildManifest} from "../../src/runtime/contracts.ts";
 import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
@@ -54,11 +55,18 @@ describe("executable Plugin admission", () => {
 			]);
 			assert.match(closure.closureDigest, /^sha256:[0-9a-f]{64}$/);
 			assert.equal(mirror.closureDigest, closure.closureDigest);
+			assert.equal(
+				executablePluginAdmissionClosureDigest(closure.admissions),
+				closure.closureDigest,
+			);
 			const build = createRuntimeBuildManifest({
-				schemaVersion: "3.0.0",
+				schemaVersion: "4.0.0",
 				domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 				runProtocolVersion: "5.0.0",
 				nodeVersion: process.version.slice(1),
+				nodeExecutablePath: "/qualified/node",
+				nodeExecutableDigest: sha256Digest("qualified-node"),
+				outerSandboxProfileDigest: null,
 				dshSourceCommit: "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
 				dshPackageClosureDigest: sha256Digest("dsh-packages"),
 				cordisClosureDigest: sha256Digest("cordis-packages"),

@@ -18,6 +18,7 @@ const roots = [];
 const servers = [];
 
 const apiKey = `fixture-${sha256Digest("provider-host-key-fixture").slice(7, 31)}`;
+const rotatedApiKey = `fixture-${sha256Digest("provider-host-rotated-key-fixture").slice(7, 31)}`;
 
 const routes = Object.freeze([
 	brokerRoute("openai-route", "openai", "openai", "openai-account", "OPENAI_B4_KEY", "cw-openai"),
@@ -115,6 +116,36 @@ describe("DSH provider Broker Host", () => {
 			}
 			assert.equal(canonicalJson(host.inventory()).includes(apiKey), false);
 			assert.equal(host.configurationDigest.includes(apiKey), false);
+		} finally {
+			await host.close();
+		}
+	});
+
+	it("rotates owner-custodied API keys and uses only the new secret on later calls", async () => {
+		const provider = await providerServer();
+		const fixture = await hostFixture(provider.url);
+		const host = await createDshProviderHost(fixture.options);
+		try {
+			await host.setApiKey("openai-account", apiKey);
+			await consume(await host.transport.open(
+				brokerRequest(routes[0]),
+				new AbortController().signal,
+			));
+			await host.setApiKey("openai-account", rotatedApiKey);
+			await consume(await host.transport.open(
+				brokerRequest(routes[0]),
+				new AbortController().signal,
+			));
+			assert.equal(provider.requests.length, 2);
+			assert.equal(provider.requests[0].headers.authorization, `Bearer ${apiKey}`);
+			assert.equal(
+				provider.requests[1].headers.authorization,
+				`Bearer ${rotatedApiKey}`,
+			);
+			assert.equal(
+				JSON.stringify(provider.requests[1]).includes(apiKey),
+				false,
+			);
 		} finally {
 			await host.close();
 		}
@@ -269,6 +300,12 @@ function brokerRequest(route) {
 			maxTokens: 16,
 		},
 	});
+}
+
+async function consume(opened) {
+	for await (const _chunk of opened.chunks) {
+		// Consume the complete provider stream so the next rotation starts quiescently.
+	}
 }
 
 function expectedInventory() {

@@ -1,13 +1,28 @@
 import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../domains/defaults.ts";
+import type {DomainPluginIdentity} from "../../domains/contracts.ts";
+import {
+	BACKEND_SUPPORT_MATRIX_PROTOCOL,
+	BACKEND_V1_SUPPORT_MATRIX,
+	RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL,
+} from "../../protocol/backend-production.ts";
 import {
 	canonicalJson,
 	canonicalJsonDigest,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
+import {
+	BACKEND_FAULT_RECOVERY_PROTOCOL,
+	BACKEND_OBSERVABILITY_PROTOCOL,
+} from "./contracts.ts";
+
+export const LEGACY_BACKEND_BUILD_PROTOCOL = Object.freeze({
+	id: "codewiki.backend-build",
+	version: "1.0.0",
+} as const);
 
 export const BACKEND_BUILD_PROTOCOL = Object.freeze({
 	id: "codewiki.backend-build",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 
 export const CODEWIKI_PACKAGE_LOCK_DIGEST =
@@ -27,17 +42,40 @@ export interface BackendDshProfileBinding extends BackendVersionBinding {
 }
 
 export interface BackendDomainPluginBinding {
+	readonly protocol: DomainPluginIdentity["protocol"];
+	readonly pluginId: string;
+	readonly pluginVersion: string;
+	readonly admissionDigest: Sha256Digest;
+	readonly implementationDigest: Sha256Digest;
+	readonly identityDigest: Sha256Digest;
+}
+
+export interface LegacyBackendDomainPluginBinding {
 	readonly pluginId: string;
 	readonly pluginVersion: string;
 	readonly admissionDigest: Sha256Digest;
 	readonly identityDigest: Sha256Digest;
 }
 
-export interface BackendBuildBinding {
+export interface LegacyBackendBuildBinding {
+	readonly protocol: typeof LEGACY_BACKEND_BUILD_PROTOCOL;
+	readonly packageName: "@nunomoura/codewiki";
+	readonly packageVersion: string;
+	readonly packageLockDigest: Sha256Digest;
+	readonly dshProfiles: readonly BackendDshProfileBinding[];
+	readonly domainPlugins: readonly LegacyBackendDomainPluginBinding[];
+	readonly domainPluginClosureDigest: Sha256Digest;
+	readonly fileSchemas: readonly BackendVersionBinding[];
+	readonly protocols: readonly BackendVersionBinding[];
+	readonly backendBuildDigest: Sha256Digest;
+}
+
+export interface CurrentBackendBuildBinding {
 	readonly protocol: typeof BACKEND_BUILD_PROTOCOL;
 	readonly packageName: "@nunomoura/codewiki";
 	readonly packageVersion: string;
 	readonly packageLockDigest: Sha256Digest;
+	readonly supportMatrixDigest: Sha256Digest;
 	readonly dshProfiles: readonly BackendDshProfileBinding[];
 	readonly domainPlugins: readonly BackendDomainPluginBinding[];
 	readonly domainPluginClosureDigest: Sha256Digest;
@@ -45,6 +83,10 @@ export interface BackendBuildBinding {
 	readonly protocols: readonly BackendVersionBinding[];
 	readonly backendBuildDigest: Sha256Digest;
 }
+
+export type BackendBuildBinding =
+	| LegacyBackendBuildBinding
+	| CurrentBackendBuildBinding;
 
 const DEFAULT_FILE_SCHEMAS = Object.freeze([
 	{id: "codewiki.backend-state", version: "1.0.0"},
@@ -54,11 +96,13 @@ const DEFAULT_FILE_SCHEMAS = Object.freeze([
 	{id: "codewiki.backend-state-recovery", version: "1.0.0"},
 	{id: "codewiki.backend-build-transition", version: "1.0.0"},
 	{id: "codewiki.project-server-registry", version: "2.0.0"},
-	{id: "codewiki.runtime-build-manifest", version: "3.0.0"},
+	{id: "codewiki.runtime-build-manifest", version: "4.0.0"},
 	{id: "codewiki.runtime-build-registry", version: "1.0.0"},
 ] as const);
 
 const DEFAULT_PROTOCOLS = Object.freeze([
+	BACKEND_FAULT_RECOVERY_PROTOCOL,
+	BACKEND_OBSERVABILITY_PROTOCOL,
 	{id: "codewiki.domain-plugin-admission", version: "2.0.0"},
 	{id: "codewiki.dsh-agent-session-custody", version: "1.0.0"},
 	{id: "codewiki.execution-ledger", version: "5.0.0"},
@@ -67,6 +111,8 @@ const DEFAULT_PROTOCOLS = Object.freeze([
 	{id: "codewiki.frontend-events", version: "1.0.0"},
 	{id: "codewiki.gate-evaluation-package", version: "2.0.0"},
 	{id: "codewiki.private-provider-broker", version: "3.0.0"},
+	BACKEND_SUPPORT_MATRIX_PROTOCOL,
+	RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL,
 	{id: "codewiki.run-process", version: "6.0.0"},
 	{id: "codewiki.run-receipt", version: "4.0.0"},
 	{id: "codewiki.session-continuity", version: "1.0.0"},
@@ -75,6 +121,7 @@ const DEFAULT_PROTOCOLS = Object.freeze([
 export const DEFAULT_BACKEND_BUILD = createBackendBuildBinding({
 	packageVersion: "0.3.0",
 	packageLockDigest: CODEWIKI_PACKAGE_LOCK_DIGEST,
+	supportMatrixDigest: BACKEND_V1_SUPPORT_MATRIX.matrixDigest,
 	dshProfiles: [
 		{
 			id: "codewiki.dsh.managed-run",
@@ -95,11 +142,12 @@ export const DEFAULT_BACKEND_BUILD = createBackendBuildBinding({
 export function createBackendBuildBinding(input: {
 	readonly packageVersion: string;
 	readonly packageLockDigest: Sha256Digest;
+	readonly supportMatrixDigest: Sha256Digest;
 	readonly dshProfiles: readonly BackendDshProfileBinding[];
 	readonly domainPlugins: readonly BackendDomainPluginBinding[];
 	readonly fileSchemas: readonly BackendVersionBinding[];
 	readonly protocols: readonly BackendVersionBinding[];
-}): BackendBuildBinding {
+}): CurrentBackendBuildBinding {
 	const dshProfiles = normalizedProfiles(input.dshProfiles);
 	const domainPlugins = normalizedDomainPlugins(input.domainPlugins);
 	const body = {
@@ -107,6 +155,7 @@ export function createBackendBuildBinding(input: {
 		packageName: "@nunomoura/codewiki" as const,
 		packageVersion: version(input.packageVersion, "Backend package version"),
 		packageLockDigest: digest(input.packageLockDigest, "Backend package-lock digest"),
+		supportMatrixDigest: digest(input.supportMatrixDigest, "Backend support matrix digest"),
 		dshProfiles,
 		domainPlugins,
 		domainPluginClosureDigest: canonicalJsonDigest(domainPlugins),
@@ -120,10 +169,15 @@ export function assertBackendBuildBinding(value: unknown): asserts value is Back
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error("Backend Build binding is invalid.");
 	}
-	const record = value as Partial<BackendBuildBinding>;
+	const record = value as Partial<CurrentBackendBuildBinding & LegacyBackendBuildBinding>;
+	if (canonicalJson(record.protocol) === canonicalJson(LEGACY_BACKEND_BUILD_PROTOCOL)) {
+		assertLegacyBackendBuildBinding(record);
+		return;
+	}
 	const normalized = createBackendBuildBinding({
 		packageVersion: record.packageVersion as string,
 		packageLockDigest: record.packageLockDigest as Sha256Digest,
+		supportMatrixDigest: record.supportMatrixDigest as Sha256Digest,
 		dshProfiles: record.dshProfiles as readonly BackendDshProfileBinding[],
 		domainPlugins: record.domainPlugins as readonly BackendDomainPluginBinding[],
 		fileSchemas: record.fileSchemas as readonly BackendVersionBinding[],
@@ -132,6 +186,98 @@ export function assertBackendBuildBinding(value: unknown): asserts value is Back
 	if (canonicalJson(record) !== canonicalJson(normalized)) {
 		throw new Error("Backend Build binding digest or shape is invalid.");
 	}
+}
+
+function assertLegacyBackendBuildBinding(
+	record: Partial<CurrentBackendBuildBinding & LegacyBackendBuildBinding>,
+): void {
+	const dshProfiles = normalizedProfiles(
+		record.dshProfiles as readonly BackendDshProfileBinding[],
+	);
+	const domainPlugins = normalizedLegacyDomainPlugins(
+		record.domainPlugins as readonly LegacyBackendDomainPluginBinding[],
+	);
+	const body = {
+		protocol: LEGACY_BACKEND_BUILD_PROTOCOL,
+		packageName: "@nunomoura/codewiki" as const,
+		packageVersion: version(record.packageVersion, "Backend package version"),
+		packageLockDigest: digest(record.packageLockDigest, "Backend package-lock digest"),
+		dshProfiles,
+		domainPlugins,
+		domainPluginClosureDigest: canonicalJsonDigest(domainPlugins),
+		fileSchemas: normalizedVersions(
+			record.fileSchemas as readonly BackendVersionBinding[],
+			"Backend file schema",
+		),
+		protocols: normalizedVersions(
+			record.protocols as readonly BackendVersionBinding[],
+			"Backend protocol",
+		),
+	};
+	const normalized = Object.freeze({
+		...body,
+		backendBuildDigest: canonicalJsonDigest(body),
+	});
+	if (canonicalJson(record) !== canonicalJson(normalized)) {
+		throw new Error("Backend Build binding digest or shape is invalid.");
+	}
+}
+
+export function backendBuildDomainClosureCompatible(
+	current: BackendBuildBinding,
+	target: BackendBuildBinding,
+): boolean {
+	assertBackendBuildBinding(current);
+	assertBackendBuildBinding(target);
+	if (current.domainPluginClosureDigest === target.domainPluginClosureDigest) return true;
+	if (
+		current.protocol.version !== LEGACY_BACKEND_BUILD_PROTOCOL.version ||
+		target.protocol.version !== BACKEND_BUILD_PROTOCOL.version ||
+		current.domainPlugins.length !== target.domainPlugins.length
+	) {
+		return false;
+	}
+	return current.domainPlugins.every((legacy) => {
+		const exact = target.domainPlugins.find((candidate) => candidate.pluginId === legacy.pluginId);
+		return Boolean(
+			exact &&
+			exact.pluginVersion === legacy.pluginVersion &&
+			exact.admissionDigest === legacy.admissionDigest &&
+			exact.identityDigest === legacy.identityDigest,
+		);
+	});
+}
+
+export function backendBuildIncompatibleFileSchema(
+	current: BackendBuildBinding,
+	target: BackendBuildBinding,
+): BackendVersionBinding | null {
+	assertBackendBuildBinding(current);
+	assertBackendBuildBinding(target);
+	return current.fileSchemas.find((schema) => !fileSchemaSupported(schema, target)) ?? null;
+}
+
+export function backendBuildFileSchemasCompatible(
+	current: BackendBuildBinding,
+	target: BackendBuildBinding,
+): boolean {
+	return backendBuildIncompatibleFileSchema(current, target) === null;
+}
+
+function fileSchemaSupported(
+	schema: BackendVersionBinding,
+	target: BackendBuildBinding,
+): boolean {
+	if (target.fileSchemas.some(
+		(candidate) => candidate.id === schema.id && candidate.version === schema.version,
+	)) {
+		return true;
+	}
+	return schema.id === "codewiki.runtime-build-manifest" &&
+		schema.version === "3.0.0" &&
+		target.fileSchemas.some(
+			(candidate) => candidate.id === schema.id && candidate.version === "4.0.0",
+		);
 }
 
 export function backendBuildSupportsStateSchema(
@@ -166,6 +312,27 @@ function normalizedDomainPlugins(
 		throw new Error("Backend Build Domain Plugin closure is invalid.");
 	}
 	const normalized = values.map((entry) => Object.freeze({
+		protocol: domainPluginIdentityProtocol(entry?.protocol),
+		pluginId: identifier(entry?.pluginId, "Domain Plugin id"),
+		pluginVersion: version(entry?.pluginVersion, "Domain Plugin version"),
+		admissionDigest: digest(entry?.admissionDigest, "Domain Plugin admission digest"),
+		implementationDigest: digest(
+			entry?.implementationDigest,
+			"Domain Plugin implementation digest",
+		),
+		identityDigest: digest(entry?.identityDigest, "Domain Plugin identity digest"),
+	})).sort((left, right) => left.pluginId.localeCompare(right.pluginId));
+	assertUnique(normalized.map((entry) => entry.pluginId), "Domain Plugin id");
+	return Object.freeze(normalized);
+}
+
+function normalizedLegacyDomainPlugins(
+	values: readonly LegacyBackendDomainPluginBinding[],
+): readonly LegacyBackendDomainPluginBinding[] {
+	if (!Array.isArray(values) || values.length === 0 || values.length > 16) {
+		throw new Error("Backend Build Domain Plugin closure is invalid.");
+	}
+	const normalized = values.map((entry) => Object.freeze({
 		pluginId: identifier(entry?.pluginId, "Domain Plugin id"),
 		pluginVersion: version(entry?.pluginVersion, "Domain Plugin version"),
 		admissionDigest: digest(entry?.admissionDigest, "Domain Plugin admission digest"),
@@ -173,6 +340,15 @@ function normalizedDomainPlugins(
 	})).sort((left, right) => left.pluginId.localeCompare(right.pluginId));
 	assertUnique(normalized.map((entry) => entry.pluginId), "Domain Plugin id");
 	return Object.freeze(normalized);
+}
+
+function domainPluginIdentityProtocol(
+	value: BackendDomainPluginBinding["protocol"] | undefined,
+): BackendDomainPluginBinding["protocol"] {
+	if (canonicalJson(value) !== canonicalJson(DEFAULT_DOMAIN_PLUGIN_IDENTITY.protocol)) {
+		throw new Error("Backend Build Domain Plugin identity protocol is invalid.");
+	}
+	return DEFAULT_DOMAIN_PLUGIN_IDENTITY.protocol;
 }
 
 function normalizedVersions(

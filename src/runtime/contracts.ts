@@ -1,3 +1,5 @@
+import {isAbsolute, normalize} from "node:path";
+
 import type {CheckStage} from "../checks/contracts.ts";
 import {
 	assertDomainPluginIdentity,
@@ -252,11 +254,11 @@ export const RUN_PROTOCOL = Object.freeze({
 	version: "6.0.0",
 } as const);
 
-export const RUNTIME_BUILD_SCHEMA_VERSION = "3.0.0" as const;
+export const LEGACY_RUNTIME_BUILD_SCHEMA_VERSION = "3.0.0" as const;
+export const RUNTIME_BUILD_SCHEMA_VERSION = "4.0.0" as const;
 export const RUNTIME_BUILD_REGISTRY_SCHEMA_VERSION = "1.0.0" as const;
 
-export interface RuntimeBuildManifest {
-	readonly schemaVersion: typeof RUNTIME_BUILD_SCHEMA_VERSION;
+interface RuntimeBuildManifestBase {
 	readonly domainPlugin: DomainPluginIdentity;
 	readonly runProtocolVersion: string;
 	readonly nodeVersion: string;
@@ -266,6 +268,21 @@ export interface RuntimeBuildManifest {
 	readonly executablePluginClosureDigest: Sha256Digest;
 	readonly runtimeArtifactDigest: Sha256Digest;
 }
+
+export interface LegacyRuntimeBuildManifest extends RuntimeBuildManifestBase {
+	readonly schemaVersion: typeof LEGACY_RUNTIME_BUILD_SCHEMA_VERSION;
+}
+
+export interface CurrentRuntimeBuildManifest extends RuntimeBuildManifestBase {
+	readonly schemaVersion: typeof RUNTIME_BUILD_SCHEMA_VERSION;
+	readonly nodeExecutablePath: string;
+	readonly nodeExecutableDigest: Sha256Digest;
+	readonly outerSandboxProfileDigest: Sha256Digest | null;
+}
+
+export type RuntimeBuildManifest =
+	| LegacyRuntimeBuildManifest
+	| CurrentRuntimeBuildManifest;
 
 export interface QualifiedRuntimeBuild {
 	readonly manifest: RuntimeBuildManifest;
@@ -1842,15 +1859,34 @@ const RUN_BUDGET_KEYS = [
 export function createRuntimeBuildManifest(
 	input: RuntimeBuildManifest,
 ): RuntimeBuildManifest {
-	if (!hasExactKeys(input, RUNTIME_BUILD_MANIFEST_KEYS)) {
+	const legacy = input.schemaVersion === LEGACY_RUNTIME_BUILD_SCHEMA_VERSION;
+	if (!hasExactKeys(
+		input,
+		legacy ? LEGACY_RUNTIME_BUILD_MANIFEST_KEYS : RUNTIME_BUILD_MANIFEST_KEYS,
+	)) {
 		throw new Error("Runtime Build manifest shape is invalid.");
 	}
-	if (input.schemaVersion !== RUNTIME_BUILD_SCHEMA_VERSION) {
+	if (!legacy && input.schemaVersion !== RUNTIME_BUILD_SCHEMA_VERSION) {
 		throw new Error("Runtime Build manifest schemaVersion is invalid.");
 	}
 	assertDomainPluginIdentity(input.domainPlugin);
 	assertVersion(input.runProtocolVersion, "Run protocol version");
 	assertVersion(input.nodeVersion, "Runtime Build Node version");
+	if (!legacy) {
+		if (
+			!isAbsolute(input.nodeExecutablePath) ||
+			normalize(input.nodeExecutablePath) !== input.nodeExecutablePath
+		) {
+			throw new Error("Runtime Build Node executable path must be normalized and absolute.");
+		}
+		assertSha256Digest(input.nodeExecutableDigest, "Runtime Build Node executable digest");
+		if (input.outerSandboxProfileDigest !== null) {
+			assertSha256Digest(
+				input.outerSandboxProfileDigest,
+				"Runtime Build outer sandbox profile digest",
+			);
+		}
+	}
 	if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(input.dshSourceCommit)) {
 		throw new Error(
 			"Runtime Build DSH source commit must be a lowercase full Git object id.",
@@ -2056,7 +2092,7 @@ function assertRuntimeBuildRegistryBuilds(
 	}
 }
 
-function assertQualifiedRuntimeBuild(
+export function assertQualifiedRuntimeBuild(
 	value: unknown,
 ): asserts value is QualifiedRuntimeBuild {
 	if (
@@ -2162,11 +2198,26 @@ function assertVersion(value: unknown, field: string): asserts value is string {
 	}
 }
 
+const LEGACY_RUNTIME_BUILD_MANIFEST_KEYS = [
+	"schemaVersion",
+	"domainPlugin",
+	"runProtocolVersion",
+	"nodeVersion",
+	"dshSourceCommit",
+	"dshPackageClosureDigest",
+	"cordisClosureDigest",
+	"executablePluginClosureDigest",
+	"runtimeArtifactDigest",
+] as const;
+
 const RUNTIME_BUILD_MANIFEST_KEYS = [
 	"schemaVersion",
 	"domainPlugin",
 	"runProtocolVersion",
 	"nodeVersion",
+	"nodeExecutablePath",
+	"nodeExecutableDigest",
+	"outerSandboxProfileDigest",
 	"dshSourceCommit",
 	"dshPackageClosureDigest",
 	"cordisClosureDigest",

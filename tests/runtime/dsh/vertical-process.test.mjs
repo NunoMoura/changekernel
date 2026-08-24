@@ -96,22 +96,32 @@ const admissionClosure = createExecutablePluginAdmissionClosure({
 	sourceRoots: [repositoryRoot],
 	admissions: DSH_MANAGED_EXECUTABLE_ADMISSIONS,
 });
-const qualifiedBuild = createQualifiedRuntimeBuild({
-	manifest: createRuntimeBuildManifest({
-		schemaVersion: "3.0.0",
-		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
-		runProtocolVersion: RUN_PROTOCOL.version,
-		nodeVersion: process.version.slice(1),
-		dshSourceCommit: provenance.reviewedSource.commit,
-		dshPackageClosureDigest: provenance.dshPackageClosureDigest,
-		cordisClosureDigest: provenance.cordisClosureDigest,
-		executablePluginClosureDigest: admissionClosure.closureDigest,
-		runtimeArtifactDigest: sha256Digest(candidateBytes),
-	}),
-	qualificationSuiteDigest: digest("dsh-qualification-suite"),
-	qualificationEvidenceDigest: digest("dsh-qualification-evidence"),
-	qualifiedAt: "2026-08-17T20:00:00.000Z",
-});
+const sandboxProfile = liveSandboxProfile();
+const qualifiedBuild = qualifiedRuntimeBuild(null);
+const sandboxedQualifiedBuild = qualifiedRuntimeBuild(canonicalJsonDigest(sandboxProfile));
+
+function qualifiedRuntimeBuild(outerSandboxProfileDigest) {
+	const nodeExecutablePath = realpathSync(process.execPath);
+	return createQualifiedRuntimeBuild({
+		manifest: createRuntimeBuildManifest({
+			schemaVersion: "4.0.0",
+			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
+			runProtocolVersion: RUN_PROTOCOL.version,
+			nodeVersion: process.version.slice(1),
+			nodeExecutablePath,
+			nodeExecutableDigest: sha256Digest(readFileSync(nodeExecutablePath)),
+			outerSandboxProfileDigest,
+			dshSourceCommit: provenance.reviewedSource.commit,
+			dshPackageClosureDigest: provenance.dshPackageClosureDigest,
+			cordisClosureDigest: provenance.cordisClosureDigest,
+			executablePluginClosureDigest: admissionClosure.closureDigest,
+			runtimeArtifactDigest: sha256Digest(candidateBytes),
+		}),
+		qualificationSuiteDigest: digest("dsh-qualification-suite"),
+		qualificationEvidenceDigest: digest("dsh-qualification-evidence"),
+		qualifiedAt: "2026-08-17T20:00:00.000Z",
+	});
+}
 
 after(async () => {
 	await Promise.all(
@@ -458,17 +468,18 @@ async function runtimeFixture(suffix, options = {}) {
 	const stateRoot = join(root, "runtime-state");
 	const sessionRoot = join(root, "sessions");
 	if (options.outerSandbox) await mkdir(sessionRoot, {recursive: true});
+	const selectedBuild = options.outerSandbox ? sandboxedQualifiedBuild : qualifiedBuild;
 	await qualifyStoredRuntimeBuild({
 		stateRoot,
 		expectedGeneration: 0,
-		build: qualifiedBuild,
+		build: selectedBuild,
 		artifactPath: candidate.artifactPath,
 		generatedAt: "2026-08-17T20:01:00.000Z",
 	});
 	await activateStoredRuntimeBuild({
 		stateRoot,
 		expectedGeneration: 1,
-		buildDigest: qualifiedBuild.buildDigest,
+		buildDigest: selectedBuild.buildDigest,
 		generatedAt: "2026-08-17T20:02:00.000Z",
 	});
 	const binding = await bindActiveStoredRuntimeBuild({stateRoot});
@@ -536,7 +547,7 @@ async function runtimeFixture(suffix, options = {}) {
 		},
 		...(options.outerSandbox ? {
 			sandbox: createBubblewrapRunProcessSandbox({
-				profile: liveSandboxProfile(),
+				profile: sandboxProfile,
 				readOnlyPaths: [
 					manifestPath,
 					...(manifest.modelAdapter.kind === "replay"

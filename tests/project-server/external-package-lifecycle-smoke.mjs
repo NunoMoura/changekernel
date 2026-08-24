@@ -202,6 +202,7 @@ try {
 	const targetBuild = lifecycleApi.createBackendBuildBinding({
 		packageVersion: "0.4.0",
 		packageLockDigest: `sha256:${"b".repeat(64)}`,
+		supportMatrixDigest: lifecycleApi.DEFAULT_BACKEND_BUILD.supportMatrixDigest,
 		dshProfiles: lifecycleApi.DEFAULT_BACKEND_BUILD.dshProfiles,
 		domainPlugins: lifecycleApi.DEFAULT_BACKEND_BUILD.domainPlugins,
 		fileSchemas: lifecycleApi.DEFAULT_BACKEND_BUILD.fileSchemas,

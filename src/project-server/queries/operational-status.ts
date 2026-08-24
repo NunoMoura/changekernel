@@ -11,7 +11,9 @@ import type {ExecutionRecoveryDecision} from "../workers/execution-recovery.ts";
 export interface BackendOperationalBinding {
 	readonly stateSchema: typeof BACKEND_STATE_PROTOCOL;
 	readonly stateGeneration: number;
+	readonly backendBuildProtocol: BackendBuildBinding["protocol"];
 	readonly backendBuildDigest: Sha256Digest;
+	readonly supportMatrixDigest: Sha256Digest | null;
 	readonly package: Readonly<{
 		name: BackendBuildBinding["packageName"];
 		version: string;
@@ -88,7 +90,12 @@ export function backendOperationalBinding(input: {
 	return Object.freeze({
 		stateSchema: BACKEND_STATE_PROTOCOL,
 		stateGeneration: input.stateGeneration,
+		backendBuildProtocol: input.activeBuild.protocol,
 		backendBuildDigest: input.activeBuild.backendBuildDigest,
+		supportMatrixDigest:
+			"supportMatrixDigest" in input.activeBuild
+				? input.activeBuild.supportMatrixDigest
+				: null,
 		package: Object.freeze({
 			name: input.activeBuild.packageName,
 			version: input.activeBuild.packageVersion,
@@ -120,7 +127,9 @@ function synchronizationStatus(value: SynchronizationObservation): ProjectOperat
 			canMutate: false,
 			snapshotDigest: value.teamSnapshot?.snapshotDigest ?? null,
 			remoteStateHead: value.teamSnapshot?.remoteStateHead ?? null,
-			reasons: Object.freeze([...value.staleReasons].sort()),
+			reasons: Object.freeze(
+				[...value.staleReasons].sort((left, right) => left.localeCompare(right)),
+			),
 			message: "Project authority changed. Refresh exact remote state before retrying this operation.",
 		});
 	}
@@ -140,5 +149,6 @@ function recoveryMessage(value: ExecutionRecoveryDecision): string {
 		case "broker": return `${value.reason} Broker owns bounded transport retry.${session}`;
 		case "project-server": return `${value.reason} Project Server must apply the typed transition.${session}`;
 		case "user": return `${value.reason} Explicit user authorization or configuration is required.${session}`;
+		default: throw new Error("Execution recovery owner is invalid.");
 	}
 }

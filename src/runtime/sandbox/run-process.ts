@@ -48,6 +48,7 @@ export function createBubblewrapRunProcessSandbox(
 			return Object.freeze({
 				runtimeBuildDigest: artifact.runtimeBuildDigest,
 				runProtocolVersion: artifact.runProtocolVersion,
+				outerSandboxProfileDigest: artifact.outerSandboxProfileDigest,
 				executable: command.executable,
 				args: command.args,
 				cwd: command.cwd,

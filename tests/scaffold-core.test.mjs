@@ -98,6 +98,10 @@ describe("fresh scaffold", () => {
 			"BACKEND_BACKUP_PROTOCOL",
 			"BACKEND_BUILD_PROTOCOL",
 			"BACKEND_BUILD_TRANSITION_PROTOCOL",
+			"BACKEND_FAULT_RECOVERY_MATRIX",
+			"BACKEND_FAULT_RECOVERY_PROTOCOL",
+			"BACKEND_OBSERVABILITY_PROTOCOL",
+			"BACKEND_PRODUCTION_FAULTS",
 			"BACKEND_STATE_MIGRATION_PROTOCOL",
 			"BACKEND_STATE_PROTOCOL",
 			"BACKEND_STATE_RECOVERY_PROTOCOL",
@@ -110,6 +114,7 @@ describe("fresh scaffold", () => {
 			"DSH_AGENT_SESSION_CUSTODY_PROTOCOL",
 			"EXTERNAL_CANDIDATE_CAPTURE_PROTOCOL",
 			"HARNESS_OBSERVER_PROJECTION_PROTOCOL",
+			"LEGACY_BACKEND_BUILD_PROTOCOL",
 			"SCHEDULING_PLAN_PROTOCOL",
 			"SESSION_CONTINUITY_PROTOCOL",
 			"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
@@ -118,19 +123,25 @@ describe("fresh scaffold", () => {
 			"admitExternalCandidateCapture",
 			"appendProjectSessionContinuity",
 			"assertBackendBuildBinding",
+			"assertBackendFaultRecoveryMatrix",
 			"assertCurrentAggregateReviewAttempt",
 			"assertExternalCandidateCapture",
 			"assertHarnessInteractionBinding",
 			"assertHarnessObserverProjection",
 			"assertSessionContinuityRecord",
 			"authorizeDshAgentSessionCustody",
+			"backendBuildDomainClosureCompatible",
+			"backendBuildFileSchemasCompatible",
+			"backendBuildIncompatibleFileSchema",
 			"backendBuildSupportsStateSchema",
+			"backendFaultRecoveryPolicy",
 			"backendOperationalBinding",
 			"bootstrapBackendState",
 			"bootstrapStandaloneProjectServer",
 			"buildProjectWikiState",
 			"buildWikiState",
 			"canonicalProjectSnapshotDigest",
+			"collectBackendAuditRecords",
 			"commitGuardedDelivery",
 			"commitImplementationAggregate",
 			"commitPrivateIntegrationAdmission",
@@ -163,6 +174,7 @@ describe("fresh scaffold", () => {
 			"deriveReadyWorkUnits",
 			"executionFailureFromProviderReceipt",
 			"expireSessionLease",
+			"inspectBackendOperations",
 			"legacyProjectStateSnapshotDigest",
 			"migrateBackendState",
 			"normalizeCodewikiMcpRequest",
@@ -204,6 +216,8 @@ describe("fresh scaffold", () => {
 		assert.equal(typeof runtimeApi.createRunRequest, "function");
 		assert.equal(typeof runtimeApi.createRunReceipt, "function");
 		assert.equal(typeof runtimeApi.createRuntimeBuildManifest, "function");
+		assert.equal(typeof runtimeApi.createRuntimeProductionQualification, "function");
+		assert.equal(runtimeApi.RUNTIME_BUILD_SCHEMA_VERSION, "4.0.0");
 		assert.equal(typeof runtimeApi.createDshPrivateProviderBrokerInstaller, "function");
 		assert.equal(typeof runtimeApi.startPrivateProviderBrokerServer, "function");
 		assert.equal("runWikiChange" in runtimeApi, false);

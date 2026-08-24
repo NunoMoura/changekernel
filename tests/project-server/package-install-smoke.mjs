@@ -476,8 +476,14 @@ assert.equal(typeof runtimeModule.openStoredExecutionLedger, "function");
 assert.equal(typeof runtimeModule.appendStoredRunRawLogChunk, "function");
 assert.equal(typeof runtimeModule.recoverStoredRawLogAppends, "function");
 assert.equal(typeof runtimeModule.commitStoredRunReceipt, "function");
-assert.equal(runtimeModule.RUNTIME_BUILD_SCHEMA_VERSION, "3.0.0");
+assert.equal(runtimeModule.LEGACY_RUNTIME_BUILD_SCHEMA_VERSION, "3.0.0");
+assert.equal(runtimeModule.RUNTIME_BUILD_SCHEMA_VERSION, "4.0.0");
+assert.equal(runtimeModule.BACKEND_SUPPORT_MATRIX_PROTOCOL.version, "1.0.0");
+assert.equal(runtimeModule.RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL.version, "1.0.0");
+assert.equal(typeof runtimeModule.createRuntimeProductionQualification, "function");
+assert.equal(typeof runtimeModule.createStoredRuntimeOperationsInspectionPort, "function");
 assert.equal(typeof runtimeModule.createExecutablePluginAdmissionClosure, "function");
+assert.equal(typeof runtimeModule.executablePluginAdmissionClosureDigest, "function");
 assert.equal(runtimeModule.createExecutablePluginManifest, undefined);
 assert.equal(runtimeModule.createExecutablePluginInventory, undefined);
 assert.equal(typeof runtimeModule.runDshRuntimeBridge, "function");
@@ -507,6 +513,10 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"BACKEND_BACKUP_PROTOCOL",
 	"BACKEND_BUILD_PROTOCOL",
 	"BACKEND_BUILD_TRANSITION_PROTOCOL",
+	"BACKEND_FAULT_RECOVERY_MATRIX",
+	"BACKEND_FAULT_RECOVERY_PROTOCOL",
+	"BACKEND_OBSERVABILITY_PROTOCOL",
+	"BACKEND_PRODUCTION_FAULTS",
 	"BACKEND_STATE_MIGRATION_PROTOCOL",
 	"BACKEND_STATE_PROTOCOL",
 	"BACKEND_STATE_RECOVERY_PROTOCOL",
@@ -519,6 +529,7 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"DSH_AGENT_SESSION_CUSTODY_PROTOCOL",
 	"EXTERNAL_CANDIDATE_CAPTURE_PROTOCOL",
 	"HARNESS_OBSERVER_PROJECTION_PROTOCOL",
+	"LEGACY_BACKEND_BUILD_PROTOCOL",
 	"SCHEDULING_PLAN_PROTOCOL",
 	"SESSION_CONTINUITY_PROTOCOL",
 	"WORK_UNIT_MODEL_ASSIGNMENT_PROTOCOL",
@@ -527,19 +538,25 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"admitExternalCandidateCapture",
 	"appendProjectSessionContinuity",
 	"assertBackendBuildBinding",
+	"assertBackendFaultRecoveryMatrix",
 	"assertCurrentAggregateReviewAttempt",
 	"assertExternalCandidateCapture",
 	"assertHarnessInteractionBinding",
 	"assertHarnessObserverProjection",
 	"assertSessionContinuityRecord",
 	"authorizeDshAgentSessionCustody",
+	"backendBuildDomainClosureCompatible",
+	"backendBuildFileSchemasCompatible",
+	"backendBuildIncompatibleFileSchema",
 	"backendBuildSupportsStateSchema",
+	"backendFaultRecoveryPolicy",
 	"backendOperationalBinding",
 	"bootstrapBackendState",
 	"bootstrapStandaloneProjectServer",
 	"buildProjectWikiState",
 	"buildWikiState",
 	"canonicalProjectSnapshotDigest",
+	"collectBackendAuditRecords",
 	"commitGuardedDelivery",
 	"commitImplementationAggregate",
 	"commitPrivateIntegrationAdmission",
@@ -572,6 +589,7 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"deriveReadyWorkUnits",
 	"executionFailureFromProviderReceipt",
 	"expireSessionLease",
+	"inspectBackendOperations",
 	"legacyProjectStateSnapshotDigest",
 	"migrateBackendState",
 	"normalizeCodewikiMcpRequest",

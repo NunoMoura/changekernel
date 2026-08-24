@@ -18,6 +18,7 @@ import test from "node:test";
 import {
 	createBackendBuildBinding,
 	DEFAULT_BACKEND_BUILD,
+	LEGACY_BACKEND_BUILD_PROTOCOL,
 } from "../../../src/project-server/operations/build.ts";
 import {projectServerStatePaths} from "../../../src/project-server/operations/paths.ts";
 import {
@@ -67,6 +68,33 @@ async function fixture(suffix) {
 
 function byteDigest(bytes) {
 	return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+function legacyBackendBuild() {
+	const domainPlugins = DEFAULT_BACKEND_BUILD.domainPlugins.map((entry) => ({
+		pluginId: entry.pluginId,
+		pluginVersion: entry.pluginVersion,
+		admissionDigest: entry.admissionDigest,
+		identityDigest: entry.identityDigest,
+	}));
+	const body = {
+		protocol: LEGACY_BACKEND_BUILD_PROTOCOL,
+		packageName: "@nunomoura/codewiki",
+		packageVersion: "0.3.0",
+		packageLockDigest: DEFAULT_BACKEND_BUILD.packageLockDigest,
+		dshProfiles: DEFAULT_BACKEND_BUILD.dshProfiles,
+		domainPlugins,
+		domainPluginClosureDigest: canonicalJsonDigest(domainPlugins),
+		fileSchemas: DEFAULT_BACKEND_BUILD.fileSchemas.map((entry) =>
+			entry.id === "codewiki.runtime-build-manifest"
+				? {id: entry.id, version: "3.0.0"}
+				: entry,
+		),
+		protocols: DEFAULT_BACKEND_BUILD.protocols.filter(
+			({id}) => !id.startsWith("codewiki.backend-") && id !== "codewiki.runtime-production-qualification",
+		),
+	};
+	return Object.freeze({...body, backendBuildDigest: canonicalJsonDigest(body)});
 }
 
 test("Backend state bootstrap is private, permission-bounded, and never creates legacy roots", async () => {
@@ -437,6 +465,41 @@ test("corrupt state recovery requires exact backup and preserves opaque Runtime 
 	}
 });
 
+test("explicit Backend upgrade converts exact v1 identity and Runtime Build schema bindings", async () => {
+	const context = await fixture("v1-upgrade");
+	try {
+		const legacyBuild = legacyBackendBuild();
+		const initial = await bootstrapBackendState({
+			...context,
+			activeBuild: legacyBuild,
+			createdAt: "2026-09-05T07:00:00.000Z",
+		});
+		const targetBuild = createBackendBuildBinding({
+			packageVersion: "0.3.1",
+			packageLockDigest: DEFAULT_BACKEND_BUILD.packageLockDigest,
+			supportMatrixDigest: DEFAULT_BACKEND_BUILD.supportMatrixDigest,
+			dshProfiles: DEFAULT_BACKEND_BUILD.dshProfiles,
+			domainPlugins: DEFAULT_BACKEND_BUILD.domainPlugins,
+			fileSchemas: DEFAULT_BACKEND_BUILD.fileSchemas,
+			protocols: DEFAULT_BACKEND_BUILD.protocols,
+		});
+		const transition = await activateBackendBuild({
+			...context,
+			expectedStateDigest: initial.stateDigest,
+			targetBuild,
+			transitionedAt: "2026-09-05T07:01:00.000Z",
+		});
+		const upgraded = await readBackendStateManifest(context);
+		assert.equal(transition.previousBackendBuildDigest, legacyBuild.backendBuildDigest);
+		assert.equal(upgraded.activeBuild.protocol.version, "2.0.0");
+		assert.equal(upgraded.activeBuild.backendBuildDigest, targetBuild.backendBuildDigest);
+		assert.equal(upgraded.generation, 2);
+		assert.equal(transition.requiresSessionRollover, true);
+	} finally {
+		await context.cleanup();
+	}
+});
+
 test("upgrade backs up expected-head state and rollback restores build without erasing audit receipts", async () => {
 	const context = await fixture("upgrade-rollback");
 	try {
@@ -447,6 +510,7 @@ test("upgrade backs up expected-head state and rollback restores build without e
 		const targetBuild = createBackendBuildBinding({
 			packageVersion: "0.4.0",
 			packageLockDigest: `sha256:${"b".repeat(64)}`,
+			supportMatrixDigest: DEFAULT_BACKEND_BUILD.supportMatrixDigest,
 			dshProfiles: DEFAULT_BACKEND_BUILD.dshProfiles,
 			domainPlugins: DEFAULT_BACKEND_BUILD.domainPlugins,
 			fileSchemas: DEFAULT_BACKEND_BUILD.fileSchemas,
@@ -455,6 +519,7 @@ test("upgrade backs up expected-head state and rollback restores build without e
 		const incompatibleBuild = createBackendBuildBinding({
 			packageVersion: "0.4.0",
 			packageLockDigest: `sha256:${"c".repeat(64)}`,
+			supportMatrixDigest: DEFAULT_BACKEND_BUILD.supportMatrixDigest,
 			dshProfiles: DEFAULT_BACKEND_BUILD.dshProfiles,
 			domainPlugins: DEFAULT_BACKEND_BUILD.domainPlugins,
 			fileSchemas: DEFAULT_BACKEND_BUILD.fileSchemas.filter(

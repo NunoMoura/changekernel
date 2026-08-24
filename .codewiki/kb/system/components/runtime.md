@@ -55,11 +55,11 @@ Run failure cannot mutate accepted state. Project Server alone chooses canonical
 
 ## Runtime Builds
 
-Runtime Build Manifest `3.0.0` binds protocol, exact Domain Plugin identity, Node, packages, executable Plugin admission closure, bytes, suite, and Evidence. Pins are 33 DSH `0.1.1-rc.2` packages, Cordis `4.0.1`, Loader `1.0.2`, `pi-ai` `0.82.1`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`; package integrity is locked and source equivalence unattested.
+Runtime Build Manifest `4.0.0` binds Domain, protocol, Node path/version/bytes, outer sandbox, DSH/Cordis, Plugins, Runtime bytes, suite, and Evidence. Runtime rehashes executable bytes before activation and launch. Retained `3.0.0` records require requalification and Session rollover; drift stops.
 
-Runtime privately stores qualified builds; CAS activates new-Run selection. Requests and Session resume bind the original build and protocol. Missing, changed, unqualified, or incompatible artifacts stop; rollback affects future Runs only.
+Pins remain DSH `0.1.1-rc.2`, Cordis `4.0.1`, Loader `1.0.2`, `pi-ai` `0.82.1`, and reviewed source `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`; source equivalence is unattested. No selector, fallback engine, or Runtime Pi exists.
 
-There is no build selector, Pi fallback, multi-engine mode, or Runtime Pi implementation. DSH is the sole first-party engine; Pi remains Client-only and cannot execute Runs.
+Runtime Production Qualification `1.0.0` binds host, containment, DSH, Plugins, routes, Domain, and Evidence without authority. `RuntimeOperationsInspectionPort` exposes verified Build and Receipt metadata only.
 
 ## DSH composition and Runtime Bridge
 

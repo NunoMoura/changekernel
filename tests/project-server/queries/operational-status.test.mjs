@@ -39,7 +39,9 @@ test("operational status exposes exact synchronization and typed recovery owners
 		],
 	});
 	assert.equal(status.backend.stateGeneration, 7);
+	assert.equal(status.backend.backendBuildProtocol.version, "2.0.0");
 	assert.equal(status.backend.backendBuildDigest, DEFAULT_BACKEND_BUILD.backendBuildDigest);
+	assert.equal(status.backend.supportMatrixDigest, DEFAULT_BACKEND_BUILD.supportMatrixDigest);
 	assert.equal(status.backend.activeRuntimeBuildDigest, digest("6"));
 	assert.deepEqual(
 		status.backend.dshProfiles.map(({id}) => id),

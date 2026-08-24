@@ -46,7 +46,7 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 		pluginVersion: "1.0.0",
 		packageName: "@nunomoura/codewiki",
 		packageIntegrity:
-			"sha256:ab56e0b3ac9df5c0c8b535859cabef3d602a47d7946d15a86ef659b36895636f",
+			"sha256:f004dc5077e7efcbff1dbadaa22c91cba38c67d46a2d526a4835eec5dae75a99",
 		implementationDigest:
 			"sha256:792182f2937a1fab796a620fe06144a5fbafc9e59a14c2a91b99594c3f106d34",
 		entrypoints: {

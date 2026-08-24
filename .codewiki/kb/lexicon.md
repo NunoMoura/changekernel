@@ -12,7 +12,7 @@ tags: [system, vocabulary]
 | Term | Definition | Owner |
 | --- | --- | --- |
 | CodeWiki | Complete product containing Backend, Clients, Domain Plugins, package assets, and Runtime Builds. | [Package](system/components/package.md) |
-| Backend Build | Package, DSH profiles, Domain closure, schemas, and protocols. | [Package](system/components/package.md) |
+| Backend Build | Package, support, DSH, Domain, schema, and protocol identity. | [Package](system/components/package.md) |
 | Project Server | Sole authoritative long-lived owner for one governed project: transport, AuthN, project AuthZ, canonical state, Stage Loops, Checks, Workbenches, transitions, effects, and its subordinate Runtime. | [Project Server](system/components/project-server.md) |
 | Runtime | Project Server-owned execution subsystem that executes bounded Run Requests and creates Run Receipts without project or lifecycle authority. | [Runtime](system/components/runtime.md) |
 | Run | One bounded execution attempt for a Stage Producer, Implementation Worker, Check, or delegated harness under one immutable Run Request. | [Runtime](system/components/runtime.md) |
@@ -20,7 +20,7 @@ tags: [system, vocabulary]
 | Run Process | Runtime-controlled OS process for one Run; process separation alone is not a security sandbox. | [Runtime](system/components/runtime.md) |
 | Run Port | Neutral internal contract through which Project Server or Checks requests bounded execution without importing DSH or a delegated harness. | [Runtime](system/components/runtime.md) |
 | Run Receipt | Immutable CodeWiki-authored account of one Run and only the inputs, outputs, custody, evidence, and gaps CodeWiki can prove. | [Runtime](system/components/runtime.md) |
-| Runtime Build | Content-addressed DSH execution closure binding protocol, Node, Plugins, Providers, bytes, and qualification Evidence. | [Runtime](system/components/runtime.md) |
+| Runtime Build | Content-addressed execution closure binding protocol, Node, containment, Plugins, bytes, and Evidence. | [Runtime](system/components/runtime.md) |
 | DSH Plugin | Trusted release-managed DSH capability admitted for one exact trust plane; project files cannot install it or extend its authority. | [Runtime](system/components/runtime.md) |
 | Executable Plugin Admission Closure | Trust-plane capability ceiling. | [Package](system/components/package.md) |
 | Runtime Bridge | CodeWiki-owned boundary mapping one Run Request to exact DSH composition and mapping DSH events and output to Runtime facts. | [Runtime](system/components/runtime.md) |

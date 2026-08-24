@@ -269,10 +269,13 @@ function processChallenge(binding, request) {
 function fixture() {
 	const build = createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "3.0.0",
+			schemaVersion: "4.0.0",
 			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion: "26.1.0",
+			nodeExecutablePath: "/qualified/node",
+			nodeExecutableDigest: sha256Digest("node:26.1.0"),
+			outerSandboxProfileDigest: null,
 			dshSourceCommit: "a".repeat(40),
 			dshPackageClosureDigest: sha256Digest("dsh-closure"),
 			cordisClosureDigest: sha256Digest("cordis-closure"),

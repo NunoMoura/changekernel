@@ -13,6 +13,7 @@ import {
 } from "../../../src/project-server/operations/lifecycle.ts";
 import {canonicalProjectSnapshotDigest} from "../../../src/project-server/operations/state.ts";
 import {projectServerStatePaths} from "../../../src/project/private-state.ts";
+import {createRuntimeBuildRegistrySnapshot} from "../../../src/runtime/contracts.ts";
 
 async function project(base, name) {
 	const repoRoot = join(base, name);
@@ -43,6 +44,15 @@ test("standalone lifecycle reports redacted running state and stops idempotently
 			(await readStandaloneProjectServerStatus({repoRoot, stateRoot})).lifecycle,
 			"stopped",
 		);
+		const observedRuntime = await readStandaloneProjectServerStatus({
+			repoRoot,
+			stateRoot,
+			runtimeBuildRegistry: createRuntimeBuildRegistrySnapshot({
+				generatedAt: "2026-09-06T10:00:01.000Z",
+			}),
+		});
+		assert.equal(observedRuntime.runtimeBuildRegistryObserved, true);
+		assert.equal(observedRuntime.backend.activeRuntimeBuildDigest, null);
 		service = await startProjectCoordinatorService(repoRoot, {
 			stateRoot,
 			generationId: "generation:lifecycle",

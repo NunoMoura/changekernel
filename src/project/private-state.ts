@@ -168,7 +168,13 @@ export async function ensureCodeWikiStateDirectory(
 	for (const part of child.split(/[\\/]/u)) {
 		current = join(current, part);
 		const metadata = await statNoFollow(current);
-		if (!metadata) await mkdir(current, {recursive: false, mode: 0o700});
+		if (!metadata) {
+			try {
+				await mkdir(current, {recursive: false, mode: 0o700});
+			} catch (error) {
+				if (!isAlreadyExists(error)) throw error;
+			}
+		}
 		await assertPrivateDirectory(current);
 	}
 }
@@ -210,6 +216,10 @@ async function statNoFollow(path: string): Promise<Awaited<ReturnType<typeof lst
 		}
 		throw error;
 	}
+}
+
+function isAlreadyExists(error: unknown): boolean {
+	return error instanceof Error && "code" in error && error.code === "EEXIST";
 }
 
 function absoluteProjectRoot(value: string): string {

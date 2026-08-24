@@ -277,6 +277,49 @@ describe("private provider broker", () => {
 		}
 	});
 
+	it("fails closed when the private Broker Host disappears before a model call", async () => {
+		const root = await mkdtemp(join(tmpdir(), "codewiki-private-broker-loss-"));
+		const modelRoute = route();
+		const systemPrompt = "Private broker loss qualification system prompt";
+		const prompt = "Do not continue without the Broker Host.";
+		const runRequest = request("run-private-broker-loss", modelRoute, systemPrompt, prompt);
+		const broker = await startPrivateProviderBrokerServer({
+			binding: binding(runRequest),
+			capabilityId: "capability-private-broker-loss",
+			capabilityToken: "l".repeat(64),
+			expiresAt: new Date(Date.now() + 60_000).toISOString(),
+			transport: {
+				open: async () => ({
+					selectedProvider: "mock-provider",
+					selectedAccountId: "mock-account",
+					selectedModel: "mock-model",
+					providerRequestId: "provider-request-loss",
+					chunks: streamChunks(),
+				}),
+			},
+		});
+		const access = broker.access;
+		await broker.close();
+		try {
+			await assert.rejects(
+				runDshRuntimeBridge({
+					request: runRequest,
+					artifacts: {
+						systemPrompt,
+						prompt,
+						workspacePath: root,
+						sessionRoot: join(root, "sessions"),
+					},
+					installModelProvider: createDshPrivateProviderBrokerInstaller({access}),
+				}),
+				/Private provider broker produced no authenticated receipt/,
+			);
+			assert.equal(broker.receipts().length, 0);
+		} finally {
+			await rm(root, {recursive: true, force: true});
+		}
+	});
+
 	it("rejects authenticated broker evidence when selected target differs from the Run", async () => {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-private-broker-route-"));
 		const modelRoute = route();

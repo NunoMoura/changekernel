@@ -10,6 +10,10 @@ import {
 	requestProjectCoordinatorHealth,
 	stopProjectCoordinatorService,
 } from "../coordinator/service.ts";
+import {
+	assertRuntimeBuildRegistrySnapshot,
+	type RuntimeBuildRegistrySnapshot,
+} from "../../runtime/contracts.ts";
 import type {Sha256Digest} from "../../utils/canonical-json.ts";
 import {
 	backendOperationalBinding,
@@ -36,6 +40,7 @@ export interface StandaloneProjectServerStatus {
 	readonly stateGeneration: number | null;
 	readonly stateDigest: Sha256Digest | null;
 	readonly backendBuildDigest: Sha256Digest | null;
+	readonly runtimeBuildRegistryObserved: boolean;
 	readonly backend: BackendOperationalBinding | null;
 	readonly process: Readonly<{
 		generationId: string;
@@ -48,7 +53,6 @@ export interface StandaloneProjectServerStatus {
 export interface StandaloneProjectServerOptions {
 	readonly stateRoot?: string;
 	readonly timeoutMs?: number;
-	readonly activeRuntimeBuildDigest?: Sha256Digest | null;
 }
 
 export interface BackendUpgradeResult {
@@ -72,20 +76,26 @@ export const bootstrapStandaloneProjectServer = bootstrapBackendState;
 export async function readStandaloneProjectServerStatus(input: {
 	readonly repoRoot: string;
 	readonly stateRoot?: string;
-	readonly activeRuntimeBuildDigest?: Sha256Digest | null;
+	readonly runtimeBuildRegistry?: RuntimeBuildRegistrySnapshot | null;
 }): Promise<StandaloneProjectServerStatus> {
 	const paths = projectServerStatePaths(input);
 	const [state, endpoint] = await Promise.all([
 		readBackendStateManifest(input),
 		readProjectCoordinatorEndpoint(paths.projectRoot, paths.stateRoot),
 	]);
+	if (input.runtimeBuildRegistry) {
+		assertRuntimeBuildRegistrySnapshot(input.runtimeBuildRegistry);
+	}
+	const runtimeBuildRegistryObserved = input.runtimeBuildRegistry !== undefined;
+	const activeRuntimeBuildDigest = input.runtimeBuildRegistry?.activeBuildDigest ?? null;
 	if (!endpoint) {
 		return status({
 			repositoryIdentity: paths.repositoryIdentity,
 			state,
 			lifecycle: "stopped",
 			endpoint: null,
-			activeRuntimeBuildDigest: input.activeRuntimeBuildDigest ?? null,
+			runtimeBuildRegistryObserved,
+			activeRuntimeBuildDigest,
 		});
 	}
 	try {
@@ -96,7 +106,8 @@ export async function readStandaloneProjectServerStatus(input: {
 				state,
 				lifecycle: "unresponsive",
 				endpoint,
-				activeRuntimeBuildDigest: input.activeRuntimeBuildDigest ?? null,
+				runtimeBuildRegistryObserved,
+				activeRuntimeBuildDigest,
 			});
 		}
 		return status({
@@ -104,7 +115,8 @@ export async function readStandaloneProjectServerStatus(input: {
 			state,
 			lifecycle: "running",
 			endpoint,
-			activeRuntimeBuildDigest: input.activeRuntimeBuildDigest ?? null,
+			runtimeBuildRegistryObserved,
+			activeRuntimeBuildDigest,
 		});
 	} catch {
 		return status({
@@ -112,7 +124,8 @@ export async function readStandaloneProjectServerStatus(input: {
 			state,
 			lifecycle: "unresponsive",
 			endpoint,
-			activeRuntimeBuildDigest: input.activeRuntimeBuildDigest ?? null,
+			runtimeBuildRegistryObserved,
+			activeRuntimeBuildDigest,
 		});
 	}
 }
@@ -130,7 +143,6 @@ export async function startStandaloneProjectServer(
 		await readStandaloneProjectServerStatus({
 			repoRoot,
 			stateRoot: options.stateRoot,
-			activeRuntimeBuildDigest: options.activeRuntimeBuildDigest,
 		}),
 		"running",
 	);
@@ -143,7 +155,6 @@ export async function stopStandaloneProjectServer(
 	const before = await readStandaloneProjectServerStatus({
 		repoRoot,
 		stateRoot: options.stateRoot,
-		activeRuntimeBuildDigest: options.activeRuntimeBuildDigest,
 	});
 	if (before.lifecycle === "unresponsive") {
 		throw new Error("Unresponsive Project Server process state requires explicit recovery.");
@@ -155,7 +166,6 @@ export async function stopStandaloneProjectServer(
 		await readStandaloneProjectServerStatus({
 			repoRoot,
 			stateRoot: options.stateRoot,
-			activeRuntimeBuildDigest: options.activeRuntimeBuildDigest,
 		}),
 		"stopped",
 	);
@@ -249,6 +259,7 @@ function status(input: {
 	readonly state: BackendStateManifest | undefined;
 	readonly lifecycle: "running" | "stopped" | "unresponsive";
 	readonly endpoint: ProjectCoordinatorEndpoint | null;
+	readonly runtimeBuildRegistryObserved: boolean;
 	readonly activeRuntimeBuildDigest: Sha256Digest | null;
 }): StandaloneProjectServerStatus {
 	return Object.freeze({
@@ -257,6 +268,7 @@ function status(input: {
 		stateGeneration: input.state?.generation ?? null,
 		stateDigest: input.state?.stateDigest ?? null,
 		backendBuildDigest: input.state?.activeBuild.backendBuildDigest ?? null,
+		runtimeBuildRegistryObserved: input.runtimeBuildRegistryObserved,
 		backend: input.state
 			? backendOperationalBinding({
 					stateGeneration: input.state.generation,

@@ -24,6 +24,8 @@ import {
 } from "../coordinator/endpoint.ts";
 import {
 	assertBackendBuildBinding,
+	backendBuildDomainClosureCompatible,
+	backendBuildIncompatibleFileSchema,
 	backendBuildSupportsStateSchema,
 	DEFAULT_BACKEND_BUILD,
 	type BackendBuildBinding,
@@ -458,19 +460,16 @@ export async function activateBackendBuild(input: {
 	if (!backendBuildSupportsStateSchema(input.targetBuild, BACKEND_STATE_PROTOCOL.version)) {
 		throw new Error("Target Backend Build does not support the active state schema.");
 	}
-	for (const schema of current.activeBuild.fileSchemas) {
-		if (!input.targetBuild.fileSchemas.some(
-			(candidate) => candidate.id === schema.id && candidate.version === schema.version,
-		)) {
-			throw new Error(
-				`Backend upgrade requires an explicit ${schema.id}@${schema.version} state migration.`,
-			);
-		}
+	const incompatibleSchema = backendBuildIncompatibleFileSchema(
+		current.activeBuild,
+		input.targetBuild,
+	);
+	if (incompatibleSchema) {
+		throw new Error(
+			`Backend upgrade requires an explicit ${incompatibleSchema.id}@${incompatibleSchema.version} state migration.`,
+		);
 	}
-	if (
-		input.targetBuild.domainPluginClosureDigest !==
-		current.activeBuild.domainPluginClosureDigest
-	) {
+	if (!backendBuildDomainClosureCompatible(current.activeBuild, input.targetBuild)) {
 		throw new Error("Backend upgrade requires an explicit Domain Plugin migration.");
 	}
 	if (compareVersions(input.targetBuild.packageVersion, current.activeBuild.packageVersion) <= 0) {

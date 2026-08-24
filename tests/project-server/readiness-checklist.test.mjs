@@ -21,6 +21,16 @@ import {
 	BACKEND_BUILD_PROTOCOL,
 	DEFAULT_BACKEND_BUILD,
 } from "../../src/project-server/operations/build.ts";
+import {BACKEND_OBSERVABILITY_PROTOCOL} from "../../src/project-server/operations/observability.ts";
+import {
+	BACKEND_FAULT_RECOVERY_MATRIX,
+	BACKEND_PRODUCTION_FAULTS,
+} from "../../src/project-server/operations/reliability.ts";
+import {
+	BACKEND_V1_SUPPORT_MATRIX,
+	RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL,
+} from "../../src/protocol/backend-production.ts";
+import {RUNTIME_BUILD_SCHEMA_VERSION} from "../../src/runtime/contracts.ts";
 import {BACKEND_STATE_PROTOCOL} from "../../src/project-server/operations/state.ts";
 import {
 	startStandaloneProjectServer,
@@ -317,7 +327,7 @@ describe("install readiness checklist", () => {
 	});
 
 	it("freezes Backend v1 lifecycle and state evolution without project-local runtime residue", () => {
-		assert.equal(BACKEND_BUILD_PROTOCOL.version, "1.0.0");
+		assert.equal(BACKEND_BUILD_PROTOCOL.id, "codewiki.backend-build");
 		assert.equal(BACKEND_STATE_PROTOCOL.version, "1.0.0");
 		assert.equal(DEFAULT_BACKEND_BUILD.packageVersion, packageJson.version);
 		assert.deepEqual(
@@ -341,6 +351,40 @@ describe("install readiness checklist", () => {
 		assert.match(
 			readFileSync("BACKEND_V1_PLAN.md", "utf8"),
 			/B7 — Backend packaging, lifecycle, and state evolution — complete/,
+		);
+	});
+
+	it("qualifies Backend v1 production security, reliability, and observability", () => {
+		assert.equal(BACKEND_BUILD_PROTOCOL.version, "2.0.0");
+		assert.equal(RUNTIME_BUILD_SCHEMA_VERSION, "4.0.0");
+		assert.equal(BACKEND_OBSERVABILITY_PROTOCOL.version, "1.0.0");
+		assert.equal(RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL.version, "1.0.0");
+		assert.equal(
+			DEFAULT_BACKEND_BUILD.supportMatrixDigest,
+			BACKEND_V1_SUPPORT_MATRIX.matrixDigest,
+		);
+		assert.deepEqual(
+			BACKEND_FAULT_RECOVERY_MATRIX.policies.map(({fault}) => fault),
+			BACKEND_PRODUCTION_FAULTS,
+		);
+		assert.equal(BACKEND_PRODUCTION_FAULTS.length, 10);
+		assert.equal(
+			DEFAULT_BACKEND_BUILD.fileSchemas.some(
+				({id, version}) => id === "codewiki.runtime-build-manifest" && version === "4.0.0",
+			),
+			true,
+		);
+		assert.equal(
+			DEFAULT_BACKEND_BUILD.protocols.some(
+				({id, version}) => id === BACKEND_OBSERVABILITY_PROTOCOL.id && version === "1.0.0",
+			),
+			true,
+		);
+		assert.match(packageJson.scripts["test:production"], /production\.test\.mjs/);
+		assert.match(packageJson.scripts["audit:codewiki"], /test:production/);
+		assert.match(
+			readFileSync("BACKEND_V1_PLAN.md", "utf8"),
+			/B8 — Production security, reliability, and observability — complete/,
 		);
 	});
 

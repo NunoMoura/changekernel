@@ -107,11 +107,13 @@ export function createDevLogEntry(value: unknown): DevLogEntry {
 export async function appendDevLogEntry(
 	repoRoot: string,
 	value: unknown,
+	stateRoot?: string,
 ): Promise<DevLogEntry> {
 	const entry = createDevLogEntry(value);
-	const key = `${repoRoot}\0${entry.traceId}`;
+	const privateState = projectServerStatePaths({repoRoot, stateRoot});
+	const key = `${privateState.stateRoot}\0${repoRoot}\0${entry.traceId}`;
 	const previous = queues.get(key) ?? Promise.resolve();
-	const queued = previous.then(() => appendEntry(repoRoot, entry));
+	const queued = previous.then(() => appendEntry(privateState, entry));
 	const tracked = queued.catch(() => undefined);
 	queues.set(key, tracked);
 	try {
@@ -126,12 +128,13 @@ export async function readDevLog(
 	repoRoot: string,
 	traceId: string,
 	maxEntries = 1_000,
+	stateRoot?: string,
 ): Promise<DevLogEntry[]> {
 	identifier(traceId, "traceId");
 	if (!Number.isInteger(maxEntries) || maxEntries < 1 || maxEntries > 10_000)
 		throw new Error("Dev Log maxEntries must be an integer from 1 to 10000.");
-	const privateState = projectServerStatePaths({repoRoot});
-	const directory = devLogDirectory(repoRoot, traceId);
+	const privateState = projectServerStatePaths({repoRoot, stateRoot});
+	const directory = devLogDirectory(repoRoot, traceId, stateRoot);
 	await assertCodeWikiStatePath(privateState, directory);
 	const entries = [ROTATED_FILE, LOG_FILE].flatMap((file) =>
 		readEntries(join(directory, file)),
@@ -143,24 +146,35 @@ export async function applyDevLogRetention(
 	repoRoot: string,
 	traceId: string,
 	outcome: DevLogTerminalOutcome,
+	stateRoot?: string,
 ): Promise<void> {
 	identifier(traceId, "traceId");
 	if (outcome !== "completed") return;
-	await rm(devLogDirectory(repoRoot, traceId), { recursive: true, force: true });
+	await rm(devLogDirectory(repoRoot, traceId, stateRoot), { recursive: true, force: true });
 }
 
-export function devLogDirectory(repoRoot: string, traceId: string): string {
+export function devLogDirectory(
+	repoRoot: string,
+	traceId: string,
+	stateRoot?: string,
+): string {
 	identifier(traceId, "traceId");
 	return join(
-		projectServerStatePaths({repoRoot}).logsRoot,
+		projectServerStatePaths({repoRoot, stateRoot}).logsRoot,
 		"development",
 		traceId,
 	);
 }
 
-async function appendEntry(repoRoot: string, entry: DevLogEntry): Promise<void> {
-	const privateState = projectServerStatePaths({repoRoot});
-	const directory = devLogDirectory(repoRoot, entry.traceId);
+async function appendEntry(
+	privateState: ReturnType<typeof projectServerStatePaths>,
+	entry: DevLogEntry,
+): Promise<void> {
+	const directory = devLogDirectory(
+		privateState.projectRoot,
+		entry.traceId,
+		privateState.stateRoot,
+	);
 	const path = join(directory, LOG_FILE);
 	await ensureCodeWikiStateDirectory(privateState, directory);
 	const line = `${JSON.stringify(entry)}\n`;
@@ -177,7 +191,9 @@ async function appendEntry(repoRoot: string, entry: DevLogEntry): Promise<void> 
 async function readEntries(path: string): Promise<DevLogEntry[]> {
 	try {
 		const text = await readFile(path, "utf8");
-		return text.split("\n").filter(Boolean).map((line) => createDevLogEntry(JSON.parse(line)));
+		return text.split("\n").flatMap((line) =>
+			line ? [createDevLogEntry(JSON.parse(line))] : [],
+		);
 	} catch (error) {
 		if (isNotFound(error)) return [];
 		throw error;
@@ -255,8 +271,13 @@ function enumValue<T extends string>(value: unknown, values: readonly T[], field
 }
 
 function assertNoSensitiveText(value: string, field: string): void {
-	if (/\b(?:bearer|authorization|api[_-]?key|access[_-]?token|password|secret)\b\s*[:=]?\s*\S+/i.test(value) || /[?&#]token=/i.test(value))
+	if (
+		/\b(?:bearer|authorization|api[_-]?key|access[_-]?token|password|secret)\b\s*[:=]?\s*\S+/i.test(value) ||
+		/[?&#]token=/i.test(value) ||
+		/(?:chain[- ]of[- ]thought|internal reasoning|reasoning trace|<think>)/i.test(value)
+	) {
 		throw new Error(`Dev Log ${field} contains sensitive text.`);
+	}
 }
 
 function object(value: unknown, label: string): Record<string, unknown> {

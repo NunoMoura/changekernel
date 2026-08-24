@@ -16,6 +16,7 @@ import type {
 export interface NodeRunProcessArtifact {
 	readonly runtimeBuildDigest: Sha256Digest;
 	readonly runProtocolVersion: string;
+	readonly outerSandboxProfileDigest: Sha256Digest | null;
 	readonly executable: string;
 	readonly args: readonly string[];
 	readonly cwd: string;
@@ -65,6 +66,12 @@ export function createNodeRunProcessManager(
 				await options.resolveArtifact(input.challenge),
 				input.challenge,
 			);
+			const configuredSandboxDigest = options.sandbox?.profileDigest ?? null;
+			if (resolvedArtifact.outerSandboxProfileDigest !== configuredSandboxDigest) {
+				throw new Error(
+					"Node Run Process sandbox does not match the qualified Runtime Build.",
+				);
+			}
 			const artifact = options.sandbox
 				? normalizeArtifact(
 						await options.sandbox.prepare(resolvedArtifact),
@@ -342,6 +349,7 @@ function normalizeArtifact(
 		!hasExactKeys(value, [
 			"runtimeBuildDigest",
 			"runProtocolVersion",
+			"outerSandboxProfileDigest",
 			"executable",
 			"args",
 			"cwd",
@@ -354,6 +362,12 @@ function normalizeArtifact(
 		value.runProtocolVersion !== challenge.runProtocolVersion
 	) {
 		throw new Error("Node Run Process artifact does not match the challenged Runtime Build.");
+	}
+	if (
+		value.outerSandboxProfileDigest !== null &&
+		!/^sha256:[a-f0-9]{64}$/u.test(value.outerSandboxProfileDigest)
+	) {
+		throw new Error("Node Run Process sandbox profile digest is invalid.");
 	}
 	if (!isAbsolute(value.executable) || !isAbsolute(value.cwd)) {
 		throw new Error("Node Run Process executable and cwd must be absolute paths.");
@@ -370,6 +384,7 @@ function normalizeArtifact(
 	return Object.freeze({
 		runtimeBuildDigest: value.runtimeBuildDigest,
 		runProtocolVersion: value.runProtocolVersion,
+		outerSandboxProfileDigest: value.outerSandboxProfileDigest,
 		executable: value.executable,
 		args: Object.freeze(args),
 		cwd: value.cwd,

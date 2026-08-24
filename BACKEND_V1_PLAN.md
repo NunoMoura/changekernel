@@ -221,21 +221,21 @@ Success: the frontend-facing backend contract and client-substrate decision are 
 
 Success: operators can recover or roll back without losing canonical meaning, duplicating authority, or trusting mutable project code.
 
-### B8 — Production security, reliability, and observability
+### B8 — Production security, reliability, and observability — complete
 
-- Publish the supported platform/provider/authentication matrix.
-- Requalify exact Bubblewrap, `prlimit`, Node, DSH, plugin, and provider identities.
-- Exercise crash, cancellation, timeout, quota, credential rotation, stale Session, broker loss, filesystem corruption, process orphan, and partial-effect recovery.
-- Provide structured health, audit export, metrics, logs, receipt inspection, and privacy-preserving diagnostics without chain-of-thought.
-- Complete threat-model, dependency, secret, vulnerability, package, performance, and adversarial gates.
+- [x] Publish Backend Support Matrix `1.0.0`: production-managed execution supports Linux x64, Node `>=22.19.0` with an exact executable identity, isolated single-user credential custody, API-key OpenAI, Anthropic, DeepSeek, and custom OpenAI-compatible routes; OAuth, ambient credentials, secret headers, multi-user local-file custody, other platforms, and other provider families remain unsupported.
+- [x] Requalify exact Bubblewrap, `prlimit`, Node, DSH, managed-Run Plugin, Broker Host Plugin, provider-route, Domain Plugin, Runtime artifact, package-integrity, and gate-evidence identities through Runtime Production Qualification `1.0.0`. Runtime Build Manifest `4.0.0` binds exact Node path and bytes plus the required outer-containment profile; retained `3.0.0` records remain readable but cannot activate or resume without explicit requalification and Session rollover.
+- [x] Exercise crash, cancellation, timeout, quota, credential rotation, stale Session, Broker Host loss, filesystem corruption, process-orphan teardown, and partial-effect recovery. Backend Fault Recovery `1.0.0` fixes one owner and action per fault and never authorizes protected-effect repetition.
+- [x] Provide Backend Observability `1.0.0` with structured component health, bounded metrics, digest-verified audit export, selected redacted Dev Logs, exact Runtime receipt inspection, stable diagnostics, active Runtime Build discovery from Runtime-owned registry state, and explicit exclusion of chain-of-thought, secrets, raw Session bytes, and raw logs.
+- [x] Complete a dedicated production gate over the threat model, dependency and vulnerability audit, secret and security collectors, packed package, performance Benchmarks, containment, provider boundaries, adversarial drift, recovery, and operational diagnostics.
 
 Success: supported deployments fail closed, explain failures, and recover deterministically under production faults.
 
 ### B9 — Safe dogfood and Backend v1 release candidate
 
-- Install reviewed release N outside the source repository with isolated controller state and credentials.
-- Use release N to govern development of N+1 without resolving or loading mutable N+1 controller code.
-- Prove controller upgrade, rollback, emergency disable, cleanup, independent CI, packed external tests, and guarded effects.
+- Install reviewed release N outside the source repository with isolated Project Server state and credentials.
+- Use release N to govern development of N+1 without resolving or loading mutable N+1 Project Server code.
+- Prove Project Server upgrade, rollback, emergency disable, cleanup, independent CI, packed external tests, and guarded effects.
 - Freeze Backend v1 API, plugin contracts, support matrix, release manifest, and qualification evidence.
 - Remove the repository no-dogfood restriction only through a separate explicit Change after all external gates pass.
 

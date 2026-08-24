@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import {mkdtemp, rm} from "node:fs/promises";
+import {mkdtemp, rm, stat} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join, resolve} from "node:path";
 import test from "node:test";
 
 import {
 	PROJECT_STATE_REF_PREFIX,
+	ensureCodeWikiStateDirectory,
 	projectServerStatePaths,
 	projectStateRef,
 	resolveProjectStateRef,
@@ -57,6 +58,26 @@ test("project state references are portable and cannot escape private state", as
 			() => projectStateRef(paths, join(root, "outside")),
 			/must stay inside private project state/,
 		);
+	} finally {
+		await rm(root, {recursive: true, force: true});
+	}
+});
+
+test("parallel projects create shared state ancestors without races", async () => {
+	const root = await mkdtemp(join(tmpdir(), "codewiki-state-concurrent-"));
+	try {
+		const stateRoot = join(root, "state");
+		const paths = ["a", "b", "c", "d"].map((name) => projectServerStatePaths({
+			repoRoot: join(root, `project-${name}`),
+			stateRoot,
+		}));
+		await Promise.all(Array.from({length: 32}, (_, index) => {
+			const selected = paths[index % paths.length];
+			return ensureCodeWikiStateDirectory(selected, selected.logsRoot);
+		}));
+		for (const selected of paths) {
+			assert.equal((await stat(selected.logsRoot)).isDirectory(), true);
+		}
 	} finally {
 		await rm(root, {recursive: true, force: true});
 	}

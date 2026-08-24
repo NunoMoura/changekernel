@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {readFileSync, realpathSync} from "node:fs";
 import {chmod, mkdtemp, readFile, rm, stat, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
@@ -200,6 +201,65 @@ describe("durable Runtime Build registry", () => {
 		});
 	});
 
+	it("rejects exact Node executable digest drift before activation or launch", async () => {
+		await withStore(async ({stateRoot, sourcePath}) => {
+			const artifact = Buffer.from("console.log('runner-node-drift');\n");
+			await writeFile(sourcePath, artifact);
+			const build = qualifiedBundle(
+				"c".repeat(40),
+				artifact,
+				"evidence-node-drift",
+				process.versions.node,
+				sha256Digest("wrong-node-executable"),
+			);
+			await qualifyStoredRuntimeBuild({
+				stateRoot,
+				expectedGeneration: 0,
+				build,
+				artifactPath: sourcePath,
+				generatedAt: "2026-08-17T10:00:00.000Z",
+			});
+			await assert.rejects(
+				activateStoredRuntimeBuild({
+					stateRoot,
+					expectedGeneration: 1,
+					buildDigest: build.buildDigest,
+					generatedAt: "2026-08-17T10:01:00.000Z",
+				}),
+				/Runtime Build Node executable digest changed/,
+			);
+			await assert.rejects(
+				createStoredNodeRuntimeBuildResolver({stateRoot})(challengeFor(build)),
+				/Runtime Build Node executable digest changed/,
+			);
+		});
+	});
+
+	it("reads retained v3 Runtime Builds but refuses activation until exact requalification", async () => {
+		await withStore(async ({stateRoot, sourcePath}) => {
+			const artifact = Buffer.from("console.log('legacy-runner');\n");
+			await writeFile(sourcePath, artifact);
+			const build = legacyQualifiedBundle("d".repeat(40), artifact);
+			const registry = await qualifyStoredRuntimeBuild({
+				stateRoot,
+				expectedGeneration: 0,
+				build,
+				artifactPath: sourcePath,
+				generatedAt: "2026-08-17T10:00:00.000Z",
+			});
+			assert.equal(registry.builds[0].manifest.schemaVersion, "3.0.0");
+			await assert.rejects(
+				activateStoredRuntimeBuild({
+					stateRoot,
+					expectedGeneration: 1,
+					buildDigest: build.buildDigest,
+					generatedAt: "2026-08-17T10:01:00.000Z",
+				}),
+				/requires exact Node and containment requalification/,
+			);
+		});
+	});
+
 	it("rejects source digest and exact Node-version mismatches", async () => {
 		await withStore(async ({stateRoot, sourcePath}) => {
 			const artifact = Buffer.from("console.log('runner-a');\n");
@@ -253,13 +313,17 @@ function qualifiedBundle(
 	artifact,
 	evidence,
 	nodeVersion = process.versions.node,
+	nodeExecutableDigest = sha256Digest(readFileSync(realpathSync(process.execPath))),
 ) {
 	return createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "3.0.0",
+			schemaVersion: "4.0.0",
 			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion,
+			nodeExecutablePath: realpathSync(process.execPath),
+			nodeExecutableDigest,
+			outerSandboxProfileDigest: null,
 			dshSourceCommit,
 			dshPackageClosureDigest: sha256Digest(`dsh:${dshSourceCommit}`),
 			cordisClosureDigest: sha256Digest("cordis"),
@@ -268,6 +332,25 @@ function qualifiedBundle(
 		}),
 		qualificationSuiteDigest: sha256Digest("suite-v1"),
 		qualificationEvidenceDigest: sha256Digest(evidence),
+		qualifiedAt: "2026-08-17T09:00:00.000Z",
+	});
+}
+
+function legacyQualifiedBundle(dshSourceCommit, artifact) {
+	return createQualifiedRuntimeBuild({
+		manifest: createRuntimeBuildManifest({
+			schemaVersion: "3.0.0",
+			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
+			runProtocolVersion: RUN_PROTOCOL.version,
+			nodeVersion: process.versions.node,
+			dshSourceCommit,
+			dshPackageClosureDigest: sha256Digest(`dsh:${dshSourceCommit}`),
+			cordisClosureDigest: sha256Digest("legacy-cordis"),
+			executablePluginClosureDigest: sha256Digest("legacy-plugins"),
+			runtimeArtifactDigest: sha256Digest(artifact),
+		}),
+		qualificationSuiteDigest: sha256Digest("legacy-suite"),
+		qualificationEvidenceDigest: sha256Digest("legacy-evidence"),
 		qualifiedAt: "2026-08-17T09:00:00.000Z",
 	});
 }

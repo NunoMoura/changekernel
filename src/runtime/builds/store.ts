@@ -16,6 +16,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 import {
+	RUNTIME_BUILD_SCHEMA_VERSION,
 	activateRuntimeBuild,
 	assertRuntimeBuildRegistrySnapshot,
 	bindActiveRuntimeBuild,
@@ -98,7 +99,7 @@ export async function activateStoredRuntimeBuild(input: {
 		if (!qualified) {
 			throw new Error(`Runtime Build ${input.buildDigest} is not qualified.`);
 		}
-		assertRuntimeNodeVersion(qualified);
+		await assertRuntimeNodeIdentity(qualified);
 		await verifyStoredArtifact(stateRoot, qualified);
 		const next = activateRuntimeBuild({
 			registry: current,
@@ -118,7 +119,7 @@ export async function bindActiveStoredRuntimeBuild(
 	const registry = await requiredRegistry(stateRoot);
 	const binding = bindActiveRuntimeBuild(registry);
 	const build = resolveRuntimeBuildForResume(registry, binding);
-	assertRuntimeNodeVersion(build);
+	await assertRuntimeNodeIdentity(build);
 	await verifyStoredArtifact(stateRoot, build);
 	return binding;
 }
@@ -135,17 +136,13 @@ export function createStoredNodeRuntimeBuildResolver(
 			buildDigest: challenge.runtimeBuildDigest,
 			runProtocolVersion: challenge.runProtocolVersion,
 		});
-		assertRuntimeNodeVersion(build);
+		const nodeIdentity = await assertRuntimeNodeIdentity(build);
 		const artifactPath = await verifyStoredArtifact(stateRoot, build);
-		const executable = await realpath(process.execPath);
-		const metadata = await lstat(executable);
-		if (!metadata.isFile()) {
-			throw new Error("Backend Node executable is not a regular file.");
-		}
 		return Object.freeze({
 			runtimeBuildDigest: build.buildDigest,
 			runProtocolVersion: build.manifest.runProtocolVersion,
-			executable,
+			outerSandboxProfileDigest: nodeIdentity.outerSandboxProfileDigest,
+			executable: nodeIdentity.executable,
 			args: Object.freeze([artifactPath]),
 			cwd: dirname(artifactPath),
 		});
@@ -378,12 +375,49 @@ function assertArtifactMetadata(size: number, isFile: boolean): void {
 	}
 }
 
-function assertRuntimeNodeVersion(build: QualifiedRuntimeBuild): void {
+async function assertRuntimeNodeIdentity(
+	build: QualifiedRuntimeBuild,
+): Promise<Readonly<{
+	readonly executable: string;
+	readonly outerSandboxProfileDigest: Sha256Digest | null;
+}>> {
+	if (build.manifest.schemaVersion !== RUNTIME_BUILD_SCHEMA_VERSION) {
+		throw new Error(
+			"Legacy Runtime Build requires exact Node and containment requalification.",
+		);
+	}
 	if (build.manifest.nodeVersion !== process.versions.node) {
 		throw new Error(
 			`Runtime Build requires Node ${build.manifest.nodeVersion}; CodeWiki runs ${process.versions.node}.`,
 		);
 	}
+	const executable = await realpath(process.execPath);
+	if (executable !== build.manifest.nodeExecutablePath) {
+		throw new Error("Runtime Build Node executable path changed.");
+	}
+	const metadata = await lstat(executable);
+	if (!metadata.isFile()) {
+		throw new Error("Backend Node executable is not a regular file.");
+	}
+	const handle = await open(executable, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+	try {
+		const digest = createHash("sha256");
+		const buffer = Buffer.allocUnsafe(64 * 1024);
+		for (;;) {
+			const {bytesRead} = await handle.read(buffer, 0, buffer.length, null);
+			if (bytesRead === 0) break;
+			digest.update(buffer.subarray(0, bytesRead));
+		}
+		if (`sha256:${digest.digest("hex")}` !== build.manifest.nodeExecutableDigest) {
+			throw new Error("Runtime Build Node executable digest changed.");
+		}
+	} finally {
+		await handle.close();
+	}
+	return Object.freeze({
+		executable,
+		outerSandboxProfileDigest: build.manifest.outerSandboxProfileDigest,
+	});
 }
 
 function artifactPath(stateRoot: string, buildDigest: Sha256Digest): string {

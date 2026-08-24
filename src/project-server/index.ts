@@ -195,13 +195,20 @@ export * from "./mcp/binding.ts";
 export * from "./queries/operational-status.ts";
 export {
 	BACKEND_BUILD_PROTOCOL,
+	LEGACY_BACKEND_BUILD_PROTOCOL,
 	CODEWIKI_PACKAGE_LOCK_DIGEST,
 	DEFAULT_BACKEND_BUILD,
 	assertBackendBuildBinding,
+	backendBuildDomainClosureCompatible,
+	backendBuildFileSchemasCompatible,
+	backendBuildIncompatibleFileSchema,
 	backendBuildSupportsStateSchema,
 	createBackendBuildBinding,
 	type BackendBuildBinding,
+	type CurrentBackendBuildBinding,
 	type BackendDomainPluginBinding,
+	type LegacyBackendBuildBinding,
+	type LegacyBackendDomainPluginBinding,
 	type BackendDshProfileBinding,
 	type BackendVersionBinding,
 } from "./operations/build.ts";
@@ -253,3 +260,29 @@ export {
 	type StandaloneProjectServerOptions,
 	type StandaloneProjectServerStatus,
 } from "./operations/lifecycle.ts";
+export {
+	BACKEND_OBSERVABILITY_PROTOCOL,
+	collectBackendAuditRecords,
+	inspectBackendOperations,
+	type BackendAuditRecord,
+	type BackendComponentHealth,
+	type BackendComponentName,
+	type BackendHealthState,
+	type BackendLiveRuntimeObservation,
+	type BackendOperationalDiagnostic,
+	type BackendOperationalReport,
+	type BackendReceiptInspection,
+	type BackendReceiptInspectionRequest,
+} from "./operations/observability.ts";
+export {
+	BACKEND_FAULT_RECOVERY_MATRIX,
+	BACKEND_FAULT_RECOVERY_PROTOCOL,
+	BACKEND_PRODUCTION_FAULTS,
+	assertBackendFaultRecoveryMatrix,
+	backendFaultRecoveryPolicy,
+	type BackendFaultOwner,
+	type BackendFaultRecoveryAction,
+	type BackendFaultRecoveryMatrix,
+	type BackendFaultRecoveryPolicy,
+	type BackendProductionFault,
+} from "./operations/reliability.ts";

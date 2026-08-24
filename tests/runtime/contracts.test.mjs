@@ -162,7 +162,10 @@ describe("execution ports", () => {
 			qualificationEvidenceDigest: sha256Digest("conformance-and-restart"),
 			qualifiedAt: "2026-08-16T10:00:00.000Z",
 		});
-		assert.equal(manifest.schemaVersion, "3.0.0");
+		assert.equal(manifest.schemaVersion, "4.0.0");
+		assert.equal(manifest.nodeExecutablePath, "/qualified/node");
+		assert.match(manifest.nodeExecutableDigest, /^sha256:[a-f0-9]{64}$/);
+		assert.equal(manifest.outerSandboxProfileDigest, null);
 		assert.equal(
 			manifest.domainPlugin.identityDigest,
 			DEFAULT_DOMAIN_PLUGIN_IDENTITY.identityDigest,
@@ -748,10 +751,13 @@ function runReceiptInput(handle, runtimeBuildDigest, overrides = {}) {
 
 function runnerManifest(dshSourceCommit, dshVersion) {
 	return createRuntimeBuildManifest({
-		schemaVersion: "3.0.0",
+		schemaVersion: "4.0.0",
 		domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 		runProtocolVersion: RUN_PROTOCOL.version,
 		nodeVersion: "26.1.0",
+		nodeExecutablePath: "/qualified/node",
+		nodeExecutableDigest: sha256Digest("node:26.1.0"),
+		outerSandboxProfileDigest: null,
 		dshSourceCommit,
 		dshPackageClosureDigest: sha256Digest(`dsh:${dshVersion}`),
 		cordisClosureDigest: sha256Digest("cordis:4.0.0-rc.7"),

@@ -118,6 +118,7 @@ describe("Runtime", () => {
 				resolveArtifact: async (challenge) => ({
 					runtimeBuildDigest: challenge.runtimeBuildDigest,
 					runProtocolVersion: challenge.runProtocolVersion,
+					outerSandboxProfileDigest: null,
 					executable: process.execPath,
 					args: [scriptPath],
 					cwd: directory,
@@ -137,6 +138,25 @@ describe("Runtime", () => {
 		} finally {
 			await rm(directory, {recursive: true, force: true});
 		}
+	});
+
+	it("rejects a Run Process when qualified outer sandbox is absent", async () => {
+		const processManager = createNodeRunProcessManager({
+			resolveArtifact: async (challenge) => ({
+				runtimeBuildDigest: challenge.runtimeBuildDigest,
+				runProtocolVersion: challenge.runProtocolVersion,
+				outerSandboxProfileDigest: sha256Digest("required-outer-sandbox"),
+				executable: process.execPath,
+				args: [],
+				cwd: process.cwd(),
+			}),
+		});
+		const runtime = createRuntime(runtimeOptions(processManager));
+		await assert.rejects(
+			runtime.start(runRequest()),
+			/Run Process sandbox does not match the qualified Runtime Build/,
+		);
+		await runtime.shutdown();
 	});
 
 	it("forces termination when shutdown cancellation cannot cross the process channel", async () => {
@@ -486,10 +506,13 @@ function runRequest() {
 function activeRunProcessBinding() {
 	const build = createQualifiedRuntimeBuild({
 		manifest: createRuntimeBuildManifest({
-			schemaVersion: "3.0.0",
+			schemaVersion: "4.0.0",
 			domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
 			runProtocolVersion: RUN_PROTOCOL.version,
 			nodeVersion: "26.1.0",
+			nodeExecutablePath: "/qualified/node",
+			nodeExecutableDigest: sha256Digest("node:26.1.0"),
+			outerSandboxProfileDigest: null,
 			dshSourceCommit: "a".repeat(40),
 			dshPackageClosureDigest: sha256Digest("dsh-closure"),
 			cordisClosureDigest: sha256Digest("cordis-closure"),
