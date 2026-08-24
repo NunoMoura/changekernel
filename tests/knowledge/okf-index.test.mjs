@@ -32,7 +32,7 @@ describe("OKF index and log navigation", () => {
 		assert.match(root.content, /14 concepts under `product\/`/);
 		assert.match(root.content, /29 concepts under `system\/`/);
 		assert.match(components.content, /Change Intake/);
-		assert.match(components.content, /Domain Plugins/);
+		assert.match(components.content, /Domains/);
 		assert.match(components.content, /Checks/);
 		assert.match(components.content, /Review/);
 	});

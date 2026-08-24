@@ -68,7 +68,7 @@ tags: [system, vocabulary]
 | Delivery effect | Separately authorized change to a protected delivery boundary. | [Project Server](system/components/project-server.md) |
 | Development stage | User-facing Decision, Planning, Implementation, or Review stage backed by its semantic Stage Loop. | [Project Server](system/components/project-server.md) |
 | Discovery Finding | Producer-neutral bounded report of new or out-of-scope work that carries no Check or Change authority. | [Change Intake](system/components/change-intake.md) |
-| Domain Plugin | Release- or operator-installed Plugin defining bounded domain vocabulary, deterministic interpretation, and plane-specific contributions without extending kernel authority. | [Domain Plugins](system/components/domain-plugins.md) |
+| Domains | Registry of admitted Domain Plugins; each plugin supplies one bounded domain's vocabulary, deterministic interpretation, and plane-specific contributions without extending kernel authority. | [Domains](system/components/domains.md) |
 | Evidence Record | Immutable metadata record for an exact observation with provenance and freshness. | [Evidence](system/components/evidence.md) |
 | Execution Ledger | Append-only retained record of exact CodeWiki-controlled Run inputs, queries, provider receipts, compaction, usage, cancellation, and output. | [Runtime](system/components/runtime.md) |
 | External Agent Client | Independently operated harness that calls CodeWiki through MCP and retains ownership of its own prompts, tools, local reads, models, subagents, code runtime, and memory. | [Clients](system/components/clients.md) |

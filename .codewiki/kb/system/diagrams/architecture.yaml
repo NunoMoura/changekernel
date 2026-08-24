@@ -7,7 +7,7 @@ components:
   - { id: protocol, concept: cw:component:protocol, label: Client-Project Server Protocol, zone: core }
   - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
   - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
-  - { id: domain-plugins, concept: cw:component:domain-plugins, label: Domain Plugins, zone: core }
+  - { id: domains, concept: cw:component:domains, label: Domains, zone: core }
   - { id: decision, concept: cw:component:decision, label: Decision, zone: core }
   - { id: planning, concept: cw:component:planning, label: Planning, zone: core }
   - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
@@ -32,9 +32,9 @@ connections:
     label: submits one immutable Run Request
     boundary: { type: authority, failure: Reject unauthorized, stale, malformed, or unsupported Run Request. }
   - { id: project-server-invokes-intake, from: project-server, to: intake, type: invokes, label: normalizes untrusted intent, external captures, and Outcome Diagnostics }
-  - { id: project-server-reads-domain-plugin, from: project-server, to: domain-plugins, type: reads, label: validates exact installed domain contract and compiler identity }
+  - { id: project-server-reads-domain-plugin, from: project-server, to: domains, type: reads, label: validates exact installed domain contract and compiler identity }
   - id: domain-plugin-produces-knowledge
-    from: domain-plugins
+    from: domains
     to: knowledge
     type: produces
     label: defines bounded vocabulary, relationships, and deterministic projection rules

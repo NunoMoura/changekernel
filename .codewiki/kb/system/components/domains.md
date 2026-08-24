@@ -1,7 +1,7 @@
 ---
 type: System Component
-codewiki_id: cw:component:domain-plugins
-title: Domain Plugins
+codewiki_id: cw:component:domains
+title: Domains
 description: Defines exact release-managed domain meaning without extending CodeWiki kernel authority or loading executable project code.
 status: stable
 tags: [system, component, plugins]
@@ -13,9 +13,9 @@ codewiki_relationships:
     target: cw:story:maintainer.automate-safe-work
     rationale: Domain Plugins contribute admitted domain context, Checks, realization, and guarded-effect bindings without owning Stage Loop authority.
 ---
-# Domain Plugins
+# Domains
 
-A Domain Plugin is a release- or operator-installed CodeWiki Plugin that supplies one bounded domain vocabulary and its deterministic interpretation. It is neither a workflow engine, project script, Check Pack, DSH profile, nor authority extension. Backend v1 supports one built-in Software Development Domain Plugin; other domains remain deferred until software and one infrastructure-as-code extension prove the boundary.
+CodeWiki organizes governed meaning through **Domains**: each domain is one admitted Domain Plugin, a release- or operator-installed CodeWiki Plugin that supplies one bounded domain vocabulary and its deterministic interpretation. A Domain Plugin is neither a workflow engine, project script, Check Pack, DSH profile, nor authority extension. Backend v1 ships exactly one Domain Plugin — Software Development — as the first member of the Domains registry; additional domains remain deferred until the software plugin and one infrastructure-as-code extension prove the boundary.
 
 CodeWiki kernel always owns stable subject identity, accepted Knowledge State, Change, four Stage Loops, Candidate custody, Gate reduction, expected-head compare-and-swap, authorization, provenance, Review, and protected effects. A Domain Plugin cannot add a stage, change a transition, authenticate itself, grant authority, select a model, create a Check Result outside Checks, write canonical state directly, or apply an effect outside Project Server.
 

@@ -39,7 +39,7 @@ The broad product API remains `src/index.ts`. Project Server publishes at `@nuno
 
 CodeWiki exposes five distinct categories:
 
-- **Domain Plugins** are release- or operator-installed semantic packages defining bounded domain vocabulary, deterministic interpretation, context, realization, and plane-specific contributions. Backend v1 ships only the built-in Software Development Domain Plugin.
+- **Domain Plugins** are release- or operator-installed semantic packages defining bounded domain vocabulary, deterministic interpretation, context, realization, and plane-specific contributions. Domains is the registry of admitted plugins; Backend v1 ships exactly one: the built-in Software Development Domain Plugin.
 - **DSH Plugins** are trusted executable capabilities admitted into one exact trusted-host, Run Process, or client trust plane through a release-managed DSH profile. Raw DSH or Cordis packages cannot load from project files.
 - **Infrastructure Providers** implement trusted CodeWiki seams such as repository, Workbench, persistence, transport, authentication, credential custody, provider brokerage, or delivery. They are release- or operator-owned infrastructure, not project policy.
 - **Client Plugins and Integrations** implement App, CLI, Agent-product, channel, or collaboration surfaces over CodeWiki protocol. They own presentation or transport, never Project Server authority.

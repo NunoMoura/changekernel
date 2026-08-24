@@ -37,6 +37,7 @@ CodeWiki uses the DSH extension vocabulary:
 - **Consumer**: a plugin that uses a capability without owning its provider.
 - **Bundle or profile**: a release-managed DSH composition selecting plugins.
 - **Bridge**: a cross-process or cross-protocol connection between separately owned systems.
+- **Domains**: the registry of admitted Domain Plugins; each plugin supplies one bounded domain's meaning without extending kernel authority.
 - **Domain Plugin**: a CodeWiki plugin that supplies bounded domain meaning without extending kernel authority.
 
 `adapter` is not a CodeWiki product extension category. The word may remain in private implementation details or upstream API names where an object literally translates protocols, but public CodeWiki composition uses Plugin, Provider, Consumer, Bundle, Profile, or Bridge.
@@ -49,7 +50,7 @@ A Domain Plugin may contain separately admitted contributions for three planes:
 
 No contribution may add a Stage Loop, alter fixed transitions, authenticate itself, grant authority, bypass expected-head compare-and-swap, create a Check Result outside Checks, or apply a protected effect outside Project Server.
 
-The first and only Backend v1 Domain Plugin is Software Development. It owns the existing Product/System/Design Knowledge vocabulary, source and test realization, Git lineage, software Checks, Workbenches, integration, and delivery semantics. Other domains remain deferred until the software plugin and one infrastructure-as-code extension prove the kernel boundary.
+Backend v1 ships the Domains registry with exactly one admitted Domain Plugin: Software Development. It owns the existing Product/System/Design Knowledge vocabulary, source and test realization, Git lineage, software Checks, Workbenches, integration, and delivery semantics. Additional domains remain deferred until the software plugin and one infrastructure-as-code extension prove the kernel boundary.
 
 ## DSH upstream research baseline
 
@@ -189,7 +190,7 @@ Success: CodeWiki uses one current, pinned, replay-qualified DSH plugin baseline
 
 Success: CodeWiki owns route authority and custody evidence while DSH plugins own provider and authorization protocols.
 
-### B5 — Domain Plugin kernel and Software Development plugin
+### B5 — Domains kernel and Software Development plugin
 
 - Define Domain Plugin manifest and deterministic Project Server contribution contract.
 - Extract current software-specific Knowledge vocabulary, relationship rules, context compilation, source/test realization, Checks, Git integration, and delivery bindings into the built-in Software Development Domain Plugin.

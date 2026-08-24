@@ -41,7 +41,7 @@ This source repository does not install or load CodeWiki during stabilization. F
 CodeWiki
 |
 +-- Clients: CLI, future DSH client-Plugin App, optional Pi, External Agent Clients
-+-- Domain Plugins: built-in Software Development
++-- Domains: Software Development Domain Plugin
 |
 `-- Backend
     +-- Project Server
@@ -197,7 +197,7 @@ CodeWiki keeps vertical, horizontal, temporal, and delivery alignment separate. 
 
 Knowledge Fact Inventory `1.0.0` classifies every semantic cell and projection file as durable seed, accepted semantic cell, deterministic view, or Git-derived realization. Stage Efficiency Metrics `1.0.0` measures source, cached-input, output, and tool-result tokens, byte repetition/novelty, Candidate amplification, active-Change expansion, and cache hits without granting authority.
 
-OKF provides portable Knowledge; the built-in Software Development Domain Plugin adds software vocabulary, realization, Checks, and Git/delivery bindings while CodeWiki kernel retains exact authority and Change accountability. OKF validation, export, and consumption are owned by `src/knowledge/**` and exposed through the curated Project Server surface.
+OKF provides portable Knowledge; Domains supply admitted meaning — the built-in Software Development Domain Plugin adds software vocabulary, realization, Checks, and Git/delivery bindings while CodeWiki kernel retains exact authority and Change accountability. OKF validation, export, and consumption are owned by `src/knowledge/**` and exposed through the curated Project Server surface.
 
 Knowledge support is OKF v0.2 with v0.1 fallback consumption, including `sources`, `generated`, `verified`, lifecycle/freshness metadata, meaningful concept types, unknown-field preservation, and inert Attested Computation definitions.
 
@@ -365,7 +365,7 @@ If CodeWiki cannot materially reduce drift, false acceptance, lost context, repe
 - [Review](.codewiki/kb/system/components/review.md)
 - [Project Server](.codewiki/kb/system/components/project-server.md)
 - [Runtime](.codewiki/kb/system/components/runtime.md)
-- [Domain Plugins](.codewiki/kb/system/components/domain-plugins.md)
+- [Domains](.codewiki/kb/system/components/domains.md)
 - [Knowledge](.codewiki/kb/system/components/knowledge.md)
 - [Lexicon](.codewiki/kb/lexicon.md)
 - [Backend v1 plan](BACKEND_V1_PLAN.md)
