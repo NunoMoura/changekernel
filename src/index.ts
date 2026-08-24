@@ -24,6 +24,33 @@ export {
 	type ClientProjectServerTransportContext,
 } from "./protocol/client-project-server.ts";
 export {
+	assertFrontendCapabilityDocument,
+	assertFrontendRequestContext,
+	createFrontendEventBatch,
+	FRONTEND_API_PROTOCOL,
+	FRONTEND_CAPABILITIES,
+	FRONTEND_CAPABILITY_DOCUMENT_PROTOCOL,
+	FRONTEND_COMMAND_NAMES,
+	FRONTEND_ERROR_CODES,
+	FRONTEND_EVENT_NAMES,
+	FRONTEND_EVENT_PROTOCOL,
+	FRONTEND_PROJECTION_NAMES,
+	FRONTEND_QUERY_NAMES,
+	frontendErrorEnvelope,
+	FrontendApiError,
+	normalizeFrontendEventRequest,
+	type FrontendCapabilityDocument,
+	type FrontendCommandName,
+	type FrontendErrorCode,
+	type FrontendErrorEnvelope,
+	type FrontendEventBatch,
+	type FrontendEventName,
+	type FrontendEventRequest,
+	type FrontendProjectionInvalidatedEvent,
+	type FrontendProjectionName,
+	type FrontendQueryName,
+} from "./protocol/frontend.ts";
+export {
 	DEFAULT_WIKI_CONFIG,
 	resolveWikiConfig,
 	resolveWikiStageModelRoute,
@@ -402,6 +429,13 @@ export * from "./runtime/checks/code.ts";
 export * from "./runtime/checks/model.ts";
 export * from "./runtime/checks/secure-code-sandbox.ts";
 export * from "./project-server/admission/external-candidate.ts";
+export {
+	assertDshClientSlotQualification,
+	DSH_CLIENT_SLOT_QUALIFICATION,
+	DSH_CLIENT_SLOT_QUALIFICATION_PROTOCOL,
+	type DshClientPackageQualification,
+	type DshClientSlotQualification,
+} from "./clients/dsh/client-slot-qualification.ts";
 export * from "./project-server/harness/contracts.ts";
 export * from "./project-server/harness/service.ts";
 export * from "./project-server/mcp/binding.ts";

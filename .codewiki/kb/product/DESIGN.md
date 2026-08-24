@@ -73,7 +73,7 @@ CodeWiki should feel calm, exact, and inspectable. It is the standalone software
 
 Git artifact history, CodeWiki semantic state, and Agent execution evidence remain visibly distinct. Visual design presents bounded project facts. It never invents lifecycle state, confidence, completion, activity, approval, custody, or causality. System components own those facts; this document owns how visible facts are arranged and distinguished.
 
-Frontend v1 begins only after Backend v1 freezes its authenticated API and event protocol. Its preferred substrate is a release-managed DSH web profile: DSH client Plugins supply generic shell, connection, settings, authorization interaction, session, and UI-slot mechanics, while CodeWiki client Plugins supply governed Change, Stage, Evidence, and effect views. DSH presentation state never becomes CodeWiki authority.
+Frontend v1 begins only after every Backend v1 release gate passes. It uses the authenticated CodeWiki App Server and frozen Frontend API `1.0.0`. Exact DSH `0.1.1-rc.2` typed slots, layout, and primitives are qualified for release-managed CodeWiki Client Plugin composition, but the stock DSH Web profile and Connection are excluded because they provide no authentication layer. Stock DSH Provider settings and authorization cards are also excluded because CodeWiki must project and authorize exact routes, accounts, credentials, escalation, and budgets through its own authority seams. DSH presentation state never becomes CodeWiki authority.
 
 ## Colors
 

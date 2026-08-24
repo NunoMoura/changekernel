@@ -31,7 +31,7 @@ CodeWiki is private pre-production software under active Backend v1 stabilizatio
 - `.codewiki/views/**` and `.codewiki/runtime/**` are disposable generated/private state, not source truth.
 - Pi native compaction remains the active conversation-compaction mechanism.
 
-The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 plus Backend v1 B0–B5 is implemented and green; frontend contract qualification, operational hardening, safe dogfood, and final Backend v1 qualification remain pre-production work. Product frontend v1 starts only after the authenticated Backend contract freezes.
+The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 plus Backend v1 B0–B6 is implemented and green; packaging/state evolution, operational hardening, safe dogfood, and final Backend v1 qualification remain pre-production work. Product frontend v1 starts only after every Backend v1 release gate passes.
 
 This source repository does not install or load CodeWiki during stabilization. Future source-repository dogfooding is ratified only for an immutable stable release installed in an isolated external controller and requires a separate explicit activation Change after external gates pass; historical pins, traces, approvals, and releases grant no authority.
 
@@ -349,9 +349,9 @@ Built-in pack ids are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyr
 
 ## Backend v1 and frontend entry gate
 
-`BACKEND_V1_PLAN.md` owns the active production sequence. CodeWiki has removed Switchyard and its backend selector and now pins one exact replay-qualified DSH Plugin baseline. Software Development Domain extraction and exact identity propagation are complete. Before Backend v1 release, CodeWiki must freeze authenticated frontend API and event contracts; retain OAuth as unsupported until its known qualification gaps close; prove install, upgrade, rollback, backup, restore, crash recovery, diagnostics, and audit; and complete external release-N-governs-N+1 dogfood without loading mutable source-controller code.
+`BACKEND_V1_PLAN.md` owns the active production sequence. CodeWiki has removed Switchyard and its backend selector and now pins one exact replay-qualified DSH Plugin baseline. Software Development Domain extraction and exact identity propagation are complete. Authenticated Frontend API, capability discovery, and resumable redacted event contracts are frozen at `1.0.0`. Before Backend v1 release, CodeWiki must retain OAuth as unsupported until its known qualification gaps close; prove install, upgrade, rollback, backup, restore, crash recovery, diagnostics, and audit; and complete external release-N-governs-N+1 dogfood without loading mutable source-controller code.
 
-Unsupported deployment, provider, authentication, and platform combinations fail closed. Frontend product implementation begins only after those backend contracts freeze. A disposable DSH client-slot spike may validate reuse of DSH shell, settings, authorization, connection, and UI primitives without becoming a compatibility surface.
+Unsupported deployment, provider, authentication, and platform combinations fail closed. Frontend product implementation begins only after every Backend v1 release gate passes. The disposable DSH client-slot spike qualified exact `0.1.1-rc.2` typed slots, layout, and primitives, but rejected the stock Web connection because it has no authentication layer and rejected direct Provider settings/authorization reuse because those surfaces mutate the wrong authority planes. Frontend v1 keeps the authenticated CodeWiki App Server host.
 
 If CodeWiki cannot materially reduce drift, false acceptance, lost context, repeated repair, and Integration errors enough to offset ceremony and latency, it should shrink rather than duplicate commodity harness mechanics.
 

@@ -17,6 +17,10 @@ import {
 const APP_SESSION_COOKIE = "codewiki_session";
 const APP_SESSION_LIFETIME_SECONDS = 86_400;
 const APP_ENDPOINTS = Object.freeze({
+	"GET /api/v1/capabilities": "frontend.capabilities.read",
+	"POST /api/v1/query": "frontend.query",
+	"POST /api/v1/command": "frontend.command",
+	"POST /api/v1/events": "frontend.events.read",
 	"GET /api/state": "app.state.read",
 	"GET /api/changes": "app.changes.read",
 	"GET /api/configuration": "app.configuration.read",

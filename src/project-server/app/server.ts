@@ -28,6 +28,11 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { openSystemBrowser } from "../../preview/browser-adapter.ts";
 import {
+	frontendErrorEnvelope,
+	FrontendApiError,
+} from "../../protocol/frontend.ts";
+import {createFrontendProjectServerGateway} from "../frontend/gateway.ts";
+import {
 	parseDashboardPreviewCommand,
 	type DashboardPreviewControl,
 	unavailableDashboardPreviewControl,
@@ -678,7 +683,11 @@ async function createProjectServerApp(
 		try {
 			await routeRequest(runtime, request, response);
 		} catch (error) {
-			writeProjectServerError(response, error);
+			if (isFrontendApiPath(request.url || "")) {
+				writeFrontendError(response, error);
+			} else {
+				writeProjectServerError(response, error);
+			}
 		}
 	});
 	await listenAppServer(server, preferredEndpoint?.port ?? 0);
@@ -747,6 +756,19 @@ async function routeRequest(
 		runtime.sessionAuthorization.session.project.repositoryIdentity,
 	);
 	if (!endpoint) {
+		if (isFrontendApiPath(url.pathname)) {
+			writeFrontendError(
+				response,
+				new FrontendApiError(
+					"unsupported_capability",
+					method !== "GET" && method !== "POST"
+						? "Frontend API method is unsupported."
+						: "Frontend API endpoint is unsupported.",
+				),
+				method !== "GET" && method !== "POST" ? 405 : 404,
+			);
+			return;
+		}
 		if (method !== "GET" && method !== "POST") {
 			writeJson(response, 405, {error: "Method not allowed"});
 			return;
@@ -765,7 +787,18 @@ async function routeRequest(
 			request,
 		});
 	} catch {
-		writeJson(response, 403, {error: "Forbidden"});
+		if (isFrontendApiPath(url.pathname)) {
+			writeFrontendError(
+				response,
+				new FrontendApiError(
+					"authorization_denied",
+					"Frontend request was not authorized.",
+				),
+				403,
+			);
+		} else {
+			writeJson(response, 403, {error: "Forbidden"});
+		}
 		return;
 	}
 	if (endpoint.endpointId === "app.session.establish") {
@@ -781,7 +814,13 @@ async function routeRequest(
 	}
 	if (
 		method === "POST" &&
-		(await routeAuthorizedPost(runtime, request, response, url))
+		(await routeAuthorizedPost(
+			runtime,
+			request,
+			response,
+			url,
+			authorization.requestContext,
+		))
 	) {
 		return;
 	}
@@ -815,6 +854,10 @@ async function routeAuthorizedGet(
 	url: URL,
 	context: ClientProjectServerRequestContext,
 ): Promise<boolean> {
+	if (url.pathname === "/api/v1/capabilities") {
+		writeJson(response, 200, frontendGateway(runtime).capabilities(context));
+		return true;
+	}
 	if (url.pathname === "/api/state") {
 		writeJson(response, 200, await readCodewikiAppState(runtime, context));
 		return true;
@@ -851,8 +894,12 @@ async function routeAuthorizedPost(
 	request: IncomingMessage,
 	response: ServerResponse,
 	url: URL,
+	context: ClientProjectServerRequestContext,
 ): Promise<boolean> {
 	if (
+		url.pathname !== "/api/v1/query" &&
+		url.pathname !== "/api/v1/command" &&
+		url.pathname !== "/api/v1/events" &&
 		url.pathname !== "/api/previews/commands" &&
 		url.pathname !== "/api/shutdown"
 	) {
@@ -865,6 +912,18 @@ async function routeAuthorizedPost(
 		return true;
 	}
 	const command = await readJsonRequest(request);
+	if (url.pathname === "/api/v1/query") {
+		writeJson(response, 200, await frontendGateway(runtime).query(context, command));
+		return true;
+	}
+	if (url.pathname === "/api/v1/command") {
+		writeJson(response, 200, await frontendGateway(runtime).command(context, command));
+		return true;
+	}
+	if (url.pathname === "/api/v1/events") {
+		writeJson(response, 200, await frontendGateway(runtime).events(context, command));
+		return true;
+	}
 	if (url.pathname === "/api/previews/commands") {
 		writeJson(
 			response,
@@ -1089,7 +1148,73 @@ function writeJson(
 	response.end(JSON.stringify(body));
 }
 
-function writeProjectServerError(response: ServerResponse, error: unknown): void {
+function frontendGateway(runtime: ProjectServerApp) {
+	if (!runtime.projectServer) {
+		throw new FrontendApiError(
+			"unavailable",
+			"Authenticated Project Server frontend gateway is unavailable.",
+			true,
+		);
+	}
+	return createFrontendProjectServerGateway({
+		repositoryIdentity:
+			runtime.sessionAuthorization.session.project.repositoryIdentity,
+		projectServer: runtime.projectServer,
+	});
+}
+
+function isFrontendApiPath(value: string): boolean {
+	return value.split("?", 1)[0]?.startsWith("/api/v1/") || false;
+}
+
+function writeFrontendError(
+	response: ServerResponse,
+	error: unknown,
+	status?: number,
+): void {
+	const normalized = frontendRequestError(error);
+	writeJson(
+		response,
+		status ?? frontendErrorStatus(normalized),
+		frontendErrorEnvelope(normalized),
+	);
+}
+
+function frontendRequestError(error: unknown): FrontendApiError {
+	if (error instanceof FrontendApiError) return error;
+	if (error instanceof AppRequestError) {
+		if (error.status === 403) {
+			return new FrontendApiError(
+				"authorization_denied",
+				"Frontend request was not authorized.",
+			);
+		}
+		return new FrontendApiError(
+			error.status === 409 ? "conflict" : "invalid_request",
+			error.message,
+		);
+	}
+	return new FrontendApiError("internal", "Frontend request failed.");
+}
+
+function frontendErrorStatus(error: unknown): number {
+	if (!(error instanceof FrontendApiError)) {
+		return error instanceof AppRequestError ? error.status : 500;
+	}
+	if (error.code === "authentication_required") return 401;
+	if (error.code === "authorization_denied") return 403;
+	if (error.code === "unsupported_capability") return 404;
+	if (error.code === "conflict" || error.code === "stale_snapshot") return 409;
+	if (error.code === "rate_limited") return 429;
+	if (error.code === "unavailable") return 503;
+	if (error.code === "internal") return 500;
+	return 400;
+}
+
+function writeProjectServerError(
+	response: ServerResponse,
+	error: unknown,
+): void {
 	if (response.headersSent || response.writableEnded || response.destroyed) {
 		response.destroy(error instanceof Error ? error : undefined);
 		return;

@@ -15,6 +15,8 @@ import {
 } from "../../src/clients/pi/prompt/index.ts";
 import { CODEWIKI_TOOL_NAMES } from "../../src/clients/pi/tools/index.ts";
 import {SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN} from "../../src/domains/software-development/plugin.ts";
+import {FRONTEND_CAPABILITIES} from "../../src/protocol/frontend.ts";
+import {DSH_CLIENT_SLOT_QUALIFICATION} from "../../src/clients/dsh/client-slot-qualification.ts";
 
 const packageJson = jsonFile("package.json");
 const buildTsconfig = jsonFile("tsconfig.build.json");
@@ -305,6 +307,24 @@ describe("install readiness checklist", () => {
 			pluginVersion: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginVersion,
 			admissionDigest: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.admissionDigest,
 		});
+	});
+
+	it("freezes the authenticated frontend contract without adopting unsafe DSH authority", () => {
+		assert.equal(FRONTEND_CAPABILITIES.frontendApi.version, "1.0.0");
+		assert.equal(FRONTEND_CAPABILITIES.authentication.required, true);
+		assert.equal(FRONTEND_CAPABILITIES.redaction.internalStorageHandles, "omitted");
+		assert.equal(
+			DSH_CLIENT_SLOT_QUALIFICATION.decisions.slotRegistry,
+			"qualified",
+		);
+		assert.equal(
+			DSH_CLIENT_SLOT_QUALIFICATION.decisions.stockConnection,
+			"rejected-no-authentication-layer",
+		);
+		assert.equal(
+			DSH_CLIENT_SLOT_QUALIFICATION.frontendSubstrate.productImplementationAuthorized,
+			false,
+		);
 	});
 
 	it("keeps only Pi and MCP product host config keys", () => {

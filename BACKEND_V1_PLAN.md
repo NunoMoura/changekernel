@@ -90,8 +90,8 @@ The exact package lock and Runtime provenance are the executable pin. Research l
 | `dsh-authorization` | First-party plugin-owned human authorization flows | Adopt and qualify | CodeWiki supplies the trusted interaction surface and route/account authorization; no model sees a flow, prompt, token, or credential record. |
 | `dsh-credentials` | First-party reference and opaque-record seam with serialized mutation | Adopt | Use as capability contract. Credential payload semantics stay owned by provider plugin. |
 | `dsh-credentials-local` | First-party file provider, owner-only permissions, explicitly not a same-UID model boundary | Conditional | May qualify for isolated single-user deployment only when outside every Run mount. Multi-user deployment requires a stronger credential Provider such as keychain, KMS, or secret manager. |
-| Provider settings, model discovery, and model-selection UI | First-party host/client plugins | Reuse in frontend | Do not duplicate provider forms or OAuth interaction UI unless CodeWiki policy requires a narrower projection. |
-| Web client shell, modules, connection service, primitives, and typed UI slots | First-party product plugins | Spike, then adopt if qualified | First CodeWiki frontend should be DSH client plugins and a release-managed profile bundle, while all authority continues through CodeWiki frontend API. |
+| Provider settings, model discovery, and model-selection UI | First-party host/client plugins tied to DSH settings and credential mutation | Reject direct Frontend v1 reuse | The pinned cards call DSH `settings.mutate` and `credentials.set`, which would bypass CodeWiki route/account authorization and credential custody. Frontend v1 may reuse presentation primitives but requires CodeWiki-owned projections and commands. |
+| Web client shell, modules, connection service, primitives, and typed UI slots | First-party product plugins; the stock connection has a reachability fence but explicitly no authentication layer | Partial adoption after B6 qualification | Exact `0.1.1-rc.2` slots, layout, and primitives passed external lifecycle and undeclared-slot rejection. The stock web profile and connection are rejected for Frontend v1; CodeWiki's authenticated App Server remains the host and a future CodeWiki client Plugin may consume the qualified presentation primitives. |
 | DSH profile plugin bundles | First-party product surface | Adopt | CodeWiki release owns exact bundle composition. Project files may select admitted Domain Plugin identity but cannot install DSH code. |
 | TypeScript SDK, JSON-RPC, and ACP | First-party product surfaces | Evaluate as frontend bridges | Preserve CodeWiki authentication, API versioning, redaction, idempotency, and event ordering; do not expose raw DSH authority. |
 | MCP client | First-party plugin; OAuth refresh not fully connected at baseline | Defer unsupported auth paths | No static-token workaround for expiring enterprise endpoints. Re-evaluate after upstream support or provide a qualified credential Provider plugin without duplicating protocol logic. |
@@ -106,6 +106,8 @@ The exact package lock and Runtime provenance are the executable pin. Research l
 ## Known upstream risks
 
 - DSH remains release-candidate software and may change package topology quickly.
+- At `0.1.1-rc.2`, the stock Web connection's trusted-host check is a DNS-rebinding/reachability fence, explicitly not authentication; remote Web is unsupported, client unload is incomplete, and out-of-tree client Plugins must reproduce an unpublished bundle preset.
+- DSH Models settings directly mutate DSH settings and credential domains. Those cards cannot represent CodeWiki's narrower authorized route/account/pool/escalation policy and are rejected as Frontend v1 authority surfaces.
 - `0.1.1-rc.2` has a reported OAuth grant-rotation serialization defect and model availability-filtering defect. OAuth remains unsupported until a selected release proves refresh, entitlement filtering, cancellation, redaction, account binding, forget, revocation posture, and failures.
 - A custom OpenAI-compatible report says `baseURL` can replace the bearer key. B4's exact `pi-ai@0.82.1` deterministic wire fixture proves the resolved key, never `baseURL`, on the pinned closure; package or request-wire drift must fail this gate.
 - Authorization attempts are process-local and not resumable after browser or host loss.
@@ -201,12 +203,12 @@ Success: CodeWiki owns route authority and custody evidence while DSH plugins ow
 
 Success: software behavior remains unchanged while domain meaning is one exact admitted plugin rather than a hard-coded generic-engine assumption.
 
-### B6 — Frontend-facing backend contract freeze and DSH client-slot qualification
+### B6 — Frontend-facing backend contract freeze and DSH client-slot qualification — complete
 
-- Freeze authenticated frontend API `1.0.0`, event ordering, resumability, idempotency, redaction, error taxonomy, and capability discovery.
-- Expose only canonical CodeWiki commands, queries, operations, and projections; no raw DSH or Project Server storage handles.
-- Build a disposable, non-product DSH web/client plugin spike for Change navigation, one stage view, provider settings reuse, and authorization interaction; the spike creates no frontend compatibility surface.
-- Decide from evidence whether frontend v1 uses DSH web profile composition; do not retain a second shell if DSH slots satisfy accessibility, lifecycle, and security requirements.
+- [x] Freeze authenticated Frontend API `1.0.0`, capability discovery `1.0.0`, and event protocol `1.0.0`, including exact request-context binding, bounded projections, semantic command idempotency, cursor/generation resume, reset-on-gap, redacted invalidation events, and a fixed error taxonomy.
+- [x] Expose only `codewiki.app-state.read`, `codewiki.changes.read`, `codewiki.configuration.read`, `codewiki.decision-attention.read`, `codewiki.decision.select`, and `codewiki.projection.invalidated` through authenticated `/api/v1/**`; reject unknown capabilities and omit raw DSH, canonical storage, internal event messages, Client IDs, and transport idempotency keys.
+- [x] Run a disposable external spike over thirteen exact DSH `0.1.1-rc.2` client packages for Change navigation, one Stage view, provider settings, authorization interaction, recursive slot disposal, undeclared-slot rejection, package integrity, and zero-vulnerability evidence.
+- [x] Qualify DSH slots, layout, and primitives for later client composition, but reject the stock DSH web profile/connection because it has no authentication layer and reject direct provider-settings/authorization reuse because it mutates the wrong settings and credential authority planes. Keep the authenticated CodeWiki App Server as Frontend v1 host and require a CodeWiki Frontend API Client Plugin for any qualified DSH presentation primitives.
 
 Success: the frontend-facing backend contract and client-substrate decision are ready for B7–B9 qualification. Product frontend implementation remains blocked until every Backend v1 release gate passes.
 

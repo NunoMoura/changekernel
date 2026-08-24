@@ -30,6 +30,7 @@ export const TARGET_PROJECT_SERVER_SUBDIRECTORIES = [
 	"coordinator",
 	"delivery",
 	"effects",
+	"frontend",
 	"harness",
 	"integration",
 	"lifecycle",
