@@ -101,6 +101,32 @@ assert.equal(packageJson.bin, undefined);
 assert.equal(packageJson.publishConfig, undefined);
 assert.deepEqual(packageJson.pi, { extensions: ["dist/pi-extension.js"] });
 assert.equal(packageJson.pi.skills, undefined);
+assert.deepEqual(
+	packageJson.codewiki.checkPacks.map(({stage, packId}) => stage + "/" + packId),
+	[
+		"decision/software-development-default",
+		"planning/software-development-default",
+		"implementation/software-development-default",
+		"review/software-development-default",
+	],
+);
+assert.equal(
+	existsSync(
+		join(
+			packageRoot,
+			"check-packs",
+			"decision",
+			"software-development-default",
+			"active_change_compatibility",
+			"CHECK.md",
+		),
+	),
+	true,
+);
+assert.equal(
+	existsSync(join(packageRoot, "check-packs", "decision", "codewiki-project-server")),
+	false,
+);
 assert.deepEqual(Object.keys(packageJson.exports).sort(), [
 	".",
 	"./checks",
@@ -202,8 +228,20 @@ assert.equal(existsSync(join(packageRoot, "dist", "project-server", "workers", "
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "workers", "start.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "project-server", "workers", "handoff.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "checks", "index.js")), true);
-assert.equal(existsSync(join(packageRoot, "dist", "checks", "packs", "defaults.js")), true);
+assert.equal(existsSync(join(packageRoot, "dist", "checks", "packs", "defaults.js")), false);
 assert.equal(existsSync(join(packageRoot, "dist", "checks", "packs", "loader.js")), true);
+assert.equal(
+	existsSync(
+		join(
+			packageRoot,
+			"dist",
+			"domains",
+			"software-development",
+			"check-packs.js",
+		),
+	),
+	true,
+);
 assert.equal(existsSync(join(packageRoot, "dist", "runtime", "checks", "code.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "runtime", "checks", "model.js")), true);
 assert.equal(existsSync(join(packageRoot, "dist", "changes", "triage", "standards.js")), true);
@@ -641,6 +679,32 @@ const {bootstrapCodewiki} = await import(
 	pathToFileURL(join(packageRoot, "dist", "project", "bootstrap.js")).href,
 );
 await bootstrapCodewiki(process.cwd(), {projectName: "packed-project-server"});
+for (const stage of ["decision", "planning", "implementation", "review"]) {
+	assert.equal(
+		existsSync(
+			join(
+				process.cwd(),
+				".codewiki",
+				"check-packs",
+				stage,
+				"software-development-default",
+			),
+		),
+		true,
+	);
+}
+assert.equal(
+	existsSync(
+		join(
+			process.cwd(),
+			".codewiki",
+			"check-packs",
+			"decision",
+			"codewiki-project-server",
+		),
+	),
+	false,
+);
 const projectServerApi = await connectProjectServerApi(
 	process.cwd(),
 	{

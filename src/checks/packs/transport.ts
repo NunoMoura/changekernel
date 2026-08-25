@@ -12,7 +12,7 @@ import {
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 
-export type CheckPackTransportKind = "npm" | "git" | "local";
+export type CheckPackTransportKind = "npm" | "git" | "local" | "domain";
 
 export interface CheckPackTransportSource {
 	readonly kind: CheckPackTransportKind;
@@ -251,7 +251,14 @@ function checkStage(value: unknown): CheckStage {
 }
 
 function sourceKind(value: unknown): CheckPackTransportKind {
-	if (value !== "npm" && value !== "git" && value !== "local") throw new Error("Check Pack transport source kind is invalid.");
+	if (
+		value !== "npm" &&
+		value !== "git" &&
+		value !== "local" &&
+		value !== "domain"
+	) {
+		throw new Error("Check Pack transport source kind is invalid.");
+	}
 	return value;
 }
 

@@ -1,7 +1,9 @@
+import type {CheckPackTransportPlan} from "../checks/packs/transport.ts";
 import {
 	assertDomainPluginIdentity,
 	type DomainPluginIdentity,
 } from "./contracts.ts";
+import {prepareSoftwareDevelopmentDefaultCheckPacks} from "./software-development/check-packs.ts";
 import {SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY} from "./software-development/plugin.ts";
 import {
 	componentKbRefs as softwareComponentKbRefs,
@@ -38,6 +40,9 @@ export type {
 
 export interface DomainProjectServerContribution {
 	readonly domainPlugin: DomainPluginIdentity;
+	readonly checkPacks: Readonly<{
+		prepareDefaultPacks(): Promise<CheckPackTransportPlan>;
+	}>;
 	readonly sourceRealization: Readonly<{
 		componentKbRefs: typeof softwareComponentKbRefs;
 		componentsForRefs: typeof softwareComponentsForRefs;
@@ -57,9 +62,15 @@ export interface DomainProjectServerContribution {
 
 export function createDomainProjectServerContribution(input: {
 	readonly domainPlugin: DomainPluginIdentity;
+	readonly checkPacks: DomainProjectServerContribution["checkPacks"];
 	readonly sourceRealization: DomainProjectServerContribution["sourceRealization"];
 }): DomainProjectServerContribution {
 	assertDomainPluginIdentity(input.domainPlugin);
+	if (typeof input.checkPacks.prepareDefaultPacks !== "function") {
+		throw new Error(
+			"Domain Project Server contribution prepareDefaultPacks is missing.",
+		);
+	}
 	const required = [
 		"componentKbRefs",
 		"componentsForRefs",
@@ -80,6 +91,7 @@ export function createDomainProjectServerContribution(input: {
 	}
 	return Object.freeze({
 		domainPlugin: input.domainPlugin,
+		checkPacks: Object.freeze({...input.checkPacks}),
 		sourceRealization: Object.freeze({...input.sourceRealization}),
 	});
 }
@@ -87,6 +99,9 @@ export function createDomainProjectServerContribution(input: {
 export const SOFTWARE_DEVELOPMENT_PROJECT_SERVER_CONTRIBUTION =
 	createDomainProjectServerContribution({
 		domainPlugin: SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY,
+		checkPacks: {
+			prepareDefaultPacks: prepareSoftwareDevelopmentDefaultCheckPacks,
+		},
 		sourceRealization: {
 			componentKbRefs: softwareComponentKbRefs,
 			componentsForRefs: softwareComponentsForRefs,

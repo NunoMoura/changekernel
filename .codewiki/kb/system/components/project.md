@@ -37,18 +37,18 @@ Canonical project-local layout is:
     TRACE-CHG-<id>.jsonl
   check-packs/
     decision/
-      default/
+      software-development-default/
         skill/<skill-name>/        # optional
         <check-id>/
       <pack-name>/
     planning/
-      default/
+      software-development-default/
       <pack-name>/
     implementation/
-      default/
+      software-development-default/
       <pack-name>/
     review/
-      default/
+      software-development-default/
       <pack-name>/
   check-packs.lock.json
 ```
@@ -59,4 +59,4 @@ Knowledge under `kb/**` is the exact materialized checkpoint of current accepted
 
 Markdown and YAML under `kb/**` remain portable agent-friendly OKF material. Compact durable intent is canonical there. Repeated indexes, expanded dictionaries, dossiers, expanded narration, status, queues, migration reports, WorkState, Alignment, Changes Backlog, App State, and other Views are deterministic projections produced on demand or cached only in private Backend state; a View is logical and does not imply a project-local file export. Backend-owned DSH Agent Sessions and delegated child traces are execution Evidence referenced by receipts, not project source truth. Compact Evidence metadata enters Change Trace while large or private artifact bytes remain in their existing authority boundary; CodeWiki creates no canonical `.codewiki/evidence/` database or generic `.codewiki/changes.log`. Root `CHANGELOG.md` records package releases, not project Change history.
 
-Bootstrap creates the compact initial Knowledge State with immutable semantic IDs and one empty bare-bones editable `default/` Pack directory per stage, without inventing a Skill or Check. This happens once. After bootstrap, accepted Knowledge mutation occurs only through a confirmed Decision transition; direct or external Knowledge bytes are observed as drift and enter Change Intake. Missing or deleted defaults are never recreated on startup or upgrade. A stage with no Checks remains valid and its Gate passes with a visible warning. Source architecture declarations describe target dependency direction and are checked independently from temporary refactoring progress.
+Bootstrap creates the compact initial Knowledge State with immutable semantic IDs and validates and copies the selected Domain Plugin's `software-development-default` Pack template for each stage. It records exact Domain source and tree identities, invents no Pack Skill, and performs this seed only while creating the first project configuration. Existing projects adopt defaults explicitly; missing, edited, or deleted Packs are never recreated or overwritten by bootstrap, startup, or upgrade. After bootstrap, accepted Knowledge mutation occurs only through a confirmed Decision transition; direct or external Knowledge bytes are observed as drift and enter Change Intake. A stage with no Checks remains valid and its Gate passes with a visible warning. Source architecture declarations describe target dependency direction and are checked independently from temporary refactoring progress.

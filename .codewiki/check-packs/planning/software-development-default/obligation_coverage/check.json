@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "obligation_coverage",
+  "version": "1.0.0",
+  "description": "Checks one Planning Candidate for complete and executable coverage of accepted obligations.",
+  "requirement": "The exact Planning Candidate must map every accepted Knowledge target, requirement, dependency, risk, and verification obligation into a bounded Work Graph without orphaned or undeclared work.",
+  "implementation": {
+    "kind": "model",
+    "route": "planning-obligation-coverage",
+    "profile": "planning-obligation-coverage",
+    "maximumTokens": 4096
+  },
+  "inputs": [
+    {
+      "source": "subject",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "knowledge",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    }
+  ],
+  "measurement": {
+    "kind": "binary"
+  },
+  "failure": {
+    "code": "planning_obligation_coverage_failed",
+    "message": "Planning Candidate does not cover every accepted obligation.",
+    "remediation": [
+      "Add or correct Work Units, dependencies, risks, and verification obligations without changing accepted meaning."
+    ]
+  },
+  "limits": {
+    "timeoutMs": 120000,
+    "maximumAttempts": 1,
+    "maximumInputBytes": 4194304,
+    "maximumOutputBytes": 65536
+  }
+}

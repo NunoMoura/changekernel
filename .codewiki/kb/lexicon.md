@@ -64,7 +64,7 @@ tags: [system, vocabulary]
 | Contribution Routing | Read-only projection of eligible reviewers, contributors, and Implementation Workers with match reasons, coverage, unknowns, and staleness. | [Alignment](system/components/alignment.md) |
 | Infrastructure Provider | Trusted Plugin implementing a repository, Workbench, persistence, transport, authentication, delivery, or other control-plane seam. | [Package](system/components/package.md) |
 | Decision | Stage Loop that evaluates accepted intent and desired-Knowledge impact. | [Decision](system/components/decision.md) |
-| Default Pack | Ordinary bare-bones Pack materialized once for a stage, then editable, removable, and never restored automatically. | [Checks](system/components/checks.md) |
+| Default Pack | Domain-supplied stage Pack copied once into project policy; editable, removable, and never auto-restored. | [Checks](system/components/checks.md) |
 | Delegated Run | CodeWiki-launched Claude Code, Codex, ACP, or future harness run for which CodeWiki owns dispatch and admitted artifacts while the child harness owns its inner Turn Loop. | [Runtime](system/components/runtime.md) |
 | Delivery effect | Separately authorized change to a protected delivery boundary. | [Project Server](system/components/project-server.md) |
 | Development stage | User-facing Decision, Planning, Implementation, or Review stage backed by its semantic Stage Loop. | [Project Server](system/components/project-server.md) |

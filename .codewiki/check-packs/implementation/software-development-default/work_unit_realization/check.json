@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "work_unit_realization",
+  "version": "1.0.0",
+  "description": "Checks one Work Unit Candidate against its exact accepted assignment and evidence.",
+  "requirement": "The exact Work Unit Candidate must realize every assigned Knowledge Effect and acceptance requirement, include proportionate source and test Evidence, preserve dependency outputs, and contain no undeclared scope.",
+  "implementation": {
+    "kind": "model",
+    "route": "implementation-work-unit-realization",
+    "profile": "implementation-work-unit-realization",
+    "maximumTokens": 4096
+  },
+  "inputs": [
+    {
+      "source": "subject",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "repository",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "knowledge",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "evidence",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    }
+  ],
+  "measurement": {
+    "kind": "binary"
+  },
+  "failure": {
+    "code": "work_unit_realization_failed",
+    "message": "Work Unit Candidate does not exactly realize its accepted assignment.",
+    "remediation": [
+      "Repair the Candidate within the same Work Unit continuity and preserve exact assignment scope."
+    ]
+  },
+  "limits": {
+    "timeoutMs": 120000,
+    "maximumAttempts": 1,
+    "maximumInputBytes": 4194304,
+    "maximumOutputBytes": 65536
+  }
+}

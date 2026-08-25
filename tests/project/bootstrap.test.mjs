@@ -154,35 +154,56 @@ describe("project bootstrap", () => {
 			assert.equal(config.hosts.pi.enabled, false);
 			assert.equal("checks" in config, false);
 			assert.equal("customChecks" in config, false);
-			for (const stage of [
-				"decision",
-				"planning",
-				"implementation",
-				"review",
-			]) {
+			const expectedChecks = {
+				decision: ["active_change_compatibility"],
+				planning: ["obligation_coverage"],
+				implementation: ["work_unit_realization"],
+				review: [
+					"aggregate_acceptance",
+					"cross_unit_behavior",
+					"full_build",
+					"integration_behavior",
+					"provenance_integrity",
+					"scope_discipline",
+				],
+			};
+			for (const [stage, checks] of Object.entries(expectedChecks)) {
 				assert.deepEqual(
 					await readdir(
-						join(root, ".codewiki", "check-packs", stage, "default"),
+						join(
+							root,
+							".codewiki",
+							"check-packs",
+							stage,
+							"software-development-default",
+						),
 					),
-					stage === "decision"
-						? ["active_change_compatibility"]
-						: stage === "review"
-							? [
-									"aggregate_acceptance",
-									"cross_unit_behavior",
-									"full_build",
-									"integration_behavior",
-									"provenance_integrity",
-									"scope_discipline",
-								]
-							: [],
+					checks,
 				);
 			}
+			const transportLock = JSON.parse(
+				await readFile(
+					join(root, ".codewiki", "check-packs.lock.json"),
+					"utf8",
+				),
+			);
+			assert.deepEqual(Object.keys(transportLock.packages), [
+				"@nunomoura/codewiki",
+			]);
+			assert.equal(
+				transportLock.packages["@nunomoura/codewiki"].source.kind,
+				"domain",
+			);
+			assert.equal(
+				transportLock.packages["@nunomoura/codewiki"].source.locator,
+				"codewiki.domain.software-development",
+			);
 			const decisionPack = await loadCheckPackSnapshot({
 				repoRoot: root,
 				stage: "decision",
 			});
 			assert.equal(decisionPack.checkCount, 1);
+			assert.equal(decisionPack.packs[0].id, "software-development-default");
 			assert.equal(
 				decisionPack.packs[0].checks[0].checkId,
 				"active_change_compatibility",
@@ -268,10 +289,28 @@ describe("project bootstrap", () => {
 				"cw:component:knowledge",
 			);
 
+			await rm(
+				join(
+					root,
+					".codewiki/check-packs/planning/software-development-default",
+				),
+				{recursive: true},
+			);
 			const second = await bootstrapCodewiki(root);
 			assert.equal(second.updated.length, 0);
 			assert.ok(second.skipped.includes(".codewiki/config.json"));
 			assert.ok(second.skipped.includes(".codewiki/kb/product/DESIGN.md"));
+			assert.ok(second.preserved.includes(".codewiki/check-packs"));
+			await assert.rejects(
+				() =>
+					readdir(
+						join(
+							root,
+							".codewiki/check-packs/planning/software-development-default",
+						),
+					),
+				(error) => error?.code === "ENOENT",
+			);
 		} finally {
 			await rm(root, { recursive: true, force: true });
 		}

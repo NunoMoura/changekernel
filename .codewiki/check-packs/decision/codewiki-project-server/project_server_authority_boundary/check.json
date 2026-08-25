@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "project_server_authority_boundary",
+  "version": "1.0.0",
+  "description": "Checks CodeWiki Decision meaning against fixed Project Server, Runtime, DSH, Broker Host, and Domain ownership.",
+  "requirement": "The exact Decision Candidate must preserve Project Server as sole project authority; keep Runtime, DSH, Broker Host, Domain Plugins, Clients, Harnesses, and Checks within their admitted custody; and introduce no mutable self-loading or repository-local executable authority.",
+  "implementation": {
+    "kind": "model",
+    "route": "decision-codewiki-project-server",
+    "profile": "codewiki-project-server-decision",
+    "maximumTokens": 4096
+  },
+  "inputs": [
+    {
+      "source": "subject",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "knowledge",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    }
+  ],
+  "measurement": {
+    "kind": "binary"
+  },
+  "failure": {
+    "code": "codewiki_project_server_authority_failed",
+    "message": "Decision Candidate violates a fixed CodeWiki authority or custody boundary.",
+    "remediation": [
+      "Correct proposed meaning before acceptance; do not defer an authority conflict to Planning or Implementation."
+    ]
+  },
+  "limits": {
+    "timeoutMs": 120000,
+    "maximumAttempts": 1,
+    "maximumInputBytes": 4194304,
+    "maximumOutputBytes": 65536
+  }
+}

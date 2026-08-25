@@ -241,6 +241,7 @@ describe("install readiness checklist", () => {
 	it("keeps Lab deleted and out of the packaged Pi extension", () => {
 		assert.deepEqual(packageJson.files, [
 			"dist",
+			"check-packs",
 			"README.md",
 			"CHANGELOG.md",
 			"LICENSE",
@@ -294,7 +295,13 @@ describe("install readiness checklist", () => {
 
 	it("keeps the active .codewiki top level in the target shape", () => {
 		const entries = readdirSync(".codewiki").sort();
-		assert.deepEqual(entries, ["config.json", "kb", "traces"]);
+		assert.deepEqual(entries, [
+			"check-packs",
+			"check-packs.lock.json",
+			"config.json",
+			"kb",
+			"traces",
+		]);
 		assert.equal(entries.includes("runtime"), false);
 		assert.equal(entries.includes("views"), false);
 	});

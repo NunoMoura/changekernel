@@ -3,7 +3,7 @@
 	"domain": {
 		"pluginId": "codewiki.domain.software-development",
 		"pluginVersion": "1.0.0",
-		"admissionDigest": "sha256:80a59f325ad853b6a94d93d0ab5862e389eb835af5645943f7c1ca5e07f56190"
+		"admissionDigest": "sha256:249c212967c45265730dd5a6c7c2ec7319173f774080098bd28e58a00430c721"
 	},
 	"runtime": {
 		"maxWorkers": 1,

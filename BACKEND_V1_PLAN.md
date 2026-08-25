@@ -210,7 +210,7 @@ Success: software behavior remains unchanged while domain meaning is one exact a
 - [x] Run a disposable external spike over thirteen exact DSH `0.1.1-rc.2` client packages for Change navigation, one Stage view, provider settings, authorization interaction, recursive slot disposal, undeclared-slot rejection, package integrity, and zero-vulnerability evidence.
 - [x] Qualify DSH slots, layout, and primitives for later client composition, but reject the stock DSH web profile/connection because it has no authentication layer and reject direct provider-settings/authorization reuse because it mutates the wrong settings and credential authority planes. Keep the authenticated CodeWiki App Server as Frontend v1 host and require a CodeWiki Frontend API Client Plugin for any qualified DSH presentation primitives.
 
-Success: the frontend-facing backend contract and client-substrate decision are ready for B7–B9 qualification. Product frontend implementation remains blocked until every Backend v1 release gate passes.
+Success: the frontend-facing backend contract and client-substrate decision are ready for B7–B11 qualification. Product frontend implementation remains blocked until every Backend v1 release gate passes.
 
 ### B7 — Backend packaging, lifecycle, and state evolution — complete
 
@@ -231,7 +231,28 @@ Success: operators can recover or roll back without losing canonical meaning, du
 
 Success: supported deployments fail closed, explain failures, and recover deterministically under production faults.
 
-### B9 — Safe dogfood and Backend v1 release candidate
+### B9 — Software Development defaults and CodeWiki repository Check Packs — complete
+
+- [x] Publish one versioned `software-development-default` Check Pack template for Decision, Planning, Implementation, and Review as exact Software Development Domain release resources.
+- [x] Validate and copy Domain defaults once during first bootstrap, bind Domain and tree identity in the passive transport lock, require explicit existing-project adoption, and never restore or overwrite project-owned Pack bytes.
+- [x] Adopt those four defaults into the CodeWiki project and add separate Check-only `codewiki-project-server` Packs for authority, Planning coverage, Work Unit realization, and aggregate integrity.
+- [x] Keep CodeWiki project Packs absent from shipped Domain defaults and free of Pack Skills, Runtime authority, Harness execution, credentials, lifecycle behavior, and hidden protected floors.
+- [x] Prove installed controller N, governed subject N+1, and accepted protected-head Pack snapshot as distinct identities; a Candidate cannot author or activate the Pack that judges itself.
+- [x] Qualify source, packed install, bootstrap replay, deletion preservation, protected loading, package contents, Domain identity, and no-project-policy-shipping behavior.
+
+Success: every Software Development stage begins with explicit editable domain policy, while CodeWiki's own stronger policy remains subject-owned and independently judged.
+
+### B10 — Repository diagnostics closure and warning ratchet
+
+- [ ] Fix all 59 current project-wide policy blockers without blanket suppression; parse unknown values at boundaries, replace bare `object` parameters, and document only genuinely proven cast invariants.
+- [ ] Produce one complete deduplicated warning inventory and classify every finding as security/authority/data-loss, correctness/type-boundary, architecture/cycle, dead-code/complexity, style, or scanner false positive.
+- [ ] Reach zero unresolved security, authority, data-loss, and correctness warnings; fix scanner rules or configuration for false positives instead of scattering suppressions.
+- [ ] Give every remaining finding an explicit owner and disposition, establish a no-new-warning changed-file gate plus non-increasing repository baseline, and separately resolve or accept each known import cycle and Knip finding.
+- [ ] Before frontend entry, reach zero actionable warnings and retain only documented non-actionable tool limitations.
+
+Success: diagnostics provide a stable regression signal instead of a noisy historical baseline, and every retained finding has an explicit disposition.
+
+### B11 — Safe dogfood and Backend v1 release candidate
 
 - Install reviewed release N outside the source repository with isolated Project Server state and credentials.
 - Use release N to govern development of N+1 without resolving or loading mutable N+1 Project Server code.
@@ -254,6 +275,8 @@ Frontend v1 product implementation may begin only when all of these are true:
 - install, upgrade, rollback, backup, restore, and crash recovery pass in disposable external environments;
 - supported containment fails closed and passes adversarial qualification;
 - operational status, audit evidence, and diagnostics are sufficient for production support;
+- Software Development defaults and CodeWiki repository Check Packs are qualified without controller/subject self-judgment;
+- repository diagnostics contain no blocker, unclassified warning, or actionable warning;
 - release N safely governs N+1 under independent-controller dogfood;
 - full tests, packed installs, audits, benchmarks, and manifest verification are green;
 - no unresolved critical security, authority, data-loss, or provider-custody defect remains.

@@ -7,8 +7,10 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import {installCheckPackTransport} from "../checks/packs/transport.ts";
+import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../domains/defaults.ts";
+import {projectServerContributionForDomain} from "../domains/project-server.ts";
 import { serializeOkfDocument } from "../knowledge/okf-frontmatter.ts";
-import {defaultCheckPackDirectories} from "../checks/packs/defaults.ts";
 import { resolveWikiConfig } from "./config.ts";
 import { WIKI_CONFIG_PATH } from "./config-file.ts";
 
@@ -29,6 +31,7 @@ export interface BootstrapAudit {
 	existing: {
 		codewiki: boolean;
 		config: boolean;
+		checkPacks: boolean;
 		kb: boolean;
 		traces: boolean;
 	};
@@ -60,7 +63,6 @@ const TARGET_DIRECTORIES = [
 	".codewiki/kb/system/flows",
 	".codewiki/kb/system/diagrams",
 	".codewiki/traces",
-	...defaultCheckPackDirectories().map((entry) => entry.relativePath),
 ];
 const TARGET_CODEWIKI_ROOTS = new Set([
 	"config.json",
@@ -96,6 +98,10 @@ export async function bootstrapCodewiki(
 	const project = await bootstrapProjectName(repoRoot, options.projectName);
 	const plan = await buildBootstrapPlan(repoRoot, project);
 	const audit = await auditBootstrapState(repoRoot, plan.boundaries);
+	const defaultPackPlan = audit.existing.config
+		? undefined
+		: await projectServerContributionForDomain(DEFAULT_DOMAIN_PLUGIN_IDENTITY)
+				.checkPacks.prepareDefaultPacks();
 	const result: BootstrapResult = {
 		repoRoot,
 		project,
@@ -118,6 +124,13 @@ export async function bootstrapCodewiki(
 			options.force === true,
 			result,
 		);
+	}
+	if (defaultPackPlan) {
+		const installed = await installCheckPackTransport({
+			repoRoot,
+			plan: defaultPackPlan,
+		});
+		result.created.push(...installed, ".codewiki/check-packs.lock.json");
 	}
 	return result;
 }
@@ -149,6 +162,9 @@ export async function auditBootstrapState(
 	const existing = {
 		codewiki,
 		config: await pathExists(join(repoRoot, WIKI_CONFIG_PATH)),
+		checkPacks: await isDirectory(
+			join(repoRoot, ".codewiki", "check-packs"),
+		),
 		kb: await isDirectory(join(repoRoot, ".codewiki", "kb")),
 		traces: await isDirectory(join(repoRoot, ".codewiki", "traces")),
 	};
@@ -166,6 +182,7 @@ function preservedBootstrapPaths(
 ): string[] {
 	return [
 		audit.existing.config && !force ? WIKI_CONFIG_PATH : "",
+		audit.existing.checkPacks ? ".codewiki/check-packs" : "",
 		audit.existing.kb ? ".codewiki/kb" : "",
 		audit.existing.traces ? ".codewiki/traces" : "",
 	].filter(Boolean);
@@ -210,11 +227,6 @@ function starterFiles(
 		.map((boundary) => boundary.path);
 	return {
 		[WIKI_CONFIG_PATH]: configJson(project),
-		".codewiki/check-packs/decision/default/active_change_compatibility/check.json":
-			activeChangeCompatibilityDefinition(),
-		".codewiki/check-packs/decision/default/active_change_compatibility/CHECK.md":
-			activeChangeCompatibilityInstructions(),
-		...defaultReviewCheckFiles(),
 		".codewiki/kb/lexicon.md": nativeDocument(
 			{
 				okf_version: "0.2",
@@ -285,130 +297,6 @@ function starterFiles(
 
 function configJson(project: string): string {
 	return `${JSON.stringify(resolveWikiConfig({ project }), null, "\t")}\n`;
-}
-
-function defaultReviewCheckFiles(): Record<string, string> {
-	const checks = [
-		[
-			"aggregate_acceptance",
-			"Complete aggregate acceptance",
-			"The integrated aggregate must realize every ratified Knowledge Effect, unchanged-Knowledge target, and acceptance requirement.",
-		],
-		[
-			"cross_unit_behavior",
-			"Cross-unit behavior",
-			"Interactions among all contributing Work Units must preserve the accepted behavior and invariants.",
-		],
-		[
-			"full_build",
-			"Full build",
-			"Current Evidence must prove the complete project build and test policy against the exact aggregate tree.",
-		],
-		[
-			"integration_behavior",
-			"Integration behavior",
-			"The exact private lineage and resulting aggregate tree must integrate without unresolved conflicts or stale dependencies.",
-		],
-		[
-			"provenance_integrity",
-			"Provenance integrity",
-			"Every Candidate, Result, Evidence record, Run receipt, integration receipt, and aggregate binding must have complete controlled provenance.",
-		],
-		[
-			"scope_discipline",
-			"Scope discipline",
-			"The aggregate must contain only changes required by the ratified Change and accepted Planning obligations.",
-		],
-	] as const;
-	const files: Record<string, string> = {};
-	for (const [id, title, requirement] of checks) {
-		const root = `.codewiki/check-packs/review/default/${id}`;
-		files[`${root}/check.json`] = `${JSON.stringify(
-			{
-				schemaVersion: "1.0.0",
-				id,
-				version: "1.0.0",
-				description: `Checks ${title.toLowerCase()} over one exact frozen Implementation aggregate.`,
-				requirement,
-				implementation: {
-					kind: "model",
-					route: `review-${id.replaceAll("_", "-")}`,
-					profile: "aggregate-review",
-					maximumTokens: 4096,
-				},
-				inputs: [
-					{source: "subject", refs: [], required: true, maximumBytes: 1_048_576},
-					{source: "evidence", refs: [], required: true, maximumBytes: 1_048_576},
-				],
-				measurement: {kind: "binary"},
-				failure: {
-					code: `review_${id}_failed`,
-					message: `${title} failed for the exact aggregate Review subject.`,
-					remediation: [
-						"Return evidence-linked feedback through the Project Server-owned Review route.",
-					],
-				},
-				limits: {
-					timeoutMs: 120_000,
-					maximumAttempts: 1,
-					maximumInputBytes: 4_194_304,
-					maximumOutputBytes: 65_536,
-				},
-			},
-			null,
-			2,
-		)}\n`;
-		files[`${root}/CHECK.md`] = `# ${title}\n\n## Requirement\n\n${requirement}\n\n## Pass\n\nPass only when the supplied aggregate subject and admitted Evidence prove the requirement completely.\n\n## Fail\n\nFail when proof is missing, stale, contradictory, or shows a violation.\n\n## Feedback\n\nIdentify exact Evidence and affected aggregate obligations. Do not choose lifecycle authority; Project Server owns typed routing.\n`;
-	}
-	return files;
-}
-
-function activeChangeCompatibilityDefinition(): string {
-	return `${JSON.stringify(
-		{
-			schemaVersion: "1.0.0",
-			id: "active_change_compatibility",
-			version: "1.0.0",
-			description:
-				"Checks one Decision Candidate against every accepted nonterminal Change.",
-			requirement:
-				"The exact Candidate must have complete accepted active Changes coverage and no unresolved semantic contradiction, duplicate Change, or improper supersession.",
-			implementation: {
-				kind: "model",
-				route: "decision-compatibility",
-				profile: "decision-compatibility",
-				maximumTokens: 4096,
-			},
-			inputs: [
-				{
-					source: "subject",
-					refs: [],
-					required: true,
-					maximumBytes: 1_048_576,
-				},
-			],
-			measurement: {kind: "binary"},
-			failure: {
-				code: "active_change_incompatible",
-				message: "Decision Candidate is incompatible with the accepted active Changes.",
-				remediation: [
-					"Resolve the contradiction, duplication, or supersession relationship and submit a new Candidate.",
-				],
-			},
-			limits: {
-				timeoutMs: 120_000,
-				maximumAttempts: 1,
-				maximumInputBytes: 4_194_304,
-				maximumOutputBytes: 65_536,
-			},
-		},
-		null,
-		2,
-	)}\n`;
-}
-
-function activeChangeCompatibilityInstructions(): string {
-	return `# Requirement\n\nEvaluate only the supplied Decision Candidate. Verify that \`acceptedActiveChanges.coverage\` is \`complete\`, expected and compared Change IDs match exactly, the accepted Effect and invariant index accounts for every active Change, and every \`expanded\` revision was considered. Index-only Changes are mechanically proven disjoint and must not be expanded. Judge only unresolved semantic contradiction, duplicate Change, or improper supersession.\n\n# Pass\n\nPass when coverage and identity bindings are exact and no unresolved semantic contradiction, duplication, or improper supersession exists. Shared targets or overlapping scope alone do not fail this Check.\n\n# Fail\n\nFail when any compared accepted revision exposes an unresolved semantic contradiction, duplicate Change, or improper supersession. Do not fail for scheduling, resource contention, dependency ordering, or patch conflicts; those belong to later stages. Stop rather than infer omitted accepted Change state when coverage or identity is incomplete.\n\n# Feedback\n\nIdentify the conflicting Change revision and the exact contradiction, duplication, or improper supersession. For incomplete coverage or identity drift, identify the mismatched field and require a fresh evaluation.\n`;
 }
 
 function nativeDocument(

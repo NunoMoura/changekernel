@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "aggregate_acceptance",
+  "version": "1.0.0",
+  "description": "Checks complete aggregate acceptance over one exact frozen Implementation aggregate.",
+  "requirement": "The integrated aggregate must realize every ratified Knowledge Effect, unchanged-Knowledge target, and acceptance requirement.",
+  "implementation": {
+    "kind": "model",
+    "route": "review-aggregate-acceptance",
+    "profile": "aggregate-review",
+    "maximumTokens": 4096
+  },
+  "inputs": [
+    {
+      "source": "subject",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "evidence",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    }
+  ],
+  "measurement": {
+    "kind": "binary"
+  },
+  "failure": {
+    "code": "review_aggregate_acceptance_failed",
+    "message": "Complete aggregate acceptance failed for the exact aggregate Review subject.",
+    "remediation": [
+      "Return evidence-linked feedback through the Project Server-owned Review route."
+    ]
+  },
+  "limits": {
+    "timeoutMs": 120000,
+    "maximumAttempts": 1,
+    "maximumInputBytes": 4194304,
+    "maximumOutputBytes": 65536
+  }
+}

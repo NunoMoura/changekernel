@@ -6,7 +6,7 @@ description: Owns Check, Check Pack, Pack Skill snapshot, Check SDK, bounded exe
 status: stable
 tags: [system, component]
 codewiki_component: cw:component:checks
-codewiki_source_patterns: ["src/checks/**"]
+codewiki_source_patterns: ["src/checks/**", "check-packs/**", ".codewiki/check-packs/**"]
 codewiki_test_patterns: ["tests/checks/**"]
 codewiki_relationships:
   - type: realizes
@@ -36,9 +36,9 @@ Checks is a root domain alongside Changes and Stage Loops. A Check defines one p
 
 A Pack is its stage-local directory; it has no extra `checks/` level or local manifest. Optional `skill/` contains one standard Agent Skill directory. Every other root directory is one Check with `check.json` and exactly one `CHECK.mjs` or `CHECK.md`. Code dependencies are bundled into self-contained `CHECK.mjs`.
 
-Bootstrap creates one empty editable `default/` Pack per stage once. Users may replace or delete all content; upgrades never restore it. Zero Checks passes with `selectedCheckCount: 0` and `no_checks_configured`, including Skill-only Packs, without synthetic Results.
+The Software Development Domain ships one versioned `software-development-default` Pack per stage. Bootstrap validates and copies them once; `check-packs.lock.json` binds Domain identity, trees, and installed paths. Existing projects adopt explicitly. Copied bytes are editable project policy; deletion is supported and never reversed by bootstrap, startup, or upgrade. Zero Checks, including Skill-only Packs, passes with `selectedCheckCount: 0`, `no_checks_configured`, and no synthetic Results.
 
-After bootstrap, only direct file edits or authenticated App actions change Packs. Folder presence defines active policy; no protected floor, tier, activation ceremony, or hidden catalog exists.
+After adoption, only direct edits or authenticated App actions change Packs. Folder presence defines policy; no protected floor, tier, activation ceremony, or hidden catalog exists. CodeWiki tracks separate Check-only `codewiki-project-server` Packs absent from shipped defaults. Release N loads their accepted protected-head snapshots to judge N+1, so Candidate bytes cannot select their judge.
 
 Project Server resolves each stage's active Packs into one deterministic policy snapshot. Implementation Stage Policy `1.0.0` binds it once; every Work Unit package contains that exact Check Pack snapshot while Candidate, declared inputs, and stage lineage vary. Planning, workers, routes, and models cannot select bespoke subsets. Editing an Implementation Pack stales affected remaining Results uniformly.
 

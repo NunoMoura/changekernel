@@ -64,6 +64,7 @@
 	"homepage": "https://github.com/NunoMoura/codewiki#readme",
 	"files": [
 		"dist",
+		"check-packs",
 		"README.md",
 		"CHANGELOG.md",
 		"LICENSE",
@@ -96,6 +97,30 @@
 			"tests/**/*.mjs"
 		],
 		"ignoreDependencies": []
+	},
+	"codewiki": {
+		"checkPacks": [
+			{
+				"stage": "decision",
+				"packId": "software-development-default",
+				"path": "check-packs/decision/software-development-default"
+			},
+			{
+				"stage": "planning",
+				"packId": "software-development-default",
+				"path": "check-packs/planning/software-development-default"
+			},
+			{
+				"stage": "implementation",
+				"packId": "software-development-default",
+				"path": "check-packs/implementation/software-development-default"
+			},
+			{
+				"stage": "review",
+				"packId": "software-development-default",
+				"path": "check-packs/review/software-development-default"
+			}
+		]
 	},
 	"pi": {
 		"extensions": [

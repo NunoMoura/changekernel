@@ -16,7 +16,27 @@ export const SOFTWARE_DEVELOPMENT_DEPENDENCY_CLOSURE = Object.freeze([
 ] as const);
 
 export const SOFTWARE_DEVELOPMENT_IMPLEMENTATION_CLOSURE = Object.freeze([
+	"src/checks/packs/transport.ts",
+	"check-packs/decision/software-development-default/active_change_compatibility/CHECK.md",
+	"check-packs/decision/software-development-default/active_change_compatibility/check.json",
+	"check-packs/implementation/software-development-default/work_unit_realization/CHECK.md",
+	"check-packs/implementation/software-development-default/work_unit_realization/check.json",
+	"check-packs/planning/software-development-default/obligation_coverage/CHECK.md",
+	"check-packs/planning/software-development-default/obligation_coverage/check.json",
+	"check-packs/review/software-development-default/aggregate_acceptance/CHECK.md",
+	"check-packs/review/software-development-default/aggregate_acceptance/check.json",
+	"check-packs/review/software-development-default/cross_unit_behavior/CHECK.md",
+	"check-packs/review/software-development-default/cross_unit_behavior/check.json",
+	"check-packs/review/software-development-default/full_build/CHECK.md",
+	"check-packs/review/software-development-default/full_build/check.json",
+	"check-packs/review/software-development-default/integration_behavior/CHECK.md",
+	"check-packs/review/software-development-default/integration_behavior/check.json",
+	"check-packs/review/software-development-default/provenance_integrity/CHECK.md",
+	"check-packs/review/software-development-default/provenance_integrity/check.json",
+	"check-packs/review/software-development-default/scope_discipline/CHECK.md",
+	"check-packs/review/software-development-default/scope_discipline/check.json",
 	"src/domains/project-server.ts",
+	"src/domains/software-development/check-packs.ts",
 	"src/domains/software-development/codewiki-kb-profile.ts",
 	"src/domains/software-development/fact-classification.ts",
 	"src/domains/software-development/okf-source-map.ts",
@@ -26,11 +46,14 @@ export const SOFTWARE_DEVELOPMENT_IMPLEMENTATION_CLOSURE = Object.freeze([
 ] as const);
 
 export const SOFTWARE_DEVELOPMENT_QUALIFICATION_CLOSURE = Object.freeze([
+	"tests/checks/pack-transport.test.mjs",
 	"tests/domains/binding.test.mjs",
+	"tests/domains/check-packs.test.mjs",
 	"tests/domains/contracts.test.mjs",
 	"tests/domains/migration.test.mjs",
 	"tests/domains/okf-source-map.test.mjs",
 	"tests/domains/project-server.test.mjs",
+	"tests/project/bootstrap.test.mjs",
 ] as const);
 
 /**
@@ -46,9 +69,9 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 		pluginVersion: "1.0.0",
 		packageName: "@nunomoura/codewiki",
 		packageIntegrity:
-			"sha256:f004dc5077e7efcbff1dbadaa22c91cba38c67d46a2d526a4835eec5dae75a99",
+			"sha256:d3028162054b3db6877321eabc217dd9616c183488fdc8ad63507930529c14e1",
 		implementationDigest:
-			"sha256:792182f2937a1fab796a620fe06144a5fbafc9e59a14c2a91b99594c3f106d34",
+			"sha256:234afde48452a9d3eaeb965ca2bfee646001c3b3e05960b962d7986a62ef9b7d",
 		entrypoints: {
 			projectServer: "project-server",
 			dshPlugins: [],
@@ -66,7 +89,7 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 			maxContextBytes: 16 * 1024 * 1024,
 		},
 		qualificationEvidenceDigest:
-			"sha256:a07d3eebff06be4381f8a91c90a85c10b1d43c125a2cb2d9ca34b760bd94c2ee",
+			"sha256:29d085a3e414768da874d7ec86492d2e479d219702bf2ccc3c72e1761fb70ae6",
 		contributions: [
 			"check-inputs",
 			"context-compilation",

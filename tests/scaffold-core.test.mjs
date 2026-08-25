@@ -48,6 +48,7 @@ describe("fresh scaffold", () => {
 		assert.equal(packageJson.keywords.includes("pi-package"), true);
 		assert.deepEqual(packageJson.files, [
 			"dist",
+			"check-packs",
 			"README.md",
 			"CHANGELOG.md",
 			"LICENSE",

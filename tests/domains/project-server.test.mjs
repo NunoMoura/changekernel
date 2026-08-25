@@ -8,6 +8,7 @@ import {
 } from "../../src/domains/project-server.ts";
 import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../src/domains/defaults.ts";
 
+const checkPacks = SOFTWARE_DEVELOPMENT_PROJECT_SERVER_CONTRIBUTION.checkPacks;
 const sourceRealization =
 	SOFTWARE_DEVELOPMENT_PROJECT_SERVER_CONTRIBUTION.sourceRealization;
 
@@ -22,6 +23,7 @@ describe("Domain Project Server contribution", () => {
 		);
 		assert.equal(pathMatchesPattern("src/a.ts", "src/**"), true);
 		assert.equal(Object.isFrozen(contribution), true);
+		assert.equal(Object.isFrozen(contribution.checkPacks), true);
 		assert.equal(Object.isFrozen(contribution.sourceRealization), true);
 	});
 
@@ -29,9 +31,19 @@ describe("Domain Project Server contribution", () => {
 		assert.throws(
 			() => createDomainProjectServerContribution({
 				domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
+				checkPacks,
 				sourceRealization: {...sourceRealization, pathMatchesPattern: null},
 			}),
 			/pathMatchesPattern is missing/,
+		);
+		assert.throws(
+			() =>
+				createDomainProjectServerContribution({
+					domainPlugin: DEFAULT_DOMAIN_PLUGIN_IDENTITY,
+					checkPacks: {prepareDefaultPacks: null},
+					sourceRealization,
+				}),
+			/prepareDefaultPacks is missing/,
 		);
 		const foreign = {
 			...DEFAULT_DOMAIN_PLUGIN_IDENTITY,

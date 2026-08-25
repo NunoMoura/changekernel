@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "project_server_aggregate_integrity",
+  "version": "1.0.0",
+  "description": "Checks CodeWiki aggregate Review for authority preservation and scope-required release evidence.",
+  "requirement": "The exact integrated aggregate must preserve fixed CodeWiki authority and custody boundaries, prove complete cross-unit realization, and include every packed, external, recovery, containment, provider, lifecycle, and cleanup artifact required by the accepted Change scope.",
+  "implementation": {
+    "kind": "model",
+    "route": "review-codewiki-project-server",
+    "profile": "codewiki-project-server-review",
+    "maximumTokens": 4096
+  },
+  "inputs": [
+    {
+      "source": "subject",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "repository",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "knowledge",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "evidence",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    },
+    {
+      "source": "provider_receipts",
+      "refs": [],
+      "required": true,
+      "maximumBytes": 1048576
+    }
+  ],
+  "measurement": {
+    "kind": "binary"
+  },
+  "failure": {
+    "code": "codewiki_project_server_review_failed",
+    "message": "Integrated aggregate fails CodeWiki Project Server integrity or required qualification.",
+    "remediation": [
+      "Return exact evidence-linked feedback to affected Work Unit Implementation or route a Planning or Decision defect through Project Server."
+    ]
+  },
+  "limits": {
+    "timeoutMs": 120000,
+    "maximumAttempts": 1,
+    "maximumInputBytes": 4194304,
+    "maximumOutputBytes": 65536
+  }
+}
