@@ -315,7 +315,7 @@ async function readFlowSummaries(repoRoot: string): Promise<FlowSummary[]> {
 	return await Promise.all(
 		files
 			.filter((file) => file.endsWith(".md"))
-			.sort()
+			.sort((left, right) => left.localeCompare(right))
 			.map(async (file) => {
 				const ref = `.codewiki/kb/system/flows/${file}`;
 				const content = await readFile(join(root, file), "utf8");

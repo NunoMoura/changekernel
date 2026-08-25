@@ -90,7 +90,7 @@ describe("Decision research collection", () => {
 		assert.equal(evidence.authority, "observed");
 		assert.equal(evidence.coverage, "complete");
 		assert.equal(evidence.freshnessBoundary, result.freshnessBoundary);
-		assert.deepEqual(JSON.parse(JSON.stringify(evidence.producer)), {
+		assert.deepEqual(structuredClone(evidence.producer), {
 			kind: "external_service",
 			id: "trusted-research-connector",
 			version: "1.0.0",

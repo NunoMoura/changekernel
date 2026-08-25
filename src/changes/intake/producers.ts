@@ -105,6 +105,24 @@ export interface KnowledgeDriftProducerInput {
 	readonly content: ChangeIntakeContent;
 }
 
+type ChangeIntakeBindingInput = Readonly<
+	Record<string, string | readonly string[]>
+>;
+
+type ProducerInput =
+	| UserSuggestionProducerInput
+	| PullRequestFindingProducerInput
+	| WorkerDiscoveryProducerInput
+	| WorkerReportDiscoveryProducerInput
+	| RegressionFindingProducerInput
+	| SecurityScannerFindingProducerInput
+	| DeliveryObservationProducerInput
+	| OutcomeFindingProducerInput
+	| DeliveryEvidenceProducerInput
+	| OutcomeEvidenceProducerInput
+	| KnowledgeDriftIssueProducerInput
+	| KnowledgeDriftProducerInput;
+
 export function createUserSuggestionMaterial(
 	input: UserSuggestionProducerInput,
 ): ChangeIntakeMaterial {
@@ -397,7 +415,7 @@ export function createKnowledgeDriftMaterialFromIssue(
 
 function produce(
 	materialType: ChangeIntakeMaterial["materialType"],
-	binding: object,
+	binding: ChangeIntakeBindingInput,
 	content: ChangeIntakeContent,
 ): ChangeIntakeMaterial {
 	return normalizeChangeIntakeMaterial({
@@ -410,7 +428,7 @@ function produce(
 }
 
 function assertProducerInput(
-	value: object,
+	value: ProducerInput,
 	allowed: readonly string[],
 	label: string,
 ): void {

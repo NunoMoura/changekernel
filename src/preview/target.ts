@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { createCodewikiConfigError } from "../project/config-errors.ts";
 
+const PREVIEW_PATH_BASE_URL = "http://127.0.0.1";
+
 export type PreviewEvidenceViewport = "desktop" | "mobile";
 
 export interface UiPreviewTarget {
@@ -90,12 +92,12 @@ function originRelativeRoute(value: unknown, path: string): string {
 	}
 	let parsed: URL;
 	try {
-		parsed = new URL(value.trim(), "http://127.0.0.1");
+		parsed = new URL(value.trim(), PREVIEW_PATH_BASE_URL);
 	} catch {
 		throw configError(path, "Preview target route must be valid.", value);
 	}
 	if (
-		parsed.origin !== "http://127.0.0.1" ||
+		parsed.origin !== PREVIEW_PATH_BASE_URL ||
 		parsed.username ||
 		parsed.password ||
 		parsed.search ||

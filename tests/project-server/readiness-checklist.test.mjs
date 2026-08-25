@@ -154,6 +154,74 @@ describe("install readiness checklist", () => {
 		);
 	});
 
+	it("pins the classified repository diagnostics ratchet", () => {
+		const baseline = jsonFile("diagnostics/baseline.json");
+		assert.equal(
+			packageJson.scripts["diagnostics:ratchet"],
+			"npm run build && node scripts/check-diagnostics-ratchet.mjs",
+		);
+		assert.equal(baseline.schema, "codewiki.diagnostics-baseline@1.1.0");
+		assert.equal(baseline.policy.newFindingBehavior, "fail-closed");
+		assert.equal(packageJson.devDependencies["@earendil-works/pi-tui"], "0.84.2");
+		assert.equal(baseline.tools.piTui, "0.84.2");
+		assert.equal(baseline.madge.runtimeCycles.maxCount, 0);
+		for (const ruleId of [
+			"require-safety-comment-for-as-unknown-as",
+			"no-unknown-returns",
+			"no-bare-object-param",
+			"no-dupe-keys-js",
+			"unchecked-throwing-call-js",
+			"no-non-null-assertion",
+			"no-sort-without-comparator",
+			"switch-without-default",
+			"ts-delete-property",
+			"prefer-structured-clone-js",
+		]) {
+			assert.equal(baseline.astGrep.rules[ruleId].maxCount, 0, ruleId);
+			assert.equal(
+				baseline.astGrep.rules[ruleId].disposition,
+				"must-remain-zero",
+				ruleId,
+			);
+		}
+		assert.equal(
+			Object.values(baseline.astGrep.rules).some(
+				(rule) => rule.disposition === "project-disabled",
+			),
+			false,
+		);
+		assert.equal(Object.keys(baseline.piLens.rules).length, 28);
+		assert.equal(baseline.piLens.rules["async-unnecessary-wrapper"], undefined);
+		for (const [ruleId, rule] of Object.entries(baseline.piLens.rules)) {
+			assert.equal(typeof rule.category, "string", ruleId);
+			assert.equal(typeof rule.owner, "string", ruleId);
+			assert.equal(typeof rule.rationale, "string", ruleId);
+			assert.notEqual(rule.disposition, "project-disabled", ruleId);
+		}
+		for (const ruleId of [
+			"ts-detached-async-call",
+			"ts-react-antipatterns",
+			"unsafe-boundary",
+		]) {
+			assert.equal(
+				baseline.piLens.rules[ruleId].category,
+				"scanner-false-positive",
+				ruleId,
+			);
+		}
+		for (const rule of [
+			"unchecked-throwing-call-js",
+			"hardcoded-url-js",
+			"no-console-except-error-js",
+		]) {
+			assert.equal(
+				existsSync(join("rules/ast-grep-rules/rules", `${rule}.yml`)),
+				true,
+				rule,
+			);
+		}
+	});
+
 	it("keeps the internal agent tool surface small and exact", () => {
 		assert.deepEqual([...CODEWIKI_TOOL_NAMES], expectedToolNames);
 		const toolSource = readFileSync("src/clients/pi/tools/index.ts", "utf8");

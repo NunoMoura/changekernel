@@ -23,7 +23,7 @@ import {createImplementationStagePolicy} from "../../src/loops/implementation/po
 import {createWorkUnitCandidate} from "../../src/loops/implementation/work-unit-candidate.ts";
 import {createImplementationOperationSequence} from "../../src/project-server/effects/implementation-operations.ts";
 import {createImplementationStageGate} from "../../src/project-server/lifecycle/implementation-gate.ts";
-import {canonicalJsonDigest, sha256Digest} from "../../src/utils/canonical-json.ts";
+import {sha256Digest} from "../../src/utils/canonical-json.ts";
 import {baseSnapshotFor, reduceBatch} from "./change-trace-replay-v1.mjs";
 import {authorityBinding, gitObject} from "./change-trace-v1.mjs";
 import {acceptedPlanningContext} from "./native-planning.mjs";

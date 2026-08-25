@@ -208,11 +208,21 @@ function sessionIdFromToolEventContext(
 	);
 }
 
+function cacheRecord(
+	candidate: Record<string, unknown>,
+): ReviewEvidenceCache {
+	// SAFETY: CodewikiExtensionContext owns this optional cache slot; cacheLike
+	// verifies every interface method before recovering its erased static type.
+	return candidate as unknown as ReviewEvidenceCache;
+}
+
 function cacheLike(value: unknown): ReviewEvidenceCache | undefined {
 	const candidate = record(value);
 	return typeof candidate.record === "function" &&
-		typeof candidate.reports === "function"
-		? (candidate as unknown as ReviewEvidenceCache)
+		typeof candidate.reports === "function" &&
+		typeof candidate.entries === "function" &&
+		typeof candidate.clear === "function"
+		? cacheRecord(candidate)
 		: undefined;
 }
 

@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import {dirname, isAbsolute, resolve} from "node:path";
 import {randomUUID} from "node:crypto";
+import type {CanonicalJsonValue} from "../../utils/canonical-json.ts";
 
 export function normalizeRuntimeStateRoot(value: unknown): string {
 	if (typeof value !== "string" || value.length === 0 || !isAbsolute(value)) {
@@ -75,9 +76,15 @@ export async function withFileLock<T>(
 	}
 }
 
-export function parseStoredJson(bytes: Uint8Array, field: string): unknown {
+export function parseStoredJson(
+	bytes: Uint8Array,
+	field: string,
+): CanonicalJsonValue {
 	try {
-		return JSON.parse(Buffer.from(bytes).toString("utf8"));
+		const parsed: CanonicalJsonValue = JSON.parse(
+			Buffer.from(bytes).toString("utf8"),
+		);
+		return parsed;
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
 		throw new Error(`${field} is invalid JSON: ${reason}`);
@@ -135,10 +142,11 @@ function isAlreadyExists(error: unknown): boolean {
 	return errorCode(error) === "EEXIST";
 }
 
-function errorCode(error: unknown): unknown {
-	return error !== null && typeof error === "object" && "code" in error
-		? error.code
-		: undefined;
+function errorCode(error: unknown): string | undefined {
+	if (error === null || typeof error !== "object" || !("code" in error)) {
+		return undefined;
+	}
+	return typeof error.code === "string" ? error.code : undefined;
 }
 
 function compareText(left: string, right: string): number {

@@ -226,6 +226,8 @@ export function ingestStructuredDocumentEvidence<
 			ownershipRefs: admitted.ownershipRefs,
 			observations: diagnosticRefs,
 		});
+	// SAFETY: adapter definition, parsed document, execution, summary, and
+	// Evidence material are fully admitted or constructed before canonicalization.
 	const body = toCanonicalJsonValue({
 		protocol: definition.protocol,
 		format: definition.format,

@@ -397,7 +397,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function hasExactKeys(value: object, expected: readonly string[]): boolean {
+function hasExactKeys(
+	value: Readonly<Record<string, unknown>>,
+	expected: readonly string[],
+): boolean {
 	const actual = Object.keys(value).sort(compareText);
 	const sorted = [...expected].sort(compareText);
 	return actual.length === sorted.length && actual.every((key, index) => key === sorted[index]);

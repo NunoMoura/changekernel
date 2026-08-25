@@ -325,7 +325,9 @@ function contributions(
 			throw new Error(`Domain Plugin contribution ${value} is unknown.`);
 		}
 	}
-	const sorted = [...new Set(values)].sort();
+	const sorted = [...new Set(values)].sort((left, right) =>
+		left.localeCompare(right),
+	);
 	if (sorted.length !== values.length) {
 		throw new Error("Domain Plugin contributions must not contain duplicates.");
 	}
@@ -356,7 +358,9 @@ function normalizedTextList(values: readonly string[], field: string): readonly 
 		throw new Error(`Domain Plugin ${field}s are invalid.`);
 	}
 	const normalized = values.map((value) => entrypoint(value, field));
-	const unique = [...new Set(normalized)].sort();
+	const unique = [...new Set(normalized)].sort((left, right) =>
+		left.localeCompare(right),
+	);
 	if (unique.length !== normalized.length) {
 		throw new Error(`Domain Plugin ${field}s must be unique.`);
 	}

@@ -12,7 +12,7 @@ export function parseSafeXmlArtifact(
 			readonly maximumNesting: number;
 		},
 	]
-): unknown {
+): Record<string, unknown> {
 	const [bytes, options] = input;
 	let xml: string;
 	try {
@@ -40,7 +40,7 @@ export function parseSafeXmlArtifact(
 		);
 	}
 	try {
-		return new XMLParser({
+		const parsed = new XMLParser({
 			ignoreAttributes: false,
 			attributesGroupName: "$",
 			attributeNamePrefix: "",
@@ -53,6 +53,7 @@ export function parseSafeXmlArtifact(
 			maxNestedTags: options.maximumNesting,
 			isArray: (tagName) => options.arrayElements.has(tagName),
 		}).parse(xml);
+		return objectValue(parsed, `${options.label} XML document`);
 	} catch {
 		throw new Error(`${options.label} artifact could not be parsed safely.`);
 	}

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { realpath, stat } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startCodewikiAppServer } from "../src/project-server/app/server.ts";
 import { openPreviewBrowser } from "../src/preview/browser-adapter.ts";

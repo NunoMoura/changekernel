@@ -434,7 +434,7 @@ function normalizedTextList(values: readonly string[], label: string): string[] 
 	if (new Set(normalized).size !== normalized.length) {
 		throw new Error(`${label} must be unique.`);
 	}
-	return [...normalized].sort();
+	return [...normalized].sort((left, right) => left.localeCompare(right));
 }
 
 function compareResults(left: CheckResult, right: CheckResult): number {

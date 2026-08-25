@@ -51,5 +51,7 @@ export function parseDecisionCandidateProposal(
 		throw new Error("Project Server decision candidate disposition is invalid.");
 	}
 	requiredCandidateText(candidate.rationale, "decision", "rationale");
+	// SAFETY: shared Candidate parsing plus Decision-specific disposition and
+	// rationale checks above admit every DecisionCandidateProposal field.
 	return candidate as unknown as DecisionCandidateProposal;
 }

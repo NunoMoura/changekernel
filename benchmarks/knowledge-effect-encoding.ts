@@ -109,6 +109,10 @@ function encodedPayload(
 			});
 		case "semantic_effect":
 			return semanticEffect(entry);
+		default: {
+			const exhaustive: never = method;
+			throw new Error(`Unsupported Knowledge encoding method ${String(exhaustive)}.`);
+		}
 	}
 }
 

@@ -131,6 +131,8 @@ export function createModelCheckRequest(input: {
 			] as const,
 		},
 	};
+	// SAFETY: the request is assembled from an admitted Model Check and exact
+	// invocation; output protocol fields are fixed before canonicalization.
 	return toCanonicalJsonValue({
 		...body,
 		requestDigest: canonicalJsonDigest(body),

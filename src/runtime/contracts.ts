@@ -651,27 +651,31 @@ export interface RunRequest extends Omit<RunRequestInput, "continuation"> {
 }
 
 export function createRunRawLogReference(
-	value: RunRawLogReference,
+	value: unknown,
 ): Readonly<RunRawLogReference> {
-	if (!hasExactKeys(value, RUN_RAW_LOG_KEYS)) {
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error("Run raw-log reference shape is invalid.");
 	}
-	if (value.encoding !== "jsonl" && value.encoding !== "jsonl-zstd") {
+	const record = value as Record<string, unknown>;
+	if (!hasExactKeys(record, RUN_RAW_LOG_KEYS)) {
+		throw new Error("Run raw-log reference shape is invalid.");
+	}
+	if (record.encoding !== "jsonl" && record.encoding !== "jsonl-zstd") {
 		throw new Error("Run raw-log encoding is invalid.");
 	}
-	assertNonNegativeInteger(value.formatVersion, "Run raw-log formatVersion");
-	assertIdentifier(value.sessionId, "Run raw-log sessionId");
-	assertIdentifier(value.storageId, "Run raw-log storageId");
-	assertPositiveInteger(value.byteLength, "Run raw-log byteLength");
+	assertNonNegativeInteger(record.formatVersion, "Run raw-log formatVersion");
+	assertIdentifier(record.sessionId, "Run raw-log sessionId");
+	assertIdentifier(record.storageId, "Run raw-log storageId");
+	assertPositiveInteger(record.byteLength, "Run raw-log byteLength");
 	return Object.freeze({
-		encoding: value.encoding,
-		formatVersion: value.formatVersion,
-		sessionId: value.sessionId,
-		storageId: value.storageId,
-		byteLength: value.byteLength,
-		digest: assertSha256Digest(value.digest, "Run raw-log digest"),
+		encoding: record.encoding,
+		formatVersion: Number(record.formatVersion),
+		sessionId: record.sessionId,
+		storageId: record.storageId,
+		byteLength: Number(record.byteLength),
+		digest: assertSha256Digest(record.digest, "Run raw-log digest"),
 		runtimeBuildDigest: assertSha256Digest(
-			value.runtimeBuildDigest,
+			record.runtimeBuildDigest,
 			"Run raw-log Runtime Build digest",
 		),
 	});

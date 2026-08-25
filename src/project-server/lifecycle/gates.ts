@@ -360,15 +360,16 @@ export function createReviewGate(input: CreateReviewGateInput): Readonly<{
 						signal: runInput.signal,
 					});
 			const {evaluationPackage, report} = evaluation;
+			const classifyFailure = input.classifyFailure;
 			const failureOwnership = normalizeReviewFailureOwnership({
 				attempt: runInput.attempt,
 				report,
-				ownership: input.classifyFailure
+				ownership: classifyFailure
 					? report.results
 							.filter((result) => result.status === "failed")
 							.map((result) => ({
 								resultDigest: result.resultDigest,
-								...input.classifyFailure!(runInput.attempt, result),
+								...classifyFailure(runInput.attempt, result),
 							}))
 					: undefined,
 			});

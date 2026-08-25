@@ -273,8 +273,10 @@ function normalizePassages(input: {
 		);
 	}
 	const passages = value.map((entry) => {
-		assertRecord({value: entry, label: "User Standard passage"});
-		const record = entry as unknown as Record<string, unknown>;
+		const record = recordValue({
+			value: entry,
+			label: "User Standard passage",
+		});
 		assertKnownKeys({
 			value: record,
 			label: "User Standard passage",
@@ -396,11 +398,22 @@ function assertKnownKeys(input: {
 	}
 }
 
-function assertRecord(input: {readonly value: unknown; readonly label: string}): void {
+function assertRecord(input: {
+	readonly value: unknown;
+	readonly label: string;
+}): void {
+	recordValue(input);
+}
+
+function recordValue(input: {
+	readonly value: unknown;
+	readonly label: string;
+}): Readonly<Record<string, unknown>> {
 	const {value, label} = input;
 	if (typeof value !== "object" || value === null || Array.isArray(value)) {
 		throw new Error(`${label} must be an object.`);
 	}
+	return value as Readonly<Record<string, unknown>>;
 }
 
 function assertUnique(input: {

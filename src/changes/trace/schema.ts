@@ -107,7 +107,13 @@ export function validateTraceRecord(
 	return {
 		ok: issues.length === 0,
 		issues,
-		...(issues.length === 0 ? { value: value as unknown as TraceRecord } : {}),
+		...(issues.length === 0
+			? {
+					// SAFETY: the type-discriminated validator above checks every field of
+					// the selected TraceRecord variant before exposing the admitted value.
+					value: value as unknown as TraceRecord,
+				}
+			: {}),
 	};
 }
 

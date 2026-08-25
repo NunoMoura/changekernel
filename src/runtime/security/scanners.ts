@@ -255,6 +255,8 @@ export async function runSecurityScannerSuite(
 		intakeMaterials,
 		findings,
 	};
+	// SAFETY: every suite result field is produced by normalized scanner
+	// executions above; canonicalization preserves the complete result shape.
 	return toCanonicalJsonValue({
 		...body,
 		suiteDigest: canonicalJsonDigest(body),
@@ -330,6 +332,8 @@ function scannerRequest(
 		ownershipRefs: input.ownershipRefs,
 		...(advisorySnapshot ? {advisorySnapshot} : {}),
 	};
+	// SAFETY: the request is assembled from admitted suite and adapter domains;
+	// canonicalization preserves the exact scanner request JSON shape.
 	return toCanonicalJsonValue({
 		protocol: SECURITY_SCANNER_PROTOCOL,
 		...body,
@@ -401,6 +405,8 @@ function normalizeObservation(
 	) {
 		throw new Error("Security scanner observation exceeds canonical byte limit.");
 	}
+	// SAFETY: exact keys and every observation field are normalized above before
+	// the canonical deep clone reconstructs the observation domain.
 	return toCanonicalJsonValue(normalized) as unknown as SecurityScannerAdapterObservation;
 }
 
@@ -462,6 +468,8 @@ function materializeScannerExecution(
 	);
 	const status = scannerRunStatus(observation, staleAdvisory);
 	return {
+		// SAFETY: run fields derive solely from admitted request, observation, and
+		// materialized Evidence; canonicalization preserves that exact JSON shape.
 		run: toCanonicalJsonValue({
 			scannerType: request.scannerType,
 			scannerId: request.scannerId,
@@ -608,6 +616,8 @@ function normalizeSuiteInput(input: RunSecurityScannerSuiteInput): NormalizedSui
 		observedAt,
 	);
 	return {
+		// SAFETY: RunSecurityScannerSuiteInput statically binds CandidateEvidenceSubject,
+		// whose digest and tree identity were revalidated immediately above.
 		subject: toCanonicalJsonValue(input.subject) as unknown as CandidateEvidenceSubject,
 		sourceSnapshotDigest: input.sourceSnapshotDigest,
 		sourceTree: input.sourceTree,
@@ -691,6 +701,8 @@ function normalizedAdvisorySnapshots(
 			if (Date.parse(snapshotObservedAt) > Date.parse(observedAt)) {
 				throw new Error("Security advisory observedAt cannot exceed Runtime observedAt.");
 			}
+			// SAFETY: exact keys, fixed scanner type, digests, timestamps, and source
+			// refs are independently normalized before canonicalization.
 			return toCanonicalJsonValue({
 				scannerType: snapshot.scannerType,
 				snapshotDigest: snapshot.snapshotDigest,
@@ -715,6 +727,8 @@ function normalizeFindings(
 	}
 	const normalized = findings.map((finding, index) => {
 		assertExactKeys(finding, FINDING_FIELDS, `Security scanner finding ${index}`);
+		// SAFETY: exact keys, bounded id, and normalized intake content form the
+		// complete SecurityScannerFindingObservation contract.
 		return toCanonicalJsonValue({
 			findingId: boundedId(finding.findingId, `Security scanner finding ${index} findingId`),
 			content: normalizeChangeIntakeContent(finding.content),
@@ -791,6 +805,8 @@ function unavailableObservation(
 	limitation: string,
 	termination: "cancelled" | "unavailable" = "unavailable",
 ): SecurityScannerAdapterObservation {
+	// SAFETY: this function constructs every observation field from a validated
+	// request, canonical timestamp, fixed terminal state, and bounded limitation.
 	return toCanonicalJsonValue({
 		requestDigest: request.requestDigest,
 		runId: `unavailable:${request.requestDigest.slice("sha256:".length, "sha256:".length + 16)}`,

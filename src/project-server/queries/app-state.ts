@@ -919,8 +919,7 @@ function primaryQualityChecksForTrace(
 		: undefined;
 	const blocked = sections.find((section) => section.state === "blocked");
 	const active = sections.find((section) => section.state === "active");
-	const latestLocked = [...sections]
-		.reverse()
+	const latestLocked = [...sections].reverse()
 		.find((section) => section.state === "locked");
 	const section = blocked || active || current || latestLocked;
 	return section?.qualityChecks.length ? section.qualityChecks : fallback;

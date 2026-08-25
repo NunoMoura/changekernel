@@ -46,6 +46,13 @@ export const CODEWIKI_TOOL_NAMES = [
 ] as const;
 
 type WikiStateToolView = "summary" | "board" | "quality" | "blockers" | "all";
+type ToolInputSchema = ReturnType<typeof Type.Object>;
+type ToolModelPayload = Readonly<Record<string, unknown>>;
+type WikiStateToolData =
+	| WikiStateSnapshot
+	| WikiStateSnapshot["quality"]
+	| WikiStateSnapshot["blockers"]
+	| ToolModelPayload;
 
 const READ_ONLY_TOOL_NAMES = new Set<string>([
 	WIKI_STATE_TOOL_NAME,
@@ -105,7 +112,10 @@ function codewikiTools(
 		wikiAttentionTool(projectServices),
 		wikiConfigTool(),
 		wikiChangeTool(),
-		facadeTool<RunWikiArchiveInput>(
+		facadeTool<
+			RunWikiArchiveInput,
+			Awaited<ReturnType<typeof runWikiArchive>>
+		>(
 			"wiki_archive",
 			"CodeWiki Archive",
 			"Preview or append CodeWiki archive lifecycle actions using the core facade.",
@@ -234,7 +244,7 @@ function wikiAttentionTool(
 
 function decisionAttentionModelPayload(
 	result: Awaited<ReturnType<PiProjectServiceClientProvider["decisionAttention"]>>,
-): unknown {
+): ToolModelPayload {
 	return {
 		protocol: result.protocol,
 		projectionDigest: result.projectionDigest,
@@ -304,7 +314,7 @@ function wikiConfigTool(): CodewikiToolDefinition {
 				args.input,
 			);
 			const root = await findCodewikiProjectRoot(ctx.cwd);
-			const warning = !args.write ? notifyInstallWarning(ctx, root) : undefined;
+			const warning = args.write ? undefined : notifyInstallWarning(ctx, root);
 			if (args.write) {
 				assertProjectLocalMutationAllowed({
 					toolName: "wiki_config",
@@ -390,10 +400,7 @@ function wikiChangeTool(): CodewikiToolDefinition {
 					},
 				});
 			}
-			const prepared = withRepoRoot(
-				input,
-				root,
-			) as unknown as RunWikiChangeInput;
+			const prepared = withRepoRoot(input, root);
 			const result = await runWikiChange(prepared);
 			return toolResult(
 				`wiki_change: completed ${result.operation} operation.`,
@@ -405,7 +412,9 @@ function wikiChangeTool(): CodewikiToolDefinition {
 	};
 }
 
-function wikiChangeModelPayload(result: RunWikiChangeResult): unknown {
+function wikiChangeModelPayload(
+	result: RunWikiChangeResult,
+): ToolModelPayload {
 	if (!result.record) {
 		return {
 			operation: result.operation,
@@ -424,12 +433,12 @@ function wikiChangeModelPayload(result: RunWikiChangeResult): unknown {
 	};
 }
 
-function facadeTool<T extends object>(
+function facadeTool<T extends object, TResult>(
 	name: string,
 	label: string,
 	description: string,
 	promptSnippet: string,
-	run: (input: T, ctx: CodewikiExtensionContext) => unknown | Promise<unknown>,
+	run: (input: T, ctx: CodewikiExtensionContext) => TResult | Promise<TResult>,
 ): CodewikiToolDefinition {
 	return {
 		name,
@@ -448,11 +457,13 @@ function facadeTool<T extends object>(
 			const root = await findCodewikiProjectRoot(ctx.cwd);
 			const prepared = withRepoRoot(input, root);
 			assertAppendContract(name, prepared);
+			const mode =
+				"mode" in prepared && typeof prepared.mode === "string"
+					? prepared.mode
+					: "preview";
 			const warning =
-				prepared.mode === "append"
-					? undefined
-					: notifyInstallWarning(ctx, root);
-			if (prepared.mode === "append") {
+				mode === "append" ? undefined : notifyInstallWarning(ctx, root);
+			if (mode === "append") {
 				assertProjectLocalMutationAllowed({
 					toolName: name,
 					ctx,
@@ -462,9 +473,9 @@ function facadeTool<T extends object>(
 				});
 			}
 			const coreInput = stripNonProjectInstallOverride(prepared);
-			const result = await run(coreInput as unknown as T, ctx);
+			const result = await run(coreInput, ctx);
 			return toolResult(
-				`${name}: completed ${modeText(input)} run.`,
+				`${name}: completed ${mode} run.`,
 				result,
 				warning,
 			);
@@ -472,7 +483,7 @@ function facadeTool<T extends object>(
 	};
 }
 
-function inputSchema(description: string): unknown {
+function inputSchema(description: string): ToolInputSchema {
 	return Type.Object(
 		{
 			input: Type.Object({}, { additionalProperties: true, description }),
@@ -505,12 +516,13 @@ async function writeConfig(
 	return await updateWikiConfigFile(root, input);
 }
 
-function withRepoRoot(
-	input: object,
+function withRepoRoot<T extends object>(
+	input: T,
 	repoRoot: string | undefined,
-): Record<string, unknown> {
-	const record = input as Record<string, unknown>;
-	return repoRoot && !record.repoRoot ? { ...record, repoRoot } : { ...record };
+): T & {readonly repoRoot?: string} {
+	return repoRoot && !("repoRoot" in input)
+		? {...input, repoRoot}
+		: {...input};
 }
 
 function paramsObject(
@@ -618,7 +630,7 @@ function stateToolModelPayload(
 	snapshot: WikiStateSnapshot,
 	view: WikiStateToolView | undefined,
 	runtimeReaction: ProjectServerReaction,
-): unknown {
+): ToolModelPayload {
 	const traceId = snapshot.selectedTraceId;
 	if (traceId) {
 		const trace = snapshot.traceBoard.traces.find(
@@ -661,7 +673,7 @@ function stateToolPayload(
 	snapshot: WikiStateSnapshot,
 	view: WikiStateToolView | undefined,
 	runtimeReaction: ProjectServerReaction,
-): unknown {
+): ToolModelPayload {
 	if (!view) return { ...snapshot, runtimeReaction };
 	return {
 		view,
@@ -673,7 +685,7 @@ function stateToolPayload(
 function stateToolViewData(
 	snapshot: WikiStateSnapshot,
 	view: WikiStateToolView,
-): unknown {
+): WikiStateToolData {
 	if (view === "summary") {
 		return {
 			workState: {
@@ -712,11 +724,6 @@ function stateToolViewData(
 
 function optionalString(value: unknown): string | undefined {
 	return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function modeText(input: object): string {
-	const record = input as Record<string, unknown>;
-	return typeof record.mode === "string" ? record.mode : "preview";
 }
 
 function notifyInstallWarning(

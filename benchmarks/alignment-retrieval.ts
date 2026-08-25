@@ -282,5 +282,7 @@ function sum(values: readonly number[]): number {
 }
 
 function canonicalValue<T>(value: unknown): T {
+	// SAFETY: benchmark callers construct T from typed case and result fields;
+	// canonicalization only deep-clones that JSON-compatible report shape.
 	return toCanonicalJsonValue(value) as unknown as T;
 }

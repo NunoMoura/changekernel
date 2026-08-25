@@ -753,7 +753,7 @@ function compareText(left: string, right: string): number {
 }
 
 function assertExactKeys(
-	value: object,
+	value: unknown,
 	allowed: readonly string[],
 	label: string,
 ): void {
@@ -769,6 +769,8 @@ function assertExactKeys(
 }
 
 function immutable<T>(value: T): T {
+	// SAFETY: callers admit complete Check Pack domain contracts before this
+	// canonical deep clone; canonicalization preserves their JSON field shapes.
 	return toCanonicalJsonValue(value) as unknown as T;
 }
 

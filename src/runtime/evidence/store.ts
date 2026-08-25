@@ -17,6 +17,7 @@ import {
 	canonicalJson,
 	canonicalJsonDigest,
 	sha256Digest,
+	type CanonicalJsonValue,
 	type Sha256Digest,
 } from "../../utils/canonical-json.ts";
 import {
@@ -409,16 +410,16 @@ async function readRawLogAppend(path: string): Promise<Readonly<RawLogAppendReco
 	if (!bytes) return null;
 	const value = parseStoredJson(bytes, "Run raw-log append");
 	if (
-		!value || typeof value !== "object" || Array.isArray(value) ||
-		(value as {schemaVersion?: unknown}).schemaVersion !== RAW_LOG_APPEND_SCHEMA_VERSION ||
-		typeof (value as {contentBase64?: unknown}).contentBase64 !== "string"
+		!isCanonicalJsonRecord(value) ||
+		value.schemaVersion !== RAW_LOG_APPEND_SCHEMA_VERSION ||
+		typeof value.contentBase64 !== "string"
 	) {
 		throw new Error("Run raw-log append record shape is invalid.");
 	}
-	const candidate = value as RawLogAppendRecord;
-	const reference = createRunRawLogReference(candidate.reference);
-	const content = Buffer.from(candidate.contentBase64, "base64");
-	if (content.toString("base64") !== candidate.contentBase64) {
+	const reference = createRunRawLogReference(value.reference);
+	const contentBase64 = value.contentBase64;
+	const content = Buffer.from(contentBase64, "base64");
+	if (content.toString("base64") !== contentBase64) {
 		throw new Error("Run raw-log append encoding is invalid.");
 	}
 	if (content.byteLength >= reference.byteLength) {
@@ -427,12 +428,18 @@ async function readRawLogAppend(path: string): Promise<Readonly<RawLogAppendReco
 	const normalized = Object.freeze({
 		schemaVersion: RAW_LOG_APPEND_SCHEMA_VERSION,
 		reference,
-		contentBase64: candidate.contentBase64,
+		contentBase64,
 	});
 	if (canonicalJson(value) !== canonicalJson(normalized)) {
 		throw new Error("Run raw-log append record is not canonical.");
 	}
 	return normalized;
+}
+
+function isCanonicalJsonRecord(
+	value: CanonicalJsonValue,
+): value is Readonly<Record<string, CanonicalJsonValue>> {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function assertExistingRawLogChunk(

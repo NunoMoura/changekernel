@@ -1,6 +1,10 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CheckResult } from "../../../loops/implementation/types.ts";
+import {
+	toCanonicalJsonValue,
+	type CanonicalJsonValue,
+} from "../../../utils/canonical-json.ts";
 import type {
 	ImplementationDiagnostic,
 	ImplementationEvidenceReportInput,
@@ -363,9 +367,9 @@ function summaryForExecution(
 		: `${description} failed with exit code ${execution.exitCode ?? "unknown"}.`;
 }
 
-function safeJson(output: string): unknown {
+function safeJson(output: string): CanonicalJsonValue | undefined {
 	try {
-		return JSON.parse(output);
+		return toCanonicalJsonValue(JSON.parse(output));
 	} catch {
 		return undefined;
 	}

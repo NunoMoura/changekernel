@@ -273,20 +273,28 @@ function codeFromShellcheck(value: unknown): string | undefined {
 	return code ? (code.startsWith("SC") ? code : `SC${code}`) : undefined;
 }
 
-function safeJsonObject(output: string): unknown {
+function safeJsonObject(
+	output: string,
+): Record<string, unknown> | undefined {
 	const trimmed = output.trim();
 	if (!trimmed) return undefined;
+	const direct = parseJsonObject(trimmed);
+	if (direct) return direct;
+	const start = trimmed.indexOf("{");
+	const end = trimmed.lastIndexOf("}");
+	return start < 0 || end <= start
+		? undefined
+		: parseJsonObject(trimmed.slice(start, end + 1));
+}
+
+function parseJsonObject(value: string): Record<string, unknown> | undefined {
 	try {
-		return JSON.parse(trimmed);
+		const parsed: unknown = JSON.parse(value);
+		return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+			? (parsed as Record<string, unknown>)
+			: undefined;
 	} catch {
-		const start = trimmed.indexOf("{");
-		const end = trimmed.lastIndexOf("}");
-		if (start < 0 || end <= start) return undefined;
-		try {
-			return JSON.parse(trimmed.slice(start, end + 1));
-		} catch {
-			return undefined;
-		}
+		return undefined;
 	}
 }
 

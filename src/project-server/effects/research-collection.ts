@@ -244,6 +244,8 @@ function normalizedReceipt(input: {
 	const receipt = input.value as Record<string, unknown>;
 	assertReceiptBinding({receipt, request: input.request});
 	assertReceiptStatus(receipt);
+	// SAFETY: exact keys, request binding, status, and citations are admitted
+	// above; canonicalization preserves the receipt's complete JSON shape.
 	return toCanonicalJsonValue(receipt) as unknown as DecisionResearchCollectionReceipt;
 }
 

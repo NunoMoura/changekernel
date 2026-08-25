@@ -117,6 +117,10 @@ function routeForTarget(
 			return "decision";
 		case "preserve_state":
 			return "waiting";
+		default: {
+			const exhaustive: never = target;
+			throw new Error(`Unsupported Review transition target ${String(exhaustive)}.`);
+		}
 	}
 }
 
@@ -137,6 +141,10 @@ function reviewOwnershipMatchesTarget(value: ReviewLifecycleTransition): boolean
 			);
 		case "decision":
 			return value.failureOwnership.some((entry) => entry.owner === "decision");
+		default: {
+			const exhaustive: never = value.target;
+			throw new Error(`Unsupported Review transition target ${String(exhaustive)}.`);
+		}
 	}
 }
 

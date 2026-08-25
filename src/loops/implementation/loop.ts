@@ -422,14 +422,18 @@ function compatibleImplementationGraph(
 		...graph,
 		graphVersion: pack.graph.graphVersion,
 		nodes: graph.nodes.map((node) => {
+			const {
+				packId: _packId,
+				rollout: _rollout,
+				evaluatorId: _evaluatorId,
+				evidenceAdapterIds: _evidenceAdapterIds,
+				dependsOn,
+				...fields
+			} = node;
 			const compatible = {
-				...node,
+				...fields,
+				...(dependsOn?.length ? {dependsOn} : {}),
 			} as LoopQualityGraphNode<ImplementationExitIssue["code"]>;
-			delete compatible.packId;
-			delete compatible.rollout;
-			delete compatible.evaluatorId;
-			delete compatible.evidenceAdapterIds;
-			if (compatible.dependsOn?.length === 0) delete compatible.dependsOn;
 			if (compatible.gate === "hard") compatible.hardGate = true;
 			if (compatible.method === "agent_self_assessment") compatible.mode = "agent";
 			if (compatible.method === "human_authority") compatible.mode = "user";
@@ -1215,9 +1219,10 @@ function missingComponentRefIssues(
 function unknownComponentRefIssues(
 	input: ImplementationExitInput,
 ): ImplementationExitIssue[] {
-	if (!input.componentMap) return [];
+	const componentMap = input.componentMap;
+	if (!componentMap) return [];
 	return (input.planningScopes || []).flatMap((scope) =>
-		unknownComponentRefs(input.componentMap!, scope.componentRefs).map(
+		unknownComponentRefs(componentMap, scope.componentRefs).map(
 			(componentRef) => ({
 				code: "unknown_component_ref" as const,
 				planningRef: scope.planningRef,
@@ -1253,12 +1258,10 @@ function invalidComponentContractIssues(
 function planningScopePathIssues(
 	input: ImplementationExitInput,
 ): ImplementationExitIssue[] {
-	if (!input.componentMap) return [];
+	const componentMap = input.componentMap;
+	if (!componentMap) return [];
 	return (input.planningScopes || []).flatMap((scope) => {
-		const components = componentsForRefs(
-			input.componentMap!,
-			scope.componentRefs,
-		);
+		const components = componentsForRefs(componentMap, scope.componentRefs);
 		if (components.length === 0) return [];
 		return scope.pathScopes.flatMap((pathScope) => {
 			if (
@@ -1386,15 +1389,14 @@ function componentsForChange(
 	input: ImplementationExitInput,
 	change: ImplementationChange,
 ): SourceMapComponent[] {
-	if (!input.componentMap) return [];
+	const componentMap = input.componentMap;
+	if (!componentMap) return [];
 	return uniqueComponents(
 		change.planningRefs.flatMap((planningRef) => {
 			const scope = (input.planningScopes || []).find(
 				(candidate) => candidate.planningRef === planningRef,
 			);
-			return scope
-				? componentsForRefs(input.componentMap!, scope.componentRefs)
-				: [];
+			return scope ? componentsForRefs(componentMap, scope.componentRefs) : [];
 		}),
 	);
 }

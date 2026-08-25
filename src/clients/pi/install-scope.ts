@@ -36,13 +36,13 @@ export function assertProjectLocalMutationAllowed(
 	);
 }
 
-export function stripNonProjectInstallOverride<
-	T extends Record<string, unknown>,
->(input: T): T {
+export function stripNonProjectInstallOverride<T extends object>(input: T): T {
 	if (!(NON_PROJECT_INSTALL_OVERRIDE_FIELD in input)) return input;
-	const cleaned = { ...input };
+	const cleaned = {...input} as T & {
+		[NON_PROJECT_INSTALL_OVERRIDE_FIELD]?: unknown;
+	};
 	delete cleaned[NON_PROJECT_INSTALL_OVERRIDE_FIELD];
-	return cleaned as T;
+	return cleaned;
 }
 
 export function isProjectLocalCodewikiInstall(

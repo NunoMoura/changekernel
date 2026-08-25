@@ -335,6 +335,19 @@ function collectReferences(document: Record<string, unknown>): {
 	return Object.freeze({externalCount, unresolvedInternalCount});
 }
 
+interface OwnPropertyValue<Value> {
+	readonly value: Value | undefined;
+}
+
+function ownPropertyValue<Value>(
+	record: Record<string, Value>,
+	property: string,
+): OwnPropertyValue<Value> {
+	return Object.freeze({
+		value: Object.getOwnPropertyDescriptor(record, property)?.value,
+	});
+}
+
 function resolvesInternalReference(
 	...args: [Record<string, unknown>, string]
 ): boolean {
@@ -352,7 +365,10 @@ function resolvesInternalReference(
 		if (!current || typeof current !== "object" || !Object.hasOwn(current, part)) {
 			return false;
 		}
-		current = (current as Record<string, unknown>)[part];
+		current = ownPropertyValue(
+			object(current, "OpenAPI internal reference segment"),
+			part,
+		).value;
 	}
 	return current !== undefined;
 }

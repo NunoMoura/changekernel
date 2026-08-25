@@ -141,6 +141,8 @@ export function queryBacklogTriage(
 			truncated: returned.length < matched.length,
 		},
 	};
+	// SAFETY: the result is assembled exclusively from admitted projection and
+	// query domains above; canonicalization preserves that complete JSON shape.
 	return toCanonicalJsonValue({
 		...body,
 		resultDigest: canonicalJsonDigest(body),
@@ -175,6 +177,8 @@ function normalizeQueryRequest(
 		);
 	}
 	const filters = request.filters ? normalizeFilters(request.filters) : undefined;
+	// SAFETY: protocol, digest, ordering, filters, and limit are all normalized
+	// above before the canonical deep clone reconstructs the request domain.
 	return toCanonicalJsonValue({
 		protocol: BACKLOG_TRIAGE_QUERY_PROTOCOL,
 		projectionDigest: request.projectionDigest,
@@ -186,7 +190,7 @@ function normalizeQueryRequest(
 
 function normalizeFilters(filters: BacklogTriageQueryFilters): BacklogTriageQueryFilters {
 	assertExactKeys(filters, FILTER_FIELDS, "Backlog triage query filters");
-	const values = filters as unknown as Readonly<Record<string, unknown>>;
+	const values: Readonly<Record<string, unknown>> = {...filters};
 	const normalized: Record<string, unknown> = {};
 	for (const [field, maxCodePoints] of TEXT_FILTERS) {
 		if (values[field] !== undefined) {
@@ -223,6 +227,8 @@ function normalizeFilters(filters: BacklogTriageQueryFilters): BacklogTriageQuer
 	}
 	if (minimumAgeDays !== undefined) normalized.minimumAgeDays = minimumAgeDays;
 	if (maximumAgeDays !== undefined) normalized.maximumAgeDays = maximumAgeDays;
+	// SAFETY: only supported filter keys with independently normalized values
+	// enter this record; canonicalization preserves the filter domain shape.
 	return toCanonicalJsonValue(normalized) as unknown as BacklogTriageQueryFilters;
 }
 

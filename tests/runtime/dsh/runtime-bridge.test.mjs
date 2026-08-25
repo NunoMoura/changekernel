@@ -183,8 +183,8 @@ describe("CodeWiki Runtime Bridge", () => {
 			assert.equal(request.continuation.rehydration.feedbackDigest, feedbackDigest);
 			assert.equal(second.outcome, "completed");
 			const raw = await readFile(second.rawLogPath, "utf8");
-			assert.match(raw, /\"operation\":\"pause\"/);
-			assert.doesNotMatch(raw, /\"operation\":\"complete\"/);
+			assert.match(raw, /"operation":"pause"/);
+			assert.doesNotMatch(raw, /"operation":"complete"/);
 		}
 	});
 
@@ -332,7 +332,7 @@ describe("CodeWiki Runtime Bridge", () => {
 			staticInput.payload.codeMode.sandboxProfileDigest,
 			canonicalJsonDigest(codeMode.runtime.sandbox),
 		);
-		assert.match(rawLog, /\"name\":\"run_code\"/);
+		assert.match(rawLog, /"name":"run_code"/);
 		assert.match(rawLog, /first.*runtime/);
 	});
 

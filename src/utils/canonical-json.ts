@@ -9,6 +9,10 @@ export type CanonicalJsonValue =
 	| readonly CanonicalJsonValue[]
 	| { readonly [key: string]: CanonicalJsonValue };
 
+type CanonicalizableContainer =
+	| readonly unknown[]
+	| Readonly<Record<string, unknown>>;
+
 export function toCanonicalJsonValue(value: unknown): CanonicalJsonValue {
 	return canonicalize(value, "$", new Set<object>());
 }
@@ -78,9 +82,13 @@ function canonicalize(
 
 	ancestors.add(value);
 	try {
-		return Array.isArray(value)
+			return Array.isArray(value)
 			? canonicalArray(value, path, ancestors)
-			: canonicalObject(value, path, ancestors);
+			: canonicalObject(
+					value as Readonly<Record<string, unknown>>,
+					path,
+					ancestors,
+				);
 	} finally {
 		ancestors.delete(value);
 	}
@@ -114,7 +122,7 @@ function canonicalArray(
 }
 
 function canonicalObject(
-	value: object,
+	value: Readonly<Record<string, unknown>>,
 	path: string,
 	ancestors: Set<object>,
 ): { readonly [key: string]: CanonicalJsonValue } {
@@ -126,16 +134,19 @@ function canonicalObject(
 		invalid(path, "symbol properties are not JSON");
 	}
 
-	const source = value as Record<string, unknown>;
 	const result: Record<string, CanonicalJsonValue> = Object.create(null);
 	for (const key of Object.getOwnPropertyNames(value).sort(compareText)) {
 		assertDataProperty(value, key, `${path}.${key}`);
-		result[key] = canonicalize(source[key], `${path}.${key}`, ancestors);
+		result[key] = canonicalize(value[key], `${path}.${key}`, ancestors);
 	}
 	return Object.freeze(result);
 }
 
-function assertDataProperty(value: object, key: string, path: string): void {
+function assertDataProperty(
+	value: CanonicalizableContainer,
+	key: string,
+	path: string,
+): void {
 	const descriptor = Object.getOwnPropertyDescriptor(value, key);
 	if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
 		invalid(path, "property must be enumerable data");

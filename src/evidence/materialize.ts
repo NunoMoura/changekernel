@@ -639,6 +639,8 @@ function objectValue(value: unknown, label: string): Record<string, unknown> {
 }
 
 function canonicalObject<T>(value: unknown): T {
+	// SAFETY: callers either assemble T from typed Evidence fields or immediately
+	// validate external records; canonicalization only deep-clones their JSON shape.
 	return toCanonicalJsonValue(value) as unknown as T;
 }
 

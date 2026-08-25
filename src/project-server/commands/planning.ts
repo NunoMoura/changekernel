@@ -92,14 +92,14 @@ const INPUT_KEYS = [
 	"runtimeJobId",
 ] as const;
 
-export async function runWikiPlan(
+export function runWikiPlan(
 	input: RunWikiPlanInput,
 ): Promise<RunWikiPlanResult> {
 	return runWikiPlanForSelectedChange(input);
 }
 
 /** Project Server-only entry: selection was already derived from triggering WorkState. */
-export async function runProjectServerSelectedWikiPlan(
+export function runProjectServerSelectedWikiPlan(
 	input: RunWikiPlanInput,
 	selectedChangeId: string,
 ): Promise<RunWikiPlanResult> {

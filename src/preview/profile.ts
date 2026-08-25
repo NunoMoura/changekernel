@@ -3,6 +3,8 @@ import { createCodewikiConfigError } from "../project/config-errors.ts";
 import { assertLoopbackPreviewUrl } from "./browser-adapter.ts";
 import { resolveUiPreviewTarget, type UiPreviewTarget } from "./target.ts";
 
+const PREVIEW_PATH_BASE_URL = "http://127.0.0.1";
+
 export type PreviewProfileBrowser = "none" | "system" | "playwright";
 
 export interface PreviewPackageScriptRunner {
@@ -205,7 +207,7 @@ function normalizedReadyPath(value: unknown, path: string): string {
 	}
 	let parsed: URL;
 	try {
-		parsed = new URL(readyPath, "http://127.0.0.1");
+		parsed = new URL(readyPath, PREVIEW_PATH_BASE_URL);
 	} catch {
 		throw configError(
 			path,
@@ -213,7 +215,7 @@ function normalizedReadyPath(value: unknown, path: string): string {
 			value,
 		);
 	}
-	if (parsed.origin !== "http://127.0.0.1" || parsed.hash) {
+	if (parsed.origin !== PREVIEW_PATH_BASE_URL || parsed.hash) {
 		throw configError(
 			path,
 			"Preview readyPath must stay on the preview origin.",

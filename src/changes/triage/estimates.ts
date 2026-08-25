@@ -61,6 +61,16 @@ const EVIDENCE_AUTHORITIES = [
 	"approved",
 ] as const;
 
+type NormalizedTriageDimensionValue =
+	| (typeof TRIAGE_LEVELS)[number]
+	| (typeof TRIAGE_EFFORTS)[number]
+	| (typeof TRIAGE_REVERSIBILITY)[number]
+	| (typeof TRIAGE_CONFIDENCE)[number]
+	| number
+	| boolean;
+type NormalizedTriageSupportedValue =
+	TriageSupportedValue<NormalizedTriageDimensionValue>;
+
 export function normalizeTriageEstimates(
 	inputs: readonly TriageEstimateInput[],
 	binding: BacklogTriageProjectionBinding,
@@ -118,7 +128,7 @@ function normalizeEstimate(
 	if (entries.length === 0) {
 		throw new Error(`${label} must provide at least one supported dimension.`);
 	}
-	const dimensions: Record<string, TriageSupportedValue<unknown>> = {};
+	const dimensions: Record<string, NormalizedTriageSupportedValue> = {};
 	for (const [name, supported] of entries) {
 		dimensions[name] = normalizeDimension(name, supported, label);
 	}
@@ -133,6 +143,8 @@ function normalizeEstimate(
 	if (Buffer.byteLength(canonicalJson(body), "utf8") > 16_384) {
 		throw new Error(`${label} exceeds 16384 canonical UTF-8 bytes.`);
 	}
+	// SAFETY: every estimate field and binding is normalized above; the canonical
+	// deep clone preserves the complete NormalizedTriageEstimate JSON shape.
 	return toCanonicalJsonValue({
 		...body,
 		estimateDigest: canonicalJsonDigest(body),
@@ -143,15 +155,21 @@ function normalizeDimension(
 	name: string,
 	input: unknown,
 	label: string,
-): TriageSupportedValue<unknown> {
+): NormalizedTriageSupportedValue {
 	assertExactKeys(input, ["value", "basis"], `${label} ${name}`);
 	const record = input as {readonly value: unknown; readonly basis: TriageDimensionBasis};
 	const value = normalizeDimensionValue(name, record.value, label);
 	const basis = normalizeBasis(record.basis, `${label} ${name} basis`);
-	return toCanonicalJsonValue({value, basis}) as unknown as TriageSupportedValue<unknown>;
+	// SAFETY: value and basis are normalized to the complete supported dimension
+	// union before canonicalization, which preserves their JSON field shapes.
+	return toCanonicalJsonValue({value, basis}) as unknown as NormalizedTriageSupportedValue;
 }
 
-function normalizeDimensionValue(name: string, value: unknown, label: string): unknown {
+function normalizeDimensionValue(
+	name: string,
+	value: unknown,
+	label: string,
+): NormalizedTriageDimensionValue {
 	if (
 		name === "urgency" ||
 		name === "expectedImpact" ||
@@ -171,7 +189,12 @@ function normalizeDimensionValue(name: string, value: unknown, label: string): u
 		return enumValue(value, TRIAGE_CONFIDENCE.slice(1), `${label} ${name}`);
 	}
 	if (name === "workUnblocked") {
-		if (!Number.isInteger(value) || (value as number) < 0 || (value as number) > 1_000) {
+		if (
+			typeof value !== "number" ||
+			!Number.isInteger(value) ||
+			value < 0 ||
+			value > 1_000
+		) {
 			throw new Error(`${label} workUnblocked must be an integer from 0 to 1000.`);
 		}
 		return value;
@@ -214,6 +237,8 @@ function normalizeBasis(input: TriageDimensionBasis, label: string): TriageDimen
 	) {
 		throw new Error(`${label} requires exact canonical, observed, or Evidence support.`);
 	}
+	// SAFETY: all basis fields are normalized above to the exact
+	// TriageDimensionBasis domain before canonicalization.
 	return toCanonicalJsonValue({
 		authority,
 		analysisClass,

@@ -128,6 +128,8 @@ Runtime Production Qualification `1.0.0` binds one exact Runtime Build, Domain P
 
 `inspectBackendOperations` consumes an explicit read-only `RuntimeOperationsInspectionPort` and returns Backend Observability `1.0.0`: structured component health, bounded aggregate metrics, digest-verified audit metadata, selected redacted Dev Logs, exact Runtime receipt metadata, and stable diagnostics. It excludes chain-of-thought, credentials, secret values, raw DSH Agent Session bytes, raw logs, and model output bodies. `collectBackendAuditRecords` exports only protocol, identity, timestamp, byte length, digest, and private-state reference for migration, build-transition, restore, and recovery receipts. Browser Frontend capabilities remain unchanged; these are explicit operator APIs, not unauthenticated browser surfaces.
 
+Repository diagnostics are governed by `diagnostics/baseline.json`, narrow context-correcting scanner rules, and `npm run diagnostics:ratchet`. Pinned Pi-Lens, ast-grep, Knip, Madge, and jscpd versions reject tool drift, unclassified or new finding identities, count increases, new source cycles, every emitted-JavaScript cycle, and increased production-oriented duplication. The baseline independently ratchets Pi-Lens's deterministic structural output and documents owner and disposition for every retained population without hiding interactive findings; ten correctness policies remain at zero, while LSP and production security gates stay active.
+
 ## Exactly four Stage Loops
 
 ```text

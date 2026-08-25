@@ -315,6 +315,8 @@ export function normalizeChangeDefectProfile(value: unknown): ChangeDefectProfil
 			),
 		},
 	};
+	// SAFETY: TypeBox admitted the full profile and every variable field is
+	// normalized above; canonicalization preserves that domain JSON shape.
 	return toCanonicalJsonValue(normalized) as unknown as ChangeDefectProfile;
 }
 
@@ -360,6 +362,8 @@ export function normalizeChangeSecurityProfile(
 			catalogRef: canonicalRef(entry.catalogRef, "KEV catalogRef"),
 		};
 	});
+	// SAFETY: TypeBox admitted the security profile and each nested identifier,
+	// score, SARIF entry, and KEV entry is normalized before canonicalization.
 	return toCanonicalJsonValue({
 		classification: input.classification,
 		identifiers: sortedObjects(identifiers, securityIdentifierKey),

@@ -193,6 +193,8 @@ export function ingestJunitXmlEvidence(
 		execution: admitted.execution,
 		diagnosticRefs,
 	});
+	// SAFETY: artifact, execution, coverage, summary, and Evidence material are
+	// fully admitted or constructed above before canonicalization.
 	const body = toCanonicalJsonValue({
 		protocol: JUNIT_EVIDENCE_ADAPTER_PROTOCOL,
 		artifact,

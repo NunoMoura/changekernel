@@ -435,7 +435,7 @@ function jsonPointerResolves(value: unknown, pointer: string): boolean {
 		.split("/")
 		.map((part) => part.replace(/~1/gu, "/").replace(/~0/gu, "~"))) {
 		if (!isPlainRecord(current) || !Object.hasOwn(current, token)) return false;
-		current = current[token];
+		current = Object.getOwnPropertyDescriptor(current, token)?.value;
 	}
 	return true;
 }

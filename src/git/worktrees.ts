@@ -242,6 +242,10 @@ function commandKeyForStep(
 			return "worktreeVerify";
 		case "worktree.cleanup":
 			return "worktreeCleanup";
+		default: {
+			const exhaustive: never = step;
+			throw new Error(`Unsupported Worktree command step ${String(exhaustive)}.`);
+		}
 	}
 }
 

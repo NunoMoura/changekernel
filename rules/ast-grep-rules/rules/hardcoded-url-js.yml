@@ -1,0 +1,26 @@
+id: hardcoded-url-js
+language: JavaScript
+message: "Hardcoded URL — use config or environment variable"
+severity: warning
+note: |
+  Production URLs must come from configuration or deliberate named constants.
+  Tests are excluded because their loopback and invalid-host URLs are controlled
+  fixtures, not deployable endpoints. B10 audited all 13 excluded findings.
+ignores:
+  - "tests/**"
+rule:
+  any:
+    - all:
+        - kind: variable_declarator
+          regex: '"https?://'
+        - not:
+            has:
+              field: name
+              regex: "^[A-Z][A-Z0-9_]*$"
+    - all:
+        - kind: assignment_expression
+          regex: '"https?://'
+        - not:
+            has:
+              field: left
+              regex: "^[A-Z][A-Z0-9_]*$"

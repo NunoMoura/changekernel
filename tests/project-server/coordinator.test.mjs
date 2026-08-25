@@ -43,16 +43,6 @@ function trigger(overrides = {}) {
 		planningRef: "trace:TRACE-trigger:planning:iteration:1#work:WU-ci",
 		changeRefs: ["trace:TRACE-trigger:decision:iteration:1#change:CHG-ci"],
 		pathScopes: ["src/project-server/coordinator"],
-		trigger: {
-			id: "TRG-ci",
-			kind: "schedule",
-			runMode: "new_trace",
-			concurrency: "skip_if_active",
-			runKeyTemplate: "ci:${week}",
-			owner: "implementation",
-			trigger: "cron:0 9 * * 1",
-			refs: ["kb:system/components/runtime.md"],
-		},
 		enabledBy: ["trace:TRACE-trigger:implementation:iteration:1#change:IC-ci"],
 		runs: [],
 		qualityBlockers: [],
@@ -72,7 +62,7 @@ function trigger(overrides = {}) {
 			owner: "implementation",
 			trigger: "cron:0 9 * * 1",
 			refs: ["kb:system/components/runtime.md"],
-			...(overrides.trigger || {}),
+			...overrides.trigger,
 		},
 	};
 }

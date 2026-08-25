@@ -175,6 +175,8 @@ export function createEvidenceObligation(
 	input: EvidenceObligation,
 ): EvidenceObligation {
 	assertTypeboxSchema(obligationSchema, input, "Evidence obligation");
+	// SAFETY: TypeBox admitted the complete obligation and every set-like field
+	// is normalized below; canonicalization preserves its domain JSON shape.
 	return toCanonicalJsonValue({
 		...input,
 		kinds: sortedUnique(input.kinds, "Evidence obligation kind"),
@@ -226,6 +228,8 @@ export function reduceEvidenceObligation(
 			admitted.obligation.minimumCount - classified.supportingEvidenceIds.length,
 		),
 	};
+	// SAFETY: reduction computes every resolution field from admitted obligation
+	// and Evidence domains; the validator below independently rechecks the clone.
 	const resolution = toCanonicalJsonValue({
 		...withoutDigest,
 		resolutionDigest: canonicalJsonDigest(withoutDigest),

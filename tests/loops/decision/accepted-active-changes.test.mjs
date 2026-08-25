@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 
 import {createNextChangeOperation} from "../../../src/changes/trace/index.ts";
-import {
-	acceptedActiveChangeBindings,
-	assertDecisionAcceptedActiveChangesBinding,
-} from "../../../src/loops/decision/accepted-active-changes.ts";
+import {assertDecisionAcceptedActiveChangesBinding} from "../../../src/loops/decision/accepted-active-changes.ts";
 import {createDecisionCandidate} from "../../../src/loops/decision/candidate.ts";
 import {
 	createAcceptedChangeCompatibilityContext,

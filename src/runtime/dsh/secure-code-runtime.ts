@@ -596,7 +596,8 @@ function activeCodeRun(child: ChildProcessWithoutNullStreams): ActiveCodeRun {
 async function terminateProcessGroup(child: ChildProcessWithoutNullStreams): Promise<void> {
 	if (child.exitCode !== null || child.signalCode !== null) return;
 	try {
-		process.kill(-child.pid!, "SIGKILL");
+		if (child.pid === undefined) child.kill("SIGKILL");
+		else process.kill(-child.pid, "SIGKILL");
 	} catch {
 		child.kill("SIGKILL");
 	}

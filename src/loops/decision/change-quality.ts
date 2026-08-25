@@ -304,6 +304,10 @@ function kindQuality(input: EvaluateChangeDecisionInput) {
 			return change.outcome.successSignals.length > 0
 				? met()
 				: unmet("Change needs observable success signals.");
+		default: {
+			const exhaustive: never = change.classification.kind;
+			throw new Error(`Unsupported Change kind ${String(exhaustive)}.`);
+		}
 	}
 }
 

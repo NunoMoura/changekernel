@@ -429,6 +429,10 @@ function dispositionStatus(
 			return "deferred";
 		case "withdraw":
 			return "withdrawn";
+		default: {
+			const exhaustive: never = disposition;
+			throw new Error(`Unsupported Decision disposition ${String(exhaustive)}.`);
+		}
 	}
 }
 
@@ -442,6 +446,10 @@ function terminalDispositionStatus(
 			return "deferred";
 		case "withdraw":
 			return "withdrawn";
+		default: {
+			const exhaustive: never = disposition;
+			throw new Error(`Unsupported terminal disposition ${String(exhaustive)}.`);
+		}
 	}
 }
 
@@ -504,7 +512,9 @@ function assertInput(input: RunWikiDecideInput): void {
 	}
 	if (
 		input.mode === "append" &&
-		(!Number.isSafeInteger(input.expectedBytes) || input.expectedBytes! < 0)
+		(typeof input.expectedBytes !== "number" ||
+			!Number.isSafeInteger(input.expectedBytes) ||
+			input.expectedBytes < 0)
 	) {
 		throw createCodewikiOperationError({
 			operation: "wiki_decide",

@@ -312,7 +312,9 @@ function requiredDigest(value: unknown, label: string): Sha256Digest {
 
 function textList(value: unknown): string[] {
 	return Array.isArray(value)
-		? value.filter((entry): entry is string => typeof entry === "string").sort()
+		? value
+				.filter((entry): entry is string => typeof entry === "string")
+				.sort((left, right) => left.localeCompare(right))
 		: [];
 }
 

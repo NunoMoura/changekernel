@@ -201,6 +201,8 @@ function ingestCoverageEvidence(
 			ownershipRefs: admitted.ownershipRefs,
 			observations: scoped.observations,
 		});
+	// SAFETY: adapter definition, parsed coverage, execution, summary, and
+	// Evidence material are fully admitted or constructed before canonicalization.
 	const body = toCanonicalJsonValue({
 		protocol: definition.protocol,
 		format: definition.format,

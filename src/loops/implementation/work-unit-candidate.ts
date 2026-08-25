@@ -487,12 +487,25 @@ function assertPathsWithinScopes(
 }
 
 function pathMatchesScope(path: string, scope: string): boolean {
-	const escaped = scope
-		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
-		.replaceAll("**", "\u0000")
-		.replaceAll("*", "[^/]*")
-		.replaceAll("\u0000", ".*");
-	return new RegExp(`^${escaped}$`, "u").test(path);
+	const closeGlobStars = (input: Set<number>): Set<number> => {
+		const closed = new Set(input);
+		for (const index of closed) {
+			if (scope.startsWith("**", index)) closed.add(index + 2);
+			else if (scope[index] === "*") closed.add(index + 1);
+		}
+		return closed;
+	};
+	let states = closeGlobStars(new Set([0]));
+	for (const character of path) {
+		const next = new Set<number>();
+		for (const index of states) {
+			if (scope.startsWith("**", index)) next.add(index);
+			else if (scope[index] === "*" && character !== "/") next.add(index);
+			else if (scope[index] === character) next.add(index + 1);
+		}
+		states = closeGlobStars(next);
+	}
+	return states.has(scope.length);
 }
 
 function normalizedPaths(values: readonly string[]): readonly string[] {

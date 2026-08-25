@@ -519,7 +519,7 @@ function payloadObject(
 	return payload as Readonly<Record<string, CanonicalJsonValue>>;
 }
 
-function envelope<T>(value: object): T {
+function envelope<T>(value: Readonly<Record<string, unknown>>): T {
 	const normalized = toCanonicalJsonValue(value);
 	if (Buffer.byteLength(canonicalJson(normalized), "utf8") > CLIENT_PROJECT_SERVER_PROTOCOL.maxEnvelopeBytes) {
 		throw new Error(`Client/Server envelope exceeds ${CLIENT_PROJECT_SERVER_PROTOCOL.maxEnvelopeBytes} canonical UTF-8 bytes.`);

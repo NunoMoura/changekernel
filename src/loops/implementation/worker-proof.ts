@@ -425,7 +425,9 @@ function changedPathsOverlap(
 	right: ImplementationWorkerProof,
 ): string[] {
 	const rightPaths = new Set(right.changedPaths);
-	return left.changedPaths.filter((path) => rightPaths.has(path)).sort();
+	return left.changedPaths
+		.filter((path) => rightPaths.has(path))
+		.sort((leftPath, rightPath) => leftPath.localeCompare(rightPath));
 }
 
 function changeInputs(

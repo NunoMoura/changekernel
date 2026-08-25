@@ -13,6 +13,9 @@ codewiki_source_patterns:
   - "src/plugins/**"
   - "src/error-handling/codewiki-error.ts"
   - "src/error-handling/operation-errors.ts"
+  - "scripts/check-diagnostics-ratchet.mjs"
+  - "diagnostics/**"
+  - "rules/ast-grep-rules/**"
 codewiki_test_patterns: ["tests/plugins/**", "tests/project-server/package-*.mjs", "tests/scaffold*.test.mjs"]
 codewiki_relationships:
   - type: realizes
@@ -60,6 +63,8 @@ Shared error handling stays lean under `src/error-handling/**`: CodeWiki error e
 Installation is passive; Project Server owns lifecycle. Backend Build `2.0.0` binds package, support, DSH, Domain, schemas, and protocols. Exact `1.0.0` stays readable; only identity-preserving Domain and Runtime `3.0.0` to `4.0.0` conversion is built in. `CODEWIKI_STATE_ROOT` isolates private state and four backup scopes.
 
 Support Matrix and Runtime Production Qualification `1.0.0` bind Linux x64, exact containment, DSH, Plugins, API-key providers, and release evidence. Backend Observability and Fault Recovery `1.0.0` provide bounded privacy-preserving operations and deterministic recovery without effect authority.
+
+Diagnostics are protected-head policy. Pinned ratchet, including Pi-Lens, rejects drift, new/increased findings and cycles. Pi-Lens stays unfiltered; only proven rule errors are corrected. Candidates cannot select policy.
 
 ## Check Pack transport
 

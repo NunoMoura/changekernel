@@ -521,7 +521,7 @@ function assertInput(input: RunWikiChangeInput): void {
 	}
 	assertKnownInputKeys(
 		"wiki_change",
-		input as unknown as Record<string, unknown>,
+		{...input},
 		INPUT_KEYS,
 	);
 	if (JSON.stringify(input).length > MAX_INPUT_BYTES) {

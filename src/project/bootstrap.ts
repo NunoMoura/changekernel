@@ -158,7 +158,7 @@ export async function auditBootstrapState(
 		.map((entry) => entry.name)
 		.filter((name) => !TARGET_CODEWIKI_ROOTS.has(name))
 		.map((name) => `.codewiki/${name}`)
-		.sort();
+		.sort((left, right) => left.localeCompare(right));
 	const existing = {
 		codewiki,
 		config: await pathExists(join(repoRoot, WIKI_CONFIG_PATH)),
