@@ -254,13 +254,15 @@ Qualification closed with 1,050 full tests, 149 production tests, 19 readiness t
 
 Success: diagnostics provide a stable regression signal instead of a noisy historical baseline, and every retained finding has an explicit disposition.
 
-### B11 — Safe dogfood and Backend v1 release candidate
+### B11 — Safe dogfood and Backend v1 release candidate — complete
 
-- Install reviewed release N outside the source repository with isolated Project Server state and credentials.
-- Use release N to govern development of N+1 without resolving or loading mutable N+1 Project Server code.
-- Prove Project Server upgrade, rollback, emergency disable, cleanup, independent CI, packed external tests, and guarded effects.
-- Freeze Backend v1 API, plugin contracts, support matrix, release manifest, and qualification evidence.
-- Remove the repository no-dogfood restriction only through a separate explicit Change after all external gates pass.
+- [x] Install reviewed release N outside the source repository with isolated Project Server state and credentials.
+- [x] Use release N to govern development of N+1 without resolving or loading mutable N+1 Project Server code.
+- [x] Prove Project Server upgrade, rollback, emergency disable, cleanup, independent CI, packed external tests, and guarded effects.
+- [x] Freeze Backend v1 API, Plugin contracts, support matrix, Release Manifest, and qualification evidence.
+- [x] Keep the repository no-dogfood restriction in place; any removal requires a later separate explicit Change after this external qualification boundary.
+
+Qualification packs exact B10 commit `6f9023f9a239e3dbe0d7491fa30b2dee2c686c3f` as controller N, installs it outside both source and subject, binds protected-head Check Packs, rejects mutable candidate policy and stale expected-head writes, runs independent N+1 CI, passively installs the candidate only after governance, and proves backup-first Build upgrade, rollback, emergency stop, private-state uninstall, credential isolation, and complete temporary-root cleanup. Backend Release Manifest `1.0.0` binds the candidate package/source/Build, frozen contract closure, Runtime Production Qualification, controller, policy, and nine exact evidence identities.
 
 Success: CodeWiki safely governs itself as a subject while the released controller remains an independent trusted application.
 
@@ -268,20 +270,20 @@ Success: CodeWiki safely governs itself as a subject while the released controll
 
 Frontend v1 product implementation may begin only when all of these are true:
 
-- one exact DSH baseline and profile closure is pinned and qualified;
-- Switchyard and engine-selection surfaces are absent;
-- Software Development Domain Plugin identity and migration rules are stable;
-- provider and authentication support matrix is explicit and tested;
-- credentials remain outside every Run authority and evidence surface;
-- frontend API and event protocol are versioned, authenticated, resumable, and frozen;
-- install, upgrade, rollback, backup, restore, and crash recovery pass in disposable external environments;
-- supported containment fails closed and passes adversarial qualification;
-- operational status, audit evidence, and diagnostics are sufficient for production support;
-- Software Development defaults and CodeWiki repository Check Packs are qualified without controller/subject self-judgment;
-- repository diagnostics contain no blocker, unclassified warning, or actionable warning;
-- release N safely governs N+1 under independent-controller dogfood;
-- full tests, packed installs, audits, benchmarks, and manifest verification are green;
-- no unresolved critical security, authority, data-loss, or provider-custody defect remains.
+- [x] one exact DSH baseline and profile closure is pinned and qualified;
+- [x] Switchyard and engine-selection surfaces are absent;
+- [x] Software Development Domain Plugin identity and migration rules are stable;
+- [x] provider and authentication support matrix is explicit and tested;
+- [x] credentials remain outside every Run authority and evidence surface;
+- [x] frontend API and event protocol are versioned, authenticated, resumable, and frozen;
+- [x] install, upgrade, rollback, backup, restore, and crash recovery pass in disposable external environments;
+- [x] supported containment fails closed and passes adversarial qualification;
+- [x] operational status, audit evidence, and diagnostics are sufficient for production support;
+- [x] Software Development defaults and CodeWiki repository Check Packs are qualified without controller/subject self-judgment;
+- [x] repository diagnostics contain no blocker, unclassified warning, or actionable warning;
+- [x] release N safely governs N+1 under independent-controller dogfood;
+- [x] full tests, packed installs, audits, benchmarks, and manifest verification are green;
+- [x] no unresolved critical security, authority, data-loss, or provider-custody defect remains.
 
 ## Verification rules
 

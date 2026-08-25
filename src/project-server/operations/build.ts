@@ -2,6 +2,7 @@ import {DEFAULT_DOMAIN_PLUGIN_IDENTITY} from "../../domains/defaults.ts";
 import type {DomainPluginIdentity} from "../../domains/contracts.ts";
 import {
 	BACKEND_SUPPORT_MATRIX_PROTOCOL,
+	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
 	BACKEND_V1_SUPPORT_MATRIX,
 	RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL,
 } from "../../protocol/backend-production.ts";
@@ -112,6 +113,7 @@ const DEFAULT_PROTOCOLS = Object.freeze([
 	{id: "codewiki.gate-evaluation-package", version: "2.0.0"},
 	{id: "codewiki.private-provider-broker", version: "3.0.0"},
 	BACKEND_SUPPORT_MATRIX_PROTOCOL,
+	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
 	RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL,
 	{id: "codewiki.run-process", version: "6.0.0"},
 	{id: "codewiki.run-receipt", version: "4.0.0"},

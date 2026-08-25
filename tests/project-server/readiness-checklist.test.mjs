@@ -23,6 +23,10 @@ import {
 } from "../../src/project-server/operations/build.ts";
 import {BACKEND_OBSERVABILITY_PROTOCOL} from "../../src/project-server/operations/observability.ts";
 import {
+	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
+	createBackendV1ReleaseManifest,
+} from "../../src/project-server/operations/release.ts";
+import {
 	BACKEND_FAULT_RECOVERY_MATRIX,
 	BACKEND_PRODUCTION_FAULTS,
 } from "../../src/project-server/operations/reliability.ts";
@@ -460,6 +464,24 @@ describe("install readiness checklist", () => {
 		assert.match(
 			readFileSync("BACKEND_V1_PLAN.md", "utf8"),
 			/B8 — Production security, reliability, and observability — complete/,
+		);
+	});
+
+	it("freezes Backend v1 release identity and independent-controller dogfood", () => {
+		assert.equal(BACKEND_V1_RELEASE_MANIFEST_PROTOCOL.version, "1.0.0");
+		assert.equal(typeof createBackendV1ReleaseManifest, "function");
+		assert.equal(
+			DEFAULT_BACKEND_BUILD.protocols.some(
+				({id, version}) =>
+					id === BACKEND_V1_RELEASE_MANIFEST_PROTOCOL.id && version === "1.0.0",
+			),
+			true,
+		);
+		assert.equal(existsSync("tests/project-server/external-dogfood-smoke.mjs"), true);
+		assert.equal(packageJson.files.includes("tests"), false);
+		assert.match(
+			readFileSync("tests/project-server/external-dogfood-smoke.mjs", "utf8"),
+			/RELEASE_N_REVISION = "6f9023f9a239e3dbe0d7491fa30b2dee2c686c3f"/,
 		);
 	});
 

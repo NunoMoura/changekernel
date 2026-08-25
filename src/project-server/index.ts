@@ -261,6 +261,20 @@ export {
 	type StandaloneProjectServerStatus,
 } from "./operations/lifecycle.ts";
 export {
+	BACKEND_V1_RELEASE_EVIDENCE_NAMES,
+	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
+	assertBackendV1ReleaseManifest,
+	backendV1ContractFreezeDigest,
+	createBackendV1ReleaseManifest,
+	type BackendV1ReleaseCheckPackBinding,
+	type BackendV1ReleaseCheckPackStage,
+	type BackendV1ReleaseControllerBinding,
+	type BackendV1ReleaseDogfoodBinding,
+	type BackendV1ReleaseEvidence,
+	type BackendV1ReleaseEvidenceName,
+	type BackendV1ReleaseManifest,
+} from "./operations/release.ts";
+export {
 	BACKEND_OBSERVABILITY_PROTOCOL,
 	collectBackendAuditRecords,
 	inspectBackendOperations,

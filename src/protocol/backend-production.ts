@@ -18,6 +18,11 @@ export const RUNTIME_PRODUCTION_QUALIFICATION_PROTOCOL = Object.freeze({
 	version: "1.0.0",
 } as const);
 
+export const BACKEND_V1_RELEASE_MANIFEST_PROTOCOL = Object.freeze({
+	id: "codewiki.backend-v1-release-manifest",
+	version: "1.0.0",
+} as const);
+
 export type SupportedDshProviderFamily =
 	| "openai"
 	| "anthropic"
