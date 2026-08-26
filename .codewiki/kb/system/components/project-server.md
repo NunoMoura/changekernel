@@ -54,7 +54,7 @@ Project Server invokes exactly four Stage Loops under `src/loops/**`: Decision, 
 Project Server applies one fixed authority model with Work Unit-granular Implementation:
 
 ```text
-Decision approve passed + exact-Candidate confirmation + Knowledge/WorkState CAS -> atomically apply Knowledge Effects -> Planning
+Decision approve passed + confirmation + Knowledge/WorkState CAS -> semantic acceptance -> Planning or complete
 Decision reject | defer | withdraw passed + confirmation                           -> typed terminal/deferred state without Knowledge mutation
 Decision failed                                                                  -> Decision
 Planning delta passed + Work Graph CAS                                            -> Implementation
@@ -71,7 +71,7 @@ Any Gate stopped                                                                
 
 Gate pass means the exact Candidate meets current Checks; it is not semantic acceptance, integration, or delivery. Before immutable Change revision identity, Project Server expands any revision-authoring context handles. Before a Decision Gate, it resolves the revision's stable Knowledge targets, validates expected prior state or absence, and compiles the complete `set | retire` Effect set. Candidate and Gate package bind base and projected Knowledge, compiler, plan, and projection identities. Compilation failure rejects admission before Checks.
 
-An authorized Actor confirms the exact passed Decision Candidate and Gate digest against current WorkState, Knowledge, and `acceptedActiveChanges` heads. Confirmed `approve` atomically records the Change, applies its compiled Knowledge transition, commits resulting heads, and advances to Planning. Planning applies only a Change-scoped Work Graph delta. Work Unit pass advances only that unit; all required units must integrate before Review. Review Attempt `5.0.0` binds current aggregate, Knowledge, Planning, Candidate, Gate, Evidence, Result, Project Context Snapshot, Session, and Run identities. Project Server owns typed failure routing. Only a current passed Review plus Delivery Authority `1.0.0` may target-head-CAS protected Git and record `delivery.applied`. Checks, Runtime, and models cannot perform transitions or effects.
+An authorized Actor confirms the passed Decision Candidate and Gate digest against current WorkState, Knowledge, and `acceptedActiveChanges` heads. Confirmed `approve` commits the Change and compiled Knowledge transition: semantic acceptance, not realization or delivery. Obligated Changes advance to Planning; pure semantic transitions complete. Planning cannot revise it. Work Unit pass advances only that unit; all required units must integrate before Review. Review Attempt `5.0.0` binds current aggregate, Knowledge, Planning, Candidate, Gate, Evidence, Result, Project Context Snapshot, Session, and Run identities. Project Server owns typed failure routing. Only a current passed Review plus Delivery Authority `1.0.0` may target-head-CAS protected Git and record `delivery.applied`. Checks, Runtime, and models cannot perform transitions or effects.
 
 ## Runtime ownership
 

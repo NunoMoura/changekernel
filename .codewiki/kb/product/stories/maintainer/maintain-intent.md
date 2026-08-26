@@ -19,6 +19,8 @@ As a maintainer, I want CodeWiki to preserve current accepted intent as stable d
 - The default Decision policy checks for unresolved semantic contradiction against an exact complete accepted active Changes snapshot; overlap, dependency, supersession, duplication, and conflict remain distinct.
 - Gate pass certifies only that exact Candidate, compiled transition, and present inputs.
 - An authenticated authorized maintainer separately confirms the unchanged passed Candidate and Gate digest before Project Server atomically accepts the semantic transition through expected-head compare-and-swap.
-- Planning, Work Units, Implementation Candidates, tests, Evidence, Review, and Git lineage remain traceable to the accepted Knowledge Effects and requirements they realize.
+- Semantic acceptance makes the desired checkpoint canonical before realization; it does not claim that current project artifacts already satisfy that checkpoint.
+- Planning, Work Units, Implementation Candidates, tests, Evidence, Review, and Git lineage remain traceable to the immutable accepted Knowledge Effects and requirements they realize and cannot rewrite that target.
+- Realization and delivery status derive from Change Trace, Alignment, Evidence, and exact project snapshots rather than being written back into desired-state prose.
 - Any Candidate edit requires a fresh Gate, and Implementation discoveries that change meaning route back to Decision.
 - Git commits preserve exact artifact states but never substitute for accepted intent, Decision confirmation, or a Project Server lifecycle transition.

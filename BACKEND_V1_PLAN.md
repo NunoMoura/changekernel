@@ -1,12 +1,12 @@
-# CodeWiki Backend v1 Plan
+# CodeWiki Backend v1 Plan — Completed
 
 ## Purpose and status
 
-This is the active implementation roadmap after completion of the deletion-first refactoring recorded in `REFACTORING_PLAN.md`. Its goal is one stable, production-ready CodeWiki Backend v1 that can support the first product frontend without reopening canonical ownership, execution-engine, or credential boundaries.
+This document records the completed Backend v1 roadmap after the deletion-first refactoring in `REFACTORING_PLAN.md`. B0 through B11 culminated in the independently governed release candidate at commit `559331a1af9cc89f0d8ab3305ea129ef4b2489cb` (`feat: qualify Backend v1 release candidate`).
 
-Current green base: `9b6e1ef` (`feat: complete product integration surfaces`). Slices 1 through 17 in the completed plan are green. Backend v1 work starts from that checkpoint and does not reinterpret those slices as unfinished migration work.
+Backend v1 remains executable and release evidence. New architecture and implementation work belongs to `SEMANTIC_KERNEL_PLAN.md`; this historical plan is not reopened, canonical runtime input, or a compatibility promise.
 
-The Knowledge Base remains intended Product and System truth. Source and tests remain executable truth. This plan orders delivery; it is not canonical runtime input or a compatibility promise.
+The current `.codewiki/kb/**` tree remains Backend v1 intended Product and System truth until the Semantic Kernel roadmap performs an explicit qualified migration. Source and tests remain executable truth.
 
 ## Product objective
 

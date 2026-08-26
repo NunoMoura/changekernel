@@ -18,7 +18,7 @@ codewiki_relationships:
 ---
 # Checks
 
-Checks is a root domain alongside Changes and Stage Loops. A Check defines one pass/fail boundary for one exact stage subject. A stage-local Check Pack groups Checks and may contain one optional producer Skill. Checks owns file contracts, discovery, bounded input, Skill snapshots, Check SDK, execution coordination, Results, cache identity, and Gate reduction; Runtime owns concrete transports.
+Backend v1 Checks owns Check files, discovery, bounded input, Pack Skill snapshots, SDK, execution, Results, cache identity, and Gate reduction; Runtime owns transports. Current stage-local Packs may contain one producer Skill. SK4 will reserve Check for user-custom evaluation, delete Planning Checks and Pack Skills, and move non-negotiable correctness into Kernel Validation; current contracts remain authoritative until that qualified migration.
 
 ## Project files
 

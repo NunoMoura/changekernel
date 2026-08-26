@@ -1,8 +1,8 @@
 # CodeWiki
 
-CodeWiki is an intent-to-production alignment runtime.
+CodeWiki is evolving from its qualified Backend v1 into a headless Semantic Kernel for governed agentic work.
 
-It turns accepted user intent into an accountable transition of project Knowledge and implementation, then permits exact Git and delivery state to advance only when required alignment evidence is complete, fresh, and authorized.
+It turns accepted project meaning into accountable semantic transitions and controlled realization, then permits exact project and delivery state to advance only when required Alignment Evidence is complete, fresh, and authorized. Applications consume a versioned Kernel API; they do not own canonical writes or lifecycle authority.
 
 ```text
 (Kₜ, Gₜ, Pₜ) + ΔIntent
@@ -18,12 +18,12 @@ CodeWiki does not guarantee unknowable semantic perfection. It provides bounded 
 
 ## Current posture
 
-CodeWiki is private pre-production software under active Backend v1 stabilization.
+CodeWiki is private pre-production software after Backend v1 qualification and under active Semantic Kernel architecture consolidation.
 
 - `.codewiki/kb/**` is intended Product/System/Design truth.
 - `src/**` and `tests/**` are executable truth.
 - Git is history and checkpoint evidence.
-- `REFACTORING_PLAN.md` records completed Slices 1–17; `BACKEND_V1_PLAN.md` is the active non-authoritative delivery roadmap.
+- `REFACTORING_PLAN.md` records completed Slices 1–17; `BACKEND_V1_PLAN.md` records completed B0–B11; `SEMANTIC_KERNEL_PLAN.md` is the active non-authoritative architecture and delivery roadmap.
 - This source checkout is developed with Pi native coding tools, Pi-Lens, normal file edits, tests, and Git.
 - It does **not** install, load, or dogfood its own CodeWiki extension during stabilization.
 - Repo-local Pi loads Pi-Lens only. No CodeWiki Backend pin, local CodeWiki Skills, commands, tools, prompt injection, or active Change Traces belong here.
@@ -31,16 +31,34 @@ CodeWiki is private pre-production software under active Backend v1 stabilizatio
 - `.codewiki/**` contains governed declarations and canonical project meaning only. Physical `.codewiki/runtime/**` and `.codewiki/views/**` roots are prohibited; private state lives under an external repository-identity-bound CodeWiki State Root and Views remain logical deterministic projections.
 - Pi native compaction remains the active conversation-compaction mechanism.
 
-The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 plus Backend v1 B0–B7 is implemented; production hardening, safe dogfood, and final Backend v1 qualification remain pre-production work. Product frontend v1 starts only after every Backend v1 release gate passes.
+The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 and Backend v1 B0–B11 are implemented and externally qualified. The next roadmap consolidates the CodeWiki Semantic Kernel, universal Wiki, Raw Data, Check, Project Realization, Kernel API, and Run Host contracts. End-user frontend implementation belongs to external applications rather than CodeWiki core.
 
-This source repository does not install or load CodeWiki during stabilization. Future source-repository dogfooding is ratified only for an immutable stable release installed through an isolated external Backend and Project Server and requires a separate explicit activation Change after external gates pass; historical pins, traces, approvals, and releases grant no authority.
+This source repository does not install or load CodeWiki. Safe self-governance uses an immutable released controller installed outside both this checkout and its disposable candidate subject; historical pins, traces, approvals, and releases grant no authority.
 
-## Primary product boundary
+## Target product boundary
+
+```text
+Applications
+    │ CodeWiki Kernel API / Wire Protocol
+    ▼
+CodeWiki Semantic Kernel
+├── filesystem Wiki and canonical Change Traces
+├── Change transactions, bounded context, Alignment, Work, Gates, AuthZ, CAS, and effects
+├── DSH Agent Runtime
+├── Raw Data Intake and Project Realization drivers
+└── qualified Run Host
+        ▼
+      Host OS
+```
+
+Host OS governs resources. DSH governs agent execution. CodeWiki Semantic Kernel governs shared meaning and change. Applications govern experience. Linux x64 remains the only currently qualified production host; target portability does not imply support.
+
+## Current Backend v1 boundary
 
 ```text
 CodeWiki
 |
-+-- Clients: CLI, future DSH client-Plugin App, optional Pi, External Agent Clients
++-- Clients: CLI, Backend v1 App surfaces, optional Pi, External Agent Clients
 +-- Domains: Software Development Domain Plugin
 |
 `-- Backend
@@ -420,18 +438,18 @@ Review Attempt `5.0.0` binds one exact Change revision, Knowledge transition and
 
 Built-in pack ids are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. `skippedPacks` explains disabled, unmatched, or unavailable sensors. Explicit `reviewEvidenceReports` remain validated compatibility input. `requiredPacks` requires relevant sensors to run, but their success never attests candidate acceptance. Clean Implementation/config cuts replace this surface with trusted Code Check bindings and exact evidence contracts.
 
-## Backend v1 and frontend entry gate
+## Backend v1 evidence and Semantic Kernel direction
 
-`BACKEND_V1_PLAN.md` owns the active production sequence. CodeWiki has removed Switchyard and its backend selector and now pins one exact replay-qualified DSH Plugin baseline. Software Development Domain extraction and exact identity propagation are complete. Authenticated Frontend API, capability discovery, and resumable redacted event contracts are frozen at `1.0.0`. Backend v1 B7 qualifies passive packed installation, explicit bootstrap/start/stop/restart, expected-state upgrade and rollback, multi-project isolation, scope-separated backup and restore, retention, corruption recovery, external private state, and uninstall that preserves canonical meaning. B8 now qualifies the production support matrix, exact host and Runtime identity, fault recovery, structured privacy-preserving operations, and dedicated security, dependency, package, performance, and adversarial gates. Before Backend v1 release, CodeWiki must retain OAuth as unsupported until its known qualification gaps close and complete B9 external release-N-governs-N+1 dogfood without loading mutable source Backend code.
+`BACKEND_V1_PLAN.md` records the completed B0–B11 production sequence. CodeWiki removed Switchyard and its backend selector, pinned one exact replay-qualified DSH Plugin baseline, completed Software Development Domain extraction and identity propagation, froze authenticated Frontend API and event contracts at `1.0.0`, qualified passive lifecycle and external private state, and proved release-N-governs-N+1 dogfood without loading mutable candidate code. Those surfaces remain executable Backend v1 evidence while `SEMANTIC_KERNEL_PLAN.md` owns the active architecture sequence.
 
-Unsupported deployment, provider, authentication, and platform combinations fail closed. Frontend product implementation begins only after every Backend v1 release gate passes. The disposable DSH client-slot spike qualified exact `0.1.1-rc.2` typed slots, layout, and primitives, but rejected the stock Web connection because it has no authentication layer and rejected direct Provider settings/authorization reuse because those surfaces mutate the wrong authority planes. Frontend v1 keeps the authenticated CodeWiki App Server host.
+Unsupported deployment, provider, authentication, and platform combinations continue to fail closed. Semantic Kernel core does not implement a rich product frontend. It retains scriptable operations and a minimal terminal-first Operator Console over public Kernel and Operations APIs. A full Semantic Desktop is a separate external product even when maintained by the CodeWiki team. The earlier DSH client-slot spike remains qualified presentation research but grants no transport authentication, credential, lifecycle, or product authority.
 
 If CodeWiki cannot materially reduce drift, false acceptance, lost context, repeated repair, and Integration errors enough to offset ceremony and latency, it should shrink rather than duplicate commodity harness mechanics.
 
 ## Documentation
 
 - [Maintainer intent](.codewiki/kb/product/stories/maintainer/maintain-intent.md)
-- [Design system](.codewiki/kb/product/DESIGN.md)
+- [Operator Console design](.codewiki/kb/product/DESIGN.md)
 - [System architecture](.codewiki/kb/system/diagrams/architecture.yaml)
 - [Alignment](.codewiki/kb/system/components/alignment.md)
 - [Checks](.codewiki/kb/system/components/checks.md)

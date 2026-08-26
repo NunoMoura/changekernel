@@ -1,161 +1,223 @@
 ---
 version: alpha
-name: CodeWiki
-colors:
-  canvas: "#F6F3ED"
-  surface: "#FFFCF7"
-  ink: "#1D2521"
-  muted: "#66706A"
-  line: "#D7D2C7"
-  forest: "#1F5A46"
-  forest-hover: "#174534"
-  amber: "#A55A13"
-  red: "#A83A32"
-  blue: "#245E99"
-typography:
-  display:
-    fontFamily: "Iowan Old Style, Georgia, serif"
-    fontSize: 32px
-    fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-0.02em"
-  title:
-    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    fontSize: 22px
-    fontWeight: 650
-    lineHeight: 1.25
-    letterSpacing: "-0.015em"
-  body:
-    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    fontSize: 16px
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: "0"
-  label:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
-    fontSize: 12px
-    fontWeight: 600
-    lineHeight: 1.3
-    letterSpacing: "0.04em"
-spacing:
-  xs: 4px
-  sm: 8px
-  md: 16px
-  lg: 24px
-  xl: 40px
-  page: 56px
-rounded:
-  sm: 4px
-  md: 8px
-  lg: 12px
-  full: 9999px
-components:
-  primary-action:
-    backgroundColor: "{colors.forest}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.sm} {spacing.md}"
-  evidence-status:
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
 type: Design System
 codewiki_id: cw:design:product
-title: CodeWiki Design System
-description: Visual and interaction rules for truthful, calm, inspectable project coordination surfaces.
+title: CodeWiki Operator Console
+description: Interaction rules for minimal, truthful, terminal-first Semantic Kernel operations.
 status: stable
-tags: [product, design]
+tags: [product, design, operations]
 ---
-# CodeWiki Design System
+# CodeWiki Operator Console
 
-## Overview
+## Purpose
 
-CodeWiki should feel calm, exact, and inspectable. It is the standalone software-evolution CodeWiki behind a project, not a skin around one Agent product. It helps people understand project state and authority without disguising uncertainty as confidence. Warm paper surfaces, deep ink, restrained forest actions, and compact technical metadata make durable work feel deliberate rather than theatrical.
+CodeWiki Semantic Kernel is headless. It does not own the end-user experience of products built on top of it. Core presentation is limited to a small first-party Operator Console: scriptable commands plus an optional terminal user interface for observing and recovering the Kernel.
 
-Git artifact history, CodeWiki semantic state, and Agent execution evidence remain visibly distinct. Visual design presents bounded project facts. It never invents lifecycle state, confidence, completion, activity, approval, custody, or causality. System components own those facts; this document owns how visible facts are arranged and distinguished.
+The Console is analogous to `systemctl`, `journalctl`, `top`, `htop`, or Task Manager. It shows exact operational state and invokes narrow authenticated operations. It is not a Wiki editor, project-management product, IDE, agent chat, marketplace, or semantic desktop.
 
-Frontend v1 begins only after every Backend v1 release gate passes. It uses the authenticated CodeWiki App Server and frozen Frontend API `1.0.0`. Exact DSH `0.1.1-rc.2` typed slots, layout, and primitives are qualified for release-managed CodeWiki Client Plugin composition, but the stock DSH Web profile and Connection are excluded because they provide no authentication layer. Stock DSH Provider settings and authorization cards are also excluded because CodeWiki must project and authorize exact routes, accounts, credentials, escalation, and budgets through its own authority seams. DSH presentation state never becomes CodeWiki authority.
+Backend v1 requires this legacy Design System item. The universal Wiki migration removes that imposed scaffold; this item may then remain an ordinary Operator Console specification. It never becomes a visual standard for external applications.
 
-## Colors
+## Product boundary
 
-Canvas is warm and quiet. Surface separates active material without heavy cards. Ink carries durable reading. Forest marks permitted forward action, amber marks attention, red marks failure or danger, and blue marks reference or neutral inspection. Color never carries status alone; text, iconography, and accessible labels accompany it.
+The CodeWiki repository owns:
 
-Use one primary action per visible task area. Do not use decorative gradients, glass effects, or severity colors as generic ornament.
+- the headless Semantic Kernel;
+- Kernel API and Wire Protocol;
+- an application SDK and conformance suite;
+- scriptable operator commands;
+- a minimal terminal-first Operator Console;
+- schemas, lifecycle tooling, and recovery operations.
 
-## Typography
+External applications own web, desktop, IDE, chat, mobile, workflow, autonomous-service, and rich project experiences. A full Semantic Desktop is a separate product even when maintained by the CodeWiki team. It consumes the same public APIs and receives no privileged imports, storage access, hidden commands, or lifecycle authority.
 
-Display type introduces destinations and major dossier titles. Sans-serif body text supports dense operational reading. Monospace labels identify IDs, timestamps, digests, source paths, exact revisions, and Check names.
+## Non-goals
 
-Keep reading measures broad enough for prose and narrow enough for comparison. Do not render technical identifiers as body prose or use tiny text to hide required context.
+The Operator Console does not provide:
 
-## Layout
+- Wiki or Raw Data authoring;
+- rich Change drafting or semantic review workspaces;
+- visual Planning boards or Workbench editing;
+- Check, Check Pack, Skill, route, or provider editors;
+- agent chat or model interaction;
+- source, media, diagram, or dataset editing;
+- package or Plugin marketplaces;
+- customer branding or product navigation;
+- a configurable workflow graph;
+- a desktop environment.
 
-Desktop uses a stable destination header, context rail, and single primary reading/work surface. Small screens replace persistent rails with labeled controls while retaining current destination, selected Change, and return path.
+Those capabilities belong to external applications or ordinary project tooling.
 
-Use spacing scale consistently. Group facts by semantic owner: intent, current state, Candidate, Evidence, Checks, Gate, Stage Loop, and effect. A page may disclose details progressively, but failures, stopped execution, empty-stage warnings, and required Evidence must remain visible before expansion.
+## Surfaces
 
-## Elevation & Depth
+The Console has two equivalent thin-client surfaces:
 
-Depth comes from surface tone, border, and spacing, not heavy shadows. Modal layers are reserved for focused confirmation, source inspection, and authority actions. A floating control must not obscure current state, status, or required Evidence.
+1. scriptable commands for automation and precise inspection;
+2. an optional interactive terminal view for live observation and narrow operator actions.
 
-## Shapes
+A target command family may include:
 
-Use modest rounded corners for controls and bounded panels. Status chips use full rounding. Keep borders thin and quiet. Avoid mixing strongly rounded playful controls with sharp dense data surfaces.
+```text
+codewiki status
+codewiki ps
+codewiki changes
+codewiki work
+codewiki gates
+codewiki effects
+codewiki inspect <identity>
+codewiki events
+codewiki backup
+codewiki recover
+codewiki top
+```
 
-## Iconography
+Names remain provisional until the Kernel API and Operations API freeze. Commands and the TUI use those versioned APIs rather than importing Project Server internals or reading canonical files directly.
 
-Use a small, consistent outline icon set for navigation, status support, disclosure, and source actions. Every icon has a visible label or accessible name. Icons reinforce text; they never carry authority, severity, or lifecycle state alone.
+## Authority model
 
-## Components
+The Console is read-only by default. Being shipped with CodeWiki grants no authority. Every operation binds an authenticated actor or operator, exact repository, target identity, expected head, requested capability, and bounded payload.
 
-**Destination navigation** identifies current Work, Product, System, or Design context and preserves keyboard focus on navigation.
+Safe inspection and protected mutation remain visually and mechanically distinct. A protected action must show:
 
-**Change selector** shows exact Change identity, proposed accepted-to-intended transition, revision, current Stage Loop, Gate state, and unresolved attention. It never suggests a Change is selected for Decision unless authenticated selection completed.
+- the exact subject and current head;
+- requested operation and consequence;
+- authority basis;
+- stale or conflicting state;
+- whether external effects may occur;
+- the expected Receipt;
+- the confirmation required before dispatch.
 
-**Stage workspace** organizes Decision, Planning, Implementation, and Review as fixed derived views. Decision shows active-Change compatibility and confirmation freshness. Planning shows one Change-scoped Work Graph delta against the global graph. Implementation shows each Work Unit Candidate, shared stage-wide policy, Gate state, integration state, dependencies, and aggregate completion. Review shows the exact aggregate Change lineage. Every view exposes exact subject, current WorkState, producer route and custody, material/package snapshots, Skills, Checks, attempts, feedback, pending authority, and permitted transition without inventing a configurable workflow graph.
+The Console never manufactures lifecycle state, Check Results, acceptance, activity, custody, causality, or recovery success. It presents Kernel facts and the exact authority that produced them.
 
-**CodeWiki status** distinguishes Backend Build, Project Server, Runtime, provider broker, Run Process, Check Run Process, and Workbench health. It shows exact Backend Support Matrix, Domain Plugin, DSH profile and Plugin closure, Runtime Production Qualification, active Run identities, cancellation, and recovery without presenting process availability as project acceptance. Operator diagnostics expose bounded health, metrics, audit and receipt metadata, and redacted logs; they never expose credentials, raw Session bytes, raw logs, model output bodies, or chain-of-thought.
+## Information hierarchy
 
-**State and Evidence rows** show status, authority basis, timestamp, exact identity, and missing or stale conditions. They link to inspectable detail rather than flattening complex Results into one score.
+The default view answers five operational questions:
 
-**Execution custody** distinguishes Runs, Delegated Runs, and External Agent Client activity. Backend-owned views may show complete DSH version, prompt, Skill, tool, model-route, context, query, budget, compaction, raw-session, usage, output, and isolation receipts. Delegated views show exact task, delegation Provider, configuration policy, process lifecycle, Workbench base and result, final output, and declared unknown child internals. External-client views show only authenticated CodeWiki calls and admitted artifacts. No partial receipt appears as complete custody.
+1. Is the Semantic Kernel healthy?
+2. What accepted Wiki checkpoint is current?
+3. What realization and Delivery checkpoint is active?
+4. Which Changes, Work Units, Runs, Gates, or Effects need attention?
+5. Can the operator safely stop, inspect, retry, or recover the affected operation?
 
-**Context and history inspection** distinguishes refreshable producer Project Context Snapshots from frozen Candidate Gate Evaluation Packages. It exposes snapshot/package identity, source-linked local queries, coverage, unknowns, truncation, staleness, controlled refreshes, and retained exact model-visible ledger ranges. Compaction summaries remain visibly non-authoritative projections. Optional programmatic query runs show exact snapshot, code digest, limits, canonical JSON output, and receipt without presenting an opaque persistent heap.
+A compact header shows:
 
-**Action controls** separate safe reads from protected actions. Disabled actions explain the unmet guard. Decision Gate pass and semantic confirmation are separate visible states. Confirmation names exact Candidate and Gate digests, current WorkState, accountable actor, and consequence; any edit invalidates confirmation eligibility until a fresh Gate passes.
+- project and repository identity;
+- Backend or Kernel Build identity;
+- Project Server generation and health;
+- qualified host profile;
+- Wiki checkpoint;
+- current realization and Delivery binding;
+- Alignment summary;
+- event-stream freshness.
 
-**Source and diagram inspectors** show canonical path or diagram reference, provenance, coverage, truncation, and staleness. They open the owning concept or exact file rather than a copied summary.
+The primary body contains bounded tables for active Changes, Work Units, DSH Runs, failed or stopped Gates, pending Effects, and faults. Exact identities remain inspectable without forcing full digests into every row.
 
-**Check Pack navigation** groups project files by Decision, Planning, Implementation, and Review, then by `default` or named Pack. Users can inspect, create, rename, edit, and delete any Pack or Check. The UI shows their deterministic resolved stage-wide policy; Implementation displays that same policy against every Work Unit and never offers per-unit Pack selection. Each source Pack separately presents its optional Agent Skill and Gate Checks so guidance never appears to be judgment. Empty stages and Packs remain valid but visibly warn.
+## Operational views
 
-**Model Check editing** uses one deterministic form for requirement, pass, fail, feedback, bounded inputs, binary or quantitative measurement, threshold, model profile, and budget. Saving writes the documented `check.json` and `CHECK.md` files. CodeWiki never invokes a model to author or alter them.
+### Overview
 
-**Pack Skill editing** presents standard Skill name, description, `SKILL.md`, scripts, references, assets, other bounded resources, and declared tool guidance. It shows effective stage composition in stable Pack order, exact content digest, DSH-backed Run and delegate-route compatibility, and capabilities unavailable under current producer or Implementation Worker policy. Saving changes project files only after an explicit authenticated action; Skill scripts never run in the browser or during package installation.
+Shows component health, current heads, active workload, attention count, host enforcement profile, and bounded resource use. Process availability never appears as semantic acceptance.
 
-**Code Check editing** uses the same common fields and accepts one self-contained `CHECK.mjs` upload. Syntax, schema, bounds, and sandbox preview errors remain visible before save; browser code never runs directly.
+### Changes and Work
 
-**Model route selection** distinguishes stage-producer, Implementation Worker, and configured Check model routes, names provider and credential source without exposing secrets, and explains unavailable capability, independence, budget, or billing boundaries before execution.
+Shows active Change identity, semantic checkpoint, current stage, realization status, ready or blocked Work Units, dependencies, and stale conditions. It does not offer rich authoring or silently reinterpret a blocked Change.
 
-**Developer Check mode** exposes the same tracked `check.json`, `CHECK.md`, and `CHECK.mjs` files used by regular forms, plus schemas, exact input coverage, horizontal and vertical OKF/repository/Alignment query facts, bundle provenance, sandbox diagnostics, content digests, cache identity, preview runs, fixture results, and historical replay. It distinguishes reusable Probes and composed Checks from the single registered top-level Result boundary and grants visibility rather than additional authority.
+### Runs and custody
 
-**Check Pack marketplace** follows npm package-gallery ergonomics while also accepting exact Git and local package sources. Search and inspection identify source, publisher where applicable, resolved version or revision, stages, optional Pack Skills, Code and Model Checks, requested inputs, integrity, separate Skill and Check digests, and local modifications. Domain Plugins, DSH or Cordis Plugins, Infrastructure Providers, product prompts, themes, settings, and lifecycle hooks are not Pack resources. Installation, update, and removal are explicit User actions; update never hides a local diff.
+Shows exact Run, Runtime Build, DSH Session continuity reference, route identity without secrets, Assignment, Workbench, process-tree state, budgets, cancellation, terminal evidence, quiescence, and Receipt state. Partial custody never appears complete.
 
-**Responsive behavior** preserves hierarchy and available actions across pointer, keyboard, touch, and assistive technology. Reduced-motion preference removes nonessential transition and animation.
+### Gates and Evidence
 
-## Do's and Don'ts
+Shows exact subject, Gate state, selected Check count, required failures, advisory findings, observations, operational unavailability, Evidence coverage, and stable failure codes. It exposes no hidden model reasoning or undeclared inputs.
 
-- Do show what CodeWiki knows, which Checks passed or failed, why a Gate stopped, and when no Checks are configured.
-- Do bind approvals and effects to exact visible subjects.
-- Do preserve readable contrast and keyboard focus.
-- Do use screenshots and previews as Candidate-bound Evidence, not semantic approval.
-- Do identify stage-producer, Implementation Worker, and Check model routes separately.
-- Do render one stable failure code and one feedback contract per failed Check while retaining its bounded factual details and locations.
-- Don't display a generic trust score, hidden reasoning, or fabricated certainty.
-- Don't invoke a model, widen Check input, or substitute a producer or Implementation Worker route for a Check route without an explicit visible choice.
-- Don't present a compaction summary, delegated receipt, External Agent Client receipt, or Agent-generated proposal as canonical truth or complete custody.
-- Don't make background work appear active without an observed state transition.
-- Don't duplicate System topology or runtime policy in design guidance.
-- Don't let visual polish hide missing Evidence, stale state, or unavailable capability.
+### Effects and Delivery
 
-## Visual References
+Shows pending, authorized, executing, completed, failed, or recovery-required effects with exact idempotency and target-head bindings. Passing Review does not appear as completed Delivery.
 
-Visual references are illustrative inputs, not canonical state. Keep accepted references project-local, identify their source and intended UI concern, and validate resulting surfaces against these tokens, accessibility requirements, and exact runtime facts.
+### Faults, backups, and recovery
+
+Shows one owner, bounded diagnosis, affected state, last verified checkpoint, available recovery action, expected head, and recovery Receipt. The Console never retries protected effects speculatively.
+
+### Event stream
+
+Shows bounded redacted state transitions ordered by stable cursor. A gap or generation change forces snapshot refresh rather than guessed replay. Raw DSH Session bytes, raw model outputs, credentials, and chain-of-thought never appear.
+
+## Terminal layout
+
+A representative layout is:
+
+```text
+ CODEWIKI  project: codewiki              Kernel Build: sha256:…
+ Wiki: K17       Realization: R14         Alignment: GAP (3)
+ Host: linux-x64 DSH: healthy             Project Server: ready
+
+ CHANGES                    RUNS
+ C42  Implementation  4/6   R91 running   memory 61%
+ C43  Decision        wait  R92 paused    Candidate ready
+ C39  Review          fail  R89 stopped   quota
+
+ ATTENTION
+ ! Required Review Check failed
+ ! Delivery effect awaits authorization
+ ! Raw source revision became stale
+ ! Work Unit W18 is blocked by W14
+
+ [Enter] inspect   [c] cancel Run   [r] recover   [q] quit
+```
+
+This is an information model, not a promise of exact styling or keybindings.
+
+## Interaction rules
+
+- Prefer one-screen operational summaries and progressive detail.
+- Preserve exact identity, authority, freshness, and status at every drill-down.
+- Keep selection separate from authorization.
+- Require explicit confirmation for destructive or externally visible actions.
+- Disable unavailable actions with one exact reason.
+- Never use a generic trust score or aggregate semantic score.
+- Never hide required failures behind advisory findings.
+- Never infer activity from elapsed time or process existence alone.
+- Never equate `wiki.head` with active Delivery.
+- Never mutate Wiki, Checks, configuration, or project artifacts through local file access.
+- Return every operation to a durable status and Receipt that another Client can inspect.
+
+## Degraded operation
+
+The Console must remain useful when models, providers, DSH Runs, drivers, external applications, or the live Project Server are unavailable. Release-managed offline inspection may verify bounded state through the Operations API or explicit maintenance operations, but it does not bypass quiescence, authentication, expected-head comparison, backup, or recovery rules.
+
+Degraded mode clearly distinguishes:
+
+- unavailable live state;
+- last verified durable state;
+- unverified filesystem observations;
+- safe read-only diagnostics;
+- operations requiring the Project Server to remain stopped;
+- actions prohibited until authority or custody is restored.
+
+The Console itself requires no model, DSH client UI, repository Plugin, project executable, or network service for local inspection.
+
+## Security and redaction
+
+The Console shows only bounded operational metadata required for diagnosis. It excludes:
+
+- credentials, bearer tokens, and secret values;
+- raw provider headers;
+- raw DSH Agent Session bytes;
+- raw model outputs and chain-of-thought;
+- unauthorized Raw Data Source or claim existence;
+- private Workbench content outside the operator's grant;
+- unredacted logs;
+- canonical storage handles.
+
+Terminal escape sequences and untrusted display text are sanitized. Paths, labels, errors, and model-originated strings cannot inject control sequences, commands, links, or confirmation state. Copy operations preserve exact text without executing it.
+
+## Accessibility and portability
+
+The Console works without color, pointer input, Unicode decoration, animation, or a large terminal. Text labels accompany status and severity. Focus order, keyboard navigation, screen-reader-compatible command output, reduced motion, high contrast, terminal resize, and bounded line wrapping are first-class requirements.
+
+Color may reinforce state but never define it. Default output remains deterministic enough for tests and automation. Platform path spelling is presentation only and never changes semantic identity.
+
+## Semantic Desktop boundary
+
+A future Semantic Desktop may combine Wiki exploration, Change workspaces, agent interaction, Workbenches, notifications, multi-project navigation, driver management, and the same operational monitor. That product owns its architecture, visual language, release cadence, threat model, and user research in a separate repository or independently versioned product boundary.
+
+The Semantic Desktop must prove that it can operate exclusively through public CodeWiki APIs and SDKs. The Kernel remains complete, testable, recoverable, and operable without it.
