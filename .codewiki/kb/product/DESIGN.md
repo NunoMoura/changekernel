@@ -2,37 +2,37 @@
 version: alpha
 type: Design System
 codewiki_id: cw:design:product
-title: CodeWiki Operator Console
+title: CodeWiki Console
 description: Interaction rules for minimal, truthful, terminal-first Semantic Kernel operations.
 status: stable
 tags: [product, design, operations]
 ---
-# CodeWiki Operator Console
+# CodeWiki Console
 
 ## Purpose
 
-CodeWiki Semantic Kernel is headless. It does not own the end-user experience of products built on top of it. Core presentation is limited to a small first-party Operator Console: scriptable commands plus an optional terminal user interface for observing and recovering the Kernel.
+CodeWiki Semantic Kernel is headless. It does not own the end-user experience of products built on top of it. Core presentation is limited to a small first-party CodeWiki Console: scriptable commands plus an optional terminal user interface for observing and recovering the Kernel.
 
 The Console is analogous to `systemctl`, `journalctl`, `top`, `htop`, or Task Manager. It shows exact operational state and invokes narrow authenticated operations. It is not a Wiki editor, project-management product, IDE, agent chat, marketplace, or semantic desktop.
 
-Backend v1 requires this legacy Design System item. The universal Wiki migration removes that imposed scaffold; this item may then remain an ordinary Operator Console specification. It never becomes a visual standard for external applications.
+Backend v1 requires this legacy Design System item. The universal Wiki migration removes that imposed scaffold; this item may then remain an ordinary CodeWiki Console specification. It never becomes a visual standard for external applications.
 
 ## Product boundary
 
 The CodeWiki repository owns:
 
 - the headless Semantic Kernel;
-- Kernel API and Wire Protocol;
+- Kernel API, canonical transport bindings, and Client SDK;
 - an application SDK and conformance suite;
 - scriptable operator commands;
-- a minimal terminal-first Operator Console;
+- a minimal terminal-first CodeWiki Console;
 - schemas, lifecycle tooling, and recovery operations.
 
-External applications own web, desktop, IDE, chat, mobile, workflow, autonomous-service, and rich project experiences. A full Semantic Desktop is a separate product even when maintained by the CodeWiki team. It consumes the same public APIs and receives no privileged imports, storage access, hidden commands, or lifecycle authority.
+External applications own web, desktop, IDE, chat, mobile, workflow, autonomous-service, and rich project experiences. Rich CodeWiki App is separate even when maintained by CodeWiki team. It consumes public APIs/Client SDK and receives no privileged imports, storage, hidden commands, lifecycle, or project AuthZ. App/IdP may own login and token acquisition; Project Server validates proof and enforces every authorization.
 
 ## Non-goals
 
-The Operator Console does not provide:
+The CodeWiki Console does not provide:
 
 - Wiki or Raw Data authoring;
 - rich Change drafting or semantic review workspaces;
@@ -93,8 +93,8 @@ The Console never manufactures lifecycle state, Check Results, acceptance, activ
 The default view answers five operational questions:
 
 1. Is the Semantic Kernel healthy?
-2. What accepted Wiki checkpoint is current?
-3. What realization and Delivery checkpoint is active?
+2. What canonical Git commit and derived fixed-path Wiki tree are current?
+3. What integrated Git artifact tree, Change completion state, and Delivery binding are active?
 4. Which Changes, Work Units, Runs, Gates, or Effects need attention?
 5. Can the operator safely stop, inspect, retry, or recover the affected operation?
 
@@ -104,12 +104,12 @@ A compact header shows:
 - Backend or Kernel Build identity;
 - Project Server generation and health;
 - qualified host profile;
-- Wiki checkpoint;
-- current realization and Delivery binding;
+- canonical Git commit and derived fixed-path Wiki tree;
+- current integrated Git artifact tree, Change completion, and Delivery binding;
 - Alignment summary;
 - event-stream freshness.
 
-The primary body contains bounded tables for active Changes, Work Units, DSH Runs, failed or stopped Gates, pending Effects, and faults. Exact identities remain inspectable without forcing full digests into every row.
+Primary body contains bounded tables for active Changes, Work Units, DSH Runs, failed/stopped Gates, CodeWiki Plugin Requests/Receipts, pending effects, and faults. Exact identities remain inspectable without forcing full digests into every row.
 
 ## Operational views
 
@@ -119,11 +119,11 @@ Shows component health, current heads, active workload, attention count, host en
 
 ### Changes and Work
 
-Shows active Change identity, semantic checkpoint, current stage, realization status, ready or blocked Work Units, dependencies, and stale conditions. It does not offer rich authoring or silently reinterpret a blocked Change.
+Shows active Change/proposal commit, canonical commit and derived Wiki tree, Completion Requirement status, current stage, ready/blocked Work Units, dependencies, and stale conditions. It does not offer rich authoring or silently reinterpret a blocked Change.
 
 ### Runs and custody
 
-Shows exact Run, Runtime Build, DSH Session continuity reference, route identity without secrets, Assignment, Workbench, process-tree state, budgets, cancellation, terminal evidence, quiescence, and Receipt state. Partial custody never appears complete.
+Shows exact Run, Runtime Build, Work Continuity reference, route identity without secrets, Assignment, Workbench, process-tree state, budgets, cancellation, terminal evidence, quiescence, and Receipt state. Partial custody never appears complete.
 
 ### Gates and Evidence
 
@@ -139,7 +139,7 @@ Shows one owner, bounded diagnosis, affected state, last verified checkpoint, av
 
 ### Event stream
 
-Shows bounded redacted state transitions ordered by stable cursor. A gap or generation change forces snapshot refresh rather than guessed replay. Raw DSH Session bytes, raw model outputs, credentials, and chain-of-thought never appear.
+Shows bounded redacted state transitions ordered by stable cursor. A gap or generation change forces commit-consistent refresh rather than guessed replay. Raw DSH Session bytes, raw model outputs, credentials, and chain-of-thought never appear.
 
 ## Terminal layout
 
@@ -182,7 +182,7 @@ This is an information model, not a promise of exact styling or keybindings.
 
 ## Degraded operation
 
-The Console must remain useful when models, providers, DSH Runs, drivers, external applications, or the live Project Server are unavailable. Release-managed offline inspection may verify bounded state through the Operations API or explicit maintenance operations, but it does not bypass quiescence, authentication, expected-head comparison, backup, or recovery rules.
+The Console must remain useful when models, AI Providers, DSH Runs, CodeWiki Plugins, external applications, or the live Project Server are unavailable. Release-managed offline inspection may verify bounded state through the Operations API or explicit maintenance operations, but it does not bypass quiescence, authentication, expected-head comparison, backup, or recovery rules.
 
 Degraded mode clearly distinguishes:
 
@@ -203,7 +203,7 @@ The Console shows only bounded operational metadata required for diagnosis. It e
 - raw provider headers;
 - raw DSH Agent Session bytes;
 - raw model outputs and chain-of-thought;
-- unauthorized Raw Data Source or claim existence;
+- unauthorized Raw Data Source or Wiki Item assertion existence;
 - private Workbench content outside the operator's grant;
 - unredacted logs;
 - canonical storage handles.
@@ -216,8 +216,8 @@ The Console works without color, pointer input, Unicode decoration, animation, o
 
 Color may reinforce state but never define it. Default output remains deterministic enough for tests and automation. Platform path spelling is presentation only and never changes semantic identity.
 
-## Semantic Desktop boundary
+## CodeWiki App boundary
 
-A future Semantic Desktop may combine Wiki exploration, Change workspaces, agent interaction, Workbenches, notifications, multi-project navigation, driver management, and the same operational monitor. That product owns its architecture, visual language, release cadence, threat model, and user research in a separate repository or independently versioned product boundary.
+A future CodeWiki App may combine Wiki exploration, Change workspaces, agent interaction, Workbenches, notifications, multi-project navigation, CodeWiki Plugin management, and same operational monitor. That product owns its architecture, visual language, release cadence, threat model, and user research in a separate repository or independently versioned product boundary.
 
-The Semantic Desktop must prove that it can operate exclusively through public CodeWiki APIs and SDKs. The Kernel remains complete, testable, recoverable, and operable without it.
+The CodeWiki App must prove that it can operate exclusively through public CodeWiki APIs and SDKs. The Kernel remains complete, testable, recoverable, and operable without it.

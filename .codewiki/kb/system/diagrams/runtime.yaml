@@ -1,52 +1,52 @@
 codewiki_id: cw:diagram:runtime
 id: runtime
-purpose: Show Project Server ownership around Runtime Runs, exact context, Implementation Workbenches, Checks, Gates, and recovery.
+purpose: Show Project Server ownership around Work Continuity, Runtime Runs, Execution Host containment, AI Gateway, exact context, Checks, Gates, and recovery.
 components:
   - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
   - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
-  - { id: outer-run-sandbox, concept: cw:component:runtime, label: Qualified Outer Run Sandbox, zone: execution }
+  - { id: outer-run-sandbox, concept: cw:component:runtime, label: Qualified Execution Host / Outer Run Sandbox, zone: execution }
   - { id: inner-code-runtime, concept: cw:component:runtime, label: Qualified Inner Code Runtime, zone: execution }
-  - { id: session-continuity, concept: cw:component:project-server, label: Session Continuity Journal, zone: core }
+  - { id: work-continuity, concept: cw:component:project-server, label: Work Continuity Journal and Physical Session Epochs, zone: core }
   - { id: work-state, concept: cw:component:work-state, label: WorkState, zone: core }
   - { id: alignment, concept: cw:component:alignment, label: Alignment, zone: core }
-  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
+  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge / Git-versioned Wiki Items, zone: repository }
   - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
   - { id: checks, concept: cw:component:checks, label: Checks, zone: core }
   - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
   - { id: preview, concept: cw:component:preview, label: Preview, zone: execution }
   - { id: evidence, concept: cw:component:evidence, label: Evidence, zone: core }
-  - { id: provider, concept: cw:component:provider-boundary, label: Private Provider Broker and Model Providers, zone: provider }
+  - { id: provider, concept: cw:component:provider-boundary, label: AI Gateway and AI Providers, zone: provider }
   - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
-  - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: builds Project Context Snapshots or Gate packages and selects ready Work Units }
+  - { id: project-server-reads-work-state, from: project-server, to: work-state, type: reads, label: rebuilds WorkState, builds Run Context Bundles or Gate packages, and selects work }
   - id: project-server-reads-knowledge
     from: project-server
     to: knowledge
     type: reads
-    label: resolves accepted intent for immutable Project Context Snapshot or Gate package
-    boundary: { type: persistence, failure: Stop context creation when exact Knowledge is unavailable. }
+    label: resolves accepted intent for immutable Run Context Bundle or Gate package
+    boundary: { type: persistence, failure: Stop context creation when exact Knowledge or canonical/proposal Git objects are unavailable. }
   - id: knowledge-returns-project-server
     from: knowledge
     to: project-server
     type: returns
-    label: returns exact accepted Knowledge snapshot
-    boundary: { type: persistence, failure: Reject stale or digest-mismatched Knowledge. }
-  - id: project-server-writes-session-continuity
+    label: returns accepted Knowledge or repository/commit-derived Wiki tree
+    boundary: { type: persistence, failure: Reject stale or mismatched Knowledge, commit, or tree. }
+  - id: project-server-writes-work-continuity
     from: project-server
-    to: session-continuity
+    to: work-continuity
     type: writes
-    label: admits or advances one expected-head Session writer lease
-  - id: session-continuity-returns-project-server
-    from: session-continuity
+    label: admits same-Run recovery or one canonically rehydrated fresh Session
+  - id: work-continuity-returns-project-server
+    from: work-continuity
     to: project-server
     type: returns
-    label: returns current Session, head, Build, lease, Receipt, and rollover
+    label: returns generation, Session head, Build, lease, predecessor Receipt, and cause
   - id: project-server-invokes-runtime
     from: project-server
     to: runtime
     type: invokes
-    label: submits Run, model Assignment, continuation, and Session lease
-    boundary: { type: authority, failure: Reject stale context, unauthorized route, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
+    label: submits Run with bundle, authority, route, and capabilities
+    boundary: { type: authority, failure: Reject stale context, missing or mismatched predecessor Receipt, unauthorized route, unsupported capability, unqualified Runtime Build, competing Session writer, invalid Workbench capability, or malformed request. }
   - id: runtime-invokes-outer-run-sandbox
     from: runtime
     to: outer-run-sandbox
@@ -71,8 +71,8 @@ connections:
     from: runtime
     to: provider
     type: invokes
-    label: streams through one authenticated host-local exact-Run broker capability
-    boundary: { type: trust, failure: Stop on route mismatch, unauthenticated receipt, exhausted broker retry, quota, cancellation, or malformed provider evidence. }
+    label: streams through one authenticated host-local exact-Run AI Gateway capability
+    boundary: { type: trust, failure: Stop on route mismatch, unauthenticated receipt, exhausted AI Gateway retry, quota, cancellation, or malformed provider evidence. }
   - id: provider-returns-runtime
     from: provider
     to: runtime
@@ -83,8 +83,8 @@ connections:
     from: runtime
     to: project-server
     type: returns
-    label: returns Receipt with continuation and exact Session heads
-    boundary: { type: authority, failure: Stop Run on malformed output, mismatched Session head or lease, incomplete ledger, undeclared custody gap, failed quiescence, or missing process-exit proof. }
+    label: returns terminal Receipt and closes its physical Session epoch
+    boundary: { type: authority, failure: Stop Run on malformed output, mismatched Session head or lease, incomplete ledger, undeclared custody gap, failed quiescence, or missing process-exit proof; never open a successor across ambiguous terminal evidence. }
   - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: admits exact Runtime output to the active Assignment }
   - { id: implementation-returns-project-server, from: implementation, to: project-server, type: returns, label: returns exact Work Unit Candidate for policy and lineage admission }
   - id: project-server-invokes-preview
@@ -105,14 +105,14 @@ connections:
     from: checks
     to: knowledge
     type: reads
-    label: resolves bounded OKF facts for Check SDK
-    boundary: { type: persistence, failure: Stop affected input resolution when exact Knowledge is unavailable. }
+    label: resolves bounded Knowledge or Wiki Item facts for Check SDK
+    boundary: { type: persistence, failure: Stop input resolution when exact Knowledge or canonical/proposal Git objects are unavailable. }
   - id: knowledge-returns-checks
     from: knowledge
     to: checks
     type: returns
-    label: returns immutable OKF snapshot facts
-    boundary: { type: persistence, failure: Reject stale, incomplete, or digest-mismatched facts. }
+    label: returns immutable package-bound facts
+    boundary: { type: persistence, failure: Reject stale, incomplete, or identity-mismatched facts. }
   - id: checks-invoke-runtime
     from: checks
     to: runtime
@@ -156,5 +156,5 @@ flows:
   - concept: cw:flow:recovery
     paths:
       - connections: [change-trace-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]
-      - connections: [session-continuity-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]
-      - connections: [project-server-writes-session-continuity, session-continuity-returns-project-server]
+      - connections: [work-continuity-returns-project-server, project-server-reads-work-state, work-state-produces-alignment, alignment-returns-project-server]
+      - connections: [project-server-writes-work-continuity, work-continuity-returns-project-server]

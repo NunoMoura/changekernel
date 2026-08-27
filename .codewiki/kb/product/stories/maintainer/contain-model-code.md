@@ -24,7 +24,7 @@ Backend also treats Client/provider/package/restore inputs, stale state, endpoin
 ## Acceptance signals
 
 - Production DSH execution uses two separately qualified operating-system boundaries: an outer sandbox around the whole authenticated Run Process and a fresh inner sandbox for each model-authored Code Mode invocation.
-- The outer sandbox mounts only the exact read-only Runtime Build, input manifest, replay fixture, Project Context Snapshot, and host-local provider-broker Unix socket; writable mounts are limited to explicit Session evidence and an Implementation-only Workbench.
+- The outer sandbox mounts only the exact read-only Runtime Build, input manifest, replay fixture, Run Context Bundle, and host-local provider-broker Unix socket; writable mounts are limited to explicit Session evidence and an Implementation-only Workbench.
 - The inner sandbox receives only lossless-JSON typed async bindings selected by the host. It has no filesystem, network, ambient environment, credentials, child-process authority, inherited private descriptor, persistence, DSH Session, provider route, Project Server handle, canonical-storage handle, recursive model route, lifecycle operation, or protected effect.
 - Both boundaries isolate user, PID, network, IPC, and UTS namespaces, drop capabilities, expose only explicit read-only system mounts and private temporary state, close undeclared descriptors, and enforce CPU, address-space, file-size, open-file, and process ceilings.
 - Node's Permission Model is defense in depth for the inner worker and never substitutes for operating-system containment. A worker thread or ordinary child process is not a qualified security boundary.

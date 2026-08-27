@@ -2,19 +2,19 @@
 
 CodeWiki is evolving from its qualified Backend v1 into a headless Semantic Kernel for governed agentic work.
 
-It turns accepted project meaning into accountable semantic transitions and controlled realization, then permits exact project and delivery state to advance only when required Alignment Evidence is complete, fresh, and authorized. Applications consume a versioned Kernel API; they do not own canonical writes or lifecycle authority.
+It carries accountable Changes from exact Git proposal commits through accepted Wiki change to verified completion. Every governed domain uses one local Git Project Store; Project Server alone writes managed proposal refs, appends Trace, creates two-parent disposition commits, and advances the canonical ref. Applications consume one versioned Kernel API/Client SDK; admitted Plugins handle bounded external mechanics without canonical-write or lifecycle authority.
 
 ```text
-(Kₜ, Gₜ, Pₜ) + ΔIntent
+(Wₜ, Pₜ, Dₜ) + ΔIntent
   ──CodeWiki──>
-(Kₜ₊₁, Gₜ₊₁, Pₜ₊₁, Evidence)
+(Wₜ₊₁, Pₜ₊₁, Dₜ₊₁, Evidence)
 ```
 
-Where `K` is accepted Knowledge, `G` is exact Git state, `P` is delivery state, and Evidence includes exact Check Results, Gate Reports, authority, Integration proof, and observations.
+Where `W` is accepted Wiki, `P` is exact project state, `D` is Delivery state, and Evidence includes exact observations, Check Results, Gate Reports, authority, integration proof, and Plugin Receipts.
 
 > **A Change is accountable intent and a durable dossier. Project Server owns the canonical Work Graph and operational scheduling; Decision, Planning, Implementation, and Review own Loop meaning.**
 
-CodeWiki does not guarantee unknowable semantic perfection. It provides bounded process integrity: accepted-intent provenance, exact subject identity, independent checking, deterministic Gate reduction, guarded progression, exact Git/delivery proof, and explicit uncertainty.
+CodeWiki does not guarantee unknowable semantic perfection. It provides bounded process integrity: accepted-intent provenance, exact subject identity, independent checking, deterministic Gate reduction, guarded progression, provider-neutral project/Delivery proof, and explicit uncertainty.
 
 ## Current posture
 
@@ -31,27 +31,30 @@ CodeWiki is private pre-production software after Backend v1 qualification and u
 - `.codewiki/**` contains governed declarations and canonical project meaning only. Physical `.codewiki/runtime/**` and `.codewiki/views/**` roots are prohibited; private state lives under an external repository-identity-bound CodeWiki State Root and Views remain logical deterministic projections.
 - Pi native compaction remains the active conversation-compaction mechanism.
 
-The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 and Backend v1 B0–B11 are implemented and externally qualified. The next roadmap consolidates the CodeWiki Semantic Kernel, universal Wiki, Raw Data, Check, Project Realization, Kernel API, and Run Host contracts. End-user frontend implementation belongs to external applications rather than CodeWiki core.
+The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 and Backend v1 B0–B11 are implemented and externally qualified. The next roadmap consolidates the CodeWiki Semantic Kernel, universal Wiki, Change Completion, Raw Data observation/custody, Checks, CodeWiki Plugins, Kernel API/SDK, Work Continuity, and Execution Host contracts. End-user frontend implementation belongs to external applications rather than CodeWiki core.
 
 This source repository does not install or load CodeWiki. Safe self-governance uses an immutable released controller installed outside both this checkout and its disposable candidate subject; historical pins, traces, approvals, and releases grant no authority.
 
-## Target product boundary
+## Primary product boundary (target)
 
 ```text
-Applications
-    │ CodeWiki Kernel API / Wire Protocol
+CodeWiki App / Console / other Clients
+    │ Kernel API + transport binding / Client SDK
     ▼
 CodeWiki Semantic Kernel
-├── filesystem Wiki and canonical Change Traces
-├── Change transactions, bounded context, Alignment, Work, Gates, AuthZ, CAS, and effects
-├── DSH Agent Runtime
-├── Raw Data Intake and Project Realization drivers
-└── qualified Run Host
+├── mandatory local Git Project Store
+│   ├── project artifacts and Wiki Item files
+│   ├── .codewiki/changes/TRACE-CHG-<id>.jsonl dossiers
+│   └── refs/codewiki/changes/** active proposal history
+├── Change lifecycle/completion, Alignment, Work, Gates, AuthZ, Git-ref CAS
+├── DSH Agent Runtime ── AI Gateway ── AI Provider
+└── CodeWiki Plugin Protocol / SDK ── admitted Plugins ── external systems
+        │
         ▼
-      Host OS
+Execution Host Contract ── Host OS
 ```
 
-Host OS governs resources. DSH governs agent execution. CodeWiki Semantic Kernel governs shared meaning and change. Applications govern experience. Linux x64 remains the only currently qualified production host; target portability does not imply support.
+Git versions project state. One proposal commit OID is one Change proposal version; first-parent/tree identity derives Wiki change. Terminal two-parent disposition commits retain proposal ancestry while canonical first-parent history defines accepted state. Each `.codewiki/changes/TRACE-CHG-<id>.jsonl` dossier preserves exact predecessor bytes and appends typed operations; Git commit/path/blob identity replaces record-digest chains, snapshot wrappers, and custom Trace tips. No lossy compaction replaces full history. At each fresh target Run, canonical replay rebuilds WorkState, then materializes one authorized read-only Run Context Bundle; neither derived artifact is continuity authority. Host OS governs resources. DSH governs agent execution. CodeWiki governs shared meaning, Change, authorization, and completion. CodeWiki Plugins govern only admitted external mechanics. Applications govern experience. Linux x64 remains the only currently qualified production host; target portability does not imply support.
 
 ## Current Backend v1 boundary
 
@@ -251,7 +254,7 @@ Project Server derives ready Work Units from canonical Work Graph and WorkState,
 
 ## Workers, Integration, and effects
 
-Planning Candidate `2.0.0` creates immutable, independently judgeable worker-ready Work Units owned by exactly one Change, with exact Knowledge Effect, unchanged-Knowledge, and acceptance-requirement coverage; dependencies; scope; verification; aggregate Review obligations; and declarative resource requirements. Typed `planning.delta_accepted` applies only exact passed-Gate output under Change, Knowledge, WorkState, and Work Graph compare-and-swap. Canonical Work Graph `2.0.0` reduces accepted deltas, amendment lineage, dependencies, and current derived statuses without rewriting accepted Work Unit identity. Project Server selects current placement and any `routine`, `standard`, or `complex` execution tier from structured facts; callers and workers cannot self-label.
+Planning Candidate `3.0.0` creates immutable, independently judgeable worker-ready Work Units owned by exactly one Change, with exact Knowledge Effect, unchanged-Knowledge, and acceptance-requirement coverage; dependencies; scope; verification; aggregate Review obligations; and declarative resource requirements. Typed `planning.delta_accepted` applies only exact passed-Gate output under Change, Knowledge, WorkState, and Work Graph compare-and-swap. Canonical Work Graph `2.0.0` reduces accepted deltas, amendment lineage, dependencies, and current derived statuses without rewriting accepted Work Unit identity. Project Server selects current placement and any `routine`, `standard`, or `complex` execution tier from structured facts; callers and workers cannot self-label.
 
 Project Server resolves each scheduled Assignment into one private digest-bound Workbench containing exact source, owning Change and Work Unit obligations, dependency outputs, Project Context Snapshot, Skills/tools, shared Implementation Check Pack policy, isolation, budgets, and Candidate contract. It separately creates Work Unit Model Assignment `2.0.0` from only the user-authorized Worker route pool, binding exact provider/account/credential-reference/model/options, policy attempt, prior typed outcomes, budgets, and rationale. Run Request binds both Assignments. Planning, Harness Agent, Worker, DSH, broker, and provider cannot widen the route. A model-route change occurs only between Runs and requires a fresh Session with canonical rehydration. Only a matching canonical Claim activates work.
 
@@ -440,19 +443,22 @@ Built-in pack ids are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyr
 
 ## Backend v1 evidence and Semantic Kernel direction
 
-`BACKEND_V1_PLAN.md` records the completed B0–B11 production sequence. CodeWiki removed Switchyard and its backend selector, pinned one exact replay-qualified DSH Plugin baseline, completed Software Development Domain extraction and identity propagation, froze authenticated Frontend API and event contracts at `1.0.0`, qualified passive lifecycle and external private state, and proved release-N-governs-N+1 dogfood without loading mutable candidate code. Those surfaces remain executable Backend v1 evidence while `SEMANTIC_KERNEL_PLAN.md` owns the active architecture sequence.
+`BACKEND_V1_PLAN.md` records the completed B0–B11 production sequence. CodeWiki removed Switchyard and its backend selector, pinned one exact replay-qualified DSH Plugin baseline, completed Software Development Domain extraction and identity propagation, froze authenticated Frontend API and event contracts at `1.0.0`, qualified passive lifecycle and external private state, and proved release-N-governs-N+1 dogfood without loading mutable candidate code. Those surfaces remain executable Backend v1 evidence while `SEMANTIC_KERNEL_PLAN.md` owns the active architecture sequence. In the Semantic Kernel target, Wiki Item is the sole first-class Wiki unit; native Git commit/tree/ref identity replaces custom Wiki checkpoint/update machinery; one stable Change has immutable proposal versions; explicit empty Completion Requirements make a Wiki-only Change complete at Decision acceptance, while unchanged-Wiki repair remains valid. Policy-bound Raw Data owns captured source material, compact Evidence records cite exact material or native Receipts, and Results remain separate judgments; capture and retention resolve within operator/legal constraints from project/source defaults and authorized intake Requests. Authorized source observations advance immutable Revisions, mark dependent support stale when needed, and may open Change Intake; ongoing connection mechanics remain external and never write Wiki directly.
 
-Unsupported deployment, provider, authentication, and platform combinations continue to fail closed. Semantic Kernel core does not implement a rich product frontend. It retains scriptable operations and a minimal terminal-first Operator Console over public Kernel and Operations APIs. A full Semantic Desktop is a separate external product even when maintained by the CodeWiki team. The earlier DSH client-slot spike remains qualified presentation research but grants no transport authentication, credential, lifecycle, or product authority.
+Unsupported deployment, provider, authentication, and platform combinations continue to fail closed. Semantic Kernel core does not implement a rich product frontend. It retains scriptable operations and minimal terminal-first CodeWiki Console over public Kernel and Operations APIs. Rich CodeWiki App is a separate external product even when maintained by the CodeWiki team. App or IdP may own login UX and identity acquisition; Project Server validates configured proof and owns project AuthZ. The earlier DSH client-slot spike remains qualified presentation research but grants no transport authentication, credential, lifecycle, or product authority.
 
 If CodeWiki cannot materially reduce drift, false acceptance, lost context, repeated repair, and Integration errors enough to offset ceremony and latency, it should shrink rather than duplicate commodity harness mechanics.
 
 ## Documentation
 
 - [Maintainer intent](.codewiki/kb/product/stories/maintainer/maintain-intent.md)
-- [Operator Console design](.codewiki/kb/product/DESIGN.md)
+- [CodeWiki Console design](.codewiki/kb/product/DESIGN.md)
 - [System architecture](.codewiki/kb/system/diagrams/architecture.yaml)
 - [Alignment](.codewiki/kb/system/components/alignment.md)
+- [Evidence](.codewiki/kb/system/components/evidence.md)
 - [Checks](.codewiki/kb/system/components/checks.md)
+- [CodeWiki Plugins and package](.codewiki/kb/system/components/package.md)
+- [Plugin Author](.codewiki/kb/product/users/plugin-author.md)
 - [Review](.codewiki/kb/system/components/review.md)
 - [Project Server](.codewiki/kb/system/components/project-server.md)
 - [Runtime](.codewiki/kb/system/components/runtime.md)

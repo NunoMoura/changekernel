@@ -1,10 +1,10 @@
 codewiki_id: cw:diagram:lifecycle
 id: lifecycle
-purpose: Show Decision committing accepted desired state before optional Planning, Implementation, Review, and Delivery realization, with Project Server retaining all canonical authority.
+purpose: Show one Git proposal commit reaching Decision and one two-parent disposition commit before conditional work and Delivery.
 components:
   - { id: clients, concept: cw:component:clients, label: Clients, zone: client }
   - { id: project-server, concept: cw:component:project-server, label: Project Server, zone: core }
-  - { id: protocol, concept: cw:component:protocol, label: Client-Project Server Protocol, zone: core }
+  - { id: protocol, concept: cw:component:protocol, label: Kernel API + Transport, zone: core }
   - { id: runtime, concept: cw:component:runtime, label: Runtime, zone: execution }
   - { id: intake, concept: cw:component:change-intake, label: Change Intake, zone: core }
   - { id: decision, concept: cw:component:decision, label: Decision, zone: core }
@@ -12,20 +12,32 @@ components:
   - { id: implementation, concept: cw:component:implementation, label: Implementation, zone: core }
   - { id: review, concept: cw:component:review, label: Review, zone: core }
   - { id: checks, concept: cw:component:checks, label: Checks, zone: core }
-  - { id: knowledge, concept: cw:component:knowledge, label: Knowledge, zone: repository }
+  - { id: knowledge, concept: cw:component:knowledge, label: Git-versioned Wiki Items, zone: repository }
   - { id: change-trace, concept: cw:component:change-trace, label: Change Trace, zone: repository }
 connections:
   - id: clients-request-project-server
     from: clients
     to: project-server
     type: invokes
-    label: submits bounded request
-    boundary: { type: trust, failure: Reject unauthenticated, malformed, expired, or oversized input. }
+    label: submits bounded request with configured identity proof
+    boundary: { type: trust, failure: Reject invalid proof, unauthorized Actor, malformed, expired, or oversized input. }
   - { id: project-server-uses-protocol, from: project-server, to: protocol, type: invokes, label: validates one versioned contract }
   - { id: protocol-returns-project-server, from: protocol, to: project-server, type: returns, label: returns normalized Actor and Client request context }
   - { id: project-server-invokes-intake, from: project-server, to: intake, type: invokes, label: normalizes proposed intent }
-  - { id: intake-returns-project-server, from: intake, to: project-server, type: returns, label: returns admitted proposed intent }
-  - { id: project-server-invokes-decision, from: project-server, to: decision, type: invokes, label: starts selected exact revision }
+  - { id: intake-returns-project-server, from: intake, to: project-server, type: returns, label: returns proposal payload and optional Wiki Item bytes }
+  - id: project-server-appends-proposal-trace
+    from: project-server
+    to: change-trace
+    type: writes
+    label: creates proposal commit and advances managed Change ref by CAS
+    boundary: { type: persistence, failure: Reject malformed, stale, non-prefix, or non-Wiki proposal deltas. }
+  - id: change-trace-returns-proposal-version
+    from: change-trace
+    to: project-server
+    type: returns
+    label: returns exact proposal commit OID and derived Item diff
+    boundary: { type: persistence, failure: Stop Decision when proposal commit, Trace prefix, managed ref, or Git objects cannot be verified. }
+  - { id: project-server-invokes-decision, from: project-server, to: decision, type: invokes, label: starts selected exact proposal version }
   - id: decision-invokes-runtime
     from: decision
     to: runtime
@@ -38,8 +50,8 @@ connections:
     type: returns
     label: returns producer output and Run Receipt
     boundary: { type: authority, failure: Reject incomplete or mismatched receipt. }
-  - { id: decision-returns-project-server, from: decision, to: project-server, type: returns, label: returns immutable Decision Candidate with exact Knowledge Effects }
-  - { id: project-server-runs-decision-gate, from: project-server, to: checks, type: invokes, label: runs policy over precompiled exact projected Knowledge State }
+  - { id: decision-returns-project-server, from: decision, to: project-server, type: returns, label: returns Candidate with proposal commit and derived Wiki Item diff }
+  - { id: project-server-runs-decision-gate, from: project-server, to: checks, type: invokes, label: runs policy over exact proposed Git/Wiki tree }
   - { id: checks-return-decision-gate, from: checks, to: project-server, type: returns, label: returns exact Decision Gate Report }
   - id: project-server-offers-decision-confirmation
     from: project-server
@@ -57,15 +69,21 @@ connections:
     from: project-server
     to: knowledge
     type: writes
-    label: semantically accepts confirmed Effects and commits the desired checkpoint
-    boundary: { type: persistence, failure: Preserve prior accepted Knowledge and Trace heads on failed compilation or commit. }
+    label: creates two-parent disposition commit under canonical-ref CAS
+    boundary: { type: persistence, failure: Preserve prior canonical commit on validation, object, commit, or ref-CAS failure. }
   - id: knowledge-returns-project-server
     from: knowledge
     to: project-server
     type: returns
-    label: returns accepted target identity without asserting realization
-    boundary: { type: persistence, failure: Stop progression when accepted Knowledge cannot be confirmed. }
-  - { id: project-server-invokes-planning, from: project-server, to: planning, type: invokes, label: starts Planning when realization obligations exist }
+    label: returns disposition commit and derived canonical Wiki tree
+    boundary: { type: persistence, failure: Stop progression when canonical Git/Wiki state cannot be confirmed. }
+  - id: project-server-appends-acceptance-trace
+    from: project-server
+    to: change-trace
+    type: writes
+    label: appends terminal disposition and requirements in same Git commit
+    boundary: { type: persistence, failure: Never advance canonical ref with missing or mismatched accepted Trace. }
+  - { id: project-server-invokes-planning, from: project-server, to: planning, type: invokes, label: starts Planning when Completion Requirements exist }
   - id: planning-invokes-runtime
     from: planning
     to: runtime
@@ -78,10 +96,8 @@ connections:
     type: returns
     label: returns producer output and Run Receipt
     boundary: { type: authority, failure: Reject incomplete or mismatched receipt. }
-  - { id: planning-returns-project-server, from: planning, to: project-server, type: returns, label: returns immutable Change-scoped Work Graph delta Candidate }
-  - { id: project-server-runs-planning-gate, from: project-server, to: checks, type: invokes, label: runs Planning policy over exact graph delta }
-  - { id: checks-return-planning-gate, from: checks, to: project-server, type: returns, label: returns exact Planning Gate Report for CAS application }
-  - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: starts one eligible Work Unit realization or feedback revision }
+  - { id: planning-returns-project-server, from: planning, to: project-server, type: returns, label: returns Work Graph delta for fixed Kernel Validation and CAS }
+  - { id: project-server-invokes-implementation, from: project-server, to: implementation, type: invokes, label: starts one eligible Kernel-validated Work Unit }
   - id: implementation-invokes-runtime
     from: implementation
     to: runtime
@@ -117,19 +133,20 @@ connections:
     from: project-server
     to: change-trace
     type: writes
-    label: appends accepted transition, realization lineage, and Gate outcome
+    label: appends completion, Plugin Receipt, Gate, and effect history
     boundary: { type: persistence, failure: Reject append and retain prior accepted head. }
 flows:
   - concept: cw:flow:change-lifecycle
     paths:
-      - connections: [clients-request-project-server, project-server-uses-protocol, protocol-returns-project-server, project-server-invokes-intake, intake-returns-project-server, project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server]
+      - connections: [clients-request-project-server, project-server-uses-protocol, protocol-returns-project-server, project-server-invokes-intake, intake-returns-project-server, project-server-appends-proposal-trace, change-trace-returns-proposal-version, project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server]
+      - connections: [clients-return-decision-confirmation, project-server-appends-acceptance-trace]
       - connections: [implementation-returns-project-server, project-server-runs-implementation-gate, checks-return-implementation-gate, project-server-invokes-review, review-invokes-runtime, runtime-returns-review, review-returns-project-server, project-server-runs-review-gate, checks-return-review-gate, project-server-writes-change-trace]
   - concept: cw:flow:decision-to-planning
     paths:
-      - connections: [project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server, project-server-invokes-planning]
+      - connections: [project-server-appends-proposal-trace, change-trace-returns-proposal-version, project-server-invokes-decision, decision-invokes-runtime, runtime-returns-decision, decision-returns-project-server, project-server-runs-decision-gate, checks-return-decision-gate, project-server-offers-decision-confirmation, clients-return-decision-confirmation, project-server-writes-knowledge, knowledge-returns-project-server, project-server-invokes-planning]
   - concept: cw:flow:planning-to-implementation
     paths:
-      - connections: [project-server-invokes-planning, planning-invokes-runtime, runtime-returns-planning, planning-returns-project-server, project-server-runs-planning-gate, checks-return-planning-gate, project-server-invokes-implementation]
+      - connections: [project-server-invokes-planning, planning-invokes-runtime, runtime-returns-planning, planning-returns-project-server, project-server-invokes-implementation]
   - concept: cw:flow:implementation-to-review
     paths:
       - connections: [project-server-invokes-implementation, implementation-invokes-runtime, runtime-returns-implementation, implementation-returns-project-server, project-server-runs-implementation-gate, checks-return-implementation-gate, project-server-invokes-review, review-invokes-runtime, runtime-returns-review, review-returns-project-server, project-server-runs-review-gate, checks-return-review-gate]

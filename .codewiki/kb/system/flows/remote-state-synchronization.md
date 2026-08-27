@@ -2,7 +2,7 @@
 type: System Flow
 codewiki_id: cw:flow:remote-state-synchronization
 title: Remote State Synchronization
-description: Synchronizes canonical Change, accepted Knowledge checkpoint, and Git state with expected-head compare-and-swap protection.
+description: Reconciles mandatory local canonical Git history with external remotes through authenticated expected-head mechanics.
 status: stable
 tags: [system, flow]
 codewiki_relationships:
@@ -12,6 +12,8 @@ codewiki_relationships:
 ---
 # Remote State Synchronization
 
-Project Server fetches provider-neutral Git refs, validates canonical bytes and identities, reduces the initial Knowledge seed plus globally ordered confirmed Change Effects, and compares the exact expected remote head before push. The reduced Knowledge State digest must equal the synchronized materialized Knowledge checkpoint. After mutation it resynchronizes and verifies every accepted Change, Knowledge, WorkState, Git, and Alignment identity.
+Backend v1 fetches/pushes Git refs directly and verifies reduced Knowledge against materialized checkpoint. Target keeps local Git repository/configured canonical ref as authority and reaches remote hosts only through admitted `remote.observe | remote.publish` Plugin Requests.
 
-Network failure, unknown required protocol or compiler identity, malformed Change history, irreducible or contradictory Knowledge checkpoint, stale base, or head mismatch rejects the mutation. Local work remains recoverable, but no caller may infer remote acceptance without post-push verification. Project Server never repairs disagreement by choosing Trace, Knowledge bytes, or Git state silently.
+`remote.observe` returns authenticated provider head/object facts and no local-write authority. Project Server imports objects through sanitized Git plumbing, verifies complete ancestry/object types, accepted Change/Trace operations, Wiki Item tree/retirements, signatures or provider proof required by policy, and expected local head before any canonical-ref CAS. Divergent accepted histories stop for explicit reconciliation.
+
+`remote.publish` is a separately authorized external effect over one exact canonical commit and expected remote head. Plugin Receipt plus follow-up observation proves provider outcome; status alone never means accepted publication, Change completion, or local mutation. Network failure, malformed/incomplete objects, unsupported protocol/object format, stale head, or contradictory history rejects synchronization. Project Server never resolves disagreement by silently choosing local bytes, remote refs, Trace, or Wiki.
