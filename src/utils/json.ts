@@ -10,6 +10,18 @@ export function parseJsonObject<T>(text: string, label = "JSON input"): T {
 	}
 }
 
+export function plainRecord(value: unknown, label: string): Record<string, unknown> {
+	if (
+		value === null ||
+		Array.isArray(value) ||
+		(typeof value !== "object") ||
+		!([Object.prototype, null] as unknown[]).includes(Object.getPrototypeOf(value))
+	) {
+		throw new Error(`${label} must be a plain object.`);
+	}
+	return value as Record<string, unknown>;
+}
+
 export function assertExactKeys(
 	value: unknown,
 	allowed: readonly string[],
@@ -24,6 +36,23 @@ export function assertExactKeys(
 	);
 	if (unsupported !== undefined) {
 		throw new Error(`${label} received unsupported field ${String(unsupported)}.`);
+	}
+}
+
+export function assertRequiredExactKeys(
+	value: unknown,
+	required: readonly string[],
+	label = "Value",
+): void {
+	if (typeof value !== "object" || value === null) {
+		throw new Error(`${label} must be an object.`);
+	}
+	const keys = Reflect.ownKeys(value);
+	if (
+		keys.length !== required.length ||
+		keys.some((key) => typeof key !== "string" || !required.includes(key))
+	) {
+		throw new Error(`Unexpected fields: ${Object.keys(value).join(", ")}.`);
 	}
 }
 

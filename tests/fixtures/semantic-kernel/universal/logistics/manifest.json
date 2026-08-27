@@ -1,0 +1,9 @@
+{
+  "scenario": "logistics",
+  "projectId": "logistics",
+  "changeId": "CHG-logistics-fixture",
+  "expectedState": "accepted_incomplete",
+  "itemCount": 3,
+  "completionRequirementCount": 2,
+  "adversarialCase": "delayed provider revision and partial Delivery"
+}

@@ -1,0 +1,9 @@
+{
+  "scenario": "music",
+  "projectId": "music",
+  "changeId": "CHG-music-fixture",
+  "expectedState": "accepted_incomplete",
+  "itemCount": 3,
+  "completionRequirementCount": 2,
+  "adversarialCase": "revoked license and conflicting ownership assertion"
+}

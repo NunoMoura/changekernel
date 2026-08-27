@@ -13,10 +13,11 @@ This plan orders delivery. It is not canonical runtime input or a compatibility 
 - `src/**` and `tests/**` remain executable truth;
 - Git remains history and checkpoint evidence;
 - released controller N governs committed candidate N+1 from outside this checkout;
+- this source repository does not dogfood CodeWiki until an immutable stable release passes external qualification and an explicit governed activation checkpoint changes that rule; after activation, released controller N still governs N+1 and never loads mutable candidate code;
 - CodeWiki is never installed or loaded from this repository's `.pi/` directory;
 - generated views and private runtime state remain outside canonical project meaning.
 
-Semantic Kernel slice SK0 is an architecture-complete documentation freeze candidate awaiting external governance. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records its detailed contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence. No source behavior, protocol identity, canonical path, Plugin composition, or support claim changes during SK0.
+The exact Semantic Kernel SK0 documentation baseline at `e3e06723242b4115c28a9a716fd817ae23f439f7` passed external governance. SK1 contract work subsequently exposed and corrected one migration Receipt dependency cycle before executable schema freeze; that correction requires qualification with the next exact candidate and does not retroactively alter prior evidence. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records the detailed contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence.
 
 ## Product objective
 
@@ -292,6 +293,8 @@ The cutover is conditional on the paired continuity benchmark frozen in `SEMANTI
 
 No executable slice invents its contract while simultaneously trying to prove that contract stable.
 
+Executable source uses stable semantic-owner names. Protocol versions belong in persisted protocol identifiers, compatibility dispatch, migration adapters, and version-specific fixture labels; they do not appear in ordinary source filenames or exported type, function, variable, service, or test-helper names. For example, the target API is `createChangeTraceOperation`, not `createChangeTraceV13Operation`. A clean-break activation replaces the semantic owner rather than creating a parallel version-branded API.
+
 ## Current-to-target transformation matrix
 
 | Current Backend v1 surface                                                       | Target owner                                               | Disposition                                                                                                                                                                                         | Planned slice          |
@@ -400,15 +403,15 @@ Success: every current responsibility has one target owner/disposition; each tar
 
 ### SK1 — Contract laboratory and universal fixtures
 
-Implement mandatory Git store profile, Wiki Item and append-only Change Trace schemas, native proposal/disposition commit and managed-ref validators, canonical encoders/parsers, reducers, valid/invalid goldens, migration/replay fixtures, and cross-platform path fixtures without changing canonical project state.
+Implement mandatory Git store profile, Wiki Item and append-only Change Trace schemas, native proposal/disposition commit and managed-ref validators, canonical encoders/parsers, reducers, valid/invalid goldens, migration/replay fixtures, and cross-platform path fixtures without changing canonical project state. Keep protocol-version literals at persistence and compatibility boundaries; source modules and semantic APIs retain version-neutral owner names.
 
-Success: all universal/adversarial fixtures use identical Git/Wiki/Change contracts; semantic Item identity never derives from Product/System/Design, software, path, title, model assertion, or Git OID; no scenario needs a hidden domain branch.
+Success: all universal/adversarial fixtures use identical Git/Wiki/Change contracts; semantic Item identity never derives from Product/System/Design, software, path, title, model assertion, or Git OID; no scenario needs a hidden domain branch; no target protocol version leaks into ordinary source filenames or semantic API identifiers.
 
 ### SK2 — Mandatory Git store, universal Wiki Items, and qualified migration
 
-Freeze repository identity/object format/canonical ref. Implement one backup-tagged, quiescent, expected-old-ref migration commit from compiled `.codewiki/kb/**` to `.codewiki/wiki/items/**` and Backend-v1 `.codewiki/traces/**` to target `.codewiki/changes/**`. Hydrate and verify every retention stub first; preserve every source record through an identity/digest map. Activate Change schema `4`, Trace `13.0.0`, native proposal commits, managed Change refs, explicit Completion Requirements, and two-parent disposition commits. Map independently mutable facets/assertions to Items, fold legacy Lexicon terms into owning Items without emitting a Lexicon container, convert active requirements, preserve legacy Trace evidence, verify exact identity/provenance/retirement/WorkState equivalence, and remove Domain from new semantic/Build authority. Bridge unavoidable old Check subjects only through verified temporary Receipts. Reject dual roots. Permit old-Build/ref restore only before first later target-only accepted commit.
+Freeze repository identity/object format/canonical ref. Implement one backup-tagged, quiescent, expected-old-ref migration commit from compiled `.codewiki/kb/**` to `.codewiki/wiki/items/**` and Backend-v1 `.codewiki/traces/**` to target `.codewiki/changes/**`. Hydrate and verify every retention stub first; preserve every source record through an identity/digest map. The Migration Receipt binds each active Change's conversion plan and expected managed-ref name, not resulting proposal OIDs that depend on the candidate commit; Project Server materializes and validates those proposals after the candidate exists, and native Git refs and ancestry provide exact OID proof. Activate Change schema `4`, Trace `13.0.0`, native proposal commits, managed Change refs, explicit Completion Requirements, and two-parent disposition commits. Map independently mutable facets/assertions to Items, fold legacy Lexicon terms into owning Items without emitting a Lexicon container, convert active requirements, preserve legacy Trace evidence, verify exact identity/provenance/retirement/WorkState equivalence, and remove Domain from new semantic/Build authority. Bridge unavoidable old Check subjects only through verified temporary Receipts. Reject dual roots. Permit old-Build/ref restore only before first later target-only accepted commit.
 
-Success: empty and migrated Wiki replay from native Git; Item files and complete `.codewiki/changes/**` traces agree; Git commit/tree/ref identity replaces custom Wiki state/projection/checkpoint/update machinery; no Raw Data or Runtime residue enters canonical Git.
+Success: empty and migrated Wiki replay from native Git; Item files and complete `.codewiki/changes/**` traces agree; Git commit/tree/ref identity replaces custom Wiki state/projection/checkpoint/update machinery; no Raw Data or Runtime residue enters canonical Git. Legacy migration code is stopped-only transition machinery, is absent from normal target lifecycle routing, and remains available only through a bounded qualified upgrade/rollback window before explicit retirement.
 
 ### SK3 — Kernel API, SDK, and application boundary
 
@@ -451,6 +454,7 @@ Success: support is independent for Client, Kernel, DSH core, inner sandbox, out
 - Change has one stable ID and one append-only JSONL trace. Each immutable proposal version is one proposal commit containing `change.proposed`, optional Wiki Item changes, and complete intention, authority, outcomes, compensation/supersession, and Completion Requirements.
 - Confirmation creates a two-parent disposition commit: expected canonical first parent, exact managed proposal tip second parent. Acceptance uses derived proposed Wiki; other dispositions preserve first-parent Wiki; all retain complete proposal ancestry and terminal Trace.
 - File order and exact predecessor-byte prefix define Trace order. Git commit/path/blob identity replaces per-record digest chains and custom Trace tips; traces are never compacted, truncated, replaced, or deleted.
+- The KB-to-Wiki Receipt binds active-Change conversion plans and expected managed-ref names, never candidate-dependent proposal OIDs. Resulting proposal commits are validated against those plans and obtain exact identity from native Git refs and retained ancestry.
 - Wiki diff plus empty requirements completes at acceptance; Wiki diff plus requirements continues to realization; empty diff plus Item-targeted requirements repairs conformance; empty diff plus no requirements is invalid.
 - Compensation/supersession uses a new Change proposal and disposition commit—never semantic rollback.
 - Raw Data owns policy-bound material; Evidence owns provenance-bound observations; Results own judgments. Admitted source observations change derived support and may open intake, never Wiki directly; ongoing connection mechanics remain external.

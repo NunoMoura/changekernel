@@ -9,7 +9,9 @@ codewiki_component: cw:component:change-trace
 codewiki_source_patterns:
   - "src/changes/trace/**"
   - "src/changes/command.ts"
+  - "src/changes/completion-requirement.ts"
   - "src/changes/digest.ts"
+  - "src/changes/git-lifecycle.ts"
   - "src/changes/normalize.ts"
   - "src/changes/records.ts"
   - "src/changes/schema.ts"

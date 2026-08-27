@@ -1,0 +1,9 @@
+{
+  "scenario": "software",
+  "projectId": "software",
+  "changeId": "CHG-software-fixture",
+  "expectedState": "accepted_incomplete",
+  "itemCount": 2,
+  "completionRequirementCount": 2,
+  "adversarialCase": "stale source head and overlapping Work Units"
+}

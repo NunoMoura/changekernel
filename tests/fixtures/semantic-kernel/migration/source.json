@@ -1,0 +1,116 @@
+{
+  "migrationId": "migration:kb-to-wiki:demo",
+  "migrationChangeId": "CHG-kb-to-wiki-demo",
+  "projectId": "demo",
+  "source": {
+    "repositoryId": "cw:repository:demo",
+    "objectFormat": "sha1",
+    "sourceCommit": {
+      "algorithm": "sha1",
+      "hex": "1111111111111111111111111111111111111111"
+    },
+    "sourceBuildDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "sourceCheckpointDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "sourceStateDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "sourceProjectionDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "sourceTraceHeadDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "authorityDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "implementationDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "quiescenceReceiptDigest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "privateBackupDigest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "backupRef": "refs/codewiki/backups/migrations/demo-source"
+  },
+  "subjects": [
+    {
+      "sourceId": "system/components/architecture.md",
+      "codewikiId": "cw:demo:item:architecture",
+      "itemType": "codewiki.architecture",
+      "title": "Architecture",
+      "body": "Accepted architecture body.",
+      "aliases": ["Architecture"],
+      "attributes": {},
+      "relationships": [],
+      "provenance": [
+        {
+          "kind": "codewiki.legacy:source",
+          "subjectId": "legacy:source:architecture",
+          "attributes": {
+            "codewiki.legacy:location": "system/components/architecture.md"
+          }
+        }
+      ],
+      "facets": [
+        {
+          "key": "constraints",
+          "itemType": "codewiki.constraint",
+          "title": "Architecture constraints",
+          "body": "Independent constraints facet.",
+          "aliases": [],
+          "attributes": {},
+          "provenance": [],
+          "legacyRecordIds": ["legacy:record:facet-1"]
+        }
+      ],
+      "legacyRecordIds": ["legacy:record:subject-1"],
+      "sourceDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "sourceId": "product/policy.md",
+      "codewikiId": "legacy policy id",
+      "itemType": "codewiki.policy",
+      "title": "Policy",
+      "body": "Accepted policy body.",
+      "aliases": [],
+      "attributes": {},
+      "relationships": [
+        {
+          "predicate": "codewiki.constrained-by",
+          "targetSourceId": "system/components/architecture.md",
+          "attributes": {}
+        }
+      ],
+      "provenance": [],
+      "facets": [],
+      "legacyRecordIds": ["legacy:record:subject-2"],
+      "sourceDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "lexicons": [
+    {
+      "sourceId": "lexicon.md",
+      "sourceDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "terms": [
+        {
+          "term": "Kernel",
+          "definition": "Governed semantic core.",
+          "aliases": ["Semantic Kernel"],
+          "ownerSourceId": "system/components/architecture.md",
+          "legacyRecordId": "legacy:record:term-1"
+        },
+        {
+          "term": "Unowned term",
+          "definition": "Definition without a legacy owner.",
+          "aliases": ["Orphan term"],
+          "ownerSourceId": null,
+          "legacyRecordId": "legacy:record:term-2"
+        }
+      ]
+    }
+  ],
+  "retirements": [
+    {
+      "sourceId": "retired/policy.md",
+      "codewikiId": "cw:demo:item:retired-policy",
+      "retiredByChangeId": "CHG-old",
+      "provenance": [
+        {
+          "kind": "codewiki.legacy:source",
+          "subjectId": "legacy:source:retired-policy",
+          "attributes": {}
+        }
+      ],
+      "legacyRecordIds": ["legacy:record:retired-policy"],
+      "sourceDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ]
+}
