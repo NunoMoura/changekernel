@@ -1,25 +1,24 @@
 # Repository Agent Guidance
 
-CodeWiki is developed as a normal source package. This repository must not load or dogfood its own Pi extension during stabilization.
+## Working rules
 
-## Development workflow
+- Think before coding. State assumptions, surface tradeoffs, push back when warranted.
 
-- Use Pi native coding tools, pi-lens, normal file edits, tests, and Git.
-- Do not call CodeWiki `wiki_*` tools or `/wiki-*` commands in this source checkout.
-- Do not install CodeWiki under this repository's `.pi/` directory or add a local CodeWiki package/extension path.
-- Do not recreate project-local `codewiki-*` skills, controller pins, Changes Backlog refs, or dogfood trace state.
-- Use Pi native compaction.
+- Simplicity first. Minimum code that solves the problem. Nothing speculative.
 
-## Sources of truth
+- Surgical changes. Touch only what you must. Clean up only your own mess.
 
-- `.codewiki/kb/**` is intended product and system design truth.
-- `src/**` and `tests/**` are executable truth.
-- Git is history and checkpoint evidence.
-- Generated views and runtime scratch are disposable.
-- Trace behavior is product functionality tested in disposable external projects, not active workflow state for this repository.
+- Goal-driven execution. Define success criteria. Loop until verified.
 
-Update KB and source/tests together when intended behavior changes. Surface drift instead of silently choosing one side.
+## Repository boundaries
 
-## Extension testing and release
-
-Build and pack reviewed candidates, then install them only into disposable external projects with isolated Pi settings. Verify prompt injection, tools, commands, dashboard behavior, guarded lifecycle writes, failures, and cleanup there. Release CodeWiki as a Pi extension only after stable external gates pass.
+- Dogfood only an immutable release that passed external exact-subject qualification and explicit activation.
+- Never load CodeWiki from this checkout, a local package path, or this repository’s `.pi/`. Candidate N+1 never governs itself.
+- Use CodeWiki tools only from the activated release; otherwise use Pi-native tools and compaction.
+- Released controller N qualifies exact committed candidate N+1 outside this checkout. Any correction requires a new candidate and qualification.
+- Pack and test candidates only in disposable external projects with isolated Pi settings.
+- Do not add project-local CodeWiki package links, duplicate skills, executable Plugin paths, or controller pins.
+- `.codewiki/kb/**` is intended truth until governed KB→Wiki migration; `.codewiki/wiki/**` is authoritative afterward. Never dual-read or dual-write.
+- `src/**` and `tests/**` are executable truth. Git is history and checkpoint evidence.
+- Governed Changes and CodeWiki refs are workflow evidence. Generated views and private runtime state are not source truth.
+- Update KB and source/tests together. Surface drift instead of silently choosing one side.
