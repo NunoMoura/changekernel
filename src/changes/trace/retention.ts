@@ -256,6 +256,7 @@ function hydratedRecords(
 			headRef: stub.headRef,
 			reason: stub.closeReason,
 			createdAt: stub.closedAt,
+			allowIncomplete: true,
 		}),
 	];
 }

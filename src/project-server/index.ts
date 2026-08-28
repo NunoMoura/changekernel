@@ -266,6 +266,14 @@ export {
 	type KbToWikiMigrationReadinessInput,
 } from "./operations/kb-to-wiki-readiness.ts";
 export {
+	KB_TO_WIKI_LEGACY_SOURCE_SNAPSHOT_PROTOCOL,
+	buildKbToWikiLegacySourceSnapshot,
+	type BuildKbToWikiLegacySourceSnapshotInput,
+	type KbToWikiLegacyKnowledgeFile,
+	type KbToWikiLegacySourceSnapshot,
+	type KbToWikiLegacyTraceSnapshot,
+} from "./operations/kb-to-wiki-source.ts";
+export {
 	BACKEND_V1_RELEASE_EVIDENCE_NAMES,
 	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
 	assertBackendV1ReleaseManifest,

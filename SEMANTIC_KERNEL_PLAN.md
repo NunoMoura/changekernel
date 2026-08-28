@@ -414,8 +414,8 @@ Freeze repository identity/object format/canonical ref. Implement one backup-tag
 Execution order:
 
 - [x] Add a read-only production preflight that binds stopped Backend state, released ownership, repository/object format, exact canonical commit, clean legacy roots, absent target/backup/managed refs, and prohibited-residue checks without writing Git or project state.
-- [ ] Build the exact legacy source snapshot from canonical KB, compiled checkpoint, hydrated retention history, complete Trace reduction, active Changes, authority, Build, and private-state backup evidence.
-- [ ] Stage and verify backup ref, private backup, target Item/Trace objects, Receipt, migration commit, and active proposal commits without advancing authoritative refs.
+- [x] Build the exact read-only legacy semantic snapshot from canonical Git KB bytes, source-Build compilation, hydrated retention history, complete Trace reduction, accepted active Changes, and a revalidated quiescence receipt.
+- [ ] Bind migration authority and private-backup evidence, then stage and verify the backup ref, target Item/Trace objects, Receipt, migration commit, and active proposal commits without advancing authoritative refs.
 - [ ] Atomically activate canonical and managed refs, replay the full closure, activate the Domain-free target Build/private generation, and retain bounded rollback.
 - [ ] Qualify empty, migrated, crash/recovery, rollback, old-reader refusal, universal-domain, package, security, and release-N-governs-N+1 gates before migrating this repository.
 
