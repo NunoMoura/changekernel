@@ -278,7 +278,7 @@ async function validateMigrationTraceClosure(
 function assertCommitInput(input: KbToWikiMigrationCommitInput): void {
 	assertGitStoreProfile(input.profile);
 	assertKbToWikiMigrationReceipt(input.receipt);
-	if (canonicalSemanticJson(input.plan) !== canonicalSemanticJson(input.receipt.plan)) {
+	if (canonicalJson(input.plan) !== canonicalJson(input.receipt.plan)) {
 		throw new Error("Migration input plan does not match its canonical Receipt.");
 	}
 	const replayedEquivalence = createKbToWikiLegacyEquivalenceProof({

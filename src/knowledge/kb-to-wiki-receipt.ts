@@ -1,14 +1,15 @@
-import type {CanonicalJsonValue, Sha256Digest} from "../utils/canonical-json.ts";
+import {
+	canonicalJson,
+	canonicalJsonDigest,
+	parseCanonicalJson,
+	type CanonicalJsonValue,
+	type Sha256Digest,
+} from "../utils/canonical-json.ts";
 import {
 	assertRequiredExactKeys as assertExactKeys,
 	plainRecord as record,
 } from "../utils/json.ts";
-import {
-	assertNfcString,
-	canonicalSemanticJson,
-	parseCanonicalSemanticJson,
-	semanticDigest,
-} from "../utils/semantic-digest.ts";
+import {assertNfcString} from "../utils/semantic-digest.ts";
 import {
 	assertCanonicalRef,
 	assertGitOid,
@@ -111,13 +112,13 @@ export function createKbToWikiMigrationReceipt(
 	input: CreateKbToWikiMigrationReceiptInput,
 ): KbToWikiMigrationReceipt {
 	// SAFETY: canonical serialization plus assertion below validate every Receipt field.
-	const normalized = parseCanonicalSemanticJson(canonicalSemanticJson({
+	const normalized = parseCanonicalJson(canonicalJson({
 		protocol: KB_TO_WIKI_MIGRATION_RECEIPT_PROTOCOL,
 		...input,
 	})) as unknown as Omit<KbToWikiMigrationReceipt, "receiptDigest">;
 	const receipt = Object.freeze({
 		...normalized,
-		receiptDigest: semanticDigest(KB_TO_WIKI_MIGRATION_RECEIPT_PROTOCOL, normalized),
+		receiptDigest: migrationReceiptDigest(normalized),
 	});
 	assertKbToWikiMigrationReceipt(receipt);
 	return receipt;
@@ -215,11 +216,21 @@ export function assertKbToWikiMigrationReceipt(
 	assertDigest(receipt.receiptDigest, "Migration Receipt receiptDigest");
 	const {receiptDigest: _receiptDigest, ...body} = receipt;
 	if (
-		receipt.receiptDigest !==
-		semanticDigest(KB_TO_WIKI_MIGRATION_RECEIPT_PROTOCOL, body)
+		receipt.receiptDigest !== migrationReceiptDigest(
+			body as Omit<KbToWikiMigrationReceipt, "receiptDigest">,
+		)
 	) {
 		throw new Error("Migration Receipt digest does not replay.");
 	}
+}
+
+function migrationReceiptDigest(
+	body: Omit<KbToWikiMigrationReceipt, "receiptDigest">,
+): Sha256Digest {
+	return canonicalJsonDigest({
+		protocol: "codewiki.kb-to-wiki-migration-receipt-digest@1.0.0",
+		receipt: body,
+	});
 }
 
 export function createKbToWikiActiveProposalOperation(input: {

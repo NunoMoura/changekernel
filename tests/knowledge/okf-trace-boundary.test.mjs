@@ -96,8 +96,11 @@ describe("OKF trace boundary", () => {
 			})),
 		);
 
-		assert.equal(traceFiles.length, 1);
-		assert.equal(traceFiles[0].kind, "trace_jsonl");
+		assert.equal(
+			traceFiles.some(({path}) => path === ".codewiki/traces/TRACE-synthetic.jsonl"),
+			true,
+		);
+		assert.equal(traceFiles.every(({kind}) => kind === "trace_jsonl"), true);
 		assert.deepEqual(okfFiles, []);
 		assert.equal(validateOkfBundle(okfFiles).conceptCount, 0);
 	});

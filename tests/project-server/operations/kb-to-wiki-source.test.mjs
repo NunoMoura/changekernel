@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {mkdtemp, mkdir, readFile, rm, writeFile} from "node:fs/promises";
+import {cp, mkdtemp, mkdir, readFile, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import test from "node:test";
@@ -49,13 +49,39 @@ title: Source topic
 Canonical legacy meaning.
 `;
 
+function oversizedLexiconBytes() {
+	return `---
+codewiki_id: cw:lexicon:fixture
+title: Fixture Lexicon
+type: Lexicon
+---
+# Fixture Lexicon
+
+${"Legacy vocabulary context. ".repeat(700)}
+
+| Term | Definition | Owner |
+| --- | --- | --- |
+| Semantic Kernel | Governed target authority. | [Source topic](topic.md) |
+`;
+}
+
 async function fixture(options = {}) {
 	const base = await mkdtemp(join(tmpdir(), "codewiki-sk2-source-"));
 	const repoRoot = join(base, "project");
 	const stateRoot = join(base, "state");
 	await mkdir(join(repoRoot, ".codewiki", "kb"), {recursive: true});
 	await writeFile(join(repoRoot, ".codewiki", "config.json"), '{"project":"fixture"}\n');
-	await writeFile(join(repoRoot, ".codewiki", "kb", "topic.md"), KNOWLEDGE_BYTES);
+	if (options.kbSource) {
+		await cp(options.kbSource, join(repoRoot, ".codewiki", "kb"), {recursive: true});
+	} else {
+		await writeFile(join(repoRoot, ".codewiki", "kb", "topic.md"), KNOWLEDGE_BYTES);
+		if (options.lexiconBytes) {
+			await writeFile(
+				join(repoRoot, ".codewiki", "kb", "lexicon.md"),
+				options.lexiconBytes,
+			);
+		}
+	}
 	git(repoRoot, [
 		"init",
 		"-q",
@@ -403,6 +429,75 @@ test("SK2 stages and validates migration objects without advancing authoritative
 				await context.cleanup();
 			}
 		});
+	}
+});
+
+test("SK2 staging omits an oversized legacy Lexicon and folds its terms into owners", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({
+		traceId: "TRACE-CHG-source",
+		traceRecords: records,
+		lexiconBytes: oversizedLexiconBytes(),
+	});
+	try {
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const staged = await stageKbToWikiMigration(
+			migrationStageInput(context, backup.backupId),
+		);
+		assert.deepEqual(staged.plan.omittedLexiconSourceIds, ["lexicon.md"]);
+		assert.equal(staged.plan.items.length, 1);
+		const [item] = staged.plan.items.map((planned) => planned.item);
+		assert.equal(item.itemId, "cw:component:source-topic");
+		assert.equal(item.body, "# Source topic\n\nCanonical legacy meaning.");
+		assert.ok(item.aliases.includes("Semantic Kernel"));
+		assert.deepEqual(
+			item.attributes["codewiki.legacy:terms"].map((term) => ({...term})),
+			[{
+				term: "Semantic Kernel",
+				definition: "Governed target authority.",
+				aliases: [],
+			}],
+		);
+	} finally {
+		await context.cleanup();
+	}
+});
+
+test("SK2 stages this repository's complete canonical KB with its Lexicon omitted", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({
+		traceId: "TRACE-CHG-source",
+		traceRecords: records,
+		kbSource: join(import.meta.dirname, "..", "..", "..", ".codewiki", "kb"),
+	});
+	try {
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const staged = await stageKbToWikiMigration(
+			migrationStageInput(context, backup.backupId),
+		);
+		assert.deepEqual(staged.plan.omittedLexiconSourceIds, ["lexicon.md"]);
+		assert.ok(staged.plan.items.length > 40);
+		assert.equal(
+			staged.plan.items.some(({item}) => item.itemId === "cw:lexicon:codewiki"),
+			false,
+		);
+		const runtime = staged.plan.items.find(
+			({item}) => item.itemId === "cw:component:runtime",
+		)?.item;
+		assert.ok(runtime?.aliases.includes("Run Request"));
+		assert.ok(
+			staged.plan.items.every(({item}) => Buffer.byteLength(item.body) <= 16_384),
+		);
+	} finally {
+		await context.cleanup();
 	}
 });
 

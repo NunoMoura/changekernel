@@ -1,4 +1,9 @@
-import type {CanonicalJsonValue, Sha256Digest} from "../utils/canonical-json.ts";
+import {
+	canonicalJson,
+	canonicalJsonDigest,
+	type CanonicalJsonValue,
+	type Sha256Digest,
+} from "../utils/canonical-json.ts";
 import {sha256Base32Nfc} from "../utils/base32.ts";
 import {assertRequiredExactKeys as assertExactKeys} from "../utils/json.ts";
 import {
@@ -528,7 +533,7 @@ export function createKbToWikiLegacyEquivalenceProof(input: {
 	readonly source: CreateKbToWikiMigrationPlanInput;
 }): KbToWikiLegacyEquivalenceProof {
 	const expected = createKbToWikiMigrationPlan(input.source);
-	if (canonicalSemanticJson(input.plan) !== canonicalSemanticJson(expected)) {
+	if (canonicalJson(input.plan) !== canonicalJson(expected)) {
 		throw new Error("Migration plan does not exactly replay canonical legacy semantics.");
 	}
 	const body = {
@@ -538,7 +543,7 @@ export function createKbToWikiLegacyEquivalenceProof(input: {
 			KB_TO_WIKI_LEGACY_EQUIVALENCE_PROTOCOL,
 			legacySemanticSource(input.source),
 		),
-		migrationPlanDigest: semanticDigest(KB_TO_WIKI_MIGRATION_PROTOCOL, input.plan),
+		migrationPlanDigest: migrationPlanDigest(input.plan),
 		subjectCount: input.source.subjects.length,
 		facetCount: input.source.subjects.reduce(
 			(count, subject) => count + (subject.facets?.length ?? 0),
@@ -599,7 +604,7 @@ export function verifyKbToWikiLegacyEquivalenceProof(
 	assertDigest(proof.migrationPlanDigest, "legacy-equivalence migrationPlanDigest");
 	assertDigest(proof.proofDigest, "legacy-equivalence proofDigest");
 	if (
-		proof.migrationPlanDigest !== semanticDigest(KB_TO_WIKI_MIGRATION_PROTOCOL, plan) ||
+		proof.migrationPlanDigest !== migrationPlanDigest(plan) ||
 		proof.retirementCount !== plan.retirementMap.length ||
 		proof.legacyRecordCount !== plan.legacyRecordMap.length ||
 		proof.targetItemCount !== plan.items.length
@@ -610,6 +615,13 @@ export function verifyKbToWikiLegacyEquivalenceProof(
 	if (proof.proofDigest !== semanticDigest(KB_TO_WIKI_LEGACY_EQUIVALENCE_PROTOCOL, body)) {
 		throw new Error("Legacy-equivalence proof digest does not replay.");
 	}
+}
+
+function migrationPlanDigest(plan: KbToWikiMigrationPlan): Sha256Digest {
+	return canonicalJsonDigest({
+		protocol: "codewiki.kb-to-wiki-migration-plan-digest@1.0.0",
+		plan,
+	});
 }
 
 function legacySemanticSource(input: CreateKbToWikiMigrationPlanInput) {

@@ -1,6 +1,6 @@
 import {mkdtemp, rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {join, posix} from "node:path";
 
 import {
 	changeTracePath,
@@ -21,6 +21,8 @@ import {
 	type CreateKbToWikiMigrationPlanInput,
 	type KbToWikiMigrationPlan,
 	type LegacyFacetInput,
+	type LegacyLexiconInput,
+	type LegacyLexiconTermInput,
 	type LegacyRelationshipInput,
 	type LegacyRetirementInput,
 	type LegacySubjectInput,
@@ -83,7 +85,7 @@ export const KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL = Object.freeze({
 } as const);
 
 export const KB_TO_WIKI_MIGRATION_STAGE_IMPLEMENTATION_DIGEST = semanticDigest(
-	"codewiki.kb-to-wiki-migration-stage-implementation@2.0.0",
+	"codewiki.kb-to-wiki-migration-stage-implementation@2.0.1",
 	{operation: "stage-kb-to-wiki-migration"},
 );
 
@@ -494,6 +496,7 @@ function compileLegacySource(
 ): CreateKbToWikiMigrationPlanInput {
 	const {sourceSnapshot} = evidence;
 	const subjects = compileSubjects(sourceSnapshot.knowledgeCheckpoint, projectId);
+	const lexicons = compileLexicons(sourceSnapshot.knowledgeCheckpoint, projectId);
 	const retirements = compileRetirements(evidence, projectId);
 	const retentionStubs = compileRetentionStubs(evidence);
 	const readiness = sourceSnapshot.readiness;
@@ -517,7 +520,7 @@ function compileLegacySource(
 			backupRef: readiness.backupRef,
 		},
 		subjects,
-		lexicons: [],
+		lexicons,
 		retirements,
 		retentionStubs,
 	};
@@ -528,17 +531,148 @@ function compileSubjects(
 	projectId: string,
 ): readonly LegacySubjectInput[] {
 	const resolved = resolveKnowledgeProjection(checkpoint.projection.files);
+	const subjectFiles = checkpoint.projection.files.filter(
+		(file) => !isLegacyLexicon(file, resolved),
+	);
+	const subjectPaths = new Set(subjectFiles.map(({path}) => path));
 	const subjectCells = new Map(
 		resolved.flatMap((cell) =>
-			cell.target.facetId === undefined ? [[cell.target.subjectId, cell] as const] : []
+			cell.target.facetId === undefined && subjectPaths.has(cell.path)
+				? [[cell.target.subjectId, cell] as const]
+				: []
 		),
 	);
 	const pathBySubject = new Map(
 		[...subjectCells].map(([subjectId, cell]) => [subjectId, cell.path]),
 	);
-	return checkpoint.projection.files.map((file) =>
+	return subjectFiles.map((file) =>
 		compileSubject({file, resolved, pathBySubject, projectId})
 	).sort((left, right) => compareText(left.sourceId, right.sourceId));
+}
+
+function compileLexicons(
+	checkpoint: KnowledgeCheckpoint,
+	projectId: string,
+): readonly LegacyLexiconInput[] {
+	const resolved = resolveKnowledgeProjection(checkpoint.projection.files);
+	const subjectPaths = new Set<string>();
+	const lexiconFiles: KnowledgeProjectionFile[] = [];
+	for (const file of checkpoint.projection.files) {
+		if (isLegacyLexicon(file, resolved)) lexiconFiles.push(file);
+		else subjectPaths.add(file.path);
+	}
+	return lexiconFiles.map((file) =>
+		compileLexicon({file, resolved, subjectPaths, projectId})
+	).sort((left, right) => compareText(left.sourceId, right.sourceId));
+}
+
+function compileLexicon(input: {
+	readonly file: KnowledgeProjectionFile;
+	readonly resolved: readonly ResolvedKnowledgeCell[];
+	readonly subjectPaths: ReadonlySet<string>;
+	readonly projectId: string;
+}): LegacyLexiconInput {
+	const subjectCell = input.resolved.find(
+		(cell) => cell.path === input.file.path && cell.target.facetId === undefined,
+	);
+	if (subjectCell === undefined) {
+		throw new Error(`Legacy Lexicon subject is missing for ${input.file.path}.`);
+	}
+	const root = semanticRoot(subjectCell.semanticValue, input.file.mediaType);
+	const body = stringField(root, "body") ?? "";
+	const terms = compileLexiconTerms({
+		body,
+		sourceId: input.file.path,
+		subjectPaths: input.subjectPaths,
+		projectId: input.projectId,
+	});
+	return {
+		sourceId: input.file.path,
+		sourceDigest: subjectCell.digest,
+		terms,
+	};
+}
+
+function compileLexiconTerms(input: {
+	readonly body: string;
+	readonly sourceId: string;
+	readonly subjectPaths: ReadonlySet<string>;
+	readonly projectId: string;
+}): readonly LegacyLexiconTermInput[] {
+	return parseLegacyLexiconRows(input.body, input.sourceId).map(
+		({term, definition, owner}) => ({
+			term,
+			definition,
+			aliases: [],
+			ownerSourceId: resolveLegacyLexiconOwner(
+				input.sourceId,
+				term,
+				owner,
+				input.subjectPaths,
+			),
+			legacyRecordId: legacyRecordId(
+				input.projectId,
+				`lexicon-term:${input.sourceId}:${term}`,
+			),
+		}),
+	);
+}
+
+function parseLegacyLexiconRows(
+	body: string,
+	sourceId: string,
+): readonly {readonly term: string; readonly definition: string; readonly owner: string}[] {
+	const rows = body
+		.split(/\r?\n/u)
+		.filter((line) => line.startsWith("|") && !/^\|\s*-/u.test(line))
+		.slice(1);
+	const seen = new Set<string>();
+	return rows.map((row, index) => {
+		const cells = row
+			.slice(1, -1)
+			.split("|")
+			.map((cell) => cell.trim());
+		if (cells.length !== 3 || cells.some((cell) => cell.length === 0)) {
+			throw new Error(`Legacy Lexicon row ${index + 1} in ${sourceId} is invalid.`);
+		}
+		const [term, definition, owner] = cells as [string, string, string];
+		if (seen.has(term)) {
+			throw new Error(`Legacy Lexicon term ${term} is duplicated in ${sourceId}.`);
+		}
+		seen.add(term);
+		return {term, definition, owner};
+	});
+}
+
+function resolveLegacyLexiconOwner(
+	sourceId: string,
+	term: string,
+	owner: string,
+	subjectPaths: ReadonlySet<string>,
+): string {
+	const ownerMatch = /^\[[^\]]+\]\(([^)]+)\)$/u.exec(owner);
+	if (!ownerMatch?.[1]) {
+		throw new Error(`Legacy Lexicon term ${term} requires an owning subject.`);
+	}
+	const ownerSourceId = posix.normalize(
+		posix.join(posix.dirname(sourceId), ownerMatch[1].replace(/^\//u, "")),
+	);
+	if (ownerSourceId.startsWith("../") || !subjectPaths.has(ownerSourceId)) {
+		throw new Error(`Legacy Lexicon owner ${ownerMatch[1]} does not resolve uniquely.`);
+	}
+	return ownerSourceId;
+}
+
+function isLegacyLexicon(
+	file: KnowledgeProjectionFile,
+	resolved: readonly ResolvedKnowledgeCell[],
+): boolean {
+	const subjectCell = resolved.find(
+		(cell) => cell.path === file.path && cell.target.facetId === undefined,
+	);
+	if (subjectCell === undefined) return false;
+	const root = semanticRoot(subjectCell.semanticValue, file.mediaType);
+	return stringField(root, "type")?.toLowerCase() === "lexicon";
 }
 
 function compileSubject(input: {

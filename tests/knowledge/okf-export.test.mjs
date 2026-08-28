@@ -53,7 +53,10 @@ describe("OKF export compatibility operation", () => {
 			exported.files.some((file) => file.path.endsWith(".jsonl")),
 			false,
 		);
-		assert.deepEqual(exported.excludedTraceFiles, []);
+		assert.deepEqual(
+			exported.excludedTraceFiles,
+			input.filter(({path}) => path.endsWith(".jsonl")).map(({path}) => path),
+		);
 	});
 
 	it("preserves unknown OKF producer fields through consume/export", () => {

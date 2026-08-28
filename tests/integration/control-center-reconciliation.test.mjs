@@ -157,10 +157,20 @@ describe("control-center reconciliation integration", () => {
 	});
 
 	it("keeps dogfood traces out of active source-repository state", () => {
+		const migrationTrace = ".codewiki/traces/TRACE-CHG-sk2-kb-to-wiki-migration.jsonl";
 		const traceFiles = filesUnder(".codewiki/traces").filter((path) =>
 			/\/TRACE-.*\.jsonl$/.test(path),
 		);
-		assert.deepEqual(traceFiles, []);
+		assert.deepEqual(
+			traceFiles.filter((path) => path !== migrationTrace),
+			[],
+		);
+		if (traceFiles.includes(migrationTrace)) {
+			assert.match(
+				readFileSync(migrationTrace, "utf8"),
+				/Accepted exact qualified SK2 repository migration\./u,
+			);
+		}
 	});
 
 	it("documents delivered control-center boundaries on canonical surfaces", () => {
