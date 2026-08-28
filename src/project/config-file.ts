@@ -6,7 +6,11 @@ import {
 	createGitCommandRunner,
 	type GitCommandRunner,
 } from "../changes/trace/git-command.ts";
-import {canonicalJsonDigest, type Sha256Digest} from "../utils/canonical-json.ts";
+import {
+	canonicalJson,
+	canonicalJsonDigest,
+	type Sha256Digest,
+} from "../utils/canonical-json.ts";
 import {
 	DEFAULT_WIKI_CONFIG,
 	runWikiConfig,
@@ -19,6 +23,32 @@ import {
 
 export const WIKI_CONFIG_PATH = ".codewiki/config.json";
 
+export const SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL = Object.freeze({
+	id: "codewiki.project-config",
+	version: "2.0.0",
+} as const);
+
+export type SemanticKernelWikiConfig = Omit<WikiConfig, "domain"> & {
+	readonly protocol: typeof SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL;
+};
+
+interface WikiConfigFileObject {
+	readonly protocol?: Readonly<{
+		readonly id: string;
+		readonly version: string;
+	}>;
+	readonly domain?: WikiConfig["domain"];
+	readonly project?: string;
+}
+
+export type WikiConfigFileFormat = "legacy-domain" | "semantic-kernel";
+
+export interface LoadedWikiConfigFile {
+	readonly config: WikiConfig;
+	readonly format: WikiConfigFileFormat;
+	readonly digest: Sha256Digest;
+}
+
 export interface WikiConfigFileResult extends RunWikiConfigResult {
 	path: string;
 	written: boolean;
@@ -28,17 +58,28 @@ export async function loadWikiConfigFile(
 	repoRoot: string,
 ): Promise<WikiConfig> {
 	const raw = await readOptionalJson(configPath(repoRoot));
-	return raw === null
-		? resolveWikiConfig()
-		: resolveWikiConfig(configFileToPartialWikiConfig(raw));
+	return (
+		raw === null
+			? loadedConfig(resolveWikiConfig(), "legacy-domain")
+			: configFileToRuntimeResult(raw)
+	).config;
 }
 
-export async function loadProtectedWikiConfigFile(input: {
+export async function loadWikiConfigFileResult(
+	repoRoot: string,
+): Promise<LoadedWikiConfigFile> {
+	const raw = await readOptionalJson(configPath(repoRoot));
+	return raw === null
+		? loadedConfig(resolveWikiConfig(), "legacy-domain")
+		: configFileToRuntimeResult(raw);
+}
+
+export async function loadProtectedWikiConfigFileResult(input: {
 	readonly repoRoot: string;
 	readonly protectedSourceHead: string;
 	readonly runner?: GitCommandRunner;
 	readonly signal?: AbortSignal;
-}): Promise<WikiConfig> {
+}): Promise<LoadedWikiConfigFile> {
 	if (!/^[a-f0-9]{40}(?:[a-f0-9]{24})?$/u.test(input.protectedSourceHead)) {
 		throw new Error("Protected source head must be a Git object id.");
 	}
@@ -53,13 +94,13 @@ export async function loadProtectedWikiConfigFile(input: {
 			`Unable to read protected project configuration: ${result.stderr.trim() || "Git failed"}`,
 		);
 	}
-	let value: unknown;
+	let value: WikiConfigFileObject;
 	try {
-		value = JSON.parse(result.stdout);
+		value = JSON.parse(result.stdout) as WikiConfigFileObject;
 	} catch {
 		throw new Error("Protected project configuration must contain valid JSON.");
 	}
-	return resolveWikiConfig(configFileToPartialWikiConfig(value));
+	return configFileToRuntimeResult(value);
 }
 
 export async function resolveWikiConfigFile(
@@ -79,6 +120,72 @@ export function serializeWikiConfigFile(config: WikiConfig): string {
 
 export function wikiConfigDigest(config: WikiConfig): Sha256Digest {
 	return canonicalJsonDigest(resolveWikiConfig(config));
+}
+
+export function wikiConfigDigestForFormat(
+	config: WikiConfig,
+	format: WikiConfigFileFormat,
+): Sha256Digest {
+	return format === "semantic-kernel"
+		? canonicalJsonDigest(migrateWikiConfigToSemanticKernel(config))
+		: wikiConfigDigest(config);
+}
+
+export function migrateWikiConfigToSemanticKernel(
+	value: WikiConfigFileObject,
+): SemanticKernelWikiConfig {
+	const current = resolveWikiConfig(configFileToPartialWikiConfig(value));
+	const {domain: _legacyDomainEvidence, ...target} = current;
+	return Object.freeze({
+		protocol: SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL,
+		...target,
+	});
+}
+
+export function assertSemanticKernelWikiConfig(
+	value: WikiConfigFileObject,
+): asserts value is SemanticKernelWikiConfig {
+	const record = requiredObjectRecord(value, WIKI_CONFIG_PATH);
+	assertKnownKeys(record, WIKI_CONFIG_PATH, [
+		"protocol",
+		"project",
+		"preview",
+		"runtime",
+		"retention",
+		"hosts",
+		"quality",
+		"userStandards",
+		"triagePreferences",
+	]);
+	if (canonicalJson(record.protocol) !== canonicalJson(SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL)) {
+		throw createCodewikiConfigError({
+			path: `${WIKI_CONFIG_PATH}.protocol`,
+			code: "invalid_value",
+			message: "Semantic Kernel project configuration protocol is invalid.",
+		});
+	}
+	// SAFETY: exact top-level keys, protocol identity, and normalized config replay are checked here.
+	const {protocol: _protocol, ...legacyCompatible} =
+		record as unknown as SemanticKernelWikiConfig;
+	const runtime = resolveWikiConfig({
+		...legacyCompatible,
+		domain: DEFAULT_WIKI_CONFIG.domain,
+	});
+	const normalized = migrateWikiConfigToSemanticKernel({
+		...runtime,
+		domain: DEFAULT_WIKI_CONFIG.domain,
+	});
+	if (canonicalJson(record) !== canonicalJson(normalized)) {
+		throw createCodewikiConfigError({
+			path: WIKI_CONFIG_PATH,
+			code: "invalid_value",
+			message: "Semantic Kernel project configuration is not canonical.",
+		});
+	}
+}
+
+function serializeSemanticKernelWikiConfigFile(config: WikiConfig): string {
+	return `${JSON.stringify(migrateWikiConfigToSemanticKernel(config), null, "\t")}\n`;
 }
 
 export async function writeWikiConfigFile(
@@ -103,8 +210,16 @@ export async function updateWikiConfigFile(
 	repoRoot: string,
 	input: RunWikiConfigInput = {},
 ): Promise<WikiConfigFileResult> {
+	const raw = await readOptionalJson(configPath(repoRoot));
 	const result = await resolveWikiConfigFile(repoRoot, input);
-	await writeWikiConfigFile(repoRoot, result.config);
+	if (raw !== null && isSemanticKernelWikiConfig(raw)) {
+		await writeWikiConfigBytes(
+			repoRoot,
+			serializeSemanticKernelWikiConfigFile(result.config),
+		);
+	} else {
+		await writeWikiConfigFile(repoRoot, result.config);
+	}
 	return { ...result, written: true };
 }
 
@@ -169,6 +284,55 @@ export function configFileToPartialWikiConfig(
 		triagePreferences:
 			record.triagePreferences as PartialWikiConfig["triagePreferences"],
 	};
+}
+
+function configFileToRuntimeResult(
+	value: WikiConfigFileObject,
+): LoadedWikiConfigFile {
+	if (isSemanticKernelWikiConfig(value)) {
+		assertSemanticKernelWikiConfig(value);
+		const {protocol: _protocol, ...config} = value;
+		return loadedConfig(
+			resolveWikiConfig({...config, domain: DEFAULT_WIKI_CONFIG.domain}),
+			"semantic-kernel",
+		);
+	}
+	return loadedConfig(
+		resolveWikiConfig(configFileToPartialWikiConfig(value)),
+		"legacy-domain",
+	);
+}
+
+function loadedConfig(
+	config: WikiConfig,
+	format: WikiConfigFileFormat,
+): LoadedWikiConfigFile {
+	return Object.freeze({
+		config,
+		format,
+		digest: wikiConfigDigestForFormat(config, format),
+	});
+}
+
+function isSemanticKernelWikiConfig(
+	value: WikiConfigFileObject,
+): value is SemanticKernelWikiConfig {
+	if (Array.isArray(value)) return false;
+	const protocol = (value as {readonly protocol?: object}).protocol;
+	return protocol !== undefined &&
+		canonicalJson(protocol) === canonicalJson(SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL);
+}
+
+async function writeWikiConfigBytes(repoRoot: string, bytes: string): Promise<void> {
+	const path = configPath(repoRoot);
+	const temporaryPath = `${path}.tmp-${process.pid}-${randomUUID()}`;
+	await mkdir(dirname(path), {recursive: true});
+	try {
+		await writeFile(temporaryPath, bytes, {encoding: "utf8", mode: 0o600});
+		await rename(temporaryPath, path);
+	} finally {
+		await rm(temporaryPath, {force: true});
+	}
 }
 
 function validateConfigFileKeys(value: unknown): Record<string, unknown> {
@@ -289,9 +453,9 @@ function configPath(repoRoot: string): string {
 	return join(repoRoot, WIKI_CONFIG_PATH);
 }
 
-async function readOptionalJson(path: string): Promise<unknown> {
+async function readOptionalJson(path: string): Promise<WikiConfigFileObject | null> {
 	try {
-		return JSON.parse(await readFile(path, "utf8"));
+		return JSON.parse(await readFile(path, "utf8")) as WikiConfigFileObject;
 	} catch (error) {
 		if (isNotFound(error)) return null;
 		throw createCodewikiConfigError({

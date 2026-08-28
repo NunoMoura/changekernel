@@ -28,7 +28,9 @@ import {
 	backendBuildIncompatibleFileSchema,
 	backendBuildSupportsStateSchema,
 	DEFAULT_BACKEND_BUILD,
+	SEMANTIC_KERNEL_BACKEND_BUILD_PROTOCOL,
 	type BackendBuildBinding,
+	type SemanticKernelBackendBuildBinding,
 } from "./build.ts";
 import {
 	projectServerStatePaths,
@@ -62,6 +64,11 @@ export const BACKEND_STATE_RECOVERY_PROTOCOL = Object.freeze({
 
 export const BACKEND_BUILD_TRANSITION_PROTOCOL = Object.freeze({
 	id: "codewiki.backend-build-transition",
+	version: "1.0.0",
+} as const);
+
+export const KB_TO_WIKI_BACKEND_STATE_ACTIVATION_PROTOCOL = Object.freeze({
+	id: "codewiki.kb-to-wiki-backend-state-activation",
 	version: "1.0.0",
 } as const);
 
@@ -153,6 +160,20 @@ export interface BackendStateRecoveryReceipt {
 	readonly recoveryDigest: Sha256Digest;
 }
 
+export interface KbToWikiBackendStateActivationReceipt {
+	readonly protocol: typeof KB_TO_WIKI_BACKEND_STATE_ACTIVATION_PROTOCOL;
+	readonly repositoryIdentity: Sha256Digest;
+	readonly migrationReceiptDigest: Sha256Digest;
+	readonly backupId: Sha256Digest;
+	readonly sourceStateDigest: Sha256Digest;
+	readonly sourceStateGeneration: number;
+	readonly sourceBackendBuildDigest: Sha256Digest;
+	readonly targetStateGeneration: number;
+	readonly targetBackendBuildDigest: Sha256Digest;
+	readonly activatedAt: string;
+	readonly activationDigest: Sha256Digest;
+}
+
 export interface BackendBuildTransitionReceipt {
 	readonly protocol: typeof BACKEND_BUILD_TRANSITION_PROTOCOL;
 	readonly repositoryIdentity: Sha256Digest;
@@ -195,6 +216,8 @@ const CANONICAL_ROOTS = Object.freeze([
 	"config.json",
 	"kb",
 	"traces",
+	"wiki",
+	"changes",
 	"check-packs",
 	"check-packs.lock.json",
 ] as const);
@@ -207,6 +230,7 @@ const PROJECT_SERVER_BACKUP_ROOTS = Object.freeze([
 const PROJECT_SERVER_AUDIT_ROOTS = Object.freeze([
 	"migrations",
 	"build-transitions",
+	"semantic-kernel-transitions",
 	"restore-receipts",
 	"recovery-receipts",
 ] as const);
@@ -515,6 +539,169 @@ export async function activateBackendBuild(input: {
 	);
 	await writePrivateCanonicalJson(paths, paths.stateManifestPath, targetState);
 	return receipt;
+}
+
+export async function activateKbToWikiBackendState(input: {
+	readonly repoRoot: string;
+	readonly stateRoot?: string;
+	readonly expectedStateDigest: Sha256Digest;
+	readonly migrationReceiptDigest: Sha256Digest;
+	readonly backupId: Sha256Digest;
+	readonly sourceStateGeneration: number;
+	readonly sourceBackendBuildDigest: Sha256Digest;
+	readonly targetStateGeneration: number;
+	readonly targetBuild: SemanticKernelBackendBuildBinding;
+	readonly activatedAt?: string;
+}): Promise<KbToWikiBackendStateActivationReceipt> {
+	const paths = projectServerStatePaths(input);
+	await assertCodeWikiProject(paths);
+	await assertNoLegacyProjectState(paths);
+	await assertProjectStopped(paths);
+	await assertNoPendingRestore(paths);
+	const current = await requireStateManifest(input);
+	const expectedStateDigest = digest(input.expectedStateDigest, "Expected Backend state digest");
+	if (
+		current.stateDigest !== expectedStateDigest ||
+		current.generation !== input.sourceStateGeneration ||
+		current.activeBuild.backendBuildDigest !== input.sourceBackendBuildDigest
+	) {
+		throw new Error("KB-to-Wiki private state activation source is stale.");
+	}
+	assertBackendBuildBinding(input.targetBuild);
+	if (
+		input.targetBuild.protocol.version !==
+		SEMANTIC_KERNEL_BACKEND_BUILD_PROTOCOL.version
+	) {
+		throw new Error("KB-to-Wiki private state target Build is not Domain-free.");
+	}
+	if (input.targetStateGeneration !== current.generation + 1) {
+		throw new Error("KB-to-Wiki private state target generation is invalid.");
+	}
+	if (!backendBuildSupportsStateSchema(input.targetBuild, BACKEND_STATE_PROTOCOL.version)) {
+		throw new Error("KB-to-Wiki target Backend Build does not support active state schema.");
+	}
+	const backup = await readBackendStateBackup({
+		...input,
+		backupId: digest(input.backupId, "KB-to-Wiki private backup ID"),
+	});
+	if (
+		backup.sourceState.stateDigest !== current.stateDigest ||
+		backup.sourceState.generation !== current.generation ||
+		backup.sourceState.activeBuild.backendBuildDigest !==
+			current.activeBuild.backendBuildDigest
+	) {
+		throw new Error("KB-to-Wiki private backup does not bind active source state.");
+	}
+	const activatedAt = timestamp(input.activatedAt);
+	const receiptBody = {
+		protocol: KB_TO_WIKI_BACKEND_STATE_ACTIVATION_PROTOCOL,
+		repositoryIdentity: paths.repositoryIdentity,
+		migrationReceiptDigest: digest(
+			input.migrationReceiptDigest,
+			"KB-to-Wiki migration Receipt digest",
+		),
+		backupId: backup.backupId,
+		sourceStateDigest: current.stateDigest,
+		sourceStateGeneration: current.generation,
+		sourceBackendBuildDigest: current.activeBuild.backendBuildDigest,
+		targetStateGeneration: input.targetStateGeneration,
+		targetBackendBuildDigest: input.targetBuild.backendBuildDigest,
+		activatedAt,
+	};
+	const receipt = Object.freeze({
+		...receiptBody,
+		activationDigest: canonicalJsonDigest(receiptBody),
+	}) as KbToWikiBackendStateActivationReceipt;
+	const targetState = createStateManifest({
+		paths,
+		generation: receipt.targetStateGeneration,
+		activeBuild: input.targetBuild,
+		createdAt: current.createdAt,
+		updatedAt: activatedAt,
+		lastMigrationDigest: current.lastMigrationDigest,
+		lastRestoreDigest: current.lastRestoreDigest,
+		lastRecoveryDigest: current.lastRecoveryDigest,
+		lastBuildTransitionDigest: current.lastBuildTransitionDigest,
+	});
+	await writePrivateCanonicalJson(
+		paths,
+		join(
+			paths.projectServerRoot,
+			"semantic-kernel-transitions",
+			`${receipt.activationDigest.slice(7)}.json`,
+		),
+		receipt,
+	);
+	await writePrivateCanonicalJson(paths, paths.stateManifestPath, targetState);
+	return receipt;
+}
+
+export async function readKbToWikiBackendStateActivationReceipt(input: {
+	readonly repoRoot: string;
+	readonly stateRoot?: string;
+	readonly migrationReceiptDigest: Sha256Digest;
+	readonly backupId: Sha256Digest;
+	readonly sourceStateDigest: Sha256Digest;
+	readonly sourceStateGeneration: number;
+	readonly sourceBackendBuildDigest: Sha256Digest;
+	readonly targetStateGeneration: number;
+	readonly targetBackendBuildDigest: Sha256Digest;
+}): Promise<KbToWikiBackendStateActivationReceipt> {
+	const paths = projectServerStatePaths(input);
+	const [state, backup] = await Promise.all([
+		requireStateManifest(input),
+		readBackendStateBackup({...input, backupId: input.backupId}),
+	]);
+	if (
+		state.generation !== input.targetStateGeneration ||
+		state.activeBuild.backendBuildDigest !== input.targetBackendBuildDigest
+	) {
+		throw new Error("KB-to-Wiki private state activation head is not active.");
+	}
+	if (
+		backup.sourceState.stateDigest !== input.sourceStateDigest ||
+		backup.sourceState.generation !== input.sourceStateGeneration ||
+		backup.sourceState.activeBuild.backendBuildDigest !== input.sourceBackendBuildDigest
+	) {
+		throw new Error("KB-to-Wiki private state activation backup no longer matches source.");
+	}
+	const body = {
+		protocol: KB_TO_WIKI_BACKEND_STATE_ACTIVATION_PROTOCOL,
+		repositoryIdentity: paths.repositoryIdentity,
+		migrationReceiptDigest: digest(
+			input.migrationReceiptDigest,
+			"KB-to-Wiki migration Receipt digest",
+		),
+		backupId: digest(input.backupId, "KB-to-Wiki private backup ID"),
+		sourceStateDigest: digest(input.sourceStateDigest, "KB-to-Wiki source state digest"),
+		sourceStateGeneration: input.sourceStateGeneration,
+		sourceBackendBuildDigest: digest(
+			input.sourceBackendBuildDigest,
+			"KB-to-Wiki source Backend Build digest",
+		),
+		targetStateGeneration: input.targetStateGeneration,
+		targetBackendBuildDigest: digest(
+			input.targetBackendBuildDigest,
+			"KB-to-Wiki target Backend Build digest",
+		),
+		activatedAt: state.updatedAt,
+	};
+	const expected = Object.freeze({
+		...body,
+		activationDigest: canonicalJsonDigest(body),
+	}) as KbToWikiBackendStateActivationReceipt;
+	const actual = await readCanonicalJsonFile(
+		paths,
+		join(
+			paths.projectServerRoot,
+			"semantic-kernel-transitions",
+			`${expected.activationDigest.slice(7)}.json`,
+		),
+	);
+	if (canonicalJson(actual) !== canonicalJson(expected)) {
+		throw new Error("KB-to-Wiki private state activation Receipt is missing or invalid.");
+	}
+	return expected;
 }
 
 export async function readBackendStateBackup(input: {

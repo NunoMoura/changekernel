@@ -62,7 +62,7 @@ Shared error handling stays lean under `src/error-handling/**`: CodeWiki error e
 
 ## Backend packaging and state evolution
 
-Installation is passive; Project Server owns lifecycle. Backend Build `2.0.0` binds package, support, DSH, Domain, schemas, and protocols. Exact `1.0.0` stays readable; upgrades are backup-first, quiescent, and identity preserving. `CODEWIKI_STATE_ROOT` isolates state and backup scopes.
+Installation is passive; Project Server owns lifecycle. Backend Build `3.0.0` binds package, support, DSH, generic compatibility components, schemas, and protocols without Domain authority; exact `1.0.0`/`2.0.0` remain readable. Ordinary upgrades and stopped SK2 private-generation activation are backup-first, quiescent, identity preserving, and independently receipted. `CODEWIKI_STATE_ROOT` isolates state and backup scopes.
 
 Support Matrix, Runtime Production Qualification, Observability, Fault Recovery, and the unfiltered diagnostics ratchet bind the supported host, containment, Plugins, providers, evidence, recovery, privacy, and warning policy. Candidates cannot select these policies.
 

@@ -7,9 +7,11 @@ import {
 	type UiPreviewTarget,
 } from "../../preview/target.ts";
 import {
-	loadWikiConfigFile,
+	loadWikiConfigFileResult,
 	WIKI_CONFIG_PATH,
 	wikiConfigDigest,
+	wikiConfigDigestForFormat,
+	type WikiConfigFileFormat,
 } from "../../project/config-file.ts";
 import type {
 	WikiConfig,
@@ -28,7 +30,7 @@ import {
 import {DEFAULT_DOMAIN_REGISTRY} from "../../domains/defaults.ts";
 
 export interface ProjectServerEffectiveConfiguration {
-	domain: DomainPluginIdentity;
+	domain?: DomainPluginIdentity;
 	runtime: {
 		maxWorkers: number;
 		worktreeIsolation: WikiConfigWorktreeIsolation;
@@ -100,10 +102,11 @@ export async function loadProjectServerConfigurationState(
 	repoRoot: string,
 	activeConfig?: WikiConfig,
 ): Promise<ProjectServerConfigurationState> {
-	const config = await loadWikiConfigFile(repoRoot);
+	const loaded = await loadWikiConfigFileResult(repoRoot);
+	const config = loaded.config;
 	const active = activeConfig || config;
-	const configDigest = runtimeConfigurationDigest(config);
-	const activeConfigDigest = runtimeConfigurationDigest(active);
+	const configDigest = loaded.digest;
+	const activeConfigDigest = wikiConfigDigestForFormat(active, loaded.format);
 	const restartRequired = configDigest !== activeConfigDigest;
 	return {
 		generatedAt: new Date().toISOString(),
@@ -129,7 +132,7 @@ export async function loadProjectServerConfigurationState(
 			...structuredClone(target),
 			digest: uiPreviewTargetDigest(target),
 		})),
-		effective: effectiveConfig(config),
+		effective: effectiveConfig(config, loaded.format),
 		limits: {
 			maxWorkers: RUNTIME_CONFIGURATION_MAX_WORKERS,
 			budgetMaxima: { ...RUNTIME_CONFIGURATION_BUDGET_MAXIMA },
@@ -153,10 +156,11 @@ export function runtimeConfigurationDigest(config: WikiConfig): string {
 	return wikiConfigDigest(config);
 }
 
-function effectiveConfig(config: WikiConfig): ProjectServerEffectiveConfiguration {
-	const admission = resolveDomainPluginSelection(config.domain, DEFAULT_DOMAIN_REGISTRY);
-	return {
-		domain: domainPluginIdentity(admission),
+function effectiveConfig(
+	config: WikiConfig,
+	format: WikiConfigFileFormat,
+): ProjectServerEffectiveConfiguration {
+	const common = {
 		runtime: {
 			maxWorkers: config.runtime.maxWorkers,
 			worktreeIsolation: config.runtime.worktreeIsolation,
@@ -167,4 +171,7 @@ function effectiveConfig(config: WikiConfig): ProjectServerEffectiveConfiguratio
 		},
 		hosts: { pi: { enabled: config.hosts.pi.enabled } },
 	};
+	if (format === "semantic-kernel") return common;
+	const admission = resolveDomainPluginSelection(config.domain, DEFAULT_DOMAIN_REGISTRY);
+	return {...common, domain: domainPluginIdentity(admission)};
 }

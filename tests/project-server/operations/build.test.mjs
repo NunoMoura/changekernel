@@ -9,7 +9,9 @@ import {
 	BACKEND_BUILD_PROTOCOL,
 	createBackendBuildBinding,
 	DEFAULT_BACKEND_BUILD,
+	DEFAULT_SEMANTIC_KERNEL_BACKEND_BUILD,
 	LEGACY_BACKEND_BUILD_PROTOCOL,
+	SEMANTIC_KERNEL_BACKEND_BUILD_PROTOCOL,
 	DSH_BROKER_HOST_PROFILE_CLOSURE_DIGEST,
 	DSH_MANAGED_PROFILE_CLOSURE_DIGEST,
 } from "../../../src/project-server/operations/build.ts";
@@ -61,6 +63,28 @@ test("default Backend Build binds package, DSH profiles, Domain closure, schemas
 		DSH_BROKER_HOST_PROFILE_CLOSURE_DIGEST,
 	);
 	assertBackendBuildBinding(DEFAULT_BACKEND_BUILD);
+});
+
+test("Semantic Kernel Backend Build binds generic compatibility without Domain authority", () => {
+	const build = DEFAULT_SEMANTIC_KERNEL_BACKEND_BUILD;
+	assert.equal(build.protocol.version, SEMANTIC_KERNEL_BACKEND_BUILD_PROTOCOL.version);
+	assert.equal(Object.hasOwn(build, "domainPlugins"), false);
+	assert.equal(Object.hasOwn(build, "domainPluginClosureDigest"), false);
+	assert.deepEqual(
+		build.compatibilityComponents.map(({id}) => id),
+		["codewiki.compatibility.backend-v1"],
+	);
+	assert.equal(
+		build.fileSchemas.some(
+			({id, version}) => id === "codewiki.project-config" && version === "2.0.0",
+		),
+		true,
+	);
+	assertBackendBuildBinding(build);
+	assert.throws(
+		() => assertBackendBuildBinding({...build, compatibilityClosureDigest: DIGEST}),
+		/Backend Build binding digest or shape is invalid/,
+	);
 });
 
 test("Backend Build v2 reads exact v1 state without inventing missing identity fields", () => {

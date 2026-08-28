@@ -18,6 +18,7 @@ import {
 import {createKbToWikiMigrationReceipt} from "../../src/knowledge/kb-to-wiki-receipt.ts";
 import {createGitStoreProfile} from "../../src/project/git-store-profile.ts";
 import {createGitCommandRunner} from "../../src/changes/trace/git-command.ts";
+import {canonicalJsonDigest} from "../../src/utils/canonical-json.ts";
 import {
 	changeTracePath,
 	createChangeTraceHeader,
@@ -81,11 +82,18 @@ async function fixture(options = {}) {
 	await git(root, "config", "user.name", "CodeWiki Migration Test");
 	await git(root, "config", "user.email", "migration@example.test");
 	await write(root, "README.md", "source project\n");
+	const sourceConfigBytes = '{"project":"demo"}\n';
+	const targetConfigBytes = '{"protocol":{"id":"codewiki.project-config","version":"2.0.0"},"project":"demo"}\n';
+	await write(root, ".codewiki/config.json", sourceConfigBytes);
 	await write(root, ".codewiki/kb/policy.md", "legacy knowledge\n");
 	await write(root, ".codewiki/traces/TRACE-CHG-old.jsonl", "legacy trace\n");
 	await git(root, "add", ".");
 	await git(root, "commit", "-q", "--no-gpg-sign", "-m", "source");
 	const source = await git(root, "rev-parse", "HEAD");
+	const sourceConfigBlobOid = oid(
+		await git(root, "rev-parse", `${source}:.codewiki/config.json`),
+		objectFormat,
+	);
 	const sourceInput = JSON.parse(await readFile(sourceFixtureUrl, "utf8"));
 	sourceInput.source.objectFormat = objectFormat;
 	sourceInput.source.sourceCommit = oid(source, objectFormat);
@@ -100,6 +108,7 @@ async function fixture(options = {}) {
 		await rm(join(root, ".codewiki/kb"), {recursive: true});
 		await rm(join(root, ".codewiki/traces"), {recursive: true});
 	}
+	await write(root, ".codewiki/config.json", targetConfigBytes);
 	for (const [index, item] of plan.items.entries()) {
 		if (options.symbolicWiki && index === 0) {
 			await mkdir(join(root, item.path, ".."), {recursive: true});
@@ -234,6 +243,10 @@ async function fixture(options = {}) {
 		await git(root, "rev-parse", `:${migrationTracePath}`),
 		objectFormat,
 	);
+	const targetConfigBlobOid = oid(
+		await git(root, "rev-parse", ":.codewiki/config.json"),
+		objectFormat,
+	);
 	const proposalPayload = {
 		intent: "Preserve active legacy Change through migration.",
 		rationale: "Active intent must remain represented.",
@@ -277,6 +290,22 @@ async function fixture(options = {}) {
 		legacyEquivalence,
 		kernelBuildDigest: plan.source.sourceBuildDigest,
 		migrationImplementationDigest: plan.source.implementationDigest,
+		configurationPlan: {
+			path: ".codewiki/config.json",
+			sourceBlobOid: sourceConfigBlobOid,
+			sourceDigest: canonicalJsonDigest(JSON.parse(sourceConfigBytes)),
+			targetBlobOid: targetConfigBlobOid,
+			targetDigest: canonicalJsonDigest(JSON.parse(targetConfigBytes)),
+			targetProtocol: {id: "codewiki.project-config", version: "2.0.0"},
+		},
+		privateStatePlan: {
+			backupId: plan.source.privateBackupDigest,
+			sourceGeneration: 1,
+			sourceStateDigest: `sha256:${"9".repeat(64)}`,
+			sourceBackendBuildDigest: plan.source.sourceBuildDigest,
+			targetGeneration: 2,
+			targetBackendBuildDigest: `sha256:${"8".repeat(64)}`,
+		},
 		wikiItemsTreeOid,
 		itemBlobOids: receiptItemBlobOids,
 		convertedTraceBlobOids,

@@ -4,6 +4,9 @@ import {canonicalJsonDigest} from "../../utils/canonical-json.ts";
 import {
 	assertBackendBuildBinding,
 	type BackendBuildBinding,
+	type BackendCompatibilityComponentBinding,
+	type BackendDomainPluginBinding,
+	type LegacyBackendDomainPluginBinding,
 } from "../operations/build.ts";
 import {BACKEND_STATE_PROTOCOL} from "../operations/state.ts";
 import type {ExecutionRecoveryDecision} from "../workers/execution-recovery.ts";
@@ -20,8 +23,12 @@ export interface BackendOperationalBinding {
 		lockDigest: Sha256Digest;
 	}>;
 	readonly dshProfiles: BackendBuildBinding["dshProfiles"];
-	readonly domainPluginClosureDigest: Sha256Digest;
-	readonly domainPlugins: BackendBuildBinding["domainPlugins"];
+	readonly domainPluginClosureDigest?: Sha256Digest;
+	readonly domainPlugins?: readonly (
+		BackendDomainPluginBinding | LegacyBackendDomainPluginBinding
+	)[];
+	readonly compatibilityClosureDigest?: Sha256Digest;
+	readonly compatibilityComponents?: readonly BackendCompatibilityComponentBinding[];
 	readonly fileSchemas: BackendBuildBinding["fileSchemas"];
 	readonly protocols: BackendBuildBinding["protocols"];
 	readonly activeRuntimeBuildDigest: Sha256Digest | null;
@@ -102,8 +109,15 @@ export function backendOperationalBinding(input: {
 			lockDigest: input.activeBuild.packageLockDigest,
 		}),
 		dshProfiles: input.activeBuild.dshProfiles,
-		domainPluginClosureDigest: input.activeBuild.domainPluginClosureDigest,
-		domainPlugins: input.activeBuild.domainPlugins,
+		...("domainPlugins" in input.activeBuild
+			? {
+				domainPluginClosureDigest: input.activeBuild.domainPluginClosureDigest,
+				domainPlugins: input.activeBuild.domainPlugins,
+			}
+			: {
+				compatibilityClosureDigest: input.activeBuild.compatibilityClosureDigest,
+				compatibilityComponents: input.activeBuild.compatibilityComponents,
+			}),
 		fileSchemas: input.activeBuild.fileSchemas,
 		protocols: input.activeBuild.protocols,
 		activeRuntimeBuildDigest: input.activeRuntimeBuildDigest,

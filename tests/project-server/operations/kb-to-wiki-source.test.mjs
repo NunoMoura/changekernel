@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {mkdtemp, mkdir, rm, writeFile} from "node:fs/promises";
+import {mkdtemp, mkdir, readFile, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import test from "node:test";
@@ -24,8 +24,17 @@ import {buildKbToWikiLegacySourceSnapshot} from "../../../src/project-server/ope
 import {bindKbToWikiMigrationStagingEvidence} from "../../../src/project-server/operations/kb-to-wiki-staging-evidence.ts";
 import {stageKbToWikiMigration} from "../../../src/project-server/operations/kb-to-wiki-stage.ts";
 import {
+	activateStagedKbToWikiMigration,
+	inspectKbToWikiMigrationRestart,
+	recoverStagedKbToWikiMigration,
+	rollbackStagedKbToWikiMigration,
+} from "../../../src/project-server/operations/kb-to-wiki-activate.ts";
+import {activateKbToWikiMigrationRefsCas} from "../../../src/knowledge/kb-to-wiki-git.ts";
+import {DEFAULT_SEMANTIC_KERNEL_BACKEND_BUILD} from "../../../src/project-server/operations/build.ts";
+import {
 	bootstrapBackendState,
 	createBackendStateBackup,
+	readBackendStateManifest,
 } from "../../../src/project-server/operations/state.ts";
 import {createGitStoreProfile} from "../../../src/project/git-store-profile.ts";
 import {projectServerStatePaths} from "../../../src/project/private-state.ts";
@@ -206,6 +215,7 @@ function migrationStageInput(context, backupId, runner) {
 			committer: migrationGitIdentity,
 			message: "stage KB to Wiki migration\n",
 		},
+		targetBackendBuild: DEFAULT_SEMANTIC_KERNEL_BACKEND_BUILD,
 	};
 	if (!runner) return stageInput;
 	return Object.assign(stageInput, {runner});
@@ -393,6 +403,181 @@ test("SK2 stages and validates migration objects without advancing authoritative
 				await context.cleanup();
 			}
 		});
+	}
+});
+
+test("SK2 atomically activates refs, materializes target closure, and rolls back", async (t) => {
+	for (const objectFormat of ["sha1", "sha256"]) {
+		await t.test(objectFormat, async () => {
+			const records = await activeTraceRecords();
+			const context = await fixture({
+				objectFormat,
+				traceId: "TRACE-CHG-source",
+				traceRecords: records,
+			});
+			try {
+				const backup = await createBackendStateBackup({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					generatedAt: "2026-08-28T11:02:00.000Z",
+				});
+				const staged = await stageKbToWikiMigration(
+					migrationStageInput(context, backup.backupId),
+				);
+				const before = await inspectKbToWikiMigrationRestart({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					staged,
+				});
+				assert.equal(before.phase, "not_activated");
+				assert.equal(before.worktreeClean, true);
+				const activation = await activateStagedKbToWikiMigration({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					staged,
+					activatedAt: "2026-08-28T11:04:00.000Z",
+				});
+				assert.equal(
+					git(context.repoRoot, ["rev-parse", context.profile.canonicalRef]),
+					staged.migrationCommit.hex,
+				);
+				assert.equal(
+					git(context.repoRoot, [
+						"rev-parse",
+						`refs/codewiki/changes/${staged.activeManagedRefs[0].changeId}`,
+					]),
+					staged.activeManagedRefs[0].proposalCommit.hex,
+				);
+				const targetConfig = JSON.parse(
+					await readFile(join(context.repoRoot, ".codewiki", "config.json"), "utf8"),
+				);
+				assert.deepEqual(targetConfig.protocol, {
+					id: "codewiki.project-config",
+					version: "2.0.0",
+				});
+				assert.equal(Object.hasOwn(targetConfig, "domain"), false);
+				const targetState = await readBackendStateManifest(context);
+				assert.equal(
+					targetState.activeBuild.backendBuildDigest,
+					DEFAULT_SEMANTIC_KERNEL_BACKEND_BUILD.backendBuildDigest,
+				);
+				assert.equal(targetState.generation, context.state.generation + 1);
+				assert.equal(activation.targetStateDigest, targetState.stateDigest);
+				const restart = await inspectKbToWikiMigrationRestart({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					staged,
+				});
+				assert.equal(restart.phase, "activated");
+				if (objectFormat === "sha1") {
+					const paths = projectServerStatePaths(context);
+					const privateReceiptPath = join(
+						paths.projectServerRoot,
+						"semantic-kernel-transitions",
+						`${activation.privateStateActivationDigest.slice(7)}.json`,
+					);
+					await writeFile(privateReceiptPath, "{}\n");
+					await assert.rejects(
+						inspectKbToWikiMigrationRestart({
+							repoRoot: context.repoRoot,
+							stateRoot: context.stateRoot,
+							staged,
+						}),
+						/private state activation Receipt is missing or invalid/,
+					);
+				}
+				const rollback = await rollbackStagedKbToWikiMigration({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					staged,
+					targetOnlyCanonicalOperationObserved: false,
+					restoredAt: "2026-08-28T11:05:00.000Z",
+				});
+				assert.equal(rollback.inspection.phase, "rolled_back");
+				assert.equal(rollback.inspection.worktreeClean, true);
+				assert.equal(
+					git(context.repoRoot, ["rev-parse", context.profile.canonicalRef]),
+					context.sourceCommit.hex,
+				);
+				assert.equal(
+					git(context.repoRoot, ["for-each-ref", "refs/codewiki/changes"]),
+					"",
+				);
+				const restoredState = await readBackendStateManifest(context);
+				assert.equal(
+					restoredState.activeBuild.backendBuildDigest,
+					context.state.activeBuild.backendBuildDigest,
+				);
+			} finally {
+				await context.cleanup();
+			}
+		});
+	}
+});
+
+test("SK2 restart recovery completes an interrupted post-ref activation", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({traceId: "TRACE-CHG-source", traceRecords: records});
+	try {
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const staged = await stageKbToWikiMigration(
+			migrationStageInput(context, backup.backupId),
+		);
+		await activateKbToWikiMigrationRefsCas({
+			repoRoot: context.repoRoot,
+			profile: staged.evidence.sourceSnapshot.readiness.profile,
+			plan: staged.plan,
+			legacySource: staged.legacySource,
+			candidateCommit: staged.migrationCommit,
+			receipt: staged.receipt,
+			activeManagedRefs: staged.activeManagedRefs,
+		});
+		const interrupted = await inspectKbToWikiMigrationRestart({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			staged,
+		});
+		assert.equal(interrupted.phase, "refs_activated");
+		assert.equal(interrupted.worktreeClean, false);
+		await writeFile(
+			join(context.repoRoot, ".codewiki", "config.json"),
+			'{"project":"post-crash-user-edit"}\n',
+		);
+		await assert.rejects(
+			recoverStagedKbToWikiMigration({
+				repoRoot: context.repoRoot,
+				stateRoot: context.stateRoot,
+				staged,
+			}),
+			/non-endpoint bytes at \.codewiki\/config\.json/,
+		);
+		git(context.repoRoot, [
+			"checkout",
+			context.sourceCommit.hex,
+			"--",
+			".codewiki/config.json",
+		]);
+		const recovered = await recoverStagedKbToWikiMigration({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			staged,
+			recoveredAt: "2026-08-28T11:04:30.000Z",
+		});
+		assert.equal(recovered.phase, "activated");
+		assert.equal(recovered.worktreeClean, true);
+		await rollbackStagedKbToWikiMigration({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			staged,
+			targetOnlyCanonicalOperationObserved: false,
+			restoredAt: "2026-08-28T11:05:30.000Z",
+		});
+	} finally {
+		await context.cleanup();
 	}
 });
 

@@ -65,6 +65,22 @@ async function fixture() {
 		legacyEquivalence,
 		kernelBuildDigest: digest,
 		migrationImplementationDigest: `sha256:${"b".repeat(64)}`,
+		configurationPlan: {
+			path: ".codewiki/config.json",
+			sourceBlobOid: oid("7".repeat(40)),
+			sourceDigest: `sha256:${"7".repeat(64)}`,
+			targetBlobOid: oid("8".repeat(40)),
+			targetDigest: `sha256:${"8".repeat(64)}`,
+			targetProtocol: {id: "codewiki.project-config", version: "2.0.0"},
+		},
+		privateStatePlan: {
+			backupId: plan.source.privateBackupDigest,
+			sourceGeneration: 1,
+			sourceStateDigest: `sha256:${"6".repeat(64)}`,
+			sourceBackendBuildDigest: plan.source.sourceBuildDigest,
+			targetGeneration: 2,
+			targetBackendBuildDigest: `sha256:${"5".repeat(64)}`,
+		},
 		wikiItemsTreeOid: oid("c".repeat(40)),
 		itemBlobOids,
 		convertedTraceBlobOids: {

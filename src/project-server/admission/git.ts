@@ -16,10 +16,7 @@ import {
 import {createBacklogTriagePolicy} from "../../changes/triage/policy.ts";
 import {buildBacklogTriageProjection} from "../../changes/triage/projection.ts";
 import type {DecisionAttentionSelectionContext} from "../../changes/triage/selection.ts";
-import {
-	loadProtectedWikiConfigFile,
-	wikiConfigDigest,
-} from "../../project/config-file.ts";
+import {loadProtectedWikiConfigFileResult} from "../../project/config-file.ts";
 import type {Sha256Digest} from "../../utils/canonical-json.ts";
 import type {DecisionAttemptAppendInput} from "./start.ts";
 
@@ -89,12 +86,12 @@ export function createDecisionGitAdmission(
 		) {
 			return cached.context;
 		}
-		const protectedConfig = await loadProtectedWikiConfigFile({
+		const protectedConfig = await loadProtectedWikiConfigFileResult({
 			repoRoot: options.repoRoot,
 			protectedSourceHead: current.teamSnapshot.protectedSourceHead,
 			runner: options.runner,
 		});
-		const projectConfigDigest = wikiConfigDigest(protectedConfig);
+		const projectConfigDigest = protectedConfig.digest;
 		if (projectConfigDigest !== current.teamSnapshot.configDigest) {
 			throw new Error(
 				"Decision projection protected config does not match the current team snapshot.",
@@ -102,8 +99,8 @@ export function createDecisionGitAdmission(
 		}
 		const policy = createBacklogTriagePolicy({
 			projectConfigDigest,
-			userStandards: protectedConfig.userStandards,
-			bindings: protectedConfig.triagePreferences,
+			userStandards: protectedConfig.config.userStandards,
+			bindings: protectedConfig.config.triagePreferences,
 		});
 		const context = Object.freeze({
 			workState: current.workState,

@@ -10,8 +10,11 @@ import {
 	runWikiConfig,
 } from "../../src/project/config.ts";
 import {
+	assertSemanticKernelWikiConfig,
+	configFileToPartialWikiConfig,
 	loadWikiConfigFile,
 	migrateLegacyWikiConfigDomainSelection,
+	migrateWikiConfigToSemanticKernel,
 	resolveWikiConfigFile,
 	updateWikiConfigFile,
 } from "../../src/project/config-file.ts";
@@ -238,6 +241,37 @@ describe("wiki_config core facade", () => {
 			assert.equal(disk.runtime.automation, "assist");
 		} finally {
 			await rm(root, { recursive: true, force: true });
+		}
+	});
+
+	it("migrates Domain selection to canonical Semantic Kernel configuration", async () => {
+		const root = await mkdtemp(join(tmpdir(), "codewiki-config-sk2-"));
+		try {
+			await mkdir(join(root, ".codewiki"), {recursive: true});
+			const legacy = migrateLegacyWikiConfigDomainSelection({project: "semantic-demo"});
+			const target = migrateWikiConfigToSemanticKernel(legacy);
+			assert.doesNotThrow(() => assertSemanticKernelWikiConfig(target));
+			assert.equal(Object.hasOwn(target, "domain"), false);
+			assert.throws(
+				() => configFileToPartialWikiConfig(target),
+				/\.codewiki\/config\.json\.protocol.*unknown/i,
+			);
+			const configPath = join(root, ".codewiki", "config.json");
+			await writeFile(configPath, `${JSON.stringify(target)}\n`);
+			const loaded = await loadWikiConfigFile(root);
+			assert.equal(loaded.project, "semantic-demo");
+			await updateWikiConfigFile(root, {
+				patch: {retention: {hotTraceLimit: 11}},
+			});
+			const updated = JSON.parse(await readFile(configPath, "utf8"));
+			assert.deepEqual(updated.protocol, {
+				id: "codewiki.project-config",
+				version: "2.0.0",
+			});
+			assert.equal(Object.hasOwn(updated, "domain"), false);
+			assert.equal(updated.retention.hotTraceLimit, 11);
+		} finally {
+			await rm(root, {recursive: true, force: true});
 		}
 	});
 

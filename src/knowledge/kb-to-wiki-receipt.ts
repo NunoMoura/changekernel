@@ -36,7 +36,7 @@ import {
 } from "./kb-to-wiki-migration.ts";
 
 export const KB_TO_WIKI_MIGRATION_RECEIPT_PROTOCOL =
-	"codewiki.kb-to-wiki-migration-receipt@1.0.0" as const;
+	"codewiki.kb-to-wiki-migration-receipt@2.0.0" as const;
 
 export interface MigrationProposalOperationPlan {
 	readonly operationId: string;
@@ -65,12 +65,35 @@ export interface MigrationActiveChangePlan {
 	readonly commit: MigrationProposalCommitPlan;
 }
 
+interface MigrationConfigurationPlan {
+	readonly path: ".codewiki/config.json";
+	readonly sourceBlobOid: GitOid;
+	readonly sourceDigest: Sha256Digest;
+	readonly targetBlobOid: GitOid;
+	readonly targetDigest: Sha256Digest;
+	readonly targetProtocol: Readonly<{
+		readonly id: "codewiki.project-config";
+		readonly version: "2.0.0";
+	}>;
+}
+
+interface MigrationPrivateStatePlan {
+	readonly backupId: Sha256Digest;
+	readonly sourceGeneration: number;
+	readonly sourceStateDigest: Sha256Digest;
+	readonly sourceBackendBuildDigest: Sha256Digest;
+	readonly targetGeneration: number;
+	readonly targetBackendBuildDigest: Sha256Digest;
+}
+
 export interface KbToWikiMigrationReceipt {
 	readonly protocol: typeof KB_TO_WIKI_MIGRATION_RECEIPT_PROTOCOL;
 	readonly plan: KbToWikiMigrationPlan;
 	readonly legacyEquivalence: KbToWikiLegacyEquivalenceProof;
 	readonly kernelBuildDigest: Sha256Digest;
 	readonly migrationImplementationDigest: Sha256Digest;
+	readonly configurationPlan: MigrationConfigurationPlan;
+	readonly privateStatePlan: MigrationPrivateStatePlan;
 	readonly wikiItemsTreeOid: GitOid | null;
 	readonly itemBlobOids: Readonly<Record<string, GitOid>>;
 	readonly convertedTraceBlobOids: Readonly<Record<string, GitOid>>;
@@ -106,6 +129,7 @@ export function assertKbToWikiMigrationReceipt(
 	const receipt = record(value, "Migration Receipt");
 	assertExactKeys(receipt, [
 		"activeChangePlans",
+		"configurationPlan",
 		"convertedTraceBlobOids",
 		"itemBlobOids",
 		"kernelBuildDigest",
@@ -113,6 +137,7 @@ export function assertKbToWikiMigrationReceipt(
 		"migrationImplementationDigest",
 		"migrationTracePreOperationBlobOid",
 		"plan",
+		"privateStatePlan",
 		"protocol",
 		"receiptDigest",
 		"wikiItemsTreeOid",
@@ -131,6 +156,12 @@ export function assertKbToWikiMigrationReceipt(
 		receipt.migrationImplementationDigest,
 		"Migration Receipt migrationImplementationDigest",
 	);
+	// SAFETY: both validators below replay every required field before use.
+	assertConfigurationPlan(
+		receipt.configurationPlan as MigrationConfigurationPlan,
+		plan,
+	);
+	assertPrivateStatePlan(receipt.privateStatePlan as MigrationPrivateStatePlan, plan);
 	const wikiItemsTreeOid = receipt.wikiItemsTreeOid;
 	if (wikiItemsTreeOid === null) {
 		if (plan.items.length !== 0) {
@@ -212,6 +243,75 @@ export function createKbToWikiActiveProposalOperation(input: {
 		throw new Error("Active Change plan and converted Trace header disagree.");
 	}
 	return createKbToWikiActiveProposalOperationUnchecked(input);
+}
+
+function assertConfigurationPlan(
+	value: MigrationConfigurationPlan,
+	migrationPlan: KbToWikiMigrationPlan,
+): asserts value is MigrationConfigurationPlan {
+	const plan = record(value, "Migration configuration plan");
+	assertExactKeys(plan, [
+		"path",
+		"sourceBlobOid",
+		"sourceDigest",
+		"targetBlobOid",
+		"targetDigest",
+		"targetProtocol",
+	]);
+	if (plan.path !== ".codewiki/config.json") {
+		throw new Error("Migration configuration path is invalid.");
+	}
+	assertGitOid(
+		plan.sourceBlobOid,
+		"Migration source configuration blob",
+		migrationPlan.source.objectFormat,
+	);
+	assertGitOid(
+		plan.targetBlobOid,
+		"Migration target configuration blob",
+		migrationPlan.source.objectFormat,
+	);
+	if ((plan.sourceBlobOid as GitOid).hex === (plan.targetBlobOid as GitOid).hex) {
+		throw new Error("Migration configuration must remove legacy Domain selection.");
+	}
+	assertDigest(plan.sourceDigest, "Migration source configuration digest");
+	assertDigest(plan.targetDigest, "Migration target configuration digest");
+	const protocol = record(plan.targetProtocol, "Migration target configuration protocol");
+	assertExactKeys(protocol, ["id", "version"]);
+	if (protocol.id !== "codewiki.project-config" || protocol.version !== "2.0.0") {
+		throw new Error("Migration target configuration protocol is invalid.");
+	}
+}
+
+function assertPrivateStatePlan(
+	value: MigrationPrivateStatePlan,
+	migrationPlan: KbToWikiMigrationPlan,
+): asserts value is MigrationPrivateStatePlan {
+	const plan = record(value, "Migration private state plan");
+	assertExactKeys(plan, [
+		"backupId",
+		"sourceBackendBuildDigest",
+		"sourceGeneration",
+		"sourceStateDigest",
+		"targetBackendBuildDigest",
+		"targetGeneration",
+	]);
+	assertDigest(plan.backupId, "Migration private state backupId");
+	if (plan.backupId !== migrationPlan.source.privateBackupDigest) {
+		throw new Error("Migration private state backup does not match migration source.");
+	}
+	assertDigest(plan.sourceStateDigest, "Migration private source state digest");
+	assertDigest(plan.sourceBackendBuildDigest, "Migration private source Backend Build digest");
+	if (plan.sourceBackendBuildDigest !== migrationPlan.source.sourceBuildDigest) {
+		throw new Error("Migration private source Backend Build does not match migration source.");
+	}
+	assertDigest(plan.targetBackendBuildDigest, "Migration private target Backend Build digest");
+	if (!Number.isSafeInteger(plan.sourceGeneration) || (plan.sourceGeneration as number) < 1) {
+		throw new Error("Migration private source generation is invalid.");
+	}
+	if (plan.targetGeneration !== (plan.sourceGeneration as number) + 1) {
+		throw new Error("Migration private target generation must advance exactly once.");
+	}
 }
 
 function assertActiveChangePlan(

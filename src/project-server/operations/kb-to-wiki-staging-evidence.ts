@@ -1,3 +1,13 @@
+export {
+	KB_TO_WIKI_TARGET_CONFIG_PATH,
+	KB_TO_WIKI_TARGET_CONFIG_PROTOCOL,
+	assertKbToWikiTargetBuild,
+	stageKbToWikiConfiguration,
+	type KbToWikiConfigurationMigration,
+	type KbToWikiStagedFile,
+	type KbToWikiTargetBackendBuild,
+} from "./kb-to-wiki-target.ts";
+
 import {changeContentDigest} from "../../changes/digest.ts";
 import {assertStableId} from "../../project/git-store-profile.ts";
 import {

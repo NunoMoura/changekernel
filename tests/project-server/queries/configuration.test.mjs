@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 
 import { loadProjectServerConfigurationState } from "../../../src/project-server/queries/configuration.ts";
-import { writeWikiConfigFile } from "../../../src/project/config-file.ts";
+import {
+	migrateWikiConfigToSemanticKernel,
+	wikiConfigDigest,
+	writeWikiConfigFile,
+} from "../../../src/project/config-file.ts";
 import { resolveWikiConfig } from "../../../src/project/config.ts";
 
 describe("Project Server configuration query", () => {
@@ -54,6 +58,26 @@ describe("Project Server configuration query", () => {
 			assert.equal(serialized.includes("apiKey"), false);
 		} finally {
 			await rm(root, { recursive: true, force: true });
+		}
+	});
+
+	it("omits legacy Domain identity from Semantic Kernel effective configuration", async () => {
+		const root = await mkdtemp(join(tmpdir(), "codewiki-dashboard-sk2-config-"));
+		try {
+			const config = resolveWikiConfig({project: "semantic-target"});
+			await writeWikiConfigFile(root, config);
+			const target = migrateWikiConfigToSemanticKernel(config);
+			await writeFile(
+				join(root, ".codewiki", "config.json"),
+				`${JSON.stringify(target)}\n`,
+			);
+			const state = await loadProjectServerConfigurationState(root, config);
+			assert.equal(Object.hasOwn(state.effective, "domain"), false);
+			assert.notEqual(state.configDigest, wikiConfigDigest(config));
+			assert.equal(state.configDigest, state.activeConfigDigest);
+			assert.equal(state.restartRequired, false);
+		} finally {
+			await rm(root, {recursive: true, force: true});
 		}
 	});
 });

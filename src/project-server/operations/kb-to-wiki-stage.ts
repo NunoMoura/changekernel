@@ -27,6 +27,7 @@ import {
 	type RetentionStubHydration,
 } from "../../knowledge/kb-to-wiki-migration.ts";
 import {
+	assertKbToWikiMigrationReceipt,
 	createKbToWikiActiveProposalOperation,
 	createKbToWikiMigrationReceipt,
 	type KbToWikiMigrationReceipt,
@@ -64,18 +65,25 @@ import {
 	semanticDigest,
 } from "../../utils/semantic-digest.ts";
 import {
+	KB_TO_WIKI_TARGET_CONFIG_PATH as WIKI_CONFIG_PATH,
+	KB_TO_WIKI_TARGET_CONFIG_PROTOCOL as SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL,
+	assertKbToWikiTargetBuild,
 	bindKbToWikiMigrationStagingEvidence,
+	stageKbToWikiConfiguration,
 	type BindKbToWikiMigrationStagingEvidenceInput,
+	type KbToWikiConfigurationMigration as ConfigurationMigration,
 	type KbToWikiMigrationStagingEvidence,
+	type KbToWikiStagedFile as StagedFile,
+	type KbToWikiTargetBackendBuild as SemanticKernelBackendBuildBinding,
 } from "./kb-to-wiki-staging-evidence.ts";
 
 export const KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL = Object.freeze({
 	id: "codewiki.kb-to-wiki-migration-stage",
-	version: "1.0.0",
+	version: "2.0.0",
 } as const);
 
 export const KB_TO_WIKI_MIGRATION_STAGE_IMPLEMENTATION_DIGEST = semanticDigest(
-	"codewiki.kb-to-wiki-migration-stage-implementation@1.0.0",
+	"codewiki.kb-to-wiki-migration-stage-implementation@2.0.0",
 	{operation: "stage-kb-to-wiki-migration"},
 );
 
@@ -91,6 +99,7 @@ export interface StageKbToWikiMigrationInput
 	readonly convertedTraces: readonly KbToWikiConvertedTraceInput[];
 	readonly activeChangePlans: readonly MigrationActiveChangePlan[];
 	readonly migrationCommit: MigrationProposalCommitPlan;
+	readonly targetBackendBuild: SemanticKernelBackendBuildBinding;
 }
 
 export interface StagedKbToWikiMigration {
@@ -99,6 +108,7 @@ export interface StagedKbToWikiMigration {
 	readonly legacySource: CreateKbToWikiMigrationPlanInput;
 	readonly plan: KbToWikiMigrationPlan;
 	readonly receipt: KbToWikiMigrationReceipt;
+	readonly targetBackendBuild: SemanticKernelBackendBuildBinding;
 	readonly backupRef: string;
 	readonly migrationCommit: GitOid;
 	readonly activeManagedRefs: readonly MigrationManagedRefTarget[];
@@ -113,12 +123,6 @@ interface ConvertedTrace {
 	readonly header: ChangeTraceHeader;
 }
 
-interface StagedFile {
-	readonly path: string;
-	readonly bytes: string;
-	readonly oid: GitOid;
-}
-
 type CanonicalJsonRecord = {readonly [key: string]: CanonicalJsonValue};
 
 interface PreparedMigration {
@@ -130,6 +134,7 @@ interface PreparedMigration {
 interface ReceiptClosure {
 	readonly itemFiles: readonly StagedFile[];
 	readonly convertedFiles: readonly StagedFile[];
+	readonly configuration: ConfigurationMigration;
 	readonly migrationPath: string;
 	readonly migrationPredecessor: StagedFile;
 	readonly receipt: KbToWikiMigrationReceipt;
@@ -145,8 +150,15 @@ export async function stageKbToWikiMigration(
 	assertStableId(input.migrationId, "migrationId");
 	assertStableId(input.projectId, "projectId");
 	assertCommitPlan(input.migrationCommit, "Migration commit");
+	assertKbToWikiTargetBuild(input.targetBackendBuild);
 	const runner = input.runner ?? createGitCommandRunner();
 	const evidenceBefore = await bindKbToWikiMigrationStagingEvidence({...input, runner});
+	if (
+		input.targetBackendBuild.backendBuildDigest ===
+		evidenceBefore.sourceSnapshot.readiness.backendBuildDigest
+	) {
+		throw new Error("Migration target Backend Build did not change.");
+	}
 	const prepared = prepareMigration(input, evidenceBefore);
 	const receiptClosure = await stageReceiptClosure(input, runner, evidenceBefore, prepared);
 	const candidateCommit = await stageMigrationCandidate({
@@ -189,10 +201,47 @@ export async function stageKbToWikiMigration(
 		evidence: evidenceAfter,
 		prepared,
 		receipt: receiptClosure.receipt,
+		targetBackendBuild: input.targetBackendBuild,
 		candidateCommit,
 		activeManagedRefs,
 		validation,
 	});
+}
+
+export function assertStagedKbToWikiMigration(
+	value: StagedKbToWikiMigration,
+): void {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("Staged KB-to-Wiki migration is invalid.");
+	}
+	const staged = value as StagedKbToWikiMigration;
+	if (canonicalJson(staged.protocol) !== canonicalJson(KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL)) {
+		throw new Error("Staged KB-to-Wiki migration protocol is invalid.");
+	}
+	assertKbToWikiMigrationReceipt(staged.receipt);
+	assertKbToWikiTargetBuild(staged.targetBackendBuild);
+	if (
+		staged.targetBackendBuild.backendBuildDigest !==
+			staged.receipt.privateStatePlan.targetBackendBuildDigest
+	) {
+		throw new Error("Staged KB-to-Wiki target Backend Build binding is invalid.");
+	}
+	assertGitOid(
+		staged.migrationCommit,
+		"Staged migration commit",
+		staged.plan.source.objectFormat,
+	);
+	const expectedDigest = migrationStageDigest({
+		evidence: staged.evidence,
+		plan: staged.plan,
+		receipt: staged.receipt,
+		candidateCommit: staged.migrationCommit,
+		activeManagedRefs: staged.activeManagedRefs,
+		validation: staged.validation,
+	});
+	if (staged.stageDigest !== expectedDigest) {
+		throw new Error("Staged KB-to-Wiki migration digest does not replay.");
+	}
 }
 
 function prepareMigration(
@@ -213,6 +262,11 @@ async function stageReceiptClosure(
 	prepared: PreparedMigration,
 ): Promise<ReceiptClosure> {
 	const {plan, converted, legacySource} = prepared;
+	const configuration = await stageKbToWikiConfiguration({
+		repoRoot: input.repoRoot,
+		runner,
+		readiness: evidence.sourceSnapshot.readiness,
+	});
 	const itemFiles = await hashFiles(
 		input.repoRoot,
 		runner,
@@ -232,7 +286,7 @@ async function stageReceiptClosure(
 		runner,
 		base: plan.source.sourceCommit.hex,
 		removePaths: legacyPaths(evidence),
-		files: [...itemFiles, ...convertedFiles],
+		files: [...itemFiles, ...convertedFiles, configuration.target],
 	});
 	const wikiItemsTreeOid = plan.items.length === 0
 		? null
@@ -250,13 +304,36 @@ async function stageReceiptClosure(
 		legacyEquivalence: createKbToWikiLegacyEquivalenceProof({plan, source: legacySource}),
 		kernelBuildDigest: plan.source.sourceBuildDigest,
 		migrationImplementationDigest: plan.source.implementationDigest,
+		configurationPlan: {
+			path: WIKI_CONFIG_PATH,
+			sourceBlobOid: configuration.source.oid,
+			sourceDigest: configuration.sourceDigest,
+			targetBlobOid: configuration.target.oid,
+			targetDigest: configuration.targetDigest,
+			targetProtocol: SEMANTIC_KERNEL_WIKI_CONFIG_PROTOCOL,
+		},
+		privateStatePlan: {
+			backupId: evidence.privateBackup.backupId,
+			sourceGeneration: evidence.privateBackup.sourceStateGeneration,
+			sourceStateDigest: evidence.privateBackup.sourceStateDigest,
+			sourceBackendBuildDigest: evidence.privateBackup.sourceBackendBuildDigest,
+			targetGeneration: evidence.privateBackup.sourceStateGeneration + 1,
+			targetBackendBuildDigest: input.targetBackendBuild.backendBuildDigest,
+		},
 		wikiItemsTreeOid,
 		itemBlobOids: oidMap(itemFiles),
 		convertedTraceBlobOids,
 		migrationTracePreOperationBlobOid: migrationPredecessor.oid,
 		activeChangePlans: input.activeChangePlans,
 	});
-	return {itemFiles, convertedFiles, migrationPath, migrationPredecessor, receipt};
+	return {
+		itemFiles,
+		convertedFiles,
+		configuration,
+		migrationPath,
+		migrationPredecessor,
+		receipt,
+	};
 }
 
 async function stageMigrationCandidate(stage: {
@@ -297,7 +374,7 @@ async function stageMigrationCandidate(stage: {
 		runner,
 		base: plan.source.sourceCommit.hex,
 		removePaths: legacyPaths(evidence),
-		files: [...traceFiles, ...closure.itemFiles],
+		files: [...traceFiles, ...closure.itemFiles, closure.configuration.target],
 	});
 	return writeCommit({
 		repoRoot: input.repoRoot,
@@ -351,17 +428,49 @@ function stagedResult(input: {
 	readonly evidence: KbToWikiMigrationStagingEvidence;
 	readonly prepared: PreparedMigration;
 	readonly receipt: KbToWikiMigrationReceipt;
+	readonly targetBackendBuild: SemanticKernelBackendBuildBinding;
 	readonly candidateCommit: GitOid;
 	readonly activeManagedRefs: readonly MigrationManagedRefTarget[];
 	readonly validation: KbToWikiMigrationCommitValidation;
 }): StagedKbToWikiMigration {
 	const {plan, legacySource} = input.prepared;
-	const stageDigest = canonicalJsonDigest({
+	const stageDigest = migrationStageDigest({
+		evidence: input.evidence,
+		plan,
+		receipt: input.receipt,
+		candidateCommit: input.candidateCommit,
+		activeManagedRefs: input.activeManagedRefs,
+		validation: input.validation,
+	});
+	return Object.freeze({
+		protocol: KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL,
+		evidence: input.evidence,
+		legacySource,
+		plan,
+		receipt: input.receipt,
+		targetBackendBuild: input.targetBackendBuild,
+		backupRef: plan.source.backupRef,
+		migrationCommit: input.candidateCommit,
+		activeManagedRefs: input.activeManagedRefs,
+		validation: input.validation,
+		stageDigest,
+	});
+}
+
+function migrationStageDigest(input: {
+	readonly evidence: KbToWikiMigrationStagingEvidence;
+	readonly plan: KbToWikiMigrationPlan;
+	readonly receipt: KbToWikiMigrationReceipt;
+	readonly candidateCommit: GitOid;
+	readonly activeManagedRefs: readonly MigrationManagedRefTarget[];
+	readonly validation: KbToWikiMigrationCommitValidation;
+}): Sha256Digest {
+	return canonicalJsonDigest({
 		protocol: KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL,
 		evidenceDigest: input.evidence.evidenceDigest,
-		migrationIntentDigest: plan.migrationIntentDigest,
+		migrationIntentDigest: input.plan.migrationIntentDigest,
 		receiptDigest: input.receipt.receiptDigest,
-		backupRef: plan.source.backupRef,
+		backupRef: input.plan.source.backupRef,
 		migrationCommit: input.candidateCommit,
 		activeManagedRefs: input.activeManagedRefs,
 		validation: {
@@ -370,20 +479,11 @@ function stagedResult(input: {
 			wikiItemsTreeOid: input.validation.wikiItemsTreeOid,
 			itemBlobOids: input.validation.itemBlobOids,
 			changeTraceBlobOids: input.validation.changeTraceBlobOids,
-			migrationTracePreOperationBlobOid: input.validation.migrationTracePreOperationBlobOid,
+			migrationTracePreOperationBlobOid:
+				input.validation.migrationTracePreOperationBlobOid,
+			configurationBlobOid: input.validation.configurationBlobOid,
 		},
-	});
-	return Object.freeze({
-		protocol: KB_TO_WIKI_MIGRATION_STAGE_PROTOCOL,
-		evidence: input.evidence,
-		legacySource,
-		plan,
-		receipt: input.receipt,
-		backupRef: plan.source.backupRef,
-		migrationCommit: input.candidateCommit,
-		activeManagedRefs: input.activeManagedRefs,
-		validation: input.validation,
-		stageDigest,
+		targetBackendBuildDigest: input.receipt.privateStatePlan.targetBackendBuildDigest,
 	});
 }
 

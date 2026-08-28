@@ -164,6 +164,7 @@ async function assertBackendStateBinding(
 		throw new Error("Backend state changed after KB-to-Wiki migration readiness.");
 	}
 	if (
+		!("domainPlugins" in state.activeBuild) ||
 		!state.activeBuild.domainPlugins.some(
 			(plugin) => plugin.identityDigest === DEFAULT_KNOWLEDGE_COMPILER.domainPlugin.identityDigest,
 		)

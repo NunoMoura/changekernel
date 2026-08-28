@@ -1,5 +1,6 @@
 import {Buffer} from "node:buffer";
 import {canonicalSemanticJson} from "../utils/semantic-digest.ts";
+import {canonicalJson, canonicalJsonDigest} from "../utils/canonical-json.ts";
 import {
 	createGitCommandRunner,
 	type GitCommandResult,
@@ -56,6 +57,7 @@ export interface KbToWikiMigrationCommitValidation {
 	readonly changeTraceBlobOids: Readonly<Record<string, GitOid>>;
 	readonly convertedTraceBlobOids: Readonly<Record<string, GitOid>>;
 	readonly migrationTracePreOperationBlobOid: GitOid;
+	readonly configurationBlobOid: GitOid;
 }
 
 export type KbToWikiMigrationActivationState = "not_activated" | "activated";
@@ -73,108 +75,27 @@ export async function validateKbToWikiMigrationCommit(
 	assertCommitInput(input);
 	verifyKbToWikiMigrationPlan(input.plan);
 	const runner = input.runner ?? createGitCommandRunner();
-	await assertRepositoryFormat(input.repoRoot, input.profile, runner);
-	await assertObjectType(input.repoRoot, runner, input.plan.source.sourceCommit.hex, "commit");
-	await assertObjectType(input.repoRoot, runner, input.candidateCommit.hex, "commit");
-	await assertRefEquals(
-		input.repoRoot,
-		runner,
-		input.plan.source.backupRef,
-		input.plan.source.sourceCommit.hex,
-		"migration backup ref",
-	);
-	const parents = await commitParents(input.repoRoot, runner, input.candidateCommit.hex);
-	if (parents.length !== 1 || parents[0] !== input.plan.source.sourceCommit.hex) {
-		throw new Error("Migration candidate must have exactly the source commit as parent.");
-	}
-	const changedPaths = await listChangedPaths(
-		input.repoRoot,
-		runner,
-		input.plan.source.sourceCommit.hex,
-		input.candidateCommit.hex,
-	);
-	for (const path of changedPaths) {
-		if (!isMigrationPath(path)) {
-			throw new Error(`Migration candidate changed out-of-scope path ${path}.`);
-		}
-	}
-	const sourceEntries = await listTree(input.repoRoot, runner, input.plan.source.sourceCommit.hex);
-	const targetEntries = await listTree(input.repoRoot, runner, input.candidateCommit.hex);
-	assertRootState(sourceEntries, targetEntries);
-	const targetWikiEntries = targetEntries.filter(({path}) => isWikiItemPath(path));
-	const wikiFiles = await Promise.all(targetWikiEntries.map(async ({path}) => ({
-		path,
-		bytes: await readPath(input.repoRoot, runner, input.candidateCommit.hex, path),
-	})));
-	const wiki = validateWikiTree(wikiFiles);
-	assertPlannedWiki(input.plan, wikiFiles);
-	const itemBlobOids = objectOidMap(targetWikiEntries, input.profile);
-	const wikiItemsTreeOid = await pathOidOrNull(
-		input.repoRoot,
-		runner,
-		input.candidateCommit.hex,
-		".codewiki/wiki/items",
-		input.profile,
-		"tree",
-	);
-	const changeEntries = targetEntries.filter(({path}) => isChangeTracePath(path));
-	if (changeEntries.length === 0) {
-		throw new Error("Migration candidate must contain target Change traces.");
-	}
-	const changeTraceBlobOids = objectOidMap(changeEntries, input.profile);
-	const migrationPath = changeTracePath(input.plan.migrationChangeId);
-	const migrationEntry = changeEntries.find(({path}) => path === migrationPath);
-	if (migrationEntry === undefined) {
-		throw new Error("Migration candidate is missing dedicated migration Change trace.");
-	}
-	let migrationTracePreOperationBlobOid: GitOid | null = null;
-	const retiredItemsByChange = new Map<string, Set<string>>();
-	for (const entry of changeEntries) {
-		const bytes = await readPath(input.repoRoot, runner, input.candidateCommit.hex, entry.path);
-		const parsed = parseChangeTrace(bytes);
-		assertConvertedTraceHeader(entry.path, parsed.header, input.plan);
-		reduceChangeTrace(parsed);
-		recordTraceRetirements(parsed, retiredItemsByChange);
-		if (entry.path === migrationPath) {
-			assertMigrationApplied(input, parsed.operations.at(-1));
-			const preOperationBytes = serializeChangeTrace(
-				parsed.header,
-				parsed.operations.slice(0, -1),
-			);
-			if (!bytes.startsWith(preOperationBytes)) {
-				throw new Error("Migration Trace final operation does not preserve exact predecessor bytes.");
-			}
-			migrationTracePreOperationBlobOid = await existingBlobOid(
-				input.repoRoot,
-				runner,
-				preOperationBytes,
-				input.profile,
-			);
-		}
-	}
-	if (migrationTracePreOperationBlobOid === null) {
-		throw new Error("Migration Trace predecessor blob is missing.");
-	}
-	const convertedTraceBlobOids = Object.fromEntries(
-		Object.entries(changeTraceBlobOids).filter(([path]) => path !== migrationPath),
-	);
-	assertRetirementTraceBindings(input.plan, retiredItemsByChange);
+	const {targetEntries, configurationBlobOid} =
+		await validateMigrationCommitEnvelope(input, runner);
+	const wikiClosure = await validateMigrationWikiClosure(input, runner, targetEntries);
+	const traceClosure = await validateMigrationTraceClosure(input, runner, targetEntries);
 	assertReceiptCandidateBindings(input.receipt, {
-		wikiItemsTreeOid,
-		itemBlobOids,
-		convertedTraceBlobOids,
-		migrationTracePreOperationBlobOid,
+		wikiItemsTreeOid: wikiClosure.wikiItemsTreeOid,
+		itemBlobOids: wikiClosure.itemBlobOids,
+		convertedTraceBlobOids: traceClosure.convertedTraceBlobOids,
+		migrationTracePreOperationBlobOid: traceClosure.migrationTracePreOperationBlobOid,
 	});
 	await validateManagedTargets(input, runner);
 	return Object.freeze({
 		sourceCommit: input.plan.source.sourceCommit,
 		candidateCommit: input.candidateCommit,
-		wiki,
-		wikiItemsTreeOid,
-		itemBlobOids: Object.freeze(itemBlobOids),
-		changeTraceBlobOids: Object.freeze(changeTraceBlobOids),
-		convertedTraceBlobOids: Object.freeze(convertedTraceBlobOids),
-		migrationTracePreOperationBlobOid,
+		wiki: wikiClosure.wiki,
+		wikiItemsTreeOid: wikiClosure.wikiItemsTreeOid,
+		itemBlobOids: Object.freeze(wikiClosure.itemBlobOids),
+		changeTraceBlobOids: Object.freeze(traceClosure.changeTraceBlobOids),
+		convertedTraceBlobOids: Object.freeze(traceClosure.convertedTraceBlobOids),
+		migrationTracePreOperationBlobOid: traceClosure.migrationTracePreOperationBlobOid,
+		configurationBlobOid,
 	});
 }
 
@@ -267,6 +188,91 @@ export async function restoreKbToWikiMigrationSourceCas(
 	if (result.exitCode !== 0) {
 		throw new Error(`Migration source-restore CAS failed: ${result.stderr.trim()}`);
 	}
+}
+
+async function validateMigrationWikiClosure(
+	input: KbToWikiMigrationCommitInput,
+	runner: GitCommandRunner,
+	targetEntries: readonly TreeEntry[],
+): Promise<{
+	readonly wiki: ReturnType<typeof validateWikiTree>;
+	readonly wikiItemsTreeOid: GitOid | null;
+	readonly itemBlobOids: Readonly<Record<string, GitOid>>;
+}> {
+	const targetWikiEntries = targetEntries.filter(({path}) => isWikiItemPath(path));
+	const wikiFiles = await Promise.all(targetWikiEntries.map(async ({path}) => ({
+		path,
+		bytes: await readPath(input.repoRoot, runner, input.candidateCommit.hex, path),
+	})));
+	const wiki = validateWikiTree(wikiFiles);
+	assertPlannedWiki(input.plan, wikiFiles);
+	return {
+		wiki,
+		wikiItemsTreeOid: await pathOidOrNull(
+			input.repoRoot,
+			runner,
+			input.candidateCommit.hex,
+			".codewiki/wiki/items",
+			input.profile,
+			"tree",
+		),
+		itemBlobOids: objectOidMap(targetWikiEntries, input.profile),
+	};
+}
+
+async function validateMigrationTraceClosure(
+	input: KbToWikiMigrationCommitInput,
+	runner: GitCommandRunner,
+	targetEntries: readonly TreeEntry[],
+): Promise<{
+	readonly changeTraceBlobOids: Readonly<Record<string, GitOid>>;
+	readonly convertedTraceBlobOids: Readonly<Record<string, GitOid>>;
+	readonly migrationTracePreOperationBlobOid: GitOid;
+}> {
+	const changeEntries = targetEntries.filter(({path}) => isChangeTracePath(path));
+	if (changeEntries.length === 0) {
+		throw new Error("Migration candidate must contain target Change traces.");
+	}
+	const changeTraceBlobOids = objectOidMap(changeEntries, input.profile);
+	const migrationPath = changeTracePath(input.plan.migrationChangeId);
+	if (!changeEntries.some(({path}) => path === migrationPath)) {
+		throw new Error("Migration candidate is missing dedicated migration Change trace.");
+	}
+	let predecessor: GitOid | null = null;
+	const retiredItemsByChange = new Map<string, Set<string>>();
+	for (const entry of changeEntries) {
+		const bytes = await readPath(input.repoRoot, runner, input.candidateCommit.hex, entry.path);
+		const parsed = parseChangeTrace(bytes);
+		assertConvertedTraceHeader(entry.path, parsed.header, input.plan);
+		reduceChangeTrace(parsed);
+		recordTraceRetirements(parsed, retiredItemsByChange);
+		if (entry.path === migrationPath) {
+			assertMigrationApplied(input, parsed.operations.at(-1));
+			const preOperationBytes = serializeChangeTrace(
+				parsed.header,
+				parsed.operations.slice(0, -1),
+			);
+			if (!bytes.startsWith(preOperationBytes)) {
+				throw new Error("Migration Trace final operation does not preserve exact predecessor bytes.");
+			}
+			predecessor = await existingBlobOid(
+				input.repoRoot,
+				runner,
+				preOperationBytes,
+				input.profile,
+			);
+		}
+	}
+	if (predecessor === null) throw new Error("Migration Trace predecessor blob is missing.");
+	const convertedTraceBlobOids = Object.fromEntries(
+		Object.entries(changeTraceBlobOids).filter(([path]) => path !== migrationPath),
+	);
+	assertRetirementTraceBindings(input.plan, retiredItemsByChange);
+	return {
+		changeTraceBlobOids,
+		convertedTraceBlobOids,
+		migrationTracePreOperationBlobOid: predecessor,
+	};
 }
 
 function assertCommitInput(input: KbToWikiMigrationCommitInput): void {
@@ -363,6 +369,192 @@ function assertRetirementTraceBindings(
 	if (canonicalSemanticJson(normalized(actual)) !== canonicalSemanticJson(normalized(expected))) {
 		throw new Error("Migration retirement map does not match converted terminal Trace evidence.");
 	}
+}
+
+async function validateMigrationCommitEnvelope(
+	input: KbToWikiMigrationCommitInput,
+	runner: GitCommandRunner,
+): Promise<{
+	readonly targetEntries: readonly TreeEntry[];
+	readonly configurationBlobOid: GitOid;
+}> {
+	await assertMigrationCandidateIdentity(input, runner);
+	return validateMigrationTreeClosure(input, runner);
+}
+
+async function assertMigrationCandidateIdentity(
+	input: KbToWikiMigrationCommitInput,
+	runner: GitCommandRunner,
+): Promise<void> {
+	await assertRepositoryFormat(input.repoRoot, input.profile, runner);
+	await assertObjectType(
+		input.repoRoot,
+		runner,
+		input.plan.source.sourceCommit.hex,
+		"commit",
+	);
+	await assertObjectType(input.repoRoot, runner, input.candidateCommit.hex, "commit");
+	await assertRefEquals(
+		input.repoRoot,
+		runner,
+		input.plan.source.backupRef,
+		input.plan.source.sourceCommit.hex,
+		"migration backup ref",
+	);
+	const parents = await commitParents(input.repoRoot, runner, input.candidateCommit.hex);
+	if (parents.length !== 1 || parents[0] !== input.plan.source.sourceCommit.hex) {
+		throw new Error("Migration candidate must have exactly the source commit as parent.");
+	}
+}
+
+async function validateMigrationTreeClosure(
+	input: KbToWikiMigrationCommitInput,
+	runner: GitCommandRunner,
+): Promise<{
+	readonly targetEntries: readonly TreeEntry[];
+	readonly configurationBlobOid: GitOid;
+}> {
+	const changedPaths = await listChangedPaths(
+		input.repoRoot,
+		runner,
+		input.plan.source.sourceCommit.hex,
+		input.candidateCommit.hex,
+	);
+	for (const path of changedPaths) {
+		if (!isMigrationPath(path)) {
+			throw new Error(`Migration candidate changed out-of-scope path ${path}.`);
+		}
+	}
+	const sourceEntries = await listTree(
+		input.repoRoot,
+		runner,
+		input.plan.source.sourceCommit.hex,
+	);
+	const targetEntries = await listTree(
+		input.repoRoot,
+		runner,
+		input.candidateCommit.hex,
+	);
+	assertRootState(sourceEntries, targetEntries);
+	const configurationBlobOid = await validateConfigurationClosure({
+		input,
+		runner,
+		sourceEntries,
+		targetEntries,
+	});
+	return {targetEntries, configurationBlobOid};
+}
+
+async function validateConfigurationClosure(input: {
+	readonly input: KbToWikiMigrationCommitInput;
+	readonly runner: GitCommandRunner;
+	readonly sourceEntries: readonly TreeEntry[];
+	readonly targetEntries: readonly TreeEntry[];
+}): Promise<GitOid> {
+	const path = input.input.receipt.configurationPlan.path;
+	const sourceEntry = requiredTreeEntry(
+		input.sourceEntries,
+		path,
+		"source configuration",
+	);
+	const targetEntry = requiredTreeEntry(
+		input.targetEntries,
+		path,
+		"target configuration",
+	);
+	const [sourceBytes, targetBytes] = await Promise.all([
+		readPath(
+			input.input.repoRoot,
+			input.runner,
+			input.input.plan.source.sourceCommit.hex,
+			path,
+		),
+		readPath(
+			input.input.repoRoot,
+			input.runner,
+			input.input.candidateCommit.hex,
+			path,
+		),
+	]);
+	assertConfigurationMigration(input.input, {
+		sourceEntry,
+		sourceBytes,
+		targetEntry,
+		targetBytes,
+	});
+	return Object.freeze({
+		algorithm: input.input.profile.objectFormat,
+		hex: targetEntry.oid,
+	});
+}
+
+function assertConfigurationMigration(
+	input: KbToWikiMigrationCommitInput,
+	actual: {
+		readonly sourceEntry: TreeEntry;
+		readonly sourceBytes: string;
+		readonly targetEntry: TreeEntry;
+		readonly targetBytes: string;
+	},
+): void {
+	const plan = input.receipt.configurationPlan;
+	assertConfigurationBlobIdentity(plan, actual);
+	const source = parseConfiguration(actual.sourceBytes, "source");
+	const target = parseConfiguration(actual.targetBytes, "target");
+	if (
+		canonicalJsonDigest(source) !== plan.sourceDigest ||
+		canonicalJsonDigest(target) !== plan.targetDigest
+	) {
+		throw new Error("Migration configuration semantic digest does not match Receipt.");
+	}
+	if (canonicalJson(target.protocol) !== canonicalJson(plan.targetProtocol)) {
+		throw new Error("Migration target configuration protocol does not match Receipt.");
+	}
+	if (Object.hasOwn(target, "domain")) {
+		throw new Error("Migration target configuration retains legacy Domain selection.");
+	}
+}
+
+function assertConfigurationBlobIdentity(
+	plan: KbToWikiMigrationReceipt["configurationPlan"],
+	actual: {
+		readonly sourceEntry: TreeEntry;
+		readonly targetEntry: TreeEntry;
+	},
+): void {
+	if (
+		actual.sourceEntry.type !== "blob" ||
+		actual.targetEntry.type !== "blob" ||
+		actual.sourceEntry.oid !== plan.sourceBlobOid.hex ||
+		actual.targetEntry.oid !== plan.targetBlobOid.hex
+	) {
+		throw new Error("Migration configuration blob identity does not match Receipt.");
+	}
+}
+
+interface MigrationConfigurationJson {
+	readonly protocol?: Readonly<{readonly id: string; readonly version: string}>;
+}
+
+function parseConfiguration(
+	bytes: string,
+	label: string,
+): MigrationConfigurationJson {
+	try {
+		return JSON.parse(bytes) as MigrationConfigurationJson;
+	} catch {
+		throw new Error(`Migration ${label} configuration must contain valid JSON.`);
+	}
+}
+
+function requiredTreeEntry(
+	entries: readonly TreeEntry[],
+	path: string,
+	label: string,
+): TreeEntry {
+	const entry = entries.find((candidate) => candidate.path === path);
+	if (!entry) throw new Error(`Migration candidate is missing ${label}.`);
+	return entry;
 }
 
 function assertReceiptCandidateBindings(
@@ -736,7 +928,10 @@ function managedRef(changeId: string): string {
 }
 
 function isMigrationPath(path: string): boolean {
-	return isLegacyRootPath(path) || isWikiItemPath(path) || isChangeTracePath(path);
+	return path === ".codewiki/config.json" ||
+		isLegacyRootPath(path) ||
+		isWikiItemPath(path) ||
+		isChangeTracePath(path);
 }
 
 function isLegacyRootPath(path: string): boolean {
