@@ -18,22 +18,20 @@ CodeWiki does not guarantee unknowable semantic perfection. It provides bounded 
 
 ## Current posture
 
-CodeWiki is private pre-production software after Backend v1 qualification and under active Semantic Kernel architecture consolidation.
+CodeWiki is private pre-production software. Backend v1, Semantic Kernel SK0, and the SK1 contract laboratory are externally qualified; SK2 is next.
 
-- `.codewiki/kb/**` is intended Product/System/Design truth.
+- `.codewiki/kb/**` is intended Product/System/Design truth until governed SK2 migration.
 - `src/**` and `tests/**` are executable truth.
 - Git is history and checkpoint evidence.
-- `REFACTORING_PLAN.md` records completed Slices 1–17; `BACKEND_V1_PLAN.md` records completed B0–B11; `SEMANTIC_KERNEL_PLAN.md` is the active non-authoritative architecture and delivery roadmap.
-- This source checkout is developed with Pi native coding tools, Pi-Lens, normal file edits, tests, and Git.
-- It does **not** install, load, or dogfood its own CodeWiki extension during stabilization.
-- Repo-local Pi loads Pi-Lens only. No CodeWiki Backend pin, local CodeWiki Skills, commands, tools, prompt injection, or active Change Traces belong here.
+- `REFACTORING_PLAN.md` and `BACKEND_V1_PLAN.md` are completed historical evidence; `SEMANTIC_KERNEL_PLAN.md` is the active roadmap.
+- An activated immutable CodeWiki release may dogfood this checkout while Pi-native tools remain the independent fallback.
+- Released controller N governs candidate N+1; mutable candidate code never governs or qualifies itself.
+- Never load CodeWiki from this working tree or this repository's `.pi/` directory.
 - Packed candidates are tested only in disposable external projects with isolated Pi settings.
-- `.codewiki/**` contains governed declarations and canonical project meaning only. Physical `.codewiki/runtime/**` and `.codewiki/views/**` roots are prohibited; private state lives under an external repository-identity-bound CodeWiki State Root and Views remain logical deterministic projections.
-- Pi native compaction remains the active conversation-compaction mechanism.
+- `.codewiki/runtime/**` and `.codewiki/views/**` are prohibited; private state stays under an external repository-identity-bound CodeWiki State Root.
+- Pi-native compaction remains active.
 
-The package is currently `@nunomoura/codewiki@0.3.0` with `"private": true` and is not published to the npm registry yet. Avoid global/user installs for normal mutation workflows. The deletion-first architecture through Slice 17 and Backend v1 B0–B11 are implemented and externally qualified. The next roadmap consolidates the CodeWiki Semantic Kernel, universal Wiki, Change Completion, Raw Data observation/custody, Checks, CodeWiki Plugins, Kernel API/SDK, Work Continuity, and Execution Host contracts. End-user frontend implementation belongs to external applications rather than CodeWiki core.
-
-This source repository does not install or load CodeWiki. Safe self-governance uses an immutable released controller installed outside both this checkout and its disposable candidate subject; historical pins, traces, approvals, and releases grant no authority.
+The private `@nunomoura/codewiki@0.3.0` package is not published. Local dogfood uses a hash-verified packed artifact installed outside the checkout; `"private": true` remains enabled. The next roadmap slice is SK2: mandatory Git store activation, universal Wiki Items, and qualified KB→Wiki migration. End-user frontend implementation remains outside CodeWiki core.
 
 ## Primary product boundary (target)
 
@@ -376,7 +374,7 @@ Public subpaths are `@nunomoura/codewiki/project-server` and `@nunomoura/codewik
 
 - Package/runtime APIs target Node.js `>=22.19.0`, matching pinned provider-protocol dependencies.
 - Local stripped-TypeScript commands require Node.js `>=22.19.0`.
-- Optional Pi Client packaging follows Pi's supported host runtime requirement.
+- Optional Pi Client packaging supports Pi `>=0.80.10 <0.82.0` and exact `0.84.2`.
 - Npm packages build to `dist/**` before packing.
 
 Core commands:
@@ -419,9 +417,9 @@ Package manifest retains:
 }
 ```
 
-This remains useful for optional thin client. Current packed installs expose compatibility `/wiki-*` commands and `wiki_*` capabilities in disposable projects. Project Server must continue owning exact identity, source facts, routing, freshness, sequence/parent/byte guards, and append authority.
+Packed installs expose compatibility `/wiki-*` commands and `wiki_*` capabilities. Project Server retains exact identity, source facts, routing, freshness, sequence/parent/byte guards, and append authority.
 
-After installing different packed runtime, fully restart Pi rather than relying on module reload. Do not install CodeWiki globally or under this repository's `.pi/` directory during stabilization.
+Private dogfood packs an exact activated commit, records the archive SHA-256, installs it outside the checkout, and loads that immutable installation with Pi. Candidate tests remain disposable and external. Never load the working tree or install CodeWiki under this repository's `.pi/`. Fully exit and restart Pi when changing the activated artifact.
 
 ## Review evidence configuration
 

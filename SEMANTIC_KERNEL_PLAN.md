@@ -13,11 +13,11 @@ This plan orders delivery. It is not canonical runtime input or a compatibility 
 - `src/**` and `tests/**` remain executable truth;
 - Git remains history and checkpoint evidence;
 - released controller N governs committed candidate N+1 from outside this checkout;
-- this source repository does not dogfood CodeWiki until an immutable stable release passes external qualification and an explicit governed activation checkpoint changes that rule; after activation, released controller N still governs N+1 and never loads mutable candidate code;
+- this source repository may dogfood only an externally installed immutable release that passed exact-subject qualification and explicit activation; released N still governs N+1 and never loads mutable candidate code;
 - CodeWiki is never installed or loaded from this repository's `.pi/` directory;
 - generated views and private runtime state remain outside canonical project meaning.
 
-The exact Semantic Kernel SK0 documentation baseline at `e3e06723242b4115c28a9a716fd817ae23f439f7` passed external governance. SK1 contract work subsequently exposed and corrected one migration Receipt dependency cycle before executable schema freeze; that correction requires qualification with the next exact candidate and does not retroactively alter prior evidence. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records the detailed contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence.
+The exact SK0 baseline `e3e06723242b4115c28a9a716fd817ae23f439f7` and SK1 contract laboratory `5735315aa6d220115f033f863a4fc5c63ed2694b` passed external governance. Successor `ed85062f181652e5083210ac666bdb5fb74e46a8` also passed exact-subject qualification and was explicitly activated for private local dogfood. Current position is after SK1 and before SK2; no target protocol or `.codewiki/wiki/**` root is active. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records the contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence.
 
 ## Product objective
 
@@ -357,8 +357,8 @@ A universal contract fails if any scenario requires a hidden domain branch in Pr
 7. Treat research and conversation summaries as navigation until assertions are reverified against exact sources.
 8. Parse unknown input at boundaries and keep open semantic payloads inside named bounded envelopes.
 9. Keep every slice releasable, migratable, rollback-capable, and externally governable.
-10. Use Pi-native tools in this checkout; test packed CodeWiki only in disposable external projects.
-11. Do not add a Wiki Store Plugin, generic workflow engine, second Session engine, backend selector, project-local executable Plugin path, or repository dogfood state.
+10. Candidate implementation and qualification use Pi-native tools; an activated immutable release may dogfood this checkout but never qualify its successor. Test candidates only in disposable external projects.
+11. Do not add a Wiki Store Plugin, generic workflow engine, second Session engine, backend selector, project-local executable Plugin path, or mutable-source dogfood path.
 12. Do not claim a platform, provider, or containment mode merely because installation succeeds.
 
 ## Roadmap
@@ -383,7 +383,7 @@ SK7 Windows bridges and separately qualified native host
 
 SK6 capability experiments may run beside SK1–SK5 but cannot change production support or Runtime authority before qualification.
 
-### SK0 — Architecture consolidation — architecture complete; governance pending
+### SK0 — Architecture consolidation — complete and qualified
 
 - [x] Establish headless Semantic Kernel and separate rich CodeWiki App boundary.
 - [x] Limit first-party presentation to scriptable operations and terminal-first CodeWiki Console.
@@ -397,11 +397,11 @@ SK6 capability experiments may run beside SK1–SK5 but cannot change production
 - [x] Establish Raw Data observation/custody, Checks, Plugins, Work Continuity, and Execution Host vocabulary.
 - [x] Complete file/protocol mapping, migration/rollback edges, release gates, and universal scenarios.
 - [x] Reverify retained external architecture evidence.
-- [ ] Govern and qualify completed architecture checkpoint with released controller N.
+- [x] Govern and qualify completed architecture checkpoint with released controller N.
 
 Success: every current responsibility has one target owner/disposition; each target contract has authority, state machine, canonical form, migration, rollback, and proof strategy; no unresolved overlap enters SK1.
 
-### SK1 — Contract laboratory and universal fixtures
+### SK1 — Contract laboratory and universal fixtures — complete and qualified
 
 Implement mandatory Git store profile, Wiki Item and append-only Change Trace schemas, native proposal/disposition commit and managed-ref validators, canonical encoders/parsers, reducers, valid/invalid goldens, migration/replay fixtures, and cross-platform path fixtures without changing canonical project state. Keep protocol-version literals at persistence and compatibility boundaries; source modules and semantic APIs retain version-neutral owner names.
 

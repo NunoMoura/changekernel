@@ -351,7 +351,7 @@ describe("install readiness checklist", () => {
 		);
 		assert.equal(
 			packageJson.peerDependencies["@earendil-works/pi-coding-agent"],
-			">=0.80.10 <0.82.0",
+			">=0.80.10 <0.82.0 || 0.84.2",
 		);
 		assert.equal(
 			packageJson.peerDependenciesMeta["@earendil-works/pi-coding-agent"]

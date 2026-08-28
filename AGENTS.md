@@ -13,7 +13,7 @@
 ## Repository boundaries
 
 - Dogfood only an immutable release that passed external exact-subject qualification and explicit activation.
-- Never load CodeWiki from this checkout, a local package path, or this repository’s `.pi/`. Candidate N+1 never governs itself.
+- Never load CodeWiki from this checkout, a mutable package path, or this repository’s `.pi/`. Candidate N+1 never governs itself.
 - Use CodeWiki tools only from the activated release; otherwise use Pi-native tools and compaction.
 - Released controller N qualifies exact committed candidate N+1 outside this checkout. Any correction requires a new candidate and qualification.
 - Pack and test candidates only in disposable external projects with isolated Pi settings.

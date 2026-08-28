@@ -149,7 +149,7 @@ assert.deepEqual(packageJson.exports["./checks"], {
 assert.equal(packageJson.exports["./pi-sdk"], undefined);
 assert.equal(
 \tpackageJson.peerDependencies["@earendil-works/pi-coding-agent"],
-\t">=0.80.10 <0.82.0",
+\t">=0.80.10 <0.82.0 || 0.84.2",
 );
 assert.equal(
 \tpackageJson.peerDependenciesMeta["@earendil-works/pi-coding-agent"].optional,
@@ -780,7 +780,7 @@ assert.equal(packageJson.dependencies["js-yaml"], undefined);
 assert.equal(packageJson.dependencies.yaml.startsWith("^2."), true);
 assert.equal(packageJson.dependencies.typebox, undefined);
 assert.deepEqual(packageJson.peerDependencies, {
-	"@earendil-works/pi-coding-agent": ">=0.80.10 <0.82.0",
+	"@earendil-works/pi-coding-agent": ">=0.80.10 <0.82.0 || 0.84.2",
 	typebox: "*",
 });
 for (const forbiddenPath of [

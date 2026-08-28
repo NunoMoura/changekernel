@@ -66,7 +66,7 @@ Installation is passive; Project Server owns lifecycle. Backend Build `2.0.0` bi
 
 Support Matrix, Runtime Production Qualification, Observability, Fault Recovery, and the unfiltered diagnostics ratchet bind the supported host, containment, Plugins, providers, evidence, recovery, privacy, and warning policy. Candidates cannot select these policies.
 
-Backend Release Manifest `1.0.0` is current. Target Kernel Build/Release `1.0.0` bind supported Git implementation/version/sanitized plumbing profile, mandatory store contract, Wiki Item/parser, Change Completion, API/SDK transport bindings, Checks, Plugin admission/capabilities, Work Continuity, AI Gateway route closure, and Execution Host; they omit Domain authority, Pack Skills, and in-core rich App. Every cut is backup-first; released controller N governs exact N+1 outside this checkout. Dogfood starts after stable external qualification and disposable migration/recovery rehearsal; released N governs N+1.
+Backend Release Manifest `1.0.0` is current. Target Kernel Build/Release `1.0.0` bind Git/store, Wiki/Change, API/SDK, Checks, Plugins, continuity, AI route, and host identities; they omit Domain authority, Pack Skills, and rich App. Every cut is backup-first. Released N governs exact N+1 outside this checkout. Private dogfood uses an activated hash-verified pack installed outside source; publication is unnecessary. Mutable N+1 never governs itself.
 
 ## Check Pack transport
 

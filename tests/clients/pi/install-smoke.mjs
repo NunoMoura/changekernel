@@ -28,6 +28,14 @@ function packageJson(path) {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function supportsDeclaredPiHost(version) {
+	const match = /^0\.(\d+)\.(\d+)$/.exec(version);
+	if (!match) return false;
+	const minor = Number(match[1]);
+	const patch = Number(match[2]);
+	return (minor === 80 && patch >= 10) || minor === 81 || (minor === 84 && patch === 2);
+}
+
 const root = mkdtempSync(join(tmpdir(), "codewiki-pi-install-smoke-"));
 try {
 	const packRoot = join(root, "pack");
@@ -49,6 +57,12 @@ try {
 		"codewiki",
 	);
 	const manifest = packageJson(join(packageRoot, "package.json"));
+	const piVersion = run("pi", ["--version"]).stdout.trim();
+	assert.equal(
+		supportsDeclaredPiHost(piVersion),
+		true,
+		`Pi ${piVersion} is outside the declared supported host range`,
+	);
 	assert.equal(manifest.bin, undefined);
 	assert.deepEqual(Object.keys(manifest.exports).sort(), [
 		".",
@@ -90,6 +104,7 @@ try {
 			{
 				ok: true,
 				packageRoot,
+				piVersion,
 			},
 			null,
 			2,
