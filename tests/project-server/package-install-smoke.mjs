@@ -584,6 +584,7 @@ assert.deepEqual(Object.keys(projectServerModule).sort(), [
 	"assertExternalCandidateCapture",
 	"assertHarnessInteractionBinding",
 	"assertHarnessObserverProjection",
+	"assertKbToWikiMigrationReadiness",
 	"assertSessionContinuityRecord",
 	"authorizeDshAgentSessionCustody",
 	"backendBuildDomainClosureCompatible",

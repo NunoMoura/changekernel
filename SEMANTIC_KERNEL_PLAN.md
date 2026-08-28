@@ -17,7 +17,7 @@ This plan orders delivery. It is not canonical runtime input or a compatibility 
 - CodeWiki is never installed or loaded from this repository's `.pi/` directory;
 - generated views and private runtime state remain outside canonical project meaning.
 
-The exact SK0 baseline `e3e06723242b4115c28a9a716fd817ae23f439f7` and SK1 contract laboratory `5735315aa6d220115f033f863a4fc5c63ed2694b` passed external governance. Successor `ed85062f181652e5083210ac666bdb5fb74e46a8` also passed exact-subject qualification and was explicitly activated for private local dogfood. Current position is after SK1 and before SK2; no target protocol or `.codewiki/wiki/**` root is active. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records the contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence.
+The exact SK0 baseline `e3e06723242b4115c28a9a716fd817ae23f439f7` and SK1 contract laboratory `5735315aa6d220115f033f863a4fc5c63ed2694b` passed external governance. Dogfood-readiness successor `32752d604e26ed7f759e6fa0bbf529097c537360` passed exact-subject qualification under activated controller `ed85062f181652e5083210ac666bdb5fb74e46a8` and was explicitly activated for private local external installation. SK2 implementation is in progress at its read-only migration-readiness boundary; no target protocol or `.codewiki/wiki/**` root is active. `SEMANTIC_KERNEL_SK0_CONTRACTS.md` records the contract ledger, transformation inventory, protocol versions, migration and rollback edges, release gates, scenario fixtures, and retained evidence.
 
 ## Product objective
 
@@ -410,6 +410,14 @@ Success: all universal/adversarial fixtures use identical Git/Wiki/Change contra
 ### SK2 — Mandatory Git store, universal Wiki Items, and qualified migration
 
 Freeze repository identity/object format/canonical ref. Implement one backup-tagged, quiescent, expected-old-ref migration commit from compiled `.codewiki/kb/**` to `.codewiki/wiki/items/**` and Backend-v1 `.codewiki/traces/**` to target `.codewiki/changes/**`. Hydrate and verify every retention stub first; preserve every source record through an identity/digest map. The Migration Receipt binds each active Change's conversion plan and expected managed-ref name, not resulting proposal OIDs that depend on the candidate commit; Project Server materializes and validates those proposals after the candidate exists, and native Git refs and ancestry provide exact OID proof. Activate Change schema `4`, Trace `13.0.0`, native proposal commits, managed Change refs, explicit Completion Requirements, and two-parent disposition commits. Map independently mutable facets/assertions to Items, fold legacy Lexicon terms into owning Items without emitting a Lexicon container, convert active requirements, preserve legacy Trace evidence, verify exact identity/provenance/retirement/WorkState equivalence, and remove Domain from new semantic/Build authority. Bridge unavoidable old Check subjects only through verified temporary Receipts. Reject dual roots. Permit old-Build/ref restore only before first later target-only accepted commit.
+
+Execution order:
+
+- [x] Add a read-only production preflight that binds stopped Backend state, released ownership, repository/object format, exact canonical commit, clean legacy roots, absent target/backup/managed refs, and prohibited-residue checks without writing Git or project state.
+- [ ] Build the exact legacy source snapshot from canonical KB, compiled checkpoint, hydrated retention history, complete Trace reduction, active Changes, authority, Build, and private-state backup evidence.
+- [ ] Stage and verify backup ref, private backup, target Item/Trace objects, Receipt, migration commit, and active proposal commits without advancing authoritative refs.
+- [ ] Atomically activate canonical and managed refs, replay the full closure, activate the Domain-free target Build/private generation, and retain bounded rollback.
+- [ ] Qualify empty, migrated, crash/recovery, rollback, old-reader refusal, universal-domain, package, security, and release-N-governs-N+1 gates before migrating this repository.
 
 Success: empty and migrated Wiki replay from native Git; Item files and complete `.codewiki/changes/**` traces agree; Git commit/tree/ref identity replaces custom Wiki state/projection/checkpoint/update machinery; no Raw Data or Runtime residue enters canonical Git. Legacy migration code is stopped-only transition machinery, is absent from normal target lifecycle routing, and remains available only through a bounded qualified upgrade/rollback window before explicit retirement.
 

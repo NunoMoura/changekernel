@@ -261,6 +261,11 @@ export {
 	type StandaloneProjectServerStatus,
 } from "./operations/lifecycle.ts";
 export {
+	assertKbToWikiMigrationReadiness,
+	type KbToWikiMigrationReadiness,
+	type KbToWikiMigrationReadinessInput,
+} from "./operations/kb-to-wiki-readiness.ts";
+export {
 	BACKEND_V1_RELEASE_EVIDENCE_NAMES,
 	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
 	assertBackendV1ReleaseManifest,

@@ -132,6 +132,7 @@ describe("fresh scaffold", () => {
 			"assertExternalCandidateCapture",
 			"assertHarnessInteractionBinding",
 			"assertHarnessObserverProjection",
+			"assertKbToWikiMigrationReadiness",
 			"assertSessionContinuityRecord",
 			"authorizeDshAgentSessionCustody",
 			"backendBuildDomainClosureCompatible",
