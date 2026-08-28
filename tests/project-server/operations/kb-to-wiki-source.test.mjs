@@ -16,8 +16,13 @@ import {
 } from "../../../src/changes/records.ts";
 import {loadKnowledgeCheckpoint} from "../../../src/knowledge/checkpoint-store.ts";
 import {buildKbToWikiLegacySourceSnapshot} from "../../../src/project-server/operations/kb-to-wiki-source.ts";
-import {bootstrapBackendState} from "../../../src/project-server/operations/state.ts";
+import {bindKbToWikiMigrationStagingEvidence} from "../../../src/project-server/operations/kb-to-wiki-staging-evidence.ts";
+import {
+	bootstrapBackendState,
+	createBackendStateBackup,
+} from "../../../src/project-server/operations/state.ts";
 import {createGitStoreProfile} from "../../../src/project/git-store-profile.ts";
+import {projectServerStatePaths} from "../../../src/project/private-state.ts";
 import {acceptedChangeFixture} from "../../helpers/accepted-change.mjs";
 
 const KNOWLEDGE_BYTES = `---
@@ -238,6 +243,95 @@ test("SK2 source snapshot hydrates compact retention stubs from exact Git restor
 	} finally {
 		await context.cleanup();
 	}
+});
+
+test("SK2 staging evidence binds accepted authority and an exact private backup", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({traceId: "TRACE-CHG-source", traceRecords: records});
+	try {
+		const paths = projectServerStatePaths(context);
+		await mkdir(paths.dshSessionsRoot, {recursive: true, mode: 0o700});
+		await writeFile(join(paths.dshSessionsRoot, "migration.session"), "private-secret\n", {
+			mode: 0o600,
+		});
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const refsBefore = git(context.repoRoot, ["for-each-ref", "refs/codewiki"]);
+		const objectsBefore = git(context.repoRoot, ["count-objects", "-v"]);
+		const evidence = await bindKbToWikiMigrationStagingEvidence({
+			...input(context),
+			migrationChangeId: "CHG-source",
+			backupId: backup.backupId,
+		});
+		assert.equal(evidence.sourceSnapshot.snapshotDigest, evidence.authority.sourceSnapshotDigest);
+		assert.equal(evidence.authority.migrationChangeId, "CHG-source");
+		assert.equal(evidence.authority.actorId, "user:test");
+		assert.equal(evidence.authority.authorityId, "maintainer");
+		assert.equal(evidence.authority.approvalRef, "approval:user:test");
+		assert.equal(evidence.privateBackup.backupId, backup.backupId);
+		assert.equal(evidence.privateBackup.sourceStateDigest, context.state.stateDigest);
+		assert.deepEqual({...evidence.privateBackup.snapshotDigests}, backup.snapshotDigests);
+		assert.equal(evidence.privateBackup.entryCount, backup.entries.length);
+		assert.equal(JSON.stringify(evidence.privateBackup).includes("private-secret"), false);
+		assert.equal(Object.hasOwn(evidence.privateBackup, "entries"), false);
+		assert.match(evidence.authority.authorityDigest, /^sha256:[0-9a-f]{64}$/u);
+		assert.match(evidence.evidenceDigest, /^sha256:[0-9a-f]{64}$/u);
+		assert.equal(git(context.repoRoot, ["for-each-ref", "refs/codewiki"]), refsBefore);
+		assert.equal(git(context.repoRoot, ["count-objects", "-v"]), objectsBefore);
+	} finally {
+		await context.cleanup();
+	}
+});
+
+test("SK2 staging evidence fails closed on missing authority and stale private state", async (t) => {
+	await t.test("migration authority is not an accepted active Change", async () => {
+		const context = await fixture();
+		try {
+			const backup = await createBackendStateBackup({
+				repoRoot: context.repoRoot,
+				stateRoot: context.stateRoot,
+				generatedAt: "2026-08-28T11:02:00.000Z",
+			});
+			await assert.rejects(
+				bindKbToWikiMigrationStagingEvidence({
+					...input(context),
+					migrationChangeId: "CHG-source",
+					backupId: backup.backupId,
+				}),
+				/accepted active legacy Change/,
+			);
+		} finally {
+			await context.cleanup();
+		}
+	});
+
+	await t.test("private state changed after backup", async () => {
+		const records = await activeTraceRecords();
+		const context = await fixture({traceId: "TRACE-CHG-source", traceRecords: records});
+		try {
+			const backup = await createBackendStateBackup({
+				repoRoot: context.repoRoot,
+				stateRoot: context.stateRoot,
+				generatedAt: "2026-08-28T11:02:00.000Z",
+			});
+			const paths = projectServerStatePaths(context);
+			await mkdir(paths.continuityRoot, {recursive: true, mode: 0o700});
+			await writeFile(join(paths.continuityRoot, "drift.json"), "{}\n", {mode: 0o600});
+			await assert.rejects(
+				bindKbToWikiMigrationStagingEvidence({
+					...input(context),
+					migrationChangeId: "CHG-source",
+					backupId: backup.backupId,
+				}),
+				/private backup is stale/,
+			);
+		} finally {
+			await context.cleanup();
+		}
+	});
 });
 
 test("SK2 source snapshot fails closed on missing retention history and unsupported source entries", async (t) => {

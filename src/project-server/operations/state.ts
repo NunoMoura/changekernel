@@ -802,6 +802,20 @@ export async function canonicalProjectSnapshotDigest(input: {
 	return snapshotDigest(await collectScope(paths, "canonical-project"));
 }
 
+/** Read the exact stopped Backend backup scopes without creating a backup. */
+export async function collectBackendStateSnapshotDigests(input: {
+	readonly repoRoot: string;
+	readonly stateRoot?: string;
+}): Promise<Readonly<Record<BackendBackupScope, Sha256Digest>>> {
+	const paths = projectServerStatePaths(input);
+	await assertCodeWikiProject(paths);
+	await assertNoLegacyProjectState(paths);
+	await assertProjectStopped(paths);
+	await assertNoPendingRestore(paths);
+	await requireStateManifest(input);
+	return snapshotDigests(await collectBackupEntries(paths));
+}
+
 async function verifyStateOperationHeads(
 	paths: ProjectServerStatePaths,
 	state: BackendStateManifest,

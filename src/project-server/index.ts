@@ -274,6 +274,14 @@ export {
 	type KbToWikiLegacyTraceSnapshot,
 } from "./operations/kb-to-wiki-source.ts";
 export {
+	KB_TO_WIKI_MIGRATION_STAGING_EVIDENCE_PROTOCOL,
+	bindKbToWikiMigrationStagingEvidence,
+	type BindKbToWikiMigrationStagingEvidenceInput,
+	type KbToWikiMigrationAuthorityEvidence,
+	type KbToWikiMigrationStagingEvidence,
+	type KbToWikiPrivateBackupEvidence,
+} from "./operations/kb-to-wiki-staging-evidence.ts";
+export {
 	BACKEND_V1_RELEASE_EVIDENCE_NAMES,
 	BACKEND_V1_RELEASE_MANIFEST_PROTOCOL,
 	assertBackendV1ReleaseManifest,
