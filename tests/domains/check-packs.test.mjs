@@ -10,7 +10,10 @@ import {
 	loadPackSkillSetSnapshot,
 	loadProtectedCheckPackSnapshot,
 } from "../../src/checks/packs/loader.ts";
-import {installCheckPackTransport} from "../../src/checks/packs/transport.ts";
+import {
+	installCheckPackTransport,
+	prepareCheckPackTransport,
+} from "../../src/checks/packs/transport.ts";
 import {
 	prepareSoftwareDevelopmentDefaultCheckPacks,
 	SOFTWARE_DEVELOPMENT_DEFAULT_CHECK_PACK_ID,
@@ -61,6 +64,28 @@ describe("Software Development and CodeWiki Check Packs", () => {
 			treeDigest,
 		})));
 		assert.equal(adopted.localDivergence, false);
+	});
+
+	it("keeps transport identity independent from the package installation path", async () => {
+		const root = await mkdtemp(join(tmpdir(), "codewiki-pack-identity-"));
+		try {
+			const roots = [join(root, "first"), join(root, "second")];
+			for (const packageRoot of roots) {
+				await cp("check-packs", join(packageRoot, "check-packs"), {recursive: true});
+				await cp("package.json", join(packageRoot, "package.json"));
+			}
+			const source = {
+				kind: "domain",
+				locator: SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY.pluginId,
+				resolvedRevision: SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY.identityDigest,
+			};
+			const first = await prepareCheckPackTransport({...source, packageRoot: roots[0]});
+			const second = await prepareCheckPackTransport({...source, packageRoot: roots[1]});
+			assert.equal(first.planDigest, second.planDigest);
+			assert.notEqual(first.resources[0].sourcePath, second.resources[0].sourcePath);
+		} finally {
+			await rm(root, {recursive: true, force: true});
+		}
 	});
 
 	it("keeps adopted defaults and CodeWiki repository policy as separate Check-only Packs", async () => {

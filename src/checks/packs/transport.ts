@@ -69,7 +69,7 @@ export async function prepareCheckPackTransport(
 			`${left.stage}/${left.packId}`.localeCompare(`${right.stage}/${right.packId}`),
 		)),
 	};
-	return Object.freeze({...body, planDigest: canonicalJsonDigest(body)});
+	return Object.freeze({...body, planDigest: transportPlanDigest(body)});
 }
 
 /** Install one verified plan with collision checks and per-Pack atomic rename. */
@@ -106,13 +106,29 @@ export async function installCheckPackTransport(input: {
 }
 
 export function assertTransportPlan(value: CheckPackTransportPlan): void {
-	const {planDigest, ...body} = value;
-	if (canonicalJsonDigest(body) !== planDigest) throw new Error("Check Pack transport plan digest is invalid.");
+	if (transportPlanDigest(value) !== value.planDigest) {
+		throw new Error("Check Pack transport plan digest is invalid.");
+	}
 	for (const resource of value.resources) {
 		if (!STAGES.includes(resource.stage) || !/^[a-z0-9][a-z0-9._-]{0,127}$/u.test(resource.packId)) {
 			throw new Error("Check Pack transport resource identity is invalid.");
 		}
 	}
+}
+
+function transportPlanDigest(
+	plan: Omit<CheckPackTransportPlan, "planDigest"> | CheckPackTransportPlan,
+): Sha256Digest {
+	return canonicalJsonDigest({
+		packageName: plan.packageName,
+		packageVersion: plan.packageVersion,
+		source: plan.source,
+		resources: plan.resources.map(({stage, packId, treeDigest}) => ({
+			stage,
+			packId,
+			treeDigest,
+		})),
+	});
 }
 
 async function declaredResources(manifest: Record<string, unknown>, packageRoot: string): Promise<Omit<CheckPackTransportResource, "treeDigest">[]> {

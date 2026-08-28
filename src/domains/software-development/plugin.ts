@@ -71,7 +71,7 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 		packageIntegrity:
 			"sha256:eef6485ec6281748c3ebd7f0996b93ae8037398ccc5416c28d08ba8cb1902c9b",
 		implementationDigest:
-			"sha256:b330d7dc48af8bfa15ef378cc9dcb0f645eaf3b13285ae3696e196006e1b8987",
+			"sha256:c766534a756bad1cff6f2279d664803362168efae9a0cce0918aee6782393ed9",
 		entrypoints: {
 			projectServer: "project-server",
 			dshPlugins: [],
@@ -89,7 +89,7 @@ export const SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN: DomainPluginAdmission =
 			maxContextBytes: 16 * 1024 * 1024,
 		},
 		qualificationEvidenceDigest:
-			"sha256:29d085a3e414768da874d7ec86492d2e479d219702bf2ccc3c72e1761fb70ae6",
+			"sha256:a02e9765f91380f3b581ecdde0975777c22c42dd081f16d5bcee49341f24e4c5",
 		contributions: [
 			"check-inputs",
 			"context-compilation",
