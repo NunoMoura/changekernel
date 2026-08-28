@@ -1,9 +1,12 @@
 {
+	"protocol": {
+		"id": "codewiki.project-config",
+		"version": "2.0.0"
+	},
 	"project": "codewiki",
-	"domain": {
-		"pluginId": "codewiki.domain.software-development",
-		"pluginVersion": "1.0.0",
-		"admissionDigest": "sha256:0bc589c58be3ddb7b6dc678328d8e7b070dcab448a9c35298789471c46391ae9"
+	"preview": {
+		"profiles": [],
+		"uiPreviewTargets": []
 	},
 	"runtime": {
 		"maxWorkers": 1,
@@ -23,27 +26,6 @@
 			"maxEscalations": 1,
 			"estimatedInputTokens": 75000,
 			"estimatedOutputTokens": 25000,
-			"roleRoutes": {
-				"harness": "openai-codex-gpt-5.4",
-				"decision": "inherit",
-				"planning": "inherit",
-				"review": "inherit",
-				"workers": [
-					"openai-codex-gpt-5.4-mini",
-					"openai-codex-gpt-5.4",
-					"openai-codex-gpt-5.5"
-				]
-			},
-			"escalationTransitions": [
-				{
-					"fromRouteId": "openai-codex-gpt-5.4-mini",
-					"toRouteId": "openai-codex-gpt-5.4"
-				},
-				{
-					"fromRouteId": "openai-codex-gpt-5.4",
-					"toRouteId": "openai-codex-gpt-5.5"
-				}
-			],
 			"routes": [
 				{
 					"id": "openai-codex-gpt-5.4-mini",
@@ -159,6 +141,27 @@
 						"write"
 					]
 				}
+			],
+			"roleRoutes": {
+				"harness": "openai-codex-gpt-5.4",
+				"decision": "inherit",
+				"planning": "inherit",
+				"review": "inherit",
+				"workers": [
+					"openai-codex-gpt-5.4",
+					"openai-codex-gpt-5.4-mini",
+					"openai-codex-gpt-5.5"
+				]
+			},
+			"escalationTransitions": [
+				{
+					"fromRouteId": "openai-codex-gpt-5.4-mini",
+					"toRouteId": "openai-codex-gpt-5.4"
+				},
+				{
+					"fromRouteId": "openai-codex-gpt-5.4",
+					"toRouteId": "openai-codex-gpt-5.5"
+				}
 			]
 		},
 		"approval": {
@@ -186,6 +189,37 @@
 		},
 		"mcp": {
 			"enabled": false
+		}
+	},
+	"userStandards": [],
+	"triagePreferences": [],
+	"quality": {
+		"judge": {
+			"enabled": false,
+			"provider": "none",
+			"promptVersion": "loop-quality-judge.v3",
+			"timeoutMs": 30000
+		},
+		"review": {
+			"enabled": true,
+			"autoEvidence": true,
+			"includeCachedEvidence": true,
+			"timeoutMs": 15000,
+			"fastTimeoutMs": 3000,
+			"maxCachedEvidenceAgeMs": 600000,
+			"enabledPacks": [
+				"tsjs.typescript",
+				"tsjs.lint",
+				"python.ruff",
+				"python.pyright",
+				"go.test",
+				"go.vet",
+				"rust.cargo-test",
+				"rust.cargo-clippy",
+				"shell.shellcheck"
+			],
+			"disabledPacks": [],
+			"requiredPacks": []
 		}
 	}
 }

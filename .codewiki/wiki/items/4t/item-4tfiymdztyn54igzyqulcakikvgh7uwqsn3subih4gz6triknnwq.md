@@ -1,0 +1,8 @@
+---
+{"aliases":[],"attributes":{"codewiki.legacy:media-type":"text/markdown","codewiki.legacy:metadata":{"codewiki_id":"cw:user:check-author","description":"Developer who builds reusable Probes and composable Checks against exact CodeWiki project inputs.","status":"stable","tags":["product","user","developer","checks"],"title":"Check Author","type":"User"},"codewiki.legacy:source-path":"product/users/check-author.md"},"itemId":"cw:user:check-author","itemType":"codewiki.legacy:user","protocol":"codewiki.wiki-item@1.0.0","provenance":[{"attributes":{"codewiki.legacy:source-digest":"sha256:b10efb4731a9caf3749da44a9de74febf609a421260039aebfcd497ab2025a84","codewiki.legacy:source-path":"product/users/check-author.md"},"kind":"codewiki.legacy:knowledge","subjectId":"cw:user:check-author"}],"relationships":[],"title":"Check Author"}
+---
+# Check Author
+
+Check Authors create deterministic project-standard logic without becoming Project Server, Gate, or lifecycle authorities. They author source, tests, fixtures, and ordinary library dependencies in their own package or repository, then produce one self-contained `CHECK.mjs` for installation beside its project-owned `check.json`.
+
+Check Authors use the CodeWiki Check SDK to inspect bounded package-bound Knowledge, repository, code, tests, revisions, commits, pull-request Evidence, Change state, and Alignment facts. They may publish reusable Probes and composable Checks for other authors. Success means community validation logic can grow through ordinary source imports and tests while every installed top-level Check remains independently inspectable, sandboxed, deterministic, and bound to one Result contract.
