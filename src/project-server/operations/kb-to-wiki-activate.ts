@@ -435,6 +435,7 @@ async function assertWorktreeAtMigrationEndpoints(
 	const status = await runGit(repoRoot, runner, [
 		"status",
 		"--porcelain=v1",
+		"--no-renames",
 		"-z",
 		"--untracked-files=all",
 		"--",
