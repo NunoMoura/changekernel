@@ -174,7 +174,10 @@ export function assertKbToWikiMigrationReceipt(
 		}
 		changeIds.add(activePlan.changeId);
 		previousChangeId = activePlan.changeId;
-		if (!Object.hasOwn(convertedTraceBlobOids, changeTracePath(activePlan.changeId))) {
+		if (
+			activePlan.changeId !== plan.migrationChangeId &&
+			!Object.hasOwn(convertedTraceBlobOids, changeTracePath(activePlan.changeId))
+		) {
 			throw new Error("Active Change plan lacks an exact converted Trace blob binding.");
 		}
 	}

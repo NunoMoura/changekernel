@@ -9,6 +9,11 @@ import {
 	createChangeRecordTraceEvent,
 	createChangeTraceHead,
 } from "../../../src/changes/trace/change-record.ts";
+import {
+	createChangeTraceHeader,
+	serializeChangeTrace,
+} from "../../../src/changes/trace/semantic-kernel.ts";
+import {createGitCommandRunner} from "../../../src/changes/trace/git-command.ts";
 import {buildTraceArchiveCompactPlan} from "../../../src/changes/trace/retention.ts";
 import {
 	acceptChangeRecord,
@@ -17,6 +22,7 @@ import {
 import {loadKnowledgeCheckpoint} from "../../../src/knowledge/checkpoint-store.ts";
 import {buildKbToWikiLegacySourceSnapshot} from "../../../src/project-server/operations/kb-to-wiki-source.ts";
 import {bindKbToWikiMigrationStagingEvidence} from "../../../src/project-server/operations/kb-to-wiki-staging-evidence.ts";
+import {stageKbToWikiMigration} from "../../../src/project-server/operations/kb-to-wiki-stage.ts";
 import {
 	bootstrapBackendState,
 	createBackendStateBackup,
@@ -140,6 +146,69 @@ function input(context, overrides = {}) {
 		backupRef: context.backupRef,
 		...overrides,
 	};
+}
+
+const migrationGitIdentity = "CodeWiki Migration <migration@codewiki.invalid> 1787896801 +0000";
+
+function migrationActivePlan() {
+	return {
+		changeId: "CHG-source",
+		expectedManagedRef: "refs/codewiki/changes/CHG-source",
+		proposalOperation: {
+			operationId: "op:sk2:active-proposal",
+			actorId: "user:test",
+			authorityId: "maintainer",
+			occurredAt: "2026-08-28T11:03:00.000Z",
+			payload: {
+				intent: "Preserve active legacy Change through migration.",
+				rationale: "Active accepted intent remains explicit under target contracts.",
+				desiredOutcomes: ["Legacy objective remains governed."],
+				authorityIntent: ["project.change.accept"],
+				relatedChangeIds: [],
+				compensatesChangeIds: [],
+				supersedesChangeIds: [],
+				targetRefs: [],
+				completionRequirements: [],
+				completionRationale: "Migration preserves intent for target Decision.",
+			},
+		},
+		proposedWiki: [],
+		commit: {
+			author: migrationGitIdentity,
+			committer: migrationGitIdentity,
+			message: "stage active migration proposal\n",
+		},
+	};
+}
+
+function migrationStageInput(context, backupId, runner) {
+	const convertedHeader = createChangeTraceHeader({
+		changeId: "CHG-source",
+		projectId: "fixture",
+		repositoryId: context.profile.repositoryId,
+		objectFormat: context.profile.objectFormat,
+		createdAt: "2026-08-28T11:00:00.000Z",
+		createdBy: "user:test",
+	});
+	const stageInput = {
+		...input(context),
+		backupId,
+		migrationChangeId: "CHG-source",
+		migrationId: "migration:sk2-source",
+		projectId: "fixture",
+		convertedTraces: [{
+			sourceTracePath: ".codewiki/traces/TRACE-CHG-source.jsonl",
+			targetBytes: serializeChangeTrace(convertedHeader, []),
+		}],
+		activeChangePlans: [migrationActivePlan()],
+		migrationCommit: {
+			author: migrationGitIdentity,
+			committer: migrationGitIdentity,
+			message: "stage KB to Wiki migration\n",
+		},
+	};
+	if (!runner) return stageInput;
+	return Object.assign(stageInput, {runner});
 }
 
 function git(repoRoot, args) {
@@ -281,6 +350,108 @@ test("SK2 staging evidence binds accepted authority and an exact private backup"
 		assert.match(evidence.evidenceDigest, /^sha256:[0-9a-f]{64}$/u);
 		assert.equal(git(context.repoRoot, ["for-each-ref", "refs/codewiki"]), refsBefore);
 		assert.equal(git(context.repoRoot, ["count-objects", "-v"]), objectsBefore);
+	} finally {
+		await context.cleanup();
+	}
+});
+
+test("SK2 stages and validates migration objects without advancing authoritative refs", async (t) => {
+	for (const objectFormat of ["sha1", "sha256"]) {
+		await t.test(objectFormat, async () => {
+			const records = await activeTraceRecords();
+			const context = await fixture({
+				objectFormat,
+				traceId: "TRACE-CHG-source",
+				traceRecords: records,
+			});
+			try {
+				const backup = await createBackendStateBackup({
+					repoRoot: context.repoRoot,
+					stateRoot: context.stateRoot,
+					generatedAt: "2026-08-28T11:02:00.000Z",
+				});
+				const refsBefore = git(context.repoRoot, ["for-each-ref", "refs/codewiki/changes"]);
+				const staged = await stageKbToWikiMigration(
+					migrationStageInput(context, backup.backupId),
+				);
+				assert.equal(staged.migrationCommit.algorithm, objectFormat);
+				assert.equal(staged.validation.candidateCommit.hex, staged.migrationCommit.hex);
+				assert.deepEqual(staged.plan.items.map(({item}) => item.itemId), ["cw:component:source-topic"]);
+				assert.deepEqual(staged.receipt.activeChangePlans.map(({changeId}) => changeId), ["CHG-source"]);
+				assert.equal(staged.activeManagedRefs.length, 1);
+				assert.equal(git(context.repoRoot, ["rev-parse", context.profile.canonicalRef]), context.sourceCommit.hex);
+				assert.equal(git(context.repoRoot, ["rev-parse", context.backupRef]), context.sourceCommit.hex);
+				assert.equal(git(context.repoRoot, ["for-each-ref", "refs/codewiki/changes"]), refsBefore);
+				assert.equal(git(context.repoRoot, ["cat-file", "-t", staged.migrationCommit.hex]), "commit");
+				assert.equal(
+					git(context.repoRoot, ["cat-file", "-t", staged.activeManagedRefs[0].proposalCommit.hex]),
+					"commit",
+				);
+				assert.equal(git(context.repoRoot, ["status", "--short"]), "");
+				assert.match(staged.stageDigest, /^sha256:[0-9a-f]{64}$/u);
+			} finally {
+				await context.cleanup();
+			}
+		});
+	}
+});
+
+test("SK2 staging rejects incomplete conversion before creating backup or authoritative refs", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({traceId: "TRACE-CHG-source", traceRecords: records});
+	try {
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const incomplete = migrationStageInput(context, backup.backupId);
+		await assert.rejects(
+			stageKbToWikiMigration({
+				...incomplete,
+				convertedTraces: [],
+				activeChangePlans: [],
+			}),
+			/cover every exact legacy Trace/,
+		);
+		assert.equal(git(context.repoRoot, ["for-each-ref", "refs/codewiki"]), "");
+	} finally {
+		await context.cleanup();
+	}
+});
+
+test("SK2 staging removes the backup ref when final object validation is interrupted", async () => {
+	const records = await activeTraceRecords();
+	const context = await fixture({traceId: "TRACE-CHG-source", traceRecords: records});
+	try {
+		const backup = await createBackendStateBackup({
+			repoRoot: context.repoRoot,
+			stateRoot: context.stateRoot,
+			generatedAt: "2026-08-28T11:02:00.000Z",
+		});
+		const baseRunner = createGitCommandRunner();
+		let backupCreated = false;
+		let interrupted = false;
+		const runner = async (request) => {
+			const backupRef = git(
+				context.repoRoot,
+				["for-each-ref", "--format=%(refname)", context.backupRef],
+			);
+			if (!interrupted && request.args.includes("cat-file") && backupRef === context.backupRef) {
+				backupCreated = true;
+				interrupted = true;
+				return {exitCode: 1, stdout: "", stderr: "injected object validation interruption\n"};
+			}
+			return baseRunner(request);
+		};
+		await assert.rejects(
+			stageKbToWikiMigration(migrationStageInput(context, backup.backupId, runner)),
+			/injected object validation interruption/,
+		);
+		assert.equal(backupCreated, true);
+		assert.equal(interrupted, true);
+		assert.equal(git(context.repoRoot, ["for-each-ref", "refs/codewiki"]), "");
+		assert.equal(git(context.repoRoot, ["rev-parse", context.profile.canonicalRef]), context.sourceCommit.hex);
 	} finally {
 		await context.cleanup();
 	}
