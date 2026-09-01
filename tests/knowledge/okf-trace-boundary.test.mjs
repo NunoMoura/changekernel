@@ -9,6 +9,7 @@ import {
 	isCodeWikiTraceJsonlPath,
 } from "../../src/knowledge/okf-trace-boundary.ts";
 import { validateOkfBundle } from "../../src/knowledge/okf-validation.ts";
+import {repositoryLegacyOkfFiles} from "../helpers/repository-wiki.mjs";
 
 function collectFiles(root) {
 	const output = [];
@@ -21,9 +22,15 @@ function collectFiles(root) {
 }
 
 function repoBoundaryFiles() {
-	return [...collectFiles(".codewiki/kb"), ...collectFiles(".codewiki/traces")]
-		.filter((path) => path.endsWith(".md") || path.endsWith(".jsonl"))
-		.map((path) => ({ path, content: readFileSync(path, "utf8") }));
+	return [
+		...repositoryLegacyOkfFiles({fullPaths: true}),
+		...collectFiles(".codewiki/changes")
+			.filter((path) => path.endsWith(".jsonl"))
+			.map((path) => ({
+				path: path.replace(/^\.codewiki\/changes\//, ".codewiki/traces/"),
+				content: readFileSync(path, "utf8"),
+			})),
+	];
 }
 
 describe("OKF trace boundary", () => {
@@ -53,7 +60,7 @@ describe("OKF trace boundary", () => {
 		);
 	});
 
-	it("builds OKF validation bundles from KB markdown only", () => {
+	it("builds legacy OKF validation bundles from retained Wiki metadata only", () => {
 		const fullRepoFiles = [
 			...repoBoundaryFiles(),
 			{
@@ -73,15 +80,15 @@ describe("OKF trace boundary", () => {
 			false,
 		);
 		assert.equal(
-			okfFiles.some((file) => file.path === "lexicon.md"),
+			okfFiles.some((file) => file.path === "system/components/knowledge.md"),
 			true,
 		);
 		assert.deepEqual(result.issues, []);
-		assert.equal(result.conceptCount, 44);
+		assert.equal(result.conceptCount, 43);
 		assert.equal(result.reservedCount, 0);
 	});
 
-	it("does not parse trace files as OKF concepts", () => {
+	it("does not parse migrated Change Trace files as OKF concepts", () => {
 		const traceFiles = codeWikiTraceBoundaryEntries([
 			...repoBoundaryFiles(),
 			{

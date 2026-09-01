@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
+import {parseChangeTrace} from "../../src/changes/trace/semantic-kernel.ts";
 
 const criterionEvidence = {
 	"WU-reconcile-completed-foundations-v1": {
@@ -114,9 +115,9 @@ const criterionEvidence = {
 		criteria: ["regression-proof", "clean-vocabulary", "aggregate-evidence"],
 		source: [
 			"README.md",
-			".codewiki/kb/system/components/decision.md",
-			".codewiki/kb/system/components/protocol.md",
-			".codewiki/kb/system/components/runtime.md",
+			".codewiki/wiki/items/system/components/decision.md",
+			".codewiki/wiki/items/system/components/client-project-server-protocol.md",
+			".codewiki/wiki/items/system/components/dsh-run-execution.md",
 		],
 		tests: [
 			"tests/integration/control-center-reconciliation.test.mjs",
@@ -156,50 +157,50 @@ describe("control-center reconciliation integration", () => {
 		}
 	});
 
-	it("keeps dogfood traces out of active source-repository state", () => {
-		const migrationTrace = ".codewiki/traces/TRACE-CHG-sk2-kb-to-wiki-migration.jsonl";
-		const traceFiles = filesUnder(".codewiki/traces").filter((path) =>
+	it("keeps only governed SK2 migration traces in source-repository state", () => {
+		const traceFiles = filesUnder(".codewiki/changes").filter((path) =>
 			/\/TRACE-.*\.jsonl$/.test(path),
 		);
-		assert.deepEqual(
-			traceFiles.filter((path) => path !== migrationTrace),
-			[],
+		assert.deepEqual(traceFiles, [
+			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration-adc272d.jsonl",
+			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration.jsonl",
+		]);
+		const traces = traceFiles.map((path) =>
+			parseChangeTrace(readFileSync(path, "utf8")),
 		);
-		if (traceFiles.includes(migrationTrace)) {
-			assert.match(
-				readFileSync(migrationTrace, "utf8"),
-				/Accepted exact qualified SK2 repository migration\./u,
-			);
-		}
+		assert.deepEqual(
+			traces.flatMap(({operations}) => operations.map(({kind}) => kind)),
+			["migration.applied"],
+		);
 	});
 
-	it("documents delivered control-center boundaries on canonical surfaces", () => {
+	it("documents current control-plane boundaries on canonical surfaces", () => {
 		const readme = readFileSync("README.md", "utf8");
 		const decision = readFileSync(
-			".codewiki/kb/system/components/decision.md",
+			".codewiki/wiki/items/system/components/decision.md",
 			"utf8",
 		);
 		const protocol = readFileSync(
-			".codewiki/kb/system/components/protocol.md",
+			".codewiki/wiki/items/system/components/client-project-server-protocol.md",
 			"utf8",
 		);
 		const projectServer = readFileSync(
-			".codewiki/kb/system/components/project-server.md",
+			".codewiki/wiki/items/system/components/project-server.md",
 			"utf8",
 		);
-		assert.match(readme, /## Primary product boundary/);
+		assert.match(readme, /## Current posture/);
 		assert.match(readme, /persisted pending Change revisions/);
 		assert.match(readme, /fully (?:exit and )?restart Pi/i);
-		assert.match(decision, /one authenticated exact Change revision/i);
-		assert.match(decision, /shared Checks Gate/i);
-		assert.match(decision, /Project Server uses expected-head compare-and-swap/i);
-		assert.match(protocol, /delegates semantics and authority to owners/i);
-		assert.match(protocol, /Payloads cannot supply identity, authentication, delegation, authority/i);
-		assert.match(projectServer, /authoritative semantic control plane/i);
-		assert.match(projectServer, /Controlled provenance requires exact persisted custody/i);
+		assert.match(decision, /authenticated submission creates or revises one Change/i);
+		assert.match(decision, /Gate binds the exact Proposed Change snapshot/i);
+		assert.match(decision, /expected-tip and expected-head compare-and-swap/i);
+		assert.match(protocol, /Command payloads contain requested semantics only/i);
+		assert.match(protocol, /cannot assert authenticated identity/i);
+		assert.match(projectServer, /sole authoritative semantic control plane/i);
+		assert.match(projectServer, /validates identity proof/i);
 		assert.match(
 			projectServer,
-			/exactly four Stage Loops.*Decision, Planning, Implementation, and Review/i,
+			/one Change lifecycle with Decision, Planning, Implementation, and Review phases/i,
 		);
 	});
 
@@ -207,10 +208,10 @@ describe("control-center reconciliation integration", () => {
 		const activeFiles = [
 			...filesUnder("src").filter((path) => path.endsWith(".ts")),
 			"README.md",
-			".codewiki/kb/system/components/decision.md",
-			".codewiki/kb/system/components/protocol.md",
-			".codewiki/kb/system/components/project-server.md",
-			".codewiki/kb/system/components/runtime.md",
+			".codewiki/wiki/items/system/components/decision.md",
+			".codewiki/wiki/items/system/components/client-project-server-protocol.md",
+			".codewiki/wiki/items/system/components/project-server.md",
+			".codewiki/wiki/items/system/components/dsh-run-execution.md",
 		];
 		const activeText = activeFiles
 			.map((path) => `${path}\n${readFileSync(path, "utf8")}`)

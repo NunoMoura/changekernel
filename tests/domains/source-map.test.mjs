@@ -25,7 +25,7 @@ function activeArtifactPaths() {
 	return unique([
 		...collectFiles("src"),
 		...collectFiles("tests"),
-		...collectFiles(".codewiki/kb"),
+		...collectFiles(".codewiki/wiki"),
 		"README.md",
 		"CHANGELOG.md",
 		"LICENSE",
@@ -43,7 +43,7 @@ function unique(values) {
 function sampleSourceMap() {
 	return {
 		id: "spec.test.source-ownership",
-		sourceRefs: [".codewiki/kb/system/components/change-trace.md"],
+		sourceRefs: [".codewiki/wiki/items/system/components/change-trace.md"],
 		defaults: {
 			inheritance: true,
 			maxOwnerDepth: 2,
@@ -52,7 +52,7 @@ function sampleSourceMap() {
 		components: [
 			{
 				id: "traces",
-				doc: ".codewiki/kb/system/components/change-trace.md",
+				doc: ".codewiki/wiki/items/system/components/change-trace.md",
 				sourcePatterns: ["src/changes/trace/**", "src/project-server/persistence/trace.ts"],
 				testPatterns: ["tests/changes/trace/**"],
 				generatedViews: [],
@@ -61,7 +61,7 @@ function sampleSourceMap() {
 			},
 			{
 				id: "implementation",
-				doc: ".codewiki/kb/system/components/implementation.md",
+				doc: ".codewiki/wiki/items/system/components/implementation.md",
 				sourcePatterns: ["src/loops/implementation/**"],
 				testPatterns: ["tests/loops/implementation/**"],
 				generatedViews: [],
@@ -83,7 +83,7 @@ describe("source ownership map helpers", () => {
 		);
 		assert.equal(
 			sourceMapOwnerForPath(map, "src/loops/implementation/workers.ts")?.doc,
-			".codewiki/kb/system/components/implementation.md",
+			".codewiki/wiki/items/system/components/implementation.md",
 		);
 	});
 
@@ -106,7 +106,7 @@ describe("source ownership map helpers", () => {
 			components: [
 				{
 					id: "tests",
-					doc: ".codewiki/kb/system/components/change-trace.md",
+					doc: ".codewiki/wiki/items/system/components/change-trace.md",
 					sourcePatterns: ["tests/**"],
 					testPatterns: ["tests/**"],
 					generatedViews: [],

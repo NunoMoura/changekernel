@@ -3,7 +3,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { CODEWIKI_EXTENSION_AVAILABLE } from "../../src/index.ts";
-import { assertValidTraceRecord } from "../../src/changes/trace/schema.ts";
+import {
+	changeTracePath,
+	parseChangeTrace,
+} from "../../src/changes/trace/semantic-kernel.ts";
 import {
 	formatKnowledgeDriftIssues,
 	lintKnowledgeDrift,
@@ -14,7 +17,6 @@ import {
 	renderCodewikiPromptInstructions,
 } from "../../src/clients/pi/prompt/index.ts";
 import { CODEWIKI_TOOL_NAMES } from "../../src/clients/pi/tools/index.ts";
-import {SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN} from "../../src/domains/software-development/plugin.ts";
 import {FRONTEND_CAPABILITIES} from "../../src/protocol/frontend.ts";
 import {DSH_CLIENT_SLOT_QUALIFICATION} from "../../src/clients/dsh/client-slot-qualification.ts";
 import {
@@ -49,7 +51,7 @@ const codewikiConfig = jsonFile(".codewiki/config.json");
 const piSettings = existsSync(".pi/settings.json")
 	? jsonFile(".pi/settings.json")
 	: { packages: [] };
-const productDocumentationFiles = ["README.md", ...filesUnder(".codewiki/kb")];
+const productDocumentationFiles = ["README.md", ...filesUnder(".codewiki/wiki")];
 const operatingGuidanceFiles = [
 	...productDocumentationFiles,
 	...filesUnder(".agents/skills"),
@@ -72,7 +74,7 @@ const forbiddenSkillNames = [
 ];
 const agentSurfaceFiles = [
 	"README.md",
-	...filesUnder(".codewiki/kb"),
+	...filesUnder(".codewiki/wiki"),
 	...filesUnder(".agents/skills"),
 	...filesUnder("src/clients/pi"),
 ];
@@ -368,41 +370,39 @@ describe("install readiness checklist", () => {
 	it("keeps the active .codewiki top level in the target shape", () => {
 		const entries = readdirSync(".codewiki").sort();
 		assert.deepEqual(entries, [
+			"changes",
 			"check-packs",
 			"check-packs.lock.json",
 			"config.json",
-			"kb",
-			"traces",
+			"wiki",
 		]);
 		assert.equal(entries.includes("runtime"), false);
 		assert.equal(entries.includes("views"), false);
 	});
 
 	it("keeps trace truth in TRACE files without central index files", () => {
-		assert.equal(existsSync(".codewiki/traces.jsonl"), false);
-		assert.equal(existsSync(".codewiki/traces/traces.jsonl"), false);
-		assert.equal(existsSync(".codewiki/traces/catalog.json"), false);
-		assert.equal(existsSync(".codewiki/traces/trace-index.jsonl"), false);
+		assert.equal(existsSync(".codewiki/changes.jsonl"), false);
+		assert.equal(existsSync(".codewiki/changes/changes.jsonl"), false);
+		assert.equal(existsSync(".codewiki/changes/catalog.json"), false);
+		assert.equal(existsSync(".codewiki/changes/change-index.jsonl"), false);
 	});
 
-	it("keeps hot trace files valid under the current schema", () => {
-		for (const fileName of readdirSync(".codewiki/traces")) {
+	it("keeps hot Change Trace files valid under the Semantic Kernel schema", () => {
+		for (const fileName of readdirSync(".codewiki/changes")) {
 			if (!/^TRACE-.*\.jsonl$/.test(fileName)) continue;
-			const path = join(".codewiki/traces", fileName);
-			const records = readFileSync(path, "utf8")
-				.split(/\r?\n/)
-				.filter(Boolean)
-				.map((line, index) => parseJson(line, `${path}:${index + 1}`));
-			for (const record of records) assertValidTraceRecord(record);
+			const path = join(".codewiki/changes", fileName);
+			const trace = parseChangeTrace(readFileSync(path, "utf8"));
+			assert.equal(path, changeTracePath(trace.header.changeId));
 		}
 	});
 
-	it("pins source configuration to exact admitted Domain Plugin", () => {
-		assert.deepEqual(codewikiConfig.domain, {
-			pluginId: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginId,
-			pluginVersion: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.pluginVersion,
-			admissionDigest: SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.admissionDigest,
+	it("uses Domain-free project configuration protocol 2.0.0", () => {
+		assert.equal(codewikiConfig.project, "codewiki");
+		assert.deepEqual(codewikiConfig.protocol, {
+			id: "codewiki.project-config",
+			version: "2.0.0",
 		});
+		assert.equal(Object.hasOwn(codewikiConfig, "domain"), false);
 	});
 
 	it("freezes Backend v1 lifecycle and state evolution without project-local runtime residue", () => {

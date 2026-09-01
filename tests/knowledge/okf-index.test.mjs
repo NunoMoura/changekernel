@@ -1,34 +1,19 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import { generateOkfDirectoryIndex } from "../../src/knowledge/okf-index.ts";
 import { validateOkfBundle } from "../../src/knowledge/okf-validation.ts";
-
-function collectFiles(root) {
-	const output = [];
-	for (const name of readdirSync(root).sort()) {
-		const path = `${root}/${name}`;
-		if (statSync(path).isDirectory()) output.push(...collectFiles(path));
-		else output.push(path);
-	}
-	return output;
-}
+import {repositoryLegacyOkfFiles} from "../helpers/repository-wiki.mjs";
 
 function readKbBundle() {
-	return collectFiles(".codewiki/kb")
-		.filter((path) => path.endsWith(".md"))
-		.map((path) => ({
-			path: path.replace(/^\.codewiki\/kb\//, ""),
-			content: readFileSync(path, "utf8"),
-		}));
+	return repositoryLegacyOkfFiles();
 }
 
-describe("OKF index and log navigation", () => {
-	it("generates disposable indexes from semantic frontmatter", () => {
+describe("migrated OKF index compatibility", () => {
+	it("generates disposable indexes from retained semantic metadata", () => {
 		const bundle = readKbBundle();
 		const root = generateOkfDirectoryIndex(bundle, { includeRootVersion: true });
 		const components = generateOkfDirectoryIndex(bundle, { directory: "system/components" });
-		assert.match(root.content, /CodeWiki Lexicon/);
+		assert.match(root.content, /# CodeWiki Knowledge Index/);
 		assert.match(root.content, /14 concepts under `product\/`/);
 		assert.match(root.content, /29 concepts under `system\/`/);
 		assert.match(components.content, /Change Intake/);
@@ -37,16 +22,16 @@ describe("OKF index and log navigation", () => {
 		assert.match(components.content, /Review/);
 	});
 
-	it("does not require disposable navigation projections in canonical Knowledge", () => {
+	it("does not reconstruct disposable navigation projections as concepts", () => {
 		const paths = new Set(readKbBundle().map((file) => file.path));
 		assert.equal(paths.has("index.md"), false);
 		assert.equal(paths.has("log.md"), false);
 	});
 
-	it("treats the active native bundle as semantic concepts only", () => {
+	it("treats retained migrated metadata as semantic concepts only", () => {
 		const result = validateOkfBundle(readKbBundle());
 		assert.deepEqual(result.issues, []);
-		assert.equal(result.conceptCount, 44);
+		assert.equal(result.conceptCount, 43);
 		assert.equal(result.reservedCount, 0);
 	});
 

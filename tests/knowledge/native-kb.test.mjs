@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
-import { parse as parseYaml } from "yaml";
 import {validateCodeWikiKbBundle} from "../../src/domains/software-development/codewiki-kb-profile.ts";
 import {
 	assertKnowledgeFactInventory,
@@ -11,78 +9,62 @@ import {createKnowledgeCheckpoint} from "../../src/knowledge/state.ts";
 import { parseOkfDocument } from "../../src/knowledge/okf-frontmatter.ts";
 import { analyzeOkfV02Document } from "../../src/knowledge/okf-v02.ts";
 import { validateSystemDiagrams } from "../../src/domains/software-development/system-diagrams.ts";
-
-const root = ".codewiki/kb";
-
-function filesBelow(directory) {
-	return readdirSync(directory)
-		.sort()
-		.flatMap((name) => {
-			const file = `${directory}/${name}`;
-			return statSync(file).isDirectory() ? filesBelow(file) : [file];
-		});
-}
+import {repositoryLegacyKnowledgeState} from "../helpers/repository-wiki.mjs";
 
 function knowledgeState() {
-	const files = filesBelow(root);
-	const documents = files
-		.filter((file) => file.endsWith(".md"))
-		.map((file) =>
-			parseOkfDocument(file.slice(root.length + 1), readFileSync(file, "utf8")),
-		);
-	const diagrams = files
-		.filter((file) => file.endsWith(".yaml"))
-		.map((file) => parseYaml(readFileSync(file, "utf8")));
-	return { files, documents, diagrams };
+	const state = repositoryLegacyKnowledgeState();
+	const documents = state.okfFiles.map(({path, content}) =>
+		parseOkfDocument(path, content),
+	);
+	return {...state, documents};
 }
 
-describe("CodeWiki native Knowledge bundle", () => {
-	it("classifies every current Knowledge file and semantic cell as durable seed or derived view", () => {
-		const {files} = knowledgeState();
+describe("CodeWiki migrated Knowledge bundle", () => {
+	it("classifies every retained legacy semantic file and cell as a durable seed", () => {
+		const {legacyFiles} = knowledgeState();
 		const checkpoint = createKnowledgeCheckpoint({
-			files: files.map((file) => ({
-				path: file.slice(root.length + 1),
-				mediaType: file.endsWith(".md") ? "text/markdown" : "application/yaml",
-				bytes: readFileSync(file, "utf8"),
-			})),
+			files: legacyFiles,
 		});
 		const inventory = createKnowledgeFactInventory({checkpoint});
 		assertKnowledgeFactInventory(inventory);
 		assert.equal(
 			inventory.entries.filter((entry) => entry.id.startsWith("knowledge-projection:")).length,
-			files.length,
+			legacyFiles.length,
 		);
 		assert.equal(inventory.counts.accepted_semantic_cell, 0);
 		assert.equal(inventory.coverage, "complete");
 	});
 
-	it("contains only canonical semantic documents and diagrams", () => {
-		const { files, documents } = knowledgeState();
+	it("retains canonical semantic documents and diagrams in Wiki migration metadata", () => {
+		const {legacyFiles, documents, itemEntries, entries, tree} = knowledgeState();
+		assert.equal(tree.entries.length, entries.length);
 		assert.equal(
-			files.every(
+			legacyFiles.every(
 				(file) =>
-					file.endsWith(".md") ||
-					/^\.codewiki\/kb\/system\/diagrams\/[a-z0-9-]+\.yaml$/.test(file),
+					file.path.endsWith(".md") ||
+					/^system\/diagrams\/[a-z0-9-]+\.yaml$/.test(file.path),
 			),
 			true,
 		);
 		assert.deepEqual(validateCodeWikiKbBundle(documents), []);
-		const concepts = new Set(documents.map((document) => `/${document.path}`));
-		const lexicon = documents.find((document) => document.path === "lexicon.md");
-		assert.ok(lexicon);
-		const ownerTargets = [...lexicon.body.matchAll(/\|\s*\[[^\]]+\]\(([^)]+)\)\s*\|$/gm)].map(
-			(match) => `/${match[1]}`,
+		assert.equal(
+			documents.some((document) => document.path === "lexicon.md"),
+			false,
 		);
-		assert.equal(ownerTargets.length > 0, true);
-		assert.equal(ownerTargets.every((target) => concepts.has(target)), true);
+		assert.equal(
+			itemEntries.some(({item}) =>
+				Array.isArray(item.attributes["codewiki.legacy:terms"]),
+			),
+			true,
+		);
 		assert.deepEqual(
 			documents.flatMap((document) => analyzeOkfV02Document(document).issues),
 			[],
 		);
 	});
 
-	it("resolves every authored relationship to one canonical concept", () => {
-		const { documents } = knowledgeState();
+	it("resolves every retained authored relationship to one Wiki Item", () => {
+		const {documents} = knowledgeState();
 		const concepts = new Set(documents.map((document) => document.conceptId));
 		const unresolved = documents.flatMap((document) =>
 			(document.frontmatter?.codewiki_relationships ?? []).flatMap(
@@ -95,8 +77,8 @@ describe("CodeWiki native Knowledge bundle", () => {
 		assert.deepEqual(unresolved, []);
 	});
 
-	it("maps every stable Component and Flow to diagram topology and Product intent", () => {
-		const { documents, diagrams } = knowledgeState();
+	it("maps every stable Component and Flow to retained diagram topology and Product intent", () => {
+		const {documents, diagrams} = knowledgeState();
 		const components = documents.filter(
 			(document) => document.frontmatter?.type === "System Component",
 		);
@@ -145,8 +127,8 @@ describe("CodeWiki native Knowledge bundle", () => {
 		}
 	});
 
-	it("contains desired state rather than authored history or migration views", () => {
-		const { documents } = knowledgeState();
+	it("retains desired state rather than authored history or migration views", () => {
+		const {documents} = knowledgeState();
 		const forbiddenHeading = /^## (Current State|History|Migration|Status|Update Log|Completed Checklist)$/m;
 		assert.deepEqual(
 			documents.flatMap((document) =>

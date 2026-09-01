@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {existsSync} from "node:fs";
 import {cp, mkdtemp, mkdir, readFile, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
@@ -463,55 +462,6 @@ test("SK2 staging omits an oversized legacy Lexicon and folds its terms into own
 				aliases: [],
 			}],
 		);
-	} finally {
-		await context.cleanup();
-	}
-});
-
-test("SK2 stages and activates this repository's complete canonical KB", async () => {
-	const records = await activeTraceRecords();
-	const context = await fixture({
-		traceId: "TRACE-CHG-source",
-		traceRecords: records,
-		kbSource: join(import.meta.dirname, "..", "..", "..", ".codewiki", "kb"),
-	});
-	try {
-		const backup = await createBackendStateBackup({
-			repoRoot: context.repoRoot,
-			stateRoot: context.stateRoot,
-			generatedAt: "2026-08-28T11:02:00.000Z",
-		});
-		const staged = await stageKbToWikiMigration(
-			migrationStageInput(context, backup.backupId),
-		);
-		assert.deepEqual(staged.plan.omittedLexiconSourceIds, ["lexicon.md"]);
-		assert.ok(staged.plan.items.length > 40);
-		assert.equal(
-			staged.plan.items.some(({item}) => item.itemId === "cw:lexicon:codewiki"),
-			false,
-		);
-		const runtime = staged.plan.items.find(
-			({item}) => item.itemId === "cw:component:runtime",
-		)?.item;
-		assert.ok(runtime?.aliases.includes("Run Request"));
-		assert.ok(
-			staged.plan.items.every(({item}) => Buffer.byteLength(item.body) <= 16_384),
-		);
-		await activateStagedKbToWikiMigration({
-			repoRoot: context.repoRoot,
-			stateRoot: context.stateRoot,
-			staged,
-			activatedAt: "2026-08-28T11:04:00.000Z",
-		});
-		const restart = await inspectKbToWikiMigrationRestart({
-			repoRoot: context.repoRoot,
-			stateRoot: context.stateRoot,
-			staged,
-		});
-		assert.equal(restart.phase, "activated");
-		assert.equal(restart.worktreeClean, true);
-		assert.equal(existsSync(join(context.repoRoot, ".codewiki", "kb")), false);
-		assert.equal(existsSync(join(context.repoRoot, ".codewiki", "wiki")), true);
 	} finally {
 		await context.cleanup();
 	}

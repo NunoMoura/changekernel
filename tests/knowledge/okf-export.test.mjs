@@ -8,6 +8,7 @@ import {
 	exportCodeWikiOkfBundle,
 	runWikiOkf,
 } from "../../src/knowledge/okf-export.ts";
+import {repositoryLegacyOkfFiles} from "../helpers/repository-wiki.mjs";
 
 function collectFiles(root) {
 	const output = [];
@@ -20,27 +21,33 @@ function collectFiles(root) {
 }
 
 function repoOkfInputFiles() {
-	return [...collectFiles(".codewiki/kb"), ...collectFiles(".codewiki/traces")]
-		.filter((path) => path.endsWith(".md") || path.endsWith(".jsonl"))
-		.map((path) => ({ path, content: readFileSync(path, "utf8") }));
+	return [
+		...repositoryLegacyOkfFiles({fullPaths: true}),
+		...collectFiles(".codewiki/changes")
+			.filter((path) => path.endsWith(".jsonl"))
+			.map((path) => ({
+				path: path.replace(/^\.codewiki\/changes\//, ".codewiki/traces/"),
+				content: readFileSync(path, "utf8"),
+			})),
+	];
 }
 
 describe("OKF export compatibility operation", () => {
-	it("validates and exports the active CodeWiki KB as native OKF v0.2", () => {
+	it("validates and exports retained migrated metadata as native OKF v0.1", () => {
 		const input = repoOkfInputFiles();
 		const validation = runWikiOkf({ action: "validate", files: input });
 		const exported = runWikiOkf({ action: "export", files: input });
 
 		assert.equal(validation.action, "validate");
-		assert.equal(validation.okfVersion, "0.2");
+		assert.equal(validation.okfVersion, "0.1");
 		assert.equal(validation.scope, "codewiki-kb");
 		assert.deepEqual(validation.validation.issues, []);
-		assert.equal(validation.validation.conceptCount, 44);
+		assert.equal(validation.validation.conceptCount, 43);
 		assert.equal(validation.validation.reservedCount, 0);
 		assert.equal(exported.action, "export");
-		assert.equal(exported.okfVersion, "0.2");
+		assert.equal(exported.okfVersion, "0.1");
 		assert.deepEqual(exported.validation.issues, []);
-		assert.equal(exported.files.length, 44);
+		assert.equal(exported.files.length, 43);
 		assert.equal(
 			exported.files.some((file) => file.path === "index.md"),
 			false,

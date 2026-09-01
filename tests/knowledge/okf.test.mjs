@@ -15,6 +15,7 @@ import {
 	okfConceptDocuments,
 	validateOkfBundle,
 } from "../../src/knowledge/okf-validation.ts";
+import {repositoryLegacyOkfFiles} from "../helpers/repository-wiki.mjs";
 
 function collectFiles(root) {
 	const output = [];
@@ -27,18 +28,11 @@ function collectFiles(root) {
 }
 
 function readKbBundle() {
-	return collectFiles(".codewiki/kb")
-		.filter((path) => path.endsWith(".md"))
-		.map((path) => ({
-			path: path.replace(/^\.codewiki\/kb\//, ""),
-			content: readFileSync(path, "utf8"),
-		}));
+	return repositoryLegacyOkfFiles();
 }
 
 function readFullPathKbBundle() {
-	return collectFiles(".codewiki/kb")
-		.filter((path) => path.endsWith(".md"))
-		.map((path) => ({ path, content: readFileSync(path, "utf8") }));
+	return repositoryLegacyOkfFiles({fullPaths: true});
 }
 
 const validConcept = `---
@@ -97,13 +91,13 @@ describe("Open Knowledge Format v0.1", () => {
 		assert.equal(reparsed.body, document.body);
 	});
 
-	it("validates the active CodeWiki KB as OKF concepts", () => {
+	it("validates retained migrated metadata as OKF concepts", () => {
 		const bundle = readKbBundle();
 		const result = validateOkfBundle(bundle);
 		const sourceMap = sourceOwnershipMapFromOkfBundle(readFullPathKbBundle());
 
 		assert.deepEqual(result.issues, []);
-		assert.equal(result.conceptCount, 44);
+		assert.equal(result.conceptCount, 43);
 		assert.equal(result.reservedCount, 0);
 		assert.equal(sourceMap.components.length, 20);
 		assert.equal(
@@ -112,7 +106,7 @@ describe("Open Knowledge Format v0.1", () => {
 			),
 			true,
 		);
-		for (const path of collectFiles(".codewiki/traces").filter((candidate) =>
+		for (const path of collectFiles(".codewiki/changes").filter((candidate) =>
 			candidate.endsWith(".jsonl"),
 		)) {
 			assert.equal(readFileSync(path, "utf8").startsWith("---\n"), false);

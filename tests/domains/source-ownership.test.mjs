@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
 	CODEWIKI_SOURCE_OWNERSHIP_DEFAULTS,
@@ -17,6 +17,7 @@ import {
 	LEGACY_SOURCE_FILES,
 	LEGACY_SOURCE_ROOTS,
 } from "../../src/project/source-architecture.ts";
+import {repositoryLegacyOkfFiles} from "../helpers/repository-wiki.mjs";
 
 function collectFiles(root) {
 	return readdirSync(root)
@@ -28,13 +29,11 @@ function collectFiles(root) {
 }
 
 function knowledgeBundleFiles() {
-	return collectFiles(".codewiki/kb")
-		.filter((path) => path.endsWith(".md"))
-		.map((path) => ({ path, content: readFileSync(path, "utf8") }));
+	return repositoryLegacyOkfFiles({fullPaths: true});
 }
 
-describe("OKF-backed intended source ownership", () => {
-	it("builds one target realization map from Component frontmatter", () => {
+describe("migrated OKF source-ownership compatibility", () => {
+	it("builds one compatibility realization map from retained Component metadata", () => {
 		const ownership = sourceOwnershipMapFromOkfBundle(knowledgeBundleFiles());
 		const components = new Map(
 			ownership.components.map((component) => [component.id, component]),
@@ -58,7 +57,7 @@ describe("OKF-backed intended source ownership", () => {
 		);
 	});
 
-	it("answers target owner and test queries without requiring paths to exist yet", () => {
+	it("answers owner and test queries without requiring paths to exist yet", () => {
 		const bundle = knowledgeBundleFiles();
 		assert.equal(
 			sourceOwnershipComponentById(bundle, "cw:component:runtime")?.doc,
@@ -93,7 +92,7 @@ describe("OKF-backed intended source ownership", () => {
 		);
 	});
 
-	it("keeps target ownership declarations structurally valid and non-duplicated", () => {
+	it("keeps retained ownership declarations structurally valid and non-duplicated", () => {
 		const bundle = knowledgeBundleFiles();
 		const ownership = sourceOwnershipMapFromOkfBundle(bundle);
 		const sourcePatterns = ownership.components.flatMap((component) =>
@@ -105,7 +104,7 @@ describe("OKF-backed intended source ownership", () => {
 		assert.equal(new Set(rawPatterns).size, rawPatterns.length);
 	});
 
-	it("accounts every active source file as one target owner or explicit legacy debt", () => {
+	it("accounts every active source file as one owner or explicit legacy debt", () => {
 		const ownership = sourceOwnershipMapFromOkfBundle(knowledgeBundleFiles());
 		for (const path of collectFiles("src")) {
 			const owners = ownership.components.filter((component) =>
@@ -118,7 +117,7 @@ describe("OKF-backed intended source ownership", () => {
 		}
 	});
 
-	it("exports realization metadata from Component concepts only", () => {
+	it("exports compatibility realization metadata from Component concepts only", () => {
 		const extensions = okfSourceOwnershipExtensionsFromBundle(
 			knowledgeBundleFiles(),
 		);
