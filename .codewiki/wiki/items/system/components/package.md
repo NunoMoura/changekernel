@@ -3,9 +3,9 @@
 ---
 # Package
 
-`@nunomoura/codewiki` is one passive private package containing Project Server, semantic contracts, Client/Check SDKs, compatibility Pi extension, admitted execution support, schemas, and release-managed Check Pack templates. Installation performs no lifecycle hook, project write, Agent/Check/Plugin execution, credential lookup, daemon start, migration, provider call, or telemetry. Package remains unpublished with `"private": true` until separately authorized.
+`@nunomoura/codewiki` is one passive package containing Project Server, semantic contracts, Client/Check SDKs, compatibility Pi extension, admitted execution support, schemas, and release-managed Check Pack templates. Installation performs no lifecycle hook, project write, Agent/Check/Plugin execution, credential lookup, daemon start, migration, provider call, or telemetry. Publication is a separately authorized Delivery and does not change passive installation behavior.
 
-Public target surfaces are version-neutral semantic Kernel/Client APIs plus explicit versioned envelopes and the curated `@nunomoura/codewiki/project-server` and execution-support boundaries. DSH owns Agent runtime mechanics; package may bundle/pin qualified DSH closure but does not relabel it as CodeWiki semantic authority.
+Public surfaces are version-neutral semantic Kernel/Client APIs plus explicit versioned envelopes and the curated `@nunomoura/codewiki/project-server` and execution-support boundaries. DSH owns Agent runtime mechanics; package may bundle/pin qualified DSH closure but does not relabel it as CodeWiki semantic authority.
 
 Check Pack resources are inert files. First bootstrap or explicit adoption may validate/copy exact templates and record source/tree identity in `.codewiki/check-packs.lock.json`. Installed project Packs are immediately editable/removable and never silently restored. Project-specific controller Packs do not become shipped defaults.
 
@@ -17,4 +17,4 @@ Every released package binds exact source commit/tree, archive SHA-256/npm ident
 
 Released controller N governs exact committed release candidate N+1 using accepted protected-head policy. Mutable N+1 code never governs, qualifies, or loads itself. Any correction requires another commit, package, exact-subject qualification, authorization, and activation. Activation pins immutable verified package bytes outside the governed checkout and remains independently recoverable through Pi-native/Git paths.
 
-Current Linux x64 Backend-v1 support, exact Node/containment identities, DSH/Cordis package closure, provider routes, backup/recovery, and historical protocol readers remain executable qualification evidence. Target refactoring must preserve accepted records and fail closed on unsupported combinations while removing obsolete semantic exposure rather than weakening containment.
+Exact qualified Linux x64 execution, Node/containment identities, DSH/Cordis package closure, provider routes, backup/recovery, and historical protocol readers remain evidence only for their bound subjects. Compatibility preserves accepted records without exposing obsolete semantic owners. Every release advertises only requalified combinations and fails closed rather than weakening containment.

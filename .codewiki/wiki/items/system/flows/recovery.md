@@ -35,4 +35,4 @@ Operational rollback may restore exact refs and private state only within a qual
 
 Repository migration/upgrade is backup-first, exact-subject, and expected-state CAS. Unknown schema, mixed Wiki roots, path escape, symlink, drifted executable/Build, incomplete backup, or unsupported conversion fails closed. `.codewiki/runtime/**` and `.codewiki/views/**` are never recreated.
 
-Backend-v1 Session Continuity, Run Request/Receipt, Runtime Build, private integration, and fault-recovery protocols remain retained executable/history evidence until target adapters replace their semantic exposure. Compatibility readers cannot dual-write or upgrade old records by inference.
+Backend-v1 Session Continuity, Run Request/Receipt, Runtime Build, private integration, and fault-recovery protocols remain accepted historical evidence only through explicit compatibility readers or internal adapters. They cannot dual-write, expose obsolete semantic owners, or upgrade old records by inference.

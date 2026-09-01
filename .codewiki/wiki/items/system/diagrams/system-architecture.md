@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:architecture",
   "id": "architecture",
-  "purpose": "Show target ownership among Clients, Project Server, Git/Wiki/Trace, four stages, Checks, DSH Runs, derived Views, Providers, release qualification, and legacy compatibility.",
+  "purpose": "Show ownership among Clients, Project Server, Git/Wiki/Trace, four stages, Checks, DSH Runs, derived Views, Providers, release qualification, and legacy compatibility.",
   "components": [
     {
       "id": "clients",

@@ -25,4 +25,4 @@ Role capabilities differ. Decision may propose Wiki bytes but cannot write refs.
 
 Execution evidence, raw DSH data, provider records, credentials, logs, caches, sockets, and temporary files remain in owner-private external state. They never enter project Git unless a bounded semantic Trace operation cites an immutable receipt. Missing or contradictory closure stops; Project Server never fabricates a Result, integration, or lifecycle transition from process exit.
 
-Backend-v1 Runtime, Runtime Build, Bridge, Run Request/Receipt, Session continuity, compaction, provider broker, and sandbox protocols remain qualified executable/history evidence. Target architecture may retain internal adapters and host qualification, but wording and public API must not claim CodeWiki owns the Agent runtime that DSH owns.
+Backend-v1 Runtime, Runtime Build, Bridge, Run Request/Receipt, Session continuity, compaction, provider-broker, and sandbox protocols remain accepted evidence only for their exact qualified subjects. Internal adapters may preserve those records and host guarantees, but public APIs never claim CodeWiki owns the Agent runtime that DSH owns.

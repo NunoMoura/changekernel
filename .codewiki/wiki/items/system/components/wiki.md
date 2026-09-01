@@ -39,6 +39,6 @@ An authenticated `commitChange` command creates the Change Commit. Accepted Wiki
 
 Batch admission may create several independent Change refs atomically, but each Change retains its own type, Gate, commit/reject/defer/withdraw outcome, attribution, and completion. Pending alternatives are conflict evidence rather than veto authority.
 
-## Migration boundary
+## Compatibility boundary
 
-SK2 migrated legacy Knowledge and Trace roots into `.codewiki/wiki/items/**` and `.codewiki/changes/**` while preserving stable IDs, content, provenance, and active history. This SK3 design transition moves all 47 Items from generated hash paths to readable `product/**` and `system/**` paths while preserving exact Item IDs and Git rename lineage. Legacy compilers/converters are stopped recovery evidence, not normal Wiki lifecycle machinery.
+Normal Wiki authoring uses readable `product/**` and `system/**` paths while stable Item IDs and Git rename lineage preserve identity. An explicit migration may import legacy Knowledge/Trace roots or hash-path Items only when it preserves exact IDs, content, provenance, and active history under backup-first recovery rules. Legacy compilers and converters are stopped compatibility machinery; normal Wiki lifecycle never invokes them or dual-reads old and new roots.

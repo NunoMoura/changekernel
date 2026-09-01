@@ -19,6 +19,8 @@
 - Pack and test candidates only in disposable external projects with isolated Pi settings.
 - Do not add project-local CodeWiki package links, duplicate skills, executable Plugin paths, or controller pins.
 - Governed KB→Wiki migration is complete. `.codewiki/wiki/**` and `.codewiki/changes/**` are intended truth; `.codewiki/kb/**` and `.codewiki/traces/**` must remain absent. Never dual-read or dual-write.
+- `.codewiki/wiki/**` is desired-state design truth; it contains stable behavior, not refactoring progress or temporary implementation status.
+- `SEMANTIC_KERNEL_PLAN.md` is the sole active refactoring roadmap, status ledger, qualification record, and archive checklist. Historical plans remain unchanged.
 - `src/**` and `tests/**` are executable truth. Git is history and checkpoint evidence.
 - Governed Changes, append-only Traces, and managed CodeWiki refs are semantic/lifecycle authority. Generated Views and private runtime state are not source truth.
-- Update Wiki and source/tests together when behavior changes. Design-only target drafts must state executable drift until governed implementation lands.
+- Update Wiki only when desired behavior changes. Track every implementation gap and its sequencing in the active refactoring plan before changing source; do not derive unscheduled work directly from Wiki.

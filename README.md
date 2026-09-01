@@ -34,9 +34,9 @@ Current truth boundaries:
 
 `.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated indexes below `.codewiki/wiki/**` must remain absent.
 
-Current source still implements qualified Backend-v1/SK2 contracts. `SEMANTIC_KERNEL_PLAN.md` defines target SK3 architecture; target behavior is not executable until governed implementation and external qualification complete.
+The Wiki defines desired stable behavior, while source and tests define current executable behavior. `SEMANTIC_KERNEL_PLAN.md` is the sole active refactoring roadmap, status ledger, and archive checklist between those states; README does not duplicate its progress claims.
 
-## Target ownership
+## Ownership
 
 ```text
 Clients / CodeWiki App / external Agents
@@ -100,7 +100,7 @@ Wiki Item is the sole first-class semantic unit. Stable `itemId` establishes ide
 
 Definition Items and Claim Items are typed Wiki Items, not peer stores. Dictionary, graph, lexical, vector, history, attribution, and semantic-diff facilities are read-only Views over one exact commit or Proposed Change tip. Approximate retrieval finds candidates only; it never establishes identity, truth, or authority.
 
-This proposal moves all 47 migrated Items to readable `product/**` and `system/**` paths. Stable `itemId` and Git rename history preserve identity; paths remain non-authoritative navigation hints.
+All 47 migrated Items use readable `product/**` and `system/**` paths. Stable `itemId` and Git rename history preserve identity; paths remain non-authoritative navigation hints.
 
 ## Agent boundary
 
@@ -155,13 +155,13 @@ Do not run packed lifecycle tests against this source checkout.
 
 ## Backend-v1 review evidence compatibility
 
-Current executable source still supports legacy **Review evidence configuration** until SK3 contract replacement. `autoEvidence` controls automatic collection, `includeCachedEvidence` allows eligible cached observations, `requiredPacks` requires relevant sensors to run, and `skippedPacks` explains unavailable or unmatched sensors. Explicit `reviewEvidenceReports` remain validated compatibility input.
+Legacy **Review evidence configuration** is accepted only through its explicit compatibility boundary. `autoEvidence` controls automatic collection, `includeCachedEvidence` allows eligible cached observations, `requiredPacks` requires relevant sensors to run, and `skippedPacks` explains unavailable or unmatched sensors. Explicit `reviewEvidenceReports` remain validated compatibility input. Its refactoring and retirement status belongs exclusively to `SEMANTIC_KERNEL_PLAN.md`.
 
-Built-in sensor IDs are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. Their output is Evidence, not target Gate or completion authority.
+Built-in sensor IDs are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. Their output is Evidence, not Gate or completion authority.
 
 ## Documentation
 
-- [Semantic Kernel plan](SEMANTIC_KERNEL_PLAN.md) — active architecture and implementation sequence
+- [Semantic Kernel refactoring plan](SEMANTIC_KERNEL_PLAN.md) — sole active roadmap, completion ledger, and archive checklist
 - [Backend v1 plan](BACKEND_V1_PLAN.md) — completed historical evidence
 - [Refactoring plan](REFACTORING_PLAN.md) — completed historical evidence
 - [SK0 contracts](SEMANTIC_KERNEL_SK0_CONTRACTS.md) — qualified historical contract freeze

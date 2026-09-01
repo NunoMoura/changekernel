@@ -31,4 +31,4 @@ Events are notifications over persisted state, ordered by stable cursor and gene
 
 Errors use stable codes and bounded structured facts for stale head/tip, authorization, missing source, unsupported capability, invalid object/tree/Trace, incomplete Gate, conflict, stop, and recovery. They exclude secrets and hidden model reasoning. Retry safety follows operation idempotency and exact current state, never a generic transport retry.
 
-Backend-v1 frontend, Change, and execution envelopes remain historical readers and fixtures. Target adapters translate only at explicit version boundaries and never dual-write old and new semantic owners.
+Backend-v1 frontend, Change, and execution envelopes remain historical compatibility inputs and fixtures. Compatibility adapters translate only at explicit version boundaries and never dual-write old and new semantic owners.

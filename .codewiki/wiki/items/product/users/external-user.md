@@ -3,6 +3,6 @@
 ---
 # External User
 
-An external user may later inspect or act through an approved client surface. CodeWiki preserves the same visibility, authority, and privacy boundaries regardless of transport.
+An External User inspects or acts through an approved Client surface. CodeWiki preserves the same visibility, authority, provenance, and privacy boundaries regardless of transport.
 
-This role stays draft until a supported external client and its user outcomes exist.
+A Client exposes only authenticated capabilities admitted for that user and Project. Remote access, interface choice, or possession of repository bytes grants no additional authority.

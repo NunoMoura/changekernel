@@ -28,4 +28,4 @@ Trace contains semantic milestones and immutable references, not prompts, reason
 
 Digests bind already-complete operation bytes, commits, receipts, or segments. No operation embeds or computes its own digest; an enclosing or successor fact cites it. Trace identity never depends on cryptographic self-reference or a hash fixed point.
 
-Backend-v1 Change Trace protocols, Knowledge Effects, Candidates, requirements, private integration records, and Review Attempts remain historical executable/migration evidence. Target protocol readers preserve accepted history while normal target operation uses the Git-snapshot, Change-ref, and append-only Trace model without dual authority.
+Backend-v1 Change Trace protocols, Knowledge Effects, Candidates, requirements, private integration records, and Review Attempts remain accepted historical/migration evidence. Explicit compatibility readers preserve that history; normal operation uses the Git-snapshot, Change-ref, and append-only Trace model without dual authority.

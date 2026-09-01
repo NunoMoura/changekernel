@@ -3,7 +3,7 @@
 ---
 # Remote State Synchronization
 
-Local Git repository and configured canonical/managed refs are Project authority. Target remote mechanics use admitted `remote.observe` and `remote.publish` Plugin Requests; Project Server never silently chooses remote bytes, force-pushes, or grants a provider direct canonical-ref authority.
+Local Git repository and configured canonical/managed refs are Project authority. Remote mechanics use admitted `remote.observe` and `remote.publish` Plugin Requests; Project Server never silently chooses remote bytes, force-pushes, or grants a provider direct canonical-ref authority.
 
 `remote.observe` returns authenticated provider refs/object facts and an immutable receipt. Project Server imports objects through sanitized Git plumbing, verifies complete ancestry/object types and provider proof, then classifies divergence. Exact known controlled history may reconcile through current Change/Work rules. Unmatched external work enters External Work Admission or Change Intake. Observation alone never advances lifecycle.
 

@@ -15,18 +15,18 @@ Git stores bytes and ancestry. Change Trace stores why, who, lifecycle facts, Re
 
 ## Tracked layout and configuration
 
-`.codewiki/config.json` uses Domain-free format `2.0.0`. Mandatory semantic roots are `.codewiki/wiki/items/**` and `.codewiki/changes/**`. Project Check policy lives under `.codewiki/check-packs/<stage>/<pack>/**` plus exact transport lock identity. `.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated Wiki indexes are invalid target state.
+`.codewiki/config.json` uses Domain-free format `2.0.0`. Mandatory semantic roots are `.codewiki/wiki/items/**` and `.codewiki/changes/**`. Project Check policy lives under `.codewiki/check-packs/<stage>/<pack>/**` plus exact transport lock identity. `.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated Wiki indexes are invalid Project state.
 
 Configuration selects repository identity, frozen Git object format, canonical project ref, semantic roots, public API/AuthZ policy references, exact admitted Plugin identities/config, DSH role routes, budgets, and retention/qualification policy. It cannot add lifecycle stages/statuses, semantic owners, arbitrary Change types, automatic merges, proposal-selected Checks, credentials, executable project-local Plugin paths, or authority grants.
 
-Change type taxonomy and realization routes are fixed Kernel protocol. Check Packs are editable project-owned files, not config fields. Target DSH route config binds explicit Decision, Planning, Worker, Review, and Model Check routes plus provider/account/credential references and ceilings. No role silently inherits a generic route; DSH owns internal Session/provider/tool mechanics.
+Change type taxonomy and realization routes are fixed Kernel protocol. Check Packs are editable project-owned files, not config fields. DSH route configuration binds explicit Decision, Planning, Worker, Review, and Model Check routes plus provider/account/credential references and ceilings. No role silently inherits a generic route; DSH owns internal Session/provider/tool mechanics.
 
 Credentials, private DSH state, leases, sockets, caches, worktrees, raw logs, execution evidence, Plugin state, and generated Views remain below an external repository-identity-bound owner-private State Root. Project files contain references and policy only. Symlinks, path escape, ambient secrets, and in-repository private state fail closed.
 
 Admitted Plugins bind exact immutable manifest/implementation/dependency identities, protocol ranges, configuration schema, capabilities, permissions, isolation, and qualification Evidence. Project config may select an installed allowlisted identity and bounded options. It cannot install code, widen operator floors, grant managed-ref writes, create Results, or define stages.
 
-Bootstrap is passive and explicit. It may create initial config, a valid empty Wiki/Trace state, and one-time release Check Pack templates only in a new Project. Existing Projects adopt resources through reviewed operations. Startup validates bytes but never repairs, restores, compiles, migrates, calls providers, runs Agents/Checks/Plugins, or changes refs silently.
+Bootstrap is passive and explicit. It may create initial config, valid empty Wiki/Change state, and one-time release Check Pack templates only in a new Project. Existing Projects adopt resources through reviewed operations. Startup validates bytes but never repairs, restores, compiles, migrates, calls providers, runs Agents/Checks/Plugins, or changes refs silently.
 
-Current migrated schema limits remain fixed: each legacy System Component body is at most 10,000 characters and Recovery Flow body is at most 8,000 characters. A limit change requires a governed schema/protocol Change.
+Compatibility schema limits remain fixed: each legacy System Component body is at most 10,000 characters and Recovery Flow body is at most 8,000 characters. A limit change requires a governed schema/protocol Change.
 
-Legacy Backend-v1 config, Domain identity, Runtime Build, and `quality.review` fields remain readable only through explicit compatibility/migration boundaries. Unknown, drifted, or mixed semantic-root state stops. Migration is backup-first, exact, and one-way; target operation never dual-reads or dual-writes old owners.
+Legacy Backend-v1 config, Domain identity, Runtime Build, and `quality.review` fields remain readable only through explicit compatibility/migration boundaries. Unknown, drifted, or mixed semantic-root state stops. Migration is backup-first, exact, and one-way; normal operation never dual-reads or dual-writes old owners.
