@@ -1,0 +1,10 @@
+---
+{"aliases":[],"attributes":{"codewiki.legacy:media-type":"text/markdown","codewiki.legacy:metadata":{"codewiki_id":"cw:user:check-author","description":"Developer who builds reusable Probes and composable Checks against exact CodeWiki project inputs.","status":"stable","tags":["product","user","developer","checks"],"title":"Check Author","type":"User"},"codewiki.legacy:source-path":"product/users/check-author.md"},"itemId":"cw:user:check-author","itemType":"codewiki.legacy:user","protocol":"codewiki.wiki-item@1.0.0","provenance":[{"attributes":{"codewiki.legacy:source-digest":"sha256:b10efb4731a9caf3749da44a9de74febf609a421260039aebfcd497ab2025a84","codewiki.legacy:source-path":"product/users/check-author.md"},"kind":"codewiki.legacy:knowledge","subjectId":"cw:user:check-author"}],"relationships":[],"title":"Check Author"}
+---
+# Check Author
+
+Check Authors create inspectable project policy without becoming Project Server, Actor, Gate, or lifecycle authorities. They author and test one atomic Check boundary, then install one self-contained `CHECK.mjs` or `CHECK.md` beside its project-owned `check.json`.
+
+`check.json` declares bounded inputs, implementation kind, execution limits, measurement, stable failure/remediation contract, and optional positive applicability allowlists. Stage, required Change type/realization, Work Unit subtype, and exact subject facts determine Gate active Checks. Check Authors cannot add arbitrary selector expressions, proposal-controlled policy, lifecycle routes, authority grants, or hidden dependencies.
+
+The Check SDK exposes only Gate-declared read-only facts over exact Git, Wiki, Trace, Alignment, Evidence, Result, and Work sources. Deterministic Code Checks run in admitted network-denied sandboxes. Model Checks run through isolated DSH Runs with no producer memory. Success means reusable validation can grow through ordinary source composition while each registered top-level Check remains independently inspectable, bounded, replayable, and responsible for at most one Result.

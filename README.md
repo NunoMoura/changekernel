@@ -1,381 +1,142 @@
 # CodeWiki
 
-CodeWiki is evolving from its qualified Backend v1 into a headless Semantic Kernel for governed agentic work.
+CodeWiki is an intent-first Git workflow for Agentic teams.
 
-It carries accountable Changes from exact Git proposal commits through accepted Wiki change to verified completion. Every governed domain uses one local Git Project Store; Project Server alone writes managed proposal refs, appends Trace, creates two-parent disposition commits, and advances the canonical ref. Applications consume one versioned Kernel API/Client SDK; admitted Plugins handle bounded external mechanics without canonical-write or lifecycle authority.
+It lets collaborators commit shared meaning before implementation begins, then verifies that one exact Project snapshot realizes that meaning.
 
 ```text
-(Wₜ, Pₜ, Dₜ) + ΔIntent
-  ──CodeWiki──>
-(Wₜ₊₁, Pₜ₊₁, Dₜ₊₁, Evidence)
+user intent
+  -> Proposed Change
+  -> semantic Decision
+  -> Change Commit
+  -> planned and checked realization
+  -> Change Completion Commit
+  -> optional Delivery
 ```
 
-Where `W` is accepted Wiki, `P` is exact project state, `D` is Delivery state, and Evidence includes exact observations, Check Results, Gate Reports, authority, integration proof, and Plugin Receipts.
+The Change Commit is the semantic merge. The Change Completion Commit is the reviewed artifact merge. Git stores complete Project snapshots and ancestry. Wiki stores accepted meaning. Change Trace stores why, who, lifecycle facts, Results, receipts, and exact object IDs.
 
-> **A Change is accountable intent and a durable dossier. Project Server owns the canonical Work Graph and operational scheduling; Decision, Planning, Implementation, and Review own Loop meaning.**
-
-CodeWiki does not guarantee unknowable semantic perfection. It provides bounded process integrity: accepted-intent provenance, exact subject identity, independent checking, deterministic Gate reduction, guarded progression, provider-neutral project/Delivery proof, and explicit uncertainty.
+CodeWiki does not promise perfect model judgment. It provides bounded process integrity: stable identity, authenticated authority, exact subjects, independent Checks, deterministic Gate reduction, compare-and-swap, explicit uncertainty, durable provenance, and recovery.
 
 ## Current posture
 
-CodeWiki is private pre-production software. Backend v1, Semantic Kernel SK0, and the SK1 contract laboratory are externally qualified; SK2 is next.
+CodeWiki is private pre-production software. Package `@nunomoura/codewiki@0.3.0` is unpublished and retains `"private": true`.
 
-- `.codewiki/kb/**` is intended Product/System/Design truth until governed SK2 migration.
-- `src/**` and `tests/**` are executable truth.
-- Git is history and checkpoint evidence.
-- `REFACTORING_PLAN.md` and `BACKEND_V1_PLAN.md` are completed historical evidence; `SEMANTIC_KERNEL_PLAN.md` is the active roadmap.
-- An activated immutable CodeWiki release may dogfood this checkout while Pi-native tools remain the independent fallback.
-- Released controller N governs candidate N+1; mutable candidate code never governs or qualifies itself.
-- Never load CodeWiki from this working tree or this repository's `.pi/` directory.
-- Packed candidates are tested only in disposable external projects with isolated Pi settings.
-- `.codewiki/runtime/**` and `.codewiki/views/**` are prohibited; private state stays under an external repository-identity-bound CodeWiki State Root.
-- Pi-native compaction remains active.
+Backend v1, Semantic Kernel SK0/SK1, and corrected SK2 release `adc272d0d9b8f228fc8cedb150c8c6371c823997` passed external exact-subject qualification. SK2 migrated this repository at commit `7b4e5e9021b27ff09f6f93569bb2a93c1fb0ebdf`.
 
-The private `@nunomoura/codewiki@0.3.0` package is not published. Local dogfood uses a hash-verified packed artifact installed outside the checkout; `"private": true` remains enabled. The next roadmap slice is SK2: mandatory Git store activation, universal Wiki Items, and qualified KB→Wiki migration. End-user frontend implementation remains outside CodeWiki core.
+Current truth boundaries:
 
-## Primary product boundary (target)
+- `.codewiki/wiki/**` and `.codewiki/changes/**` — accepted semantic and lifecycle truth;
+- `src/**` and `tests/**` — executable truth;
+- Git — exact Project bytes, history, ancestry, refs, and checkpoint evidence;
+- external owner-private state — DSH internals, credentials, caches, leases, sockets, worktrees, and raw execution evidence;
+- generated Views — rebuildable, never source truth.
 
-```text
-CodeWiki App / Console / other Clients
-    │ Kernel API + transport binding / Client SDK
-    ▼
-CodeWiki Semantic Kernel
-├── mandatory local Git Project Store
-│   ├── project artifacts and Wiki Item files
-│   ├── .codewiki/changes/TRACE-CHG-<id>.jsonl dossiers
-│   └── refs/codewiki/changes/** active proposal history
-├── Change lifecycle/completion, Alignment, Work, Gates, AuthZ, Git-ref CAS
-├── DSH Agent Runtime ── AI Gateway ── AI Provider
-└── CodeWiki Plugin Protocol / SDK ── admitted Plugins ── external systems
-        │
-        ▼
-Execution Host Contract ── Host OS
-```
+`.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated indexes below `.codewiki/wiki/**` must remain absent.
 
-Git versions project state. One proposal commit OID is one Change proposal version; first-parent/tree identity derives Wiki change. Terminal two-parent disposition commits retain proposal ancestry while canonical first-parent history defines accepted state. Each `.codewiki/changes/TRACE-CHG-<id>.jsonl` dossier preserves exact predecessor bytes and appends typed operations; Git commit/path/blob identity replaces record-digest chains, snapshot wrappers, and custom Trace tips. No lossy compaction replaces full history. At each fresh target Run, canonical replay rebuilds WorkState, then materializes one authorized read-only Run Context Bundle; neither derived artifact is continuity authority. Host OS governs resources. DSH governs agent execution. CodeWiki governs shared meaning, Change, authorization, and completion. CodeWiki Plugins govern only admitted external mechanics. Applications govern experience. Linux x64 remains the only currently qualified production host; target portability does not imply support.
+Current source still implements qualified Backend-v1/SK2 contracts. `SEMANTIC_KERNEL_PLAN.md` defines target SK3 architecture; target behavior is not executable until governed implementation and external qualification complete.
 
-## Current Backend v1 boundary
+## Target ownership
 
 ```text
-CodeWiki
-|
-+-- Clients: CLI, Backend v1 App surfaces, optional Pi, External Agent Clients
-+-- Domains: Software Development Domain Plugin
-|
-`-- Backend
-    +-- Project Server
-    |   +-- transport, AuthN, project AuthZ
-    |   +-- canonical state and four Stage Loops
-    |   +-- Checks, Gates, Workbenches, transitions, and effects
-    |   `-- Runtime
-    |       +-- Run Requests and Runs
-    |       +-- Runtime Builds -> qualified outer Run Sandbox -> Run Process
-    |       +-- Runtime Bridge -> exact DSH profile, Plugins, AgentLoop
-    |       +-- admitted run_code -> qualified inner Code Runtime
-    |       `-- CodeWiki-authored Run Receipts
-    +-- private provider broker -> DSH provider/auth/credential Plugins -> exact route
-    `-- durable state and executable Plugin admission policy
+Clients / CodeWiki App / external Agents
+                 |
+        authenticated Kernel API
+                 |
+          Project Server
+       /      |       |       \
+     Git     Wiki   Checks    DSH Run authorization
+      |       |       |                |
+ full trees  meaning  Gates      DSH + Execution Host
+ ancestry    links    Results    models/tools/providers
+ refs        Views
 ```
 
-Project Server is the sole authority for one governed project. Runtime is its subordinate execution subsystem and owns no project meaning, Work Graph, queue, integration, or lifecycle authority. The managed package closure pins all 33 DSH packages to `0.1.1-rc.2`, Cordis to `4.0.1`, Cordis Plugin Loader to `1.0.2`, and the provider-protocol support package `@earendil-works/pi-ai` to `0.82.1`; exact package-lock integrities remain distinct from the explicitly unattested relationship to reviewed DSH source commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`. DSH Loader owns Plugin lifecycle, while the read-only DSH Host Plugin Inventory must report every expected managed-Run entry enabled and active. Replay qualification proves that exact Runtime Build from authenticated Run Process launch through persistent Agent Session JSONL and Runtime-authored Run Receipt. Authenticated process frames persist the exact Execution Ledger and bounded raw-log chunks before Runtime atomically commits the Receipt; restart recovery rejects corrupt evidence and duplicate Run authority. Production producer Runs accept an authorized read-only content-addressed Project Context Snapshot mount and expose typed local Knowledge, Alignment, Project State, repository, Evidence, Result, batch, and Change-delta services; legacy `StageContextBundle` tools remain replay qualification evidence only. At Candidate checkpoint, Project Server freezes Gate Evaluation Package `2.0.0` over the complete resolved Check Pack, exact declared selections, source heads, stage lineage, and execution identities. Checks receive no producer handles or live project access. Project Server persists logical Session continuity independently of Runtime processes, admits one expected-head-CAS writer lease, and records cancellation, expiry, receipt advancement, and explicit rollover. Run Process `6.0.0`, Run Request `6.0.0`, Run Receipt `4.0.0`, Execution Ledger `5.0.0`, Run Continuation `1.0.0`, Runtime Build Manifest `4.0.0`, and Executable Plugin Admission Closure `1.0.0` bind the exact continuity, lease, material, feedback, canonical rehydration, predictive reserves, build, exact Node executable, required outer-containment profile, executable Plugin admission policy, expected head, and resulting head. Retained Runtime Build Manifest `3.0.0` records remain readable for diagnosis but cannot activate or resume until an operator performs exact requalification and Project Server rolls Session continuity explicitly. DSH Goal state drives one Project Server-authorized round per Run; Candidate output pauses the Goal, while only Project Server and Gates determine completion. Predictive idle compaction uses deterministic non-authoritative CodeWiki summaries, records exact replacement provenance, and retains raw history. Trusted Broker Host composition now mounts official DSH LLM, authorization, local credential, and Host Plugin Inventory seams through DSH Loader. Deterministic local provider fixtures qualify API-key OpenAI, Anthropic, DeepSeek, and custom OpenAI-compatible wire paths, exact account and credential-reference binding, owner-only credential storage outside Run roots, broker-owned request/output budgets, cancellation, retry, and authenticated account-bound receipts. OAuth, ambient credentials, secret-bearing provider headers, unsupported provider protocols, and multi-user local-file custody fail closed; replay remains mandatory CI and live-provider qualification remains opt-in. Secure Code Mode uses DSH's `run_code` transport with a CodeWiki fresh-process TypeScript runtime and typed lossless-JSON bindings. Production revalidates exact Bubblewrap, `prlimit`, and Node paths, versions, and SHA-256 digests before launch. A qualified outer sandbox contains the whole DSH Run Process; a separate fresh inner sandbox contains each model-authored program. Both deny ambient authority and enforce namespace, mount, descriptor, process, CPU, memory, output, call, byte, timeout, and cancellation bounds without an in-process or worker-thread fallback. Backend v1 now qualifies current DSH provider, authorization, and credential Plugin surfaces rather than duplicating them; bundle and client composition remain later freeze work. Switchyard and its backend selector are absent. Public execution contracts use DSH Plugin, Infrastructure Provider, Runtime Bridge, and Client Plugin vocabulary; Pi remains Client-only.
+- **Project Server** owns Actor authorization, managed Git writes, Change lifecycle, Gate coordination, Work admission, protected effects, and recovery.
+- **Git Project Store** owns complete trees, commits, ancestry, canonical first-parent history, managed Change refs, and expected-old-OID compare-and-swap.
+- **Wiki** owns accepted descriptive, historical, and normative Project meaning through stable Wiki Item IDs.
+- **Change Trace** owns rationale, contributors, lifecycle events, Work facts, Results/receipts, and exact Git OIDs.
+- **Checks** judge one exact stage subject. Change type and subject facts deterministically select Gate active Checks from exact stage Pack snapshots.
+- **DSH** owns Agent execution mechanics, internal Sessions, models, tools, providers, and compaction. CodeWiki authorizes exact DSH Runs and validates receipts.
+- **WorkState, Alignment, Dictionary, search, backlinks, history, and attribution** are derived Views.
 
-## Backend lifecycle and private state
-
-Package installation is passive. It runs no CodeWiki lifecycle hook, project code, Plugin, Skill, Check, credential lookup, daemon, or canonical write. Operators use the curated `@nunomoura/codewiki/project-server` surface explicitly:
-
-- `bootstrapStandaloneProjectServer`
-- `startStandaloneProjectServer`
-- `stopStandaloneProjectServer`
-- `restartStandaloneProjectServer`
-- `upgradeStandaloneBackend`
-- `rollbackStandaloneBackend`
-- `createBackendStateBackup` / `restoreBackendStateBackup`
-- `recoverBackendStateManifest` / `pruneBackendStateBackups`
-- `uninstallStandaloneBackendState`
-
-Set `CODEWIKI_STATE_ROOT` to one absolute owner-private location outside every governed checkout. If omitted, Linux uses `$XDG_STATE_HOME/codewiki` or `~/.local/state/codewiki`; Windows uses `%LOCALAPPDATA%/CodeWiki/State`.
-
-```text
-$CODEWIKI_STATE_ROOT/
-  registry/
-  runtime-builds/
-  backups/<repository-identity>/<backup-id>/
-  quarantine/<repository-identity>/<quarantine-id>/
-  projects/<repository-identity>/
-    state.json
-    project-server/
-      process-control/
-      continuity/
-      synchronization/
-      worker-assignments/
-      effects/
-      workbenches/
-      integration/
-      logs/
-      tmp/
-    runtime/
-      dsh-agent-sessions/
-      execution-evidence/
-      worker-reports/
-      preview-evidence/
-      publications/
-```
-
-Backend State `1.0.0` binds repository identity, generation, active Backend Build, and migration, restore, recovery, and build-transition heads. Backend Build `2.0.0` binds package version and lock, Backend Support Matrix identity, exact managed-Run and broker-host DSH profile closures, complete Domain Plugin identities including implementation digests, durable file schemas, and protocol versions. Exact Backend Build `1.0.0` state remains readable, and backup-first upgrade may convert only the known identity-preserving Domain and Runtime Build schema bindings; no foreign or drifted identity is inferred. Startup rejects installed/active Build drift. Upgrade requires quiescence, expected-state CAS, compatible state schema, unchanged Domain identity unless explicitly migrated, and a verified pre-upgrade backup. Rollback restores exact canonical, Project Server-private, and Runtime-private scopes, preserves append-only audit receipts, advances generation, and requires Session rollover.
-
-Backups store canonical-project, Project-Server-private, Runtime-private, and Backend-audit scopes separately. Every regular file binds portable path, mode, size, and SHA-256 digest. DSH Agent Session files are opaque: DSH owns their format and live behavior, Runtime owns exact-byte custody and evidence, and Project Server owns continuity, resume, and rollover decisions. Restore never interprets or rewrites DSH internals. Corrupt state is quarantined and can recover only from an exact verified backup. Uninstall preserves `.codewiki/**` and private state by default; explicit private-state removal first creates a verified external backup.
-
-Supported schema-less `.codewiki/runtime/` and `.codewiki/views/` residue requires explicit stopped-Project-Server migration. Known durable paths move to declared external owners, all source bytes enter digest-bound quarantine, unknown or symbolic residue fails closed, and successful migration deletes both local roots. Normal operation never recreates them.
-
-## Backend v1 production support and operations
-
-Backend Support Matrix `1.0.0` defines the production boundary. Passive installation and offline inspection do not imply production qualification.
-
-| Surface | Backend v1 support |
-| --- | --- |
-| Production platform | Linux x64 only |
-| Node | `>=22.19.0`; each qualified Runtime Build binds the exact real path, semantic version, and SHA-256 executable digest |
-| Containment | Exact Bubblewrap and `prlimit` paths, versions, and SHA-256 digests; outer Run Process containment and fresh inner Code Mode containment are mandatory |
-| Deployment class | Isolated single-user host with owner-private external state and credential files |
-| Providers | OpenAI, Anthropic, DeepSeek, and operator-defined OpenAI-compatible routes |
-| Authentication | API key through exact Broker Host account and credential references |
-| Qualification | Deterministic replay and local wire qualification are mandatory; live-provider qualification is opt-in |
-
-OAuth, ambient credentials, secret-bearing provider headers, multi-user local-file credential custody, non-Linux production hosts, non-x64 production architectures, and undeclared provider families fail closed. OAuth remains unsupported specifically because refresh persistence, entitlement filtering, revocation, and recovery are not qualified. Package integrity remains distinct from the unattested relationship to reviewed DSH source.
-
-Runtime Production Qualification `1.0.0` binds one exact Runtime Build, Domain Plugin identity, Node binary, Bubblewrap profile, `prlimit`, DSH and Cordis package closure, managed-Run and Broker Host executable Plugin closures, provider routes, and eight release-gate evidence digests. Backend Fault Recovery `1.0.0` fixes ownership and recovery for crash, cancellation, timeout, quota, credential rotation, stale Session, Broker Host loss, filesystem corruption, process orphan, and partial effect. Protected effects are recovered from durable idempotency evidence and are never repeated speculatively.
-
-`inspectBackendOperations` consumes an explicit read-only `RuntimeOperationsInspectionPort` and returns Backend Observability `1.0.0`: structured component health, bounded aggregate metrics, digest-verified audit metadata, selected redacted Dev Logs, exact Runtime receipt metadata, and stable diagnostics. It excludes chain-of-thought, credentials, secret values, raw DSH Agent Session bytes, raw logs, and model output bodies. `collectBackendAuditRecords` exports only protocol, identity, timestamp, byte length, digest, and private-state reference for migration, build-transition, restore, and recovery receipts. Browser Frontend capabilities remain unchanged; these are explicit operator APIs, not unauthenticated browser surfaces.
-
-Backend Release Manifest `1.0.0` freezes one candidate package artifact and source tree, Backend Build and contract closure, Runtime Production Qualification, release-N controller, protected-head Check Pack snapshots, and exact qualification evidence. Safe dogfood packs and installs controller N outside both source and disposable N+1 subject, keeps state and random credential custody in separate owner-private roots, proves expected-head CAS and candidate-policy isolation, runs independent N+1 CI, then qualifies backup-first upgrade, rollback, emergency stop, uninstall, and residue-free cleanup. Mutable N+1 Project Server code is never resolved by controller N; it is loaded only by independent CI after governance. Dogfood machinery remains test-only and is excluded from the package.
-
-Repository diagnostics are governed by `diagnostics/baseline.json`, narrow context-correcting scanner rules, and `npm run diagnostics:ratchet`. Pinned Pi-Lens, ast-grep, Knip, Madge, and jscpd versions reject tool drift, unclassified or new finding identities, count increases, new source cycles, every emitted-JavaScript cycle, and increased production-oriented duplication. The baseline independently ratchets Pi-Lens's deterministic structural output and documents owner and disposition for every retained population without hiding interactive findings; ten correctness policies remain at zero, while LSP and production security gates stay active.
-
-## Exactly four Stage Loops
-
-```text
-Project Server
-+-- Decision
-+-- Planning
-+-- Implementation
-`-- Review
-```
-
-The user-selected Harness Agent is the primary interactive DSH-backed Agent. It submits Decision and Planning Candidates through exact role-scoped Runs and may observe bounded canonical Implementation progress and Review outcomes for user explanation. It is not a fifth Stage Loop, Worker, Check, Review producer, feedback forwarder, or Project Server coordinator. Decision and Planning inherit its exact route by default; Review may inherit the same route but always uses a fresh independent producer Session. Implementation Workers use a separate user-authorized route pool, and Model Checks use Check-owned routes. Harness interaction bindings reuse ordinary producer Session continuity, bind exact Project Context and observer projection digests, and submit unchanged Candidates only after a completed receipt-bound Run. The observer projection coalesces successful progress, includes exceptional report references, and exposes exact Review Results only after a typed return to Decision or Planning.
-
-External Agent Clients use six reserved operations under `codewiki.*`: bounded material query, Candidate submission, operation status, digest-bound confirmation, Work Unit read, and Review read. The MCP binding accepts only ordinary authenticated Client–Project Server envelopes and cannot bypass AuthZ, expected-state CAS, snapshot coverage, admission, Gates, or confirmation.
-
-A producer DSH Agent Session may span several separately bounded Runs, but every Candidate has exactly one producing Run. DSH Goal state records bounded same-Session rounds without receiving completion authority: Project Server starts or resumes one round, Candidate submission pauses it, and Gate feedback becomes canonical rehydration for a later Run. Models receive no `complete_goal` tool. DSH AgentLoop owns model/tool continuation and compaction mechanics; it is not a CodeWiki Stage Loop.
-
-- **Decision** evaluates one exact Change revision, accepted active Changes compatibility, and `approve | reject | defer | withdraw`.
-- **Planning** creates one immutable Change-scoped Work Graph delta without replacing a global plan.
-- **Implementation** independently realizes and gates each accepted Work Unit through an isolated Assignment-bound Workbench under one shared stage-wide policy.
-- **Review** judges the exact aggregate integrated Change lineage and complete Change outcome.
-
-Every Candidate attempt follows one authority model:
-
-```text
-refreshable producer Project Context Snapshot
--> exact Run Request and exclusive Session lease
--> Runtime executes bounded Run
--> Run Receipt
--> immutable Candidate
--> frozen Gate Evaluation Package and resolved stage-wide Check Pack
--> Gate
--> Project Server retries, stops, integrates one Work Unit, completes aggregate Review, or applies guarded transition
-```
-
-## Check Packs, Results, and Gates
-
-Project files define stage standards directly:
-
-```text
-.codewiki/check-packs/<stage>/<pack>/
-├── skill/<skill-name>/        # optional, at most one per Pack
-│   ├── SKILL.md
-│   └── scripts/ | references/ | assets/ | other resources
-└── <check-id>/
-    ├── check.json
-    └── CHECK.mjs | CHECK.md
-```
-
-Stages are `decision`, `planning`, `implementation`, and `review`. Pack directories need no manifest. Project Server deterministically resolves every active Pack in one stage into one stage-wide policy snapshot. Implementation applies the same resolved policy to every Work Unit Candidate; only frozen unit-specific inputs differ. No Work Unit, Planning Candidate, worker, or route selects a bespoke Pack. Every present Check gates. Empty Packs and Skill-only Packs are valid; a stage with zero Checks passes with `selectedCheckCount: 0`, no synthetic Result, and `no_checks_configured`.
-
-An optional Pack Skill guides only the work-producing Agent for its stage. Project Server snapshots its complete bounded file tree and binds separate Skill digests to producer attempts and receipts. Managed DSH Runs disable ambient Skills and resources, materialize only exact stage snapshots, preserve executable files, and keep explicit Worker tool policy authoritative over `allowed-tools` metadata. Code and Model Check executors receive no Pack Skill, producer context, memory, or tools, and Skill identity does not enter Check Result or Gate cache identity.
-
-`check.json` uses the exported `CheckDefinitionSchema` at version `1.0.0`. It binds one atomic requirement, one Code or Model implementation, bounded input selectors, binary or finite quantitative measurement, execution limits, one stable failure code, and one remediation contract. It contains no lifecycle route, authority grant, enforcement tier, activation state, protected floor, arbitrary dependency, or repair subsystem.
-
-Code Checks use `CHECK.mjs`. Checks delegates them only to an admitted sandbox that declares hermetic, bounded, credential-free, network-denied execution. CodeWiki does not execute project JavaScript directly in the host process. The public `@nunomoura/codewiki/checks` Check Author SDK reads only declared frozen Invocation selections and emits the fixed Check Output contract. Production Code Checks execute as self-contained modules through the same qualified fresh-process Bubblewrap boundary used by secure Code Mode, with one read-only Invocation binding and no ambient repository, network, credentials, persistence, or effect port. Model Checks use `CHECK.md`; each Pack-selected route, profile, and token ceiling is independent from work-producing Worker routes. Every top-level Model Check invocation uses its own fresh isolated tool-free session, may run in bounded parallel, and receives no producer context query, memory, conversation, Worker state, or lifecycle authority.
-
-Passive Check Pack transport accepts exact npm, Git, local, or admitted Domain release-resource identity, discovers declared `codewiki.checkPacks` resources or conventional `check-packs/` trees, rejects links and path escape, bounds files and bytes, validates each Pack with the ordinary loader, content-addresses the source tree, and atomically installs only collision-free resources. Domain transport binds the exact admitted Domain identity and does not execute Domain or package code.
-
-Code and Model implementations return the same strict structured output: exact Invocation digest, binary or quantitative measurement, bounded summary, and bounded factual details. Checks derives the verdict. Completed Results are only `passed | failed`; a failed Result receives the Check's authored failure code and feedback. Timeout, cancellation, unavailable execution, missing inputs, malformed output, exhausted retries, or stale identity creates no Result and stops only that Gate.
-
-Gate Reports are `passed | failed | stopped`. Gate Report `2.0.0` binds the exact Gate Evaluation Package digest when package construction completed, stage subject, immutable Pack snapshot, selected Check count, completed Results, exact cache hits, execution and cancellation facts, warnings, and one bounded stop reason. A stop before complete package construction binds no package and creates no Result. Gates never choose lifecycle stages or perform effects. Project Server applies fixed transitions after validating report identity and freshness.
-
-The Gate runner resolves every declared input exactly once, rejects incomplete package coverage, freezes the package, and then resolves exact completed cache hits before execution. It runs Code Checks with bounded concurrency, stops before Model Checks after a Code failure or operational stop, then runs Model Checks with separate bounded concurrency. It stops launching queued work after a conclusive outcome and requests best-effort cancellation for already-running work. Check Invocation `4.0.0`, Check Result `2.0.0`, and cache identity `2.0.0` bind the complete package digest in addition to exact execution identity, so compiler, projected-state, accepted-target, route, or other package drift cannot reuse prior Results.
-
-The Software Development Domain ships one `software-development-default` Pack template for each stage. First bootstrap validates and copies those exact release resources once and records source, Domain identity, resource trees, and installed paths in `.codewiki/check-packs.lock.json`; existing projects adopt them only through explicit reviewed installation. Adopted Packs are ordinary project-owned policy: users may add, edit, or delete them, and bootstrap, startup, and upgrades never restore or overwrite content. CodeWiki development keeps separate Check-only `codewiki-project-server` Packs that are absent from shipped defaults. Release N reads their accepted protected-head snapshots to judge N+1; they never run as Harness Skills or controller policy.
-
-Canonical Evidence importers remain bounded observation membranes. SARIF, JUnit, coverage, provider receipts, CycloneDX, SPDX, Pact, and OpenAPI do not grant Results. Concrete scanners and provider transports remain under Execution ownership. Research collection remains a bounded trusted-host Evidence collector; it does not install hidden research Checks or share model state with Model Checks.
-
-Change Trace Protocol changes are explicit clean cuts with frozen fixtures for each active contract. Inline artifacts carry Check Pack snapshots, completed Results, Gate Reports, Project Server transitions, and compiled Knowledge checkpoints; typed `decision.confirmed` operations bind semantic acceptance separately from Gate passage.
+No Agent, Client, Check, provider, Plugin, or project file directly writes managed refs or grants lifecycle authority.
 
 ## Work and project control plane
 
-Backlog is a generated intake view over persisted pending Change revisions; submission grants no semantic or execution authority. Project Server exposes one content-addressed triage projection and one bounded user/agent query with explicit readiness, supported estimates, overlap, freshness, frontier, fairness, and ordering reasons. Accepted User Standard preferences may influence protected deterministic triage ordering, but lower order is not Check failure and no model emits final rank. An authenticated user selects an exact revision to start Decision; selection grants no disposition. `codewiki.decision-attention-selection@3.0.0` binds that command to one actor-scoped idempotency key, exact Change revision, and the projection digest that already commits WorkState, triage Candidates, graph, protected config, and policy. Project Server then appends canonical `loop.attempt_started`; its operation ID is also the revision-bound job key. Pending Changes and generic triggers remain quiescent until selection. The authenticated coordinator exposes a bounded bootstrap query plus strict projection-bound follow-up queries. Pi agents may inspect this through read-only `wiki_attention`; users may browse with `/wiki-attention` and start one exact attempt only through `/wiki-select <change-id> --revision <revision-id> --projection <digest>`. No model-callable selection tool exists. Planning later decomposes one ratified Change into a graph delta and declares dependencies and strategic parallelism; Project Server owns live readiness, queueing, Claims, Assignments, and placement.
+Backlog is a derived view over persisted pending Change revisions; it grants no selection, Check, or lifecycle authority. Project Server derives current Work from exact Git and Trace owners.
 
-Change Trace Protocol `12.0.0` makes every revision a complete content-addressed semantic input rather than a skeletal issue summary and binds authority through accountable actor plus proof-backed authenticated identity. Revision identity binds bounded problem and objective summaries, rationale and alternatives, classification and affected targets, impact, observable outcomes, delivery constraints, Evidence expectations, safety semantics, acceptance requirements, any normalized defect profile, and either exact reducible `set | retire` Knowledge Effects or explicit unchanged-Knowledge references and rationale. Effects target immutable `cw:<kind>:<stable-key>` subject IDs and optional stable facet keys, bind exact prior state or absence, and carry complete post-state once. Typed `decision.confirmed` operations bind the exact passed Candidate, Gate Report, expected WorkState, accepted-active-Changes digest, compiler plan, resulting Knowledge State, and projection identity. Missing assurance remains explicitly absent or unknown; intake claims never become risk or Check authority.
+### Change model
 
-Decision Candidate schema `8.0.0` is materialized only from native `ProjectWorkState`, the exact accepted Knowledge checkpoint, and the producer's strict disposition/rationale proposal. Project Server derives the current revision, active relationships, Accepted Effect Index `1.0.0`, complete `index_only | expanded` compatibility coverage, WorkState/Knowledge/source/config/policy refs, stable Effect identities, compiler identity, exact application plan, projected Knowledge State, exact Markdown/YAML projection, current/projected/diff view, and Candidate identity. Full accepted revisions enter model context only for shared Effect targets, shared invariants, explicit relationships, or unknown semantics. Callers cannot submit observed bases, validation state, authority, compiler output, or append bindings. Checks judge that immutable compiled Candidate. A separately authorized confirmation step then binds the unchanged Candidate and Gate Report under WorkState, Knowledge, and accepted-active-Changes compare-and-swap; no model runs after confirmation. Confirmed approval, Change Trace continuation, resulting Knowledge checkpoint, and Planning route commit in one accepted state batch. Native continuation reloads fresh Git state, verifies exact Gate binding, and recovers canonical completion without reinvoking producer or confirmer. `createDecisionGitAdmission()` supplies selection-side Git coordination. DSH producer output enters Decision only through the same strict Project Server Candidate boundary; no Client or model session can submit observed bases, compiler output, or authority fields.
-
-One Change owns one append-only JSONL dossier:
+One Change has one stable ID, one append-only Trace, and one managed ref:
 
 ```text
-.codewiki/traces/TRACE-CHG-<id>.jsonl
+.codewiki/changes/TRACE-CHG-<id>.jsonl
+refs/codewiki/changes/<id>
 ```
 
-It retains exact semantic revisions, Loop attempts, completed passed/failed Results, stopped Gate facts, bounded feedback, Planning coverage, implementation realization, Git/delivery proof, and outcome observations. Full prompts, reasoning, raw tool/model output, credentials, private Workbenches, and complete failed patches never enter canonical traces.
+Every revision is a full Project snapshot. Persisted states are Proposed, Committed, Completed, Rejected, Deferred, and Withdrawn. Accepted corrections use a Superseding Change; history is never rewritten.
 
-Dashboard destinations are:
-
-- **Work:** Backlog, Planning, Implementation;
-- **Product:** Users, Stories, Dictionary;
-- **System:** canonical diagrams and architecture Knowledge;
-- **Design:** Guidelines and UIs.
-
-Change detail is a cross-cutting dossier, not a private copy of the pipeline.
-
-Project Server derives ready Work Units from canonical Work Graph and WorkState, resolves content-addressed Worker Offers and scheduling policy, and atomically admits exact Claims, Assignments, leases, source bases, custody, consent, privacy, budget, capacity, and isolated Workbenches. Generic mutation and Runtime own no Work Unit Claim, queue, or placement API. Project Server then invokes producer Sessions or workers, runs subject-bound Gates, integrates passing unit outputs into private Change lineages, and guards writes and effects. Change-scoped Planning deltas may proceed concurrently but apply through Work Graph expected-head CAS. Independent Work Units may execute and gate concurrently; integration lineages, overlapping scopes, protected targets, and external effects remain serialized where authority requires.
-
-`WorkState` is a disposable projection over Change Traces, Knowledge, source/test ownership, source/tests/Git, configuration, delivery evidence, and bounded Project Server observations. JSONL is streamed and indexed in memory; process loss causes rebuild. No SQLite or graph database belongs to the current architecture.
-
-## Workers, Integration, and effects
-
-Planning Candidate `3.0.0` creates immutable, independently judgeable worker-ready Work Units owned by exactly one Change, with exact Knowledge Effect, unchanged-Knowledge, and acceptance-requirement coverage; dependencies; scope; verification; aggregate Review obligations; and declarative resource requirements. Typed `planning.delta_accepted` applies only exact passed-Gate output under Change, Knowledge, WorkState, and Work Graph compare-and-swap. Canonical Work Graph `2.0.0` reduces accepted deltas, amendment lineage, dependencies, and current derived statuses without rewriting accepted Work Unit identity. Project Server selects current placement and any `routine`, `standard`, or `complex` execution tier from structured facts; callers and workers cannot self-label.
-
-Project Server resolves each scheduled Assignment into one private digest-bound Workbench containing exact source, owning Change and Work Unit obligations, dependency outputs, Project Context Snapshot, Skills/tools, shared Implementation Check Pack policy, isolation, budgets, and Candidate contract. It separately creates Work Unit Model Assignment `2.0.0` from only the user-authorized Worker route pool, binding exact provider/account/credential-reference/model/options, policy attempt, prior typed outcomes, budgets, and rationale. Run Request binds both Assignments. Planning, Harness Agent, Worker, DSH, broker, and provider cannot widen the route. A model-route change occurs only between Runs and requires a fresh Session with canonical rehydration. Only a matching canonical Claim activates work.
-
-Workers are isolated and non-authoritative. Work Unit Candidate `2.0.0` binds one exact accepted Work Unit obligation slice, Assignment, Workbench, source base, bounded Run receipts, changed paths, Evidence identities, and result tree. One persistent `implementation:<work-unit-id>` DSH Session spans at most eight attempts; exactly one final completed Run produces each Candidate. Implementation Stage Policy `1.0.0` binds one shared Check Pack snapshot, while each Gate Evaluation Package `2.0.0` binds one exact Work Unit Candidate, Assignment, accepted target and requirement slice, result tree, source heads, declared Check selections, Evidence, configuration, routes, and execution identities under that shared snapshot. Code Checks run before bounded parallel Model Checks; each Model Check receives a fresh isolated Session. `gate_failed`, `gate_passed`, `integration_pending`, `integrated`, `stale`, and `conflicted` remain separate.
-
-Passing fresh output enters the owning Change's serialized private integration lineage through expected-head CAS. Private Integration Receipt `1.0.0` binds current Change and Work Graph identity, dependency set, Assignment, Workbench, Candidate and passing Gate, exact custody receipts, Candidate tree and paths, private Git base, and resulting commit/tree or conflict. Change Trace stores admission, Git stores and anchors exact bytes, and WorkState derives Private Change Integration Lineage `1.0.0`; no third store or protected per-unit merge exists. Implementation Aggregate `1.0.0` freezes only after all required units, dependencies, accepted Effects, unchanged-Knowledge targets, and requirements are covered. Gate pass, integration, aggregate completion, Review, branch merge, push, publication, release, deployment, and outcome remain separate facts and authority boundaries.
-
-Each later boundary is separately guarded and authorized:
+Every proposal declares exactly one Change type and one realization route:
 
 ```text
-Implementation exit
-→ private Integration receipts
-→ frozen Implementation aggregate
-→ aggregate Review
-→ guarded local fast-forward merge
-→ optional remote push
-→ optional publication
-→ optional release
-→ future deployment and outcome observation
+changeType: capability | correction | maintenance | policy | investigation
+realization: wiki-only | project
 ```
 
-OCI workers are opt-in, digest-pinned, preinstalled, capability-scoped, resource-bounded, non-privileged, and network-denied unless a restricted network is explicitly authorized. CodeWiki never implicitly pulls an image or mounts provider credentials/Docker socket.
+A true Wiki-only Change completes in its Change Commit. A project-realization Change continues through Planning, independently gated Work Units, Review, and Change Completion Commit.
 
-## Alignment and Knowledge
-
-Alignment means every discrepancy among intent, Knowledge, Planning, source/tests, Git, delivery, and outcomes is:
-
-1. resolved;
-2. accounted for by one exact active Change; or
-3. explicitly unknown and blocked from unsafe progression.
-
-CodeWiki keeps vertical, horizontal, temporal, and delivery alignment separate. Alignment Graph Projector `5.0.0` connects accepted Effects and requirements through Planning, Work Units, Candidates, exact source/test paths, Evidence, Results, private commits/trees, frozen aggregate, Review, and guarded delivery. Local proof never implies continuing remote state.
-
-Knowledge Fact Inventory `1.0.0` classifies every semantic cell and projection file as durable seed, accepted semantic cell, deterministic view, or Git-derived realization. Stage Efficiency Metrics `1.0.0` measures source, cached-input, output, and tool-result tokens, byte repetition/novelty, Candidate amplification, active-Change expansion, and cache hits without granting authority.
-
-OKF provides portable Knowledge; Domains supply admitted meaning — the built-in Software Development Domain Plugin adds software vocabulary, realization, Checks, and Git/delivery bindings while CodeWiki kernel retains exact authority and Change accountability. Existing project configuration must persist its exact Plugin ID, version, and admission digest; omitted/null legacy selection requires explicit `migrateLegacyWikiConfigDomainSelection` before startup. OKF validation, export, and consumption are owned by `src/knowledge/**` and exposed through the curated Project Server surface.
-
-Knowledge support is OKF v0.2 with v0.1 fallback consumption, including `sources`, `generated`, `verified`, lifecycle/freshness metadata, meaningful concept types, unknown-field preservation, and inert Attested Computation definitions.
-
-Imported `generated`, `verified`, `status`, `stale_after`, provenance, or Attested Computation metadata never grants CodeWiki authority or Loop exit. Change Traces remain outside OKF.
-
-## Relationship queries and improvement intake
-
-WorkState and Alignment Graph queries are disposable views over canonical sources. Agents may use bounded read-only semantic queries that include snapshot digest, provenance, authority class, coverage, truncation, and staleness. No arbitrary Cypher, graph mutation, canonical graph file, or absence-as-proof under partial coverage.
-
-CodeWiki has no separate project-learning, Feedback Bundle, or self-improvement subsystem. User feedback, benchmark regressions, CI/security findings, worker discoveries, delivery outcomes, and maintainer suggestions enter through normal bounded Change Intake. Improvement then follows the same authenticated selection, Decision, Planning, Implementation, Review, and release authority as any other Change. CodeWiki never uploads private project traces automatically.
-
-After stabilization and explicit activation, an immutable released CodeWiki version may operate on this source repository through an isolated external Backend and Project Server to govern the next version. It must not load mutable workspace code or edit its installed package, and dogfood evidence cannot replace independent CI, packed external proof, benchmark oracles, human review, or release authorization.
-
-## Source layout
+CodeWiki retains exactly four stages:
 
 ```text
-src/
-  index.ts
-  pi-extension.ts
-  alignment/
-  changes/
-  checks/
-  clients/
-  error-handling/
-  evidence/
-  git/
-  knowledge/
-  loops/
-  preview/
-  project/
-  project-server/
-    index.ts
-    api.ts
-    admission/
-    app/
-    authentication/
-    claims/
-    commands/
-    coordinator/
-    effects/
-    integration/
-    lifecycle/
-    pairing/
-    persistence/
-    queries/
-    registry/
-    repository-access/
-    sessions/
-    workbenches/
-    workers/
-  protocol/
-    client-project-server.ts
-    client-pairing.ts
-  runtime/
-    index.ts
-    contracts.ts
-    runtime.ts
-    builds/
-    checks/
-    context/
-    dsh/
-    evidence/
-    persistence/
-    processes/
-    providers/
-    receipts/
-    review/
-    sandbox/
-    security/
-  utils/
-  work-state/
-
-benchmarks/
-scripts/
-tests/
+Decision -> Planning -> Implementation -> Review
 ```
 
-Project Server AuthN, Pairing, Client Sessions, project AuthZ, Stage Loop coordination, persistence, Workbenches, and effects live under `src/project-server/**`. Runtime contracts, Runtime Builds, Runtime Bridge implementation, Run Process management, qualified sandbox policies, concrete Check execution, and Review execution live under `src/runtime/**`. Project Server owns standalone daemon lifecycle under `src/project-server/coordinator/**`; optional Pi code remains only under `src/clients/pi/**` plus the package extension entrypoint. Release tooling bundles the exact DSH process closure into a self-contained Runtime Build candidate; qualification, activation, and launch reverify its content digest. Core Stage Loop and Check domains import only neutral Runtime contracts. No Pi executor, backend selector, `./pi-sdk`, legacy `src/server/**`, legacy `src/execution/**`, or compatibility path survives.
+All four retain project-owned Check Packs. Gate itself freezes exact subject, Pack identities, type-conditioned active Checks, declared inputs, resolver identity, and digest. Each execution attempt is a Check Run; completed Runs may yield immutable Results.
 
-Public subpaths are `@nunomoura/codewiki/project-server` and `@nunomoura/codewiki/runtime`.
+## Wiki
 
-## Development requirements
+Wiki Item is the sole first-class semantic unit. Stable `itemId` establishes identity; path, title, alias, term, Git OID, and model output do not.
 
-- Package/runtime APIs target Node.js `>=22.19.0`, matching pinned provider-protocol dependencies.
-- Local stripped-TypeScript commands require Node.js `>=22.19.0`.
-- Optional Pi Client packaging supports Pi `>=0.80.10 <0.82.0` and exact `0.84.2`.
-- Npm packages build to `dist/**` before packing.
+Definition Items and Claim Items are typed Wiki Items, not peer stores. Dictionary, graph, lexical, vector, history, attribution, and semantic-diff facilities are read-only Views over one exact commit or Proposed Change tip. Approximate retrieval finds candidates only; it never establishes identity, truth, or authority.
+
+This proposal moves all 47 migrated Items to readable `product/**` and `system/**` paths. Stable `itemId` and Git rename history preserve identity; paths remain non-authoritative navigation hints.
+
+## Agent boundary
+
+Every CodeWiki-controlled Agent runs through DSH with:
+
+- immutable Kernel-owned role instructions;
+- exact Project/Change/stage subject;
+- mandatory relevant Wiki Items and Definitions;
+- bounded snapshot-fixed Wiki and status tools;
+- role-specific capability and writable scope;
+- exact DSH Run receipt;
+- independent stage Checks.
+
+Decision may propose Wiki changes. Planning maps Work Units to committed targets. Workers modify project artifacts only. Review compares the integrated Project tree with committed meaning. Model Checks receive only Gate-declared inputs.
+
+## Repository rules
+
+- Never load CodeWiki from this checkout, a mutable package path, or this repository's `.pi/` directory.
+- Dogfood only an immutable release that passed external exact-subject qualification and explicit activation.
+- Released controller N qualifies exact committed candidate N+1 in a disposable external project.
+- Every post-commit correction requires a new candidate, qualification, approval, and activation.
+- Use Pi-native tools and compaction as independent repair paths.
+- Do not add project-local CodeWiki links, duplicate Skills, controller pins, or executable Plugin paths.
+- Keep credentials, DSH state, generated Views, caches, and runtime scratch outside project Git.
+- Fully exit and restart Pi when changing an activated packed artifact; never hot-switch a mutable package.
+
+See [`AGENTS.md`](AGENTS.md) for repository-agent constraints.
+
+## Development
+
+Requirements:
+
+- Node.js `>=22.19.0`;
+- package/runtime builds emitted to `dist/**`;
+- Pi integration supports declared peer versions only;
+- external smoke tests use disposable projects.
 
 Core commands:
 
@@ -383,85 +144,32 @@ Core commands:
 npm run typecheck
 npm run build
 npm test
-npm run test:pack
-npm run test:pi-install
-npm run test:pi-rpc
-npm run test:pi-multiprocess
-npm run test:coordinator
-npm run test:project-local-install
-npm run test:external-lifecycle
 npm run test:production
+npm run test:pack
 npm run test:readiness
+npm run diagnostics:ratchet
 npm run audit:codewiki
 ```
 
-External smokes pack/install into disposable projects. They must not mutate this source checkout or perform real publication/release without separate approval.
+Do not run packed lifecycle tests against this source checkout.
 
-For dashboard visual development:
+## Backend-v1 review evidence compatibility
 
-```bash
-npm run dashboard:dev -- --project /tmp/codewiki-dashboard-fixture
-```
+Current executable source still supports legacy **Review evidence configuration** until SK3 contract replacement. `autoEvidence` controls automatic collection, `includeCachedEvidence` allows eligible cached observations, `requiredPacks` requires relevant sensors to run, and `skippedPacks` explains unavailable or unmatched sensors. Explicit `reviewEvidenceReports` remain validated compatibility input.
 
-Fixture must exist outside repository. Development server does not load CodeWiki extension into source checkout.
-
-## Current extension and distribution testing
-
-Package manifest retains:
-
-```json
-{
-  "pi": {
-    "extensions": ["dist/pi-extension.js"]
-  }
-}
-```
-
-Packed installs expose compatibility `/wiki-*` commands and `wiki_*` capabilities. Project Server retains exact identity, source facts, routing, freshness, sequence/parent/byte guards, and append authority.
-
-Private dogfood packs an exact activated commit, records the archive SHA-256, installs it outside the checkout, and loads that immutable installation with Pi. Candidate tests remain disposable and external. Never load the working tree or install CodeWiki under this repository's `.pi/`. Fully exit and restart Pi when changing the activated artifact.
-
-## Review evidence configuration
-
-Review Attempt `5.0.0` binds one exact Change revision, Knowledge transition and resulting state, Planning deltas, Work Graph, frozen aggregate, private lineage, target base, every Work Unit, Candidate, Implementation Gate Report, Evidence and Result identity, Project Context Snapshot, fresh Review producer Session and Run receipt, provider receipts, and Review Check Pack. Project Server routes each failed Result to exact affected Implementation, explicit Planning amendment, or Decision through typed ownership. Only a current passed Review plus Delivery Authority `1.0.0` may target-head-CAS protected Git state and record `delivery.applied`; stopped Gates preserve state without fabricating Results. Legacy `.codewiki/config.json` `quality.review` evidence-pack settings remain only for older Implementation evidence collection and grant no Review authority.
-
-```json
-{
-  "quality": {
-    "review": {
-      "autoEvidence": true,
-      "includeCachedEvidence": true,
-      "requiredPacks": []
-    }
-  }
-}
-```
-
-Built-in pack ids are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. `skippedPacks` explains disabled, unmatched, or unavailable sensors. Explicit `reviewEvidenceReports` remain validated compatibility input. `requiredPacks` requires relevant sensors to run, but their success never attests candidate acceptance. Clean Implementation/config cuts replace this surface with trusted Code Check bindings and exact evidence contracts.
-
-## Backend v1 evidence and Semantic Kernel direction
-
-`BACKEND_V1_PLAN.md` records the completed B0–B11 production sequence. CodeWiki removed Switchyard and its backend selector, pinned one exact replay-qualified DSH Plugin baseline, completed Software Development Domain extraction and identity propagation, froze authenticated Frontend API and event contracts at `1.0.0`, qualified passive lifecycle and external private state, and proved release-N-governs-N+1 dogfood without loading mutable candidate code. Those surfaces remain executable Backend v1 evidence while `SEMANTIC_KERNEL_PLAN.md` owns the active architecture sequence. In the Semantic Kernel target, Wiki Item is the sole first-class Wiki unit; native Git commit/tree/ref identity replaces custom Wiki checkpoint/update machinery; one stable Change has immutable proposal versions; explicit empty Completion Requirements make a Wiki-only Change complete at Decision acceptance, while unchanged-Wiki repair remains valid. Policy-bound Raw Data owns captured source material, compact Evidence records cite exact material or native Receipts, and Results remain separate judgments; capture and retention resolve within operator/legal constraints from project/source defaults and authorized intake Requests. Authorized source observations advance immutable Revisions, mark dependent support stale when needed, and may open Change Intake; ongoing connection mechanics remain external and never write Wiki directly.
-
-Unsupported deployment, provider, authentication, and platform combinations continue to fail closed. Semantic Kernel core does not implement a rich product frontend. It retains scriptable operations and minimal terminal-first CodeWiki Console over public Kernel and Operations APIs. Rich CodeWiki App is a separate external product even when maintained by the CodeWiki team. App or IdP may own login UX and identity acquisition; Project Server validates configured proof and owns project AuthZ. The earlier DSH client-slot spike remains qualified presentation research but grants no transport authentication, credential, lifecycle, or product authority.
-
-If CodeWiki cannot materially reduce drift, false acceptance, lost context, repeated repair, and Integration errors enough to offset ceremony and latency, it should shrink rather than duplicate commodity harness mechanics.
+Built-in sensor IDs are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. Their output is Evidence, not target Gate or completion authority.
 
 ## Documentation
 
-- [Maintainer intent](.codewiki/kb/product/stories/maintainer/maintain-intent.md)
-- [CodeWiki Console design](.codewiki/kb/product/DESIGN.md)
-- [System architecture](.codewiki/kb/system/diagrams/architecture.yaml)
-- [Alignment](.codewiki/kb/system/components/alignment.md)
-- [Evidence](.codewiki/kb/system/components/evidence.md)
-- [Checks](.codewiki/kb/system/components/checks.md)
-- [CodeWiki Plugins and package](.codewiki/kb/system/components/package.md)
-- [Plugin Author](.codewiki/kb/product/users/plugin-author.md)
-- [Review](.codewiki/kb/system/components/review.md)
-- [Project Server](.codewiki/kb/system/components/project-server.md)
-- [Runtime](.codewiki/kb/system/components/runtime.md)
-- [Domains](.codewiki/kb/system/components/domains.md)
-- [Knowledge](.codewiki/kb/system/components/knowledge.md)
-- [Lexicon](.codewiki/kb/lexicon.md)
-- [Backend v1 plan](BACKEND_V1_PLAN.md)
-- [Completed refactoring plan](REFACTORING_PLAN.md)
+- [Semantic Kernel plan](SEMANTIC_KERNEL_PLAN.md) — active architecture and implementation sequence
+- [Backend v1 plan](BACKEND_V1_PLAN.md) — completed historical evidence
+- [Refactoring plan](REFACTORING_PLAN.md) — completed historical evidence
+- [SK0 contracts](SEMANTIC_KERNEL_SK0_CONTRACTS.md) — qualified historical contract freeze
+- [System architecture](.codewiki/wiki/items/system/diagrams/system-architecture.md)
+- [Change lifecycle](.codewiki/wiki/items/system/flows/change-lifecycle.md)
+- [Wiki](.codewiki/wiki/items/system/components/wiki.md)
+- [Change Trace](.codewiki/wiki/items/system/components/change-trace.md)
+- [Checks](.codewiki/wiki/items/system/components/checks.md)
+- [Project Server](.codewiki/wiki/items/system/components/project-server.md)
+- [DSH Run Execution](.codewiki/wiki/items/system/components/dsh-run-execution.md)
+- [Alignment](.codewiki/wiki/items/system/components/alignment.md)

@@ -1,0 +1,16 @@
+---
+{"aliases":[],"attributes":{"codewiki.legacy:media-type":"text/markdown","codewiki.legacy:metadata":{"codewiki_id":"cw:flow:decision-to-planning","codewiki_relationships":[{"rationale":"Decision to Planning preserves accepted meaning and active-Change compatibility before decomposition.","target":"cw:story:maintainer.maintain-intent","type":"realizes"}],"description":"Accepts one exact proposal commit and derived Wiki change atomically, then transfers non-empty Completion Requirements into one Work Graph delta.","status":"stable","tags":["system","flow"],"title":"Decision to Planning","type":"System Flow"},"codewiki.legacy:source-path":"system/flows/decision-to-planning.md"},"itemId":"cw:flow:decision-to-planning","itemType":"codewiki.legacy:system-flow","protocol":"codewiki.wiki-item@1.0.0","provenance":[{"attributes":{"codewiki.legacy:source-digest":"sha256:ad4051efbab6b7ba1d7540aae3e7ff4f9b04525b78664199565dfe4077b2d2d5","codewiki.legacy:source-path":"system/flows/decision-to-planning.md"},"kind":"codewiki.legacy:knowledge","subjectId":"cw:flow:decision-to-planning"}],"relationships":[{"attributes":{"codewiki.legacy:relationship":{"rationale":"Decision to Planning preserves accepted meaning and active-Change compatibility before decomposition.","target":"cw:story:maintainer.maintain-intent","type":"realizes"}},"predicate":"codewiki.legacy:realizes","targetItemId":"cw:story:maintainer.maintain-intent"}],"title":"Decision to Planning"}
+---
+# Decision to Planning
+
+Project Server runs Decision Gate over one exact Proposed Change tip. Gate freezes full Project commit/tree, required `changeType` and `realization`, exact Decision Pack snapshots, deterministic active Checks, Wiki/Dictionary Views, declared inputs, resolver identity, and digest. Fixed type/realization and Wiki semantic-alignment Checks always apply.
+
+A failed Gate returns bounded feedback for a revised Proposed Change. A stopped Gate preserves state. A passed Gate grants eligibility only. Authenticated `commitChange` revalidates Actor, authority, unchanged Change tip, current Gate/Results, active-Change compatibility, complete Git/Wiki/Trace closure, and expected canonical head.
+
+Change Commit has current canonical head as first parent and exact Proposed Change tip as second. It advances canonical and managed Change refs through expected-old-OID compare-and-swap and records `change.committed`.
+
+For `realization: wiki-only`, the same full snapshot already realizes accepted outcome, so Change Commit also records `change.completed`; Planning does not run.
+
+For `realization: project`, Committed Change enters Planning. Planning receives exact committed Wiki Item/facet targets, Change type, current Project state, active relationships, and prior feedback. It proposes singly owned Work Units/dependencies without restating accepted meaning. Fixed structure plus a type-conditioned Planning Gate must pass before planning facts append to Trace.
+
+If intent, classification, authority, or accepted Wiki meaning is wrong after commitment, correction uses a Superseding Change rather than mutating the Committed Change.

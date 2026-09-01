@@ -18,7 +18,7 @@
 - Released controller N qualifies exact committed candidate N+1 outside this checkout. Any correction requires a new candidate and qualification.
 - Pack and test candidates only in disposable external projects with isolated Pi settings.
 - Do not add project-local CodeWiki package links, duplicate skills, executable Plugin paths, or controller pins.
-- `.codewiki/kb/**` is intended truth until governed KB→Wiki migration; `.codewiki/wiki/**` is authoritative afterward. Never dual-read or dual-write.
+- Governed KB→Wiki migration is complete. `.codewiki/wiki/**` and `.codewiki/changes/**` are intended truth; `.codewiki/kb/**` and `.codewiki/traces/**` must remain absent. Never dual-read or dual-write.
 - `src/**` and `tests/**` are executable truth. Git is history and checkpoint evidence.
-- Governed Changes and CodeWiki refs are workflow evidence. Generated views and private runtime state are not source truth.
-- Update KB and source/tests together. Surface drift instead of silently choosing one side.
+- Governed Changes, append-only Traces, and managed CodeWiki refs are semantic/lifecycle authority. Generated Views and private runtime state are not source truth.
+- Update Wiki and source/tests together when behavior changes. Design-only target drafts must state executable drift until governed implementation lands.

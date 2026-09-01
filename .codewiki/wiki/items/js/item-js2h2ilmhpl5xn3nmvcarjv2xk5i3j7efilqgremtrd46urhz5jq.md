@@ -1,8 +1,0 @@
----
-{"aliases":[],"attributes":{"codewiki.legacy:media-type":"text/markdown","codewiki.legacy:metadata":{"codewiki_id":"cw:user:maintainer","description":"Accountable human who accepts intent, grants protected authority, and evaluates whether CodeWiki preserves project alignment.","status":"stable","tags":["product","user","authority"],"title":"Maintainer","type":"User"},"codewiki.legacy:source-path":"product/users/maintainer.md"},"itemId":"cw:user:maintainer","itemType":"codewiki.legacy:user","protocol":"codewiki.wiki-item@1.0.0","provenance":[{"attributes":{"codewiki.legacy:source-digest":"sha256:d9633e6d71309e4da82cc16b9a96f2dcecd8c09eff1b76d4e70ed427662aa596","codewiki.legacy:source-path":"product/users/maintainer.md"},"kind":"codewiki.legacy:knowledge","subjectId":"cw:user:maintainer"}],"relationships":[],"title":"Maintainer"}
----
-# Maintainer
-
-Maintainers define intended outcomes, select exact eligible Change proposal versions, confirm unchanged passed Decision Candidates, approve protected boundaries, and inspect why CodeWiki passed, failed, or stopped each Gate. They need a standalone CodeWiki that can reconcile accepted work after Clients disconnect, traceable intent, bounded context, visible execution custody, Evidence gaps, safe recovery, and no hidden automation or data export.
-
-Success means Gate-certified project progress with accountability closure and without losing authority, provenance, privacy, or an exact recovery path when required Evidence or execution is unavailable. A Gate pass never impersonates semantic confirmation. Backend-delegated and External Agent Client receipts state their custody gaps and never imply complete child-harness observation.

@@ -1,0 +1,20 @@
+---
+{"aliases":[],"attributes":{"codewiki.legacy:media-type":"text/markdown","codewiki.legacy:metadata":{"codewiki_id":"cw:user:agent","description":"Tool-using participant acting as a Stage Producer, Implementation Worker, Check executor, delegated harness, or External Agent Client without owning acceptance, lifecycle, or effects.","status":"stable","tags":["product","user","agent"],"title":"Agent","type":"User"},"codewiki.legacy:source-path":"product/users/agent.md"},"itemId":"cw:user:agent","itemType":"codewiki.legacy:user","protocol":"codewiki.wiki-item@1.0.0","provenance":[{"attributes":{"codewiki.legacy:source-digest":"sha256:5faa41912f89b2fdd35167783ce412a0bd4eebdbc4cb718e992ca2c1005d83c2","codewiki.legacy:source-path":"product/users/agent.md"},"kind":"codewiki.legacy:knowledge","subjectId":"cw:user:agent"}],"relationships":[],"title":"Agent"}
+---
+# Agent
+
+DSH is the operational plane for every CodeWiki-controlled Agent. Agents run with exact stage subjects, bounded capabilities, mandatory relevant Wiki context, role-specific read-only Wiki tools, and receipt evidence. They produce proposals, plans, project artifacts, Review judgments, or Check outputs without gaining Actor, Git-ref, Gate, or lifecycle authority.
+
+Decision Agent is the only user-facing CodeWiki Agent role. It helps the user develop intent, queries exact current/proposed Wiki and Dictionary Views, explains feedback, and prepares Proposed Change bytes. Planning, Worker, Review, and Model Check Agents are internal DSH roles under separately authorized routes.
+
+Every role receives a small Kernel-owned Wiki-use instruction: use stable Item IDs, treat supplied Wiki as committed meaning, resolve ambiguity through bounded tools, expose unknowns/conflicts, and never silently contradict or mutate accepted intent. Project-specific Skills may guide work but cannot weaken this contract, select active Checks, or grant capabilities.
+
+Project Server deterministically supplies exact target Item/Definition inputs from the Change or Work Unit and allows only authorized bounded operations such as `wiki.get`, `wiki.list`, `wiki.search`, `wiki.resolve`, `wiki.links`, `wiki.history`, `wiki.diff`, and `change.get`. Decision may propose Wiki changes through user submission. Planning maps Work Units to committed Item/facet targets. Workers modify only isolated project-artifact scope; a meaning gap returns to Decision rather than editing Wiki. Review compares integrated Project snapshot with Committed Change. Project-authored Model Checks receive only Gate-declared inputs and no tools or producer memory; a fixed Kernel semantic Model Check may receive explicitly declared bounded read-only Wiki/View tools.
+
+Stage outputs cite Change IDs, Work Unit IDs, Item/facet references, and Git OIDs rather than copying governed Wiki outcome prose. The ordinary DSH Run receipt binds exact visible Wiki inputs, bounded queries, outputs, and Gate context; no standalone Wiki Usage Receipt or tool-call checklist can prove understanding.
+
+Durable learning enters accepted Wiki meaning, project Check policy, or explicit Change feedback. Repeated mistakes never become hidden cross-Run Agent memory or an unreviewed private semantic store.
+
+Agents cannot select Change type, suppress Gate active Checks, commit or complete Changes, alter accepted history, assign Workers, perform protected effects, or write managed refs. When an Agent prepares a proposal, authenticated user submission and later `commitChange` bind accountable human authority while preserving producing DSH Run provenance. An undelegated service acts only as its own limited Actor.
+
+External Agent products may connect as authenticated Clients or execute as explicitly delegated DSH-compatible Runs. CodeWiki claims only custody it can prove. Product brand, model identity, repository access, or useful output never upgrades authority.
