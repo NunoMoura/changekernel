@@ -149,16 +149,15 @@ export function createBubblewrapLaunchCommand(
 ): BubblewrapLaunchCommand {
 	const profileDigest = verifyBubblewrapSandboxProfile(profile);
 	assertLaunchRequest(request);
-	const mounts = normalizedMounts(profile, request.mounts);
+	const mounts = normalizedMounts(profile, [
+		...request.mounts,
+		{
+			source: profile.prlimit.path,
+			destination: profile.prlimit.path,
+			access: "read-only",
+		},
+	]);
 	const args = [
-		`--as=${profile.limits.addressSpaceBytes}`,
-		`--cpu=${profile.limits.cpuSeconds}`,
-		`--nofile=${profile.limits.openFiles}`,
-		`--nproc=${profile.limits.processes}`,
-		`--fsize=${profile.limits.fileBytes}`,
-		"--core=0",
-		"--",
-		profile.bubblewrap.path,
 		"--unshare-user",
 		"--unshare-pid",
 		"--unshare-net",
@@ -183,9 +182,24 @@ export function createBubblewrapLaunchCommand(
 		);
 	}
 	args.push("--proc", "/proc", "--dev", "/dev", "--chdir", request.cwd);
-	args.push("--", request.executable, ...request.args);
+	// RLIMIT_NPROC is accounted by real UID and user namespace on Linux. Apply
+	// it after Bubblewrap enters the fresh namespace so unrelated host-user
+	// threads do not consume this sandbox's process budget.
+	args.push(
+		"--",
+		profile.prlimit.path,
+		`--as=${profile.limits.addressSpaceBytes}`,
+		`--cpu=${profile.limits.cpuSeconds}`,
+		`--nofile=${profile.limits.openFiles}`,
+		`--nproc=${profile.limits.processes}`,
+		`--fsize=${profile.limits.fileBytes}`,
+		"--core=0",
+		"--",
+		request.executable,
+		...request.args,
+	);
 	return Object.freeze({
-		executable: profile.prlimit.path,
+		executable: profile.bubblewrap.path,
 		args: Object.freeze(args),
 		cwd: "/" as const,
 		profileDigest,

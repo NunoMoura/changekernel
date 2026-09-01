@@ -90,6 +90,38 @@ test("pinned Bubblewrap profile denies ambient files, environment, writes, child
 	assert.match(command.profileDigest, /^sha256:[0-9a-f]{64}$/);
 });
 
+test("Bubblewrap applies the process limit inside its fresh user namespace", async () => {
+	const base = liveProfile();
+	const profile = liveProfile({limits: {...base.limits, processes: 32}});
+	const node = nodeMount();
+	const script = String.raw`
+		const {spawnSync} = require("node:child_process");
+		const limit = spawnSync("/usr/bin/prlimit", [
+			"--pid", String(process.pid), "--nproc", "--noheadings", "--output", "SOFT,HARD"
+		], {encoding: "utf8"});
+		if (limit.status !== 0) throw new Error(limit.stderr);
+		console.log(limit.stdout.trim().replace(/\s+/g, " "));
+	`;
+	const command = createBubblewrapLaunchCommand(profile, {
+		executable: node.executable,
+		args: ["-e", script],
+		cwd: "/",
+		mounts: node.mounts,
+		disableNestedUserNamespaces: true,
+	});
+	const prlimitIndex = command.args.lastIndexOf(profile.prlimit.path);
+	assert.equal(command.executable, profile.bubblewrap.path);
+	assert.ok(prlimitIndex > command.args.indexOf("--unshare-user"));
+	assert.equal(command.args[prlimitIndex - 1], "--");
+	assert.ok(command.args.indexOf("--nproc=32") > prlimitIndex);
+	const result = await execute(command.executable, command.args, {
+		cwd: command.cwd,
+		env: {},
+		timeout: 10_000,
+	});
+	assert.equal(result.stdout.trim(), "32 32");
+});
+
 test("Bubblewrap profile enforces operating-system CPU limits", async () => {
 	const base = liveProfile();
 	const profile = liveProfile({limits: {...base.limits, cpuSeconds: 1}});
