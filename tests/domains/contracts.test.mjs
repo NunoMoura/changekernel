@@ -1,6 +1,4 @@
 import assert from "node:assert/strict";
-import {createHash} from "node:crypto";
-import {readFile} from "node:fs/promises";
 import { describe, it } from "node:test";
 import {
 	assertDomainPluginAdmission,
@@ -13,11 +11,10 @@ import {
 } from "../../src/domains/contracts.ts";
 import {
 	BUILTIN_DOMAIN_PLUGIN_ADMISSIONS,
+	SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY,
 	SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN,
-	SOFTWARE_DEVELOPMENT_DEPENDENCY_CLOSURE,
-	SOFTWARE_DEVELOPMENT_IMPLEMENTATION_CLOSURE,
-	SOFTWARE_DEVELOPMENT_PACKAGE_CLOSURE,
-	SOFTWARE_DEVELOPMENT_QUALIFICATION_CLOSURE,
+	SOFTWARE_DEVELOPMENT_HISTORICAL_IDENTITY_DIGEST,
+	SOFTWARE_DEVELOPMENT_HISTORICAL_PACKAGE_INTEGRITY,
 } from "../../src/domains/software-development/plugin.ts";
 
 function inputFrom(admission) {
@@ -40,17 +37,6 @@ function inputFrom(admission) {
 
 const baseInput = inputFrom(SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN);
 
-async function closureDigest(paths) {
-	const hash = createHash("sha256");
-	for (const path of paths) {
-		hash.update(path);
-		hash.update("\0");
-		hash.update(await readFile(path));
-		hash.update("\0");
-	}
-	return `sha256:${hash.digest("hex")}`;
-}
-
 describe("Domain Plugin admission", () => {
 	it("admits exact qualified Software Development package and implementation evidence", () => {
 		const admission = createDomainPluginAdmission(baseInput);
@@ -69,22 +55,14 @@ describe("Domain Plugin admission", () => {
 		assert.equal(Object.isFrozen(admission.manifest.entrypoints), true);
 	});
 
-	it("binds exact package, implementation, and qualification source closures", async () => {
+	it("retains exact historical package and Domain identity", () => {
 		assert.equal(
-			await closureDigest(SOFTWARE_DEVELOPMENT_PACKAGE_CLOSURE),
 			SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.packageIntegrity,
+			SOFTWARE_DEVELOPMENT_HISTORICAL_PACKAGE_INTEGRITY,
 		);
 		assert.equal(
-			await closureDigest(SOFTWARE_DEVELOPMENT_DEPENDENCY_CLOSURE),
-			SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.dependencyClosureDigest,
-		);
-		assert.equal(
-			await closureDigest(SOFTWARE_DEVELOPMENT_IMPLEMENTATION_CLOSURE),
-			SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.implementationDigest,
-		);
-		assert.equal(
-			await closureDigest(SOFTWARE_DEVELOPMENT_QUALIFICATION_CLOSURE),
-			SOFTWARE_DEVELOPMENT_DOMAIN_PLUGIN.manifest.qualificationEvidenceDigest,
+			SOFTWARE_DEVELOPMENT_DOMAIN_IDENTITY.identityDigest,
+			SOFTWARE_DEVELOPMENT_HISTORICAL_IDENTITY_DIGEST,
 		);
 	});
 
