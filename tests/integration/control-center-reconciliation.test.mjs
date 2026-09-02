@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import {parseChangeTrace} from "../../src/changes/trace/semantic-kernel.ts";
+import {
+	changeTracePath,
+	parseChangeTrace,
+	reduceChangeTrace,
+} from "../../src/changes/trace/semantic-kernel.ts";
 
 const criterionEvidence = {
 	"WU-reconcile-completed-foundations-v1": {
@@ -157,29 +161,86 @@ describe("control-center reconciliation integration", () => {
 		}
 	});
 
-	it("keeps only governed migration and roadmap-admission traces in source state", () => {
-		const traceFiles = filesUnder(".codewiki/changes").filter((path) =>
-			/\/TRACE-.*\.jsonl$/.test(path),
-		);
-		assert.deepEqual(traceFiles, [
-			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration-adc272d.jsonl",
-			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration.jsonl",
-			".codewiki/changes/TRACE-CHG-sk3a-exact-design-roadmap.jsonl",
-		]);
-		const traces = traceFiles.map((path) =>
-			parseChangeTrace(readFileSync(path, "utf8")),
+	it("keeps one valid canonical Trace per Change without freezing the repository-wide count", () => {
+		const changeFiles = filesUnder(".codewiki/changes");
+		const traceFiles = changeFiles.filter((path) =>
+			/\/TRACE-CHG-.*\.jsonl$/.test(path),
 		);
 		assert.deepEqual(
-			traces.flatMap(({operations}) => operations.map(({kind}) => kind)),
+			changeFiles,
+			traceFiles,
+			"Change truth must use only fixed-path Trace files",
+		);
+
+		const records = traceFiles.map((path) => {
+			const trace = parseChangeTrace(readFileSync(path, "utf8"));
+			return {path, trace, state: reduceChangeTrace(trace)};
+		});
+		assert.equal(
+			new Set(records.map(({trace}) => trace.header.changeId)).size,
+			records.length,
+			"one Trace per Change ID",
+		);
+		assert.equal(
+			new Set(records.map(({trace}) => trace.header.traceId)).size,
+			records.length,
+			"Trace IDs must be unique",
+		);
+		const operationIds = records.flatMap(({trace}) =>
+			trace.operations.map(({operationId}) => operationId),
+		);
+		assert.equal(
+			new Set(operationIds).size,
+			operationIds.length,
+			"operation IDs must be unique",
+		);
+
+		for (const {path, trace} of records) {
+			assert.equal(path, changeTracePath(trace.header.changeId));
+			assert.equal(trace.header.traceId, `TRACE-${trace.header.changeId}`);
+		}
+
+		const immutableMigrationOperations = new Map([
+			["CHG-sk2-kb-to-wiki-migration-adc272d", []],
+			["CHG-sk2-kb-to-wiki-migration", ["migration.applied"]],
+		]);
+		for (const [changeId, expectedKinds] of immutableMigrationOperations) {
+			const record = records.find(
+				({trace}) => trace.header.changeId === changeId,
+			);
+			assert.ok(record, `missing historical Trace for ${changeId}`);
+			assert.deepEqual(
+				record.trace.operations.map(({kind}) => kind),
+				expectedKinds,
+			);
+		}
+
+		const roadmapRecord = records.find(
+			({trace}) => trace.header.changeId === "CHG-sk3a-exact-design-roadmap",
+		);
+		assert.ok(
+			roadmapRecord,
+			"missing historical Trace for CHG-sk3a-exact-design-roadmap",
+		);
+		assert.deepEqual(
+			roadmapRecord.trace.operations.slice(0, 5).map(({kind}) => kind),
 			[
-				"migration.applied",
 				"change.proposed",
 				"decision.running",
 				"decision.passed",
 				"confirmation.recorded",
 				"change.accepted",
 			],
+			"SK3A's immutable admission prefix must remain exact",
 		);
+
+		for (const {path, trace, state} of records) {
+			if (immutableMigrationOperations.has(trace.header.changeId)) continue;
+			assert.ok(
+				["accepted_incomplete", "completed"].includes(state.status),
+				`${path} must contain canonical accepted Change state`,
+			);
+		}
 	});
 
 	it("documents current control-plane boundaries on canonical surfaces", () => {

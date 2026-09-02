@@ -203,7 +203,7 @@ Qualified Wiki/Change roots and repository migration. Historical migration machi
 
 Accepted requirement: `cw:codewiki:requirement:xj62wfc6qeqpzvgqqpndu7h4dcrtalsleyerrfptisafmm7zlyha`.
 
-- [ ] Qualify and activate the exact Wiki/roadmap cutover amendment before source work.
+- [ ] Qualify and activate the exact Wiki/roadmap cutover amendment before source work. Qualification must also preflight the released-controller-generated admission and completion Trace snapshots against candidate tests; a candidate test may enforce one Trace per Change and exact closed historical seeds, but never freeze the repository-wide Trace count. An accepted-incomplete Trace may freeze only its immutable prefix and reducer-valid state, never its total operation count.
 - [ ] Seal activated legacy commit/tree, tags, release artifacts, qualification evidence, and verified Git bundle.
 - [ ] Preserve the uncommitted exploratory overlay externally; retain no overlay byte by default.
 - [ ] Freeze subsystem donor manifests with structural search, LSP references, dependency graphs, public exports, tests, and dynamic-entrypoint analysis.
@@ -349,7 +349,7 @@ When a milestone outcome is coherent:
 3. run diagnostics ratchet, dependency/security audit, architecture, fuzz/fault, recovery, and reproducibility gates applicable to the milestone;
 4. pack and test only in disposable external projects with isolated Pi settings and owner-private state;
 5. prove no source-checkout CodeWiki load, project-local package link, runtime/view scratch, credential, socket, daemon, or package artifact remains;
-6. use immutable activated Product N to qualify exact N+1 bytes;
+6. use immutable activated Product N to qualify exact N+1 bytes, construct the prospective admission/completion Trace-only snapshots in a disposable external project, and rerun affected candidate tests against both snapshots;
 7. obtain explicit exact-byte authorization and activate the release through protected-head policy;
 8. retain Product N as sole controller unless this is the exact SK3G handoff subject and every ordered handoff condition above passes.
 
