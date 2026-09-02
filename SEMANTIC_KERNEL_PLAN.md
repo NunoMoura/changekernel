@@ -1,505 +1,379 @@
 # Semantic Kernel Refactoring Plan — Active Ledger
 
-## Status and authority
+## Authority
 
-This is the sole active CodeWiki refactoring roadmap and completion ledger after Semantic Kernel SK2. It owns transitional inventory, implementation sequence, slice status, qualification checkpoints, deliberate deferrals, and final archive criteria. It replaces earlier SK3 proposals that used target Candidates, authored Completion Requirements, dispositions, Gate Evaluation Packages, private integration lineage, a canonical global Work Graph, or CodeWiki-owned physical Agent Sessions.
+This file is the sole active CodeWiki refactoring roadmap, status ledger, qualification record, and archive checklist. `.codewiki/wiki/**` is desired-state design truth. `src/**` and `tests/**` are executable truth. Git is history and checkpoint evidence. `README.md` is orientation only. Historical plans remain unchanged.
 
-Current `.codewiki/wiki/**` is the sole desired-state design authority. `src/**` and `tests/**` record current executable behavior. This plan defines only the governed path between them; its architecture summaries provide refactoring context and do not create a second desired-state contract. `README.md` is orientation, while `REFACTORING_PLAN.md`, `BACKEND_V1_PLAN.md`, and `SEMANTIC_KERNEL_SK0_CONTRACTS.md` are qualified historical evidence and remain unchanged.
+Wiki does not directly authorize source work. Every implementation change must map to an incomplete item below. Unscheduled gaps enter this ledger before source changes. Wiki records stable behavior; this plan alone records cutover mechanics, temporary gaps, sequencing, evidence, and deferrals.
 
-A desired-state Wiki invariant does not by itself authorize source work. Every implementation change must map to an explicit incomplete item in this plan; an unlisted gap is added and admitted here before code changes begin. Desired design and executable behavior move through governed Changes together. Until an exact proposal is validated, authorized, admitted, implemented, externally qualified, and activated, existing source protocols remain executable truth.
+No mutable checkout governs or qualifies itself. Native Pi, Git, deterministic checks, and human authority are bootstrap and recovery paths. After bootstrap, immutable externally installed Product N governs exact committed candidate N+1. Candidate N+1 never enters Product N's module graph or qualification authority.
 
-No mutable checkout governs or qualifies itself. Released controller N qualifies exact committed candidate N+1 outside this repository. Every correction creates another candidate, exact-subject qualification, and explicit activation. A checked item means its exact committed subject passed the applicable external qualification and activation boundary; a local commit or green suite is recorded as landed evidence, not completion.
+Release activation and controller promotion are distinct. SK3B–SK3F may activate immutable qualified checkpoint packages, but Product N remains the sole semantic controller. Controller promotion occurs only at the explicit SK3G quiescent handoff below; source and target controllers never overlap.
 
-## Product thesis
+A checklist item is marked complete only when its bound release subject is externally qualified, explicitly authorized, and activated. Inner-loop commits and green development checks are evidence, not release completion. Activation alone never implies controller promotion.
 
-CodeWiki is an intent-first Git workflow for Agentic teams. It validates shared meaning before expensive implementation, then verifies that one exact Project snapshot realizes that meaning.
+## Activated baseline
+
+CodeWiki remains private pre-production software. Package `@nunomoura/codewiki@0.3.0` is unpublished and private.
+
+### Completed semantic releases
+
+- **Backend v1, SK0, and SK1** — qualified historical foundations.
+- **SK2** — governed KB-to-Wiki migration activated at `7b4e5e9021b27ff09f6f93569bb2a93c1fb0ebdf`; current semantic roots are `.codewiki/wiki/**` and `.codewiki/changes/**`.
+- **SK3A** — exact desired-state Wiki and roadmap admission:
+  - candidate commit `985bc1bd0a77dece9be08829844bb32da4cfac61`;
+  - candidate tree `096a1169de7e49c12db42527e88cf86ede2c9207`;
+  - patch SHA-256 `58eb472d9a4cfe7189691288c7eb120487e969f18898f012d669ff1db15a8360`;
+  - authorization `sha256:7022ddecf05975ee8db95315fb9be0b00178782008d64a106bf96612efcf787c`;
+  - qualification report `sha256:9ac91bbb7fa41762f292509693f687b0662e5da6f69c79fc775afdd87820b0e2`;
+  - activation commit `927e21f863ca954ba7826d771b8556dfe236827e`;
+  - activation tree `75ecaca3765023c4f0ae5f3848da86227f69d5f5`;
+  - activation report `sha256:bc6fa831f089ad1833237d984877cd1a059a2639c13b2cb3dff9fd7e6946188e`.
+
+`CHG-sk3a-exact-design-roadmap` is accepted incomplete. Its SK3B–SK3H outcomes remain binding until a later governed Change explicitly supersedes them. Historical target refs to retired Item IDs remain evidence; retirement never reassigns an ID.
+
+### Current truth boundaries
 
 ```text
-user intent
-  -> Proposed Change
-  -> semantic Decision
-  -> Change Commit
-  -> planned and checked realization
-  -> Change Completion Commit
-  -> optional Delivery
+.codewiki/wiki/**        desired Project meaning
+.codewiki/changes/**     append-only lifecycle truth
+src/** and tests/**      current executable behavior
+Git                      exact bytes, ancestry, refs, history, checkpoints
+external private state   credentials, DSH/Preview internals, caches, worktrees, raw evidence
 ```
 
-The semantic merge happens at Change Commit. The artifact merge happens at Change Completion Commit. Both are ordinary Git commits over the complete governed Project tree. Change scopes intent, authority, and lineage; it never defines a partial repository snapshot.
+`.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, generated Wiki indexes, project-local CodeWiki packages, and controller pins must remain absent.
 
-CodeWiki does not promise semantic perfection or replace human accountability. It provides bounded process integrity: stable identity, exact subjects, authenticated authority, independent Checks, deterministic Gate reduction, Git compare-and-swap, explicit uncertainty, durable provenance, and recoverable state.
+## Current gap and overlay disposition
 
-## Current posture
+A post-SK3A audit found broad executable drift, dead architecture, API sprawl, cycles, duplication, stale source ownership, and compatibility leakage. An uncommitted SK3B overlay explored those cuts. It is not an authorized candidate.
 
-CodeWiki is private pre-production software. Backend v1, SK0, SK1, and corrected SK2 release `adc272d0d9b8f228fc8cedb150c8c6371c823997` passed external exact-subject qualification. SK2 migrated this repository at commit `7b4e5e9021b27ff09f6f93569bb2a93c1fb0ebdf`.
+Before source cutover:
 
-Current semantic roots are:
+- preserve the overlay's exact status, patch, tests, and audit notes outside the governed checkout;
+- preserve pre-existing untracked `outputs/` unchanged;
+- treat overlay files only as donor/research evidence;
+- do not merge or transplant any dependency closure wholesale;
+- re-evaluate every behavior against current Wiki and the allowlist below.
+
+The documentation amendment that establishes this cutover must itself be frozen, externally qualified by immutable Product N, authorized, and activated before target source edits begin.
+
+## Cutover rules
+
+1. Keep this repository and package identity. Do not create a replacement Product repository.
+2. Preserve obsolete implementation in immutable Git history, release artifacts, and a verified Git bundle.
+3. Do not keep active `legacy/**`, `old/**`, archive-source, or dual architecture directories.
+4. Build in an isolated clean worktree/branch from the activated baseline.
+5. Create the target tree from an allowlist. Old files have no presumption of migration.
+6. For each subsystem, freeze old files, exports, references, tests, accepted invariants, and dependency closure before changing it.
+7. Classify each behavior as `transplant`, `rewrite`, `defer`, or `delete`. A dependency chain that imports old architecture is a rewrite signal.
+8. Retain no pre-stable compatibility reader without an identified external subject, exact predecessor bytes/schema, owner, expiry, and qualification evidence.
+9. Normal startup reads only current Wiki/Change roots and never migrates, repairs, or dual-writes semantic state. The sole exception is the explicit one-shot SK3G handoff converter; it is unavailable after handoff.
+10. Exclude `codewiki.legacy:*` provenance from normal term resolution, search, semantic diff, ownership, applicability, authorization, Agent context, and generated Views.
+11. Keep one Product, one semantic controller, and one release lineage. Do not create Forge, a Dev controller product, a Pi wrapper, or another lifecycle authority.
+
+## Target source architecture
+
+The target production allowlist is:
 
 ```text
-.codewiki/
-  config.json
-  wiki/items/**
-  changes/TRACE-CHG-<id>.jsonl
-  check-packs/<stage>/<pack>/**
-  check-packs.lock.json
+src/
+  kernel/
+    canonical/
+    identity/
+    wiki/
+    changes/
+    work/
+    gates/
+    evidence/
+    index.ts
+  server/
+    authorization/
+    intake/
+    lifecycle/
+      decision/
+      planning/
+      implementation/
+      review/
+    commands/
+    queries/
+    projections/
+      alignment/
+      work/
+    recovery/
+    effects/
+    index.ts
+  ports/
+    project-store.ts
+    check-runner.ts
+    agent-runtime.ts
+    preview.ts
+  adapters/
+    git/
+    checks/
+    dsh/
+    preview/
+  api/
+    contracts/
+    transport/
+    client/
+    index.ts
+  product.ts
+  index.ts
 ```
 
-`.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated indexes below `.codewiki/wiki/**` must remain absent. All 47 migrated Items now use readable paths under preserved `product/**` and `system/**` categories. Stable Item IDs and Git rename history preserve identity; paths remain non-authoritative navigation hints.
+Tests mirror target ownership under `tests/kernel/**`, `tests/server/**`, `tests/ports/**`, `tests/adapters/**`, `tests/api/**`, `tests/product/**`, and `tests/package/**`. Benchmarks remain outside the shipped package.
 
-The migrated schema limits remain binding until a governed schema change: each legacy System Component body is at most 10,000 characters and Recovery Flow body is at most 8,000 characters.
-
-The landed mutable candidate contains three post-design stabilization corrections:
-
-- `2077c8a0` replaced the 27 stale post-SK2 test cases with current Wiki/Change assertions without recreating forbidden roots or Domain configuration;
-- `c9de8b51` applied `RLIMIT_NPROC` inside the Bubblewrap user namespace, preserving the process ceiling without charging unrelated host-user threads;
-- `d3488ddd` retained exact historical Backend-v1 Domain package and identity digests instead of recomputing historical admission from changing target bytes.
-
-At checkpoint `d3488ddd`, local typecheck, the 1,140-test smoke suite, and the 150-test production suite pass with no skipped tests. These commits are landed evidence only: they have not completed SK3A, do not replace external exact-subject qualification, and do not authorize later slices. The repository contains no admitted SK3 Change Trace, so documentation commit `8c191e3e` remains a design draft rather than completed SK3A admission.
-
-A follow-up audit confirms broader target-state drift beyond the corrected tests. Fresh bootstrap still writes `.codewiki/kb/**` and `.codewiki/traces/**` and obtains default Check Packs through executable Domain contribution code. Current project, Client, storage, Runtime/Build, and lifecycle paths also retain legacy-root or Domain-bound behavior that must be classified as target execution, explicit compatibility, or removable dead code. SK3B owns that closure; no legacy root or Domain authority may be recreated to make tests pass.
-
-Package `@nunomoura/codewiki@0.3.0` remains private and unpublished with `"private": true`. Immutable packed installs run only outside this checkout with owner-private state and isolated Pi settings. Rich application UI remains outside Kernel scope.
-
-## Non-negotiable ownership
-
-### Project Server
-
-Project Server is the sole writer of canonical and managed CodeWiki Git refs. It owns Actor authorization, Change admission, lifecycle validation, Gate coordination, Work admission, expected-head compare-and-swap, protected effects, recovery, and public semantic APIs.
-
-### Git Project Store
-
-Git owns exact Project bytes, full trees, commits, ancestry, first-parent canonical state, managed Change refs, expected-old-OID compare-and-swap, replay, and bounded rollback. Every Change revision, Work result, Change Commit, and Completion Commit identifies a full Project snapshot.
-
-### Wiki
-
-Wiki owns accepted descriptive, historical, and normative Project meaning. Wiki may intentionally lead artifact realization between Change Commit and Completion Commit. Stable Wiki Item IDs—not paths, titles, aliases, terms, Git OIDs, installations, or model output—establish identity.
-
-### Change Trace
-
-One append-only Trace owns lifecycle meaning, rationale, accountable Actors, contributor and DSH Run provenance, Gate/Result references, Work facts, exact Git OIDs, protected-effect receipts, and correction/supersession history. Trace does not duplicate project bytes, raw Agent logs, or private execution state.
-
-### DSH and Execution Host
-
-DSH owns Agent execution mechanics: internal Sessions, Agent loop, models, tools, providers, and compaction. Execution Host owns process containment and resource enforcement. CodeWiki authorizes one exact DSH Run and validates its receipt; it does not implement a second Agent Session engine or assign semantic authority to opaque DSH Session bytes.
-
-### Checks and Gates
-
-Project-owned stage Check Packs define available evaluation policy. A Gate freezes the exact subject, policy, type-conditioned active Checks, inputs, and digest. Check Runs execute individual Checks. Results are judgments, not Evidence or lifecycle authority.
-
-### Derived state
-
-WorkState, Work View, Alignment, Dictionary, backlinks, search, history, attribution, semantic diff, graph, lexical, and vector facilities are rebuildable Views. Private indexes and caches accelerate queries but never establish identity, truth, absence, authority, or lifecycle state.
-
-## Truth planes
-
-CodeWiki keeps these planes separate:
-
-1. **Wiki meaning** — accepted intent and governed semantics.
-2. **Project artifacts** — exact Git-tracked source, tests, configuration, documentation, and assets.
-3. **Evidence** — provenance-bound observations over exact material.
-4. **Results** — Check judgments over exact Gate inputs.
-5. **Trace** — why, who, lifecycle events, receipts, and exact OIDs.
-6. **Derived state** — WorkState, Alignment, search, Dictionary, and other Views.
-7. **Private operation** — credentials, DSH internals, leases, sockets, caches, worktrees, raw execution evidence, and provider state outside project Git.
-
-No plane silently upgrades another. A model finding is not Evidence truth. Similarity is not identity. Provider success is not completion. Git authorship is not Actor authority. A Check pass is not a Change transition until Project Server validates a current authenticated command and exact heads.
-
-Digests identify already-complete bytes. No persisted object embeds or searches for its own digest; enclosing or successor records cite completed object identities. CodeWiki performs no cryptographic fixed-point search.
-
-## Change model
-
-### Identity and representation
-
-One Change has:
-
-- one stable Change ID;
-- one append-only `.codewiki/changes/TRACE-CHG-<id>.jsonl` file;
-- one managed `refs/codewiki/changes/<id>` ref;
-- zero or more full-snapshot Trace commits;
-- at most one Change Commit;
-- when project realization is required, at most one Change Completion Commit.
-
-A Trace commit means any managed-ref version. A Proposed Change is an exact managed-ref tip eligible for Decision. A Committed Change is accepted intent recorded by Change Commit. A Completed Change is accepted intent whose local Project realization is recorded by Change Commit or Completion Commit.
-
-### State vocabulary
-
-Draft material is local and non-authoritative. Persisted lifecycle states are:
-
-- **Proposed**
-- **Committed**
-- **Completed**
-- **Rejected**
-- **Deferred**
-- **Withdrawn**
-
-Deferral may resume. Rejection and withdrawal apply only before commitment. A Committed Change cannot later be rejected or withdrawn. Wrong or changed accepted intent requires a Superseding Change; accepted history is never rewritten.
-
-### Required classification
-
-Every Proposed Change declares exactly one `changeType`:
-
-- `capability` — add, remove, or materially change externally observable behavior or meaning;
-- `correction` — restore behavior or meaning to accepted intent;
-- `maintenance` — change realization while preserving intended behavior;
-- `policy` — change governance, standards, authority, security posture, or controlled configuration;
-- `investigation` — produce an accepted finding, decision, or explanatory model.
-
-All five types may use either realization route when the exact outcome supports it. Protected publication, Delivery, deployment, or other external effects are not a sixth Change type; they remain separately authorized after local lifecycle boundaries.
-
-Every Proposed Change also declares exactly one `realization`:
-
-- `wiki-only` — the Decision-phase full snapshot itself completely realizes the outcome; changed paths are limited to the Change Trace and Wiki meaning allowed by policy;
-- `project` — accepted Wiki meaning requires later project-artifact realization and Review.
-
-A `project` Change may have no Wiki file diff when existing accepted Items already state the complete goal. Its proposal and Trace bind those stable Item/facet targets plus rationale; no authored requirement object duplicates them.
-
-SK3 minimum has no second persisted class/tag authority. Check selection may additionally use exact Item types, changed paths, stage subject facts, and Work Unit subtype/scope. New primary types require a governed protocol change, not arbitrary proposal text.
-
-A fixed Decision Check validates type and realization alignment. Misclassification requires a revised Proposed Change and fresh Gate. An Agent, route, Worker, or Check cannot silently reclassify work.
-
-### Proposal admission and collaboration
-
-`proposeChanges` is the primary command; singular submission wraps one proposal. One authenticated request binds an Actor-scoped idempotency key, exact expected project head, bounded proposals with unique request-local keys, authority, and optional correlation metadata. Project Server assigns Change IDs and atomically creates all requested refs/Traces or none. Admitted Changes proceed independently.
-
-Several contributors may revise one Change only while they refine the same independently decidable outcome. Different acceptable outcomes use separate Changes. Revisions advance the managed ref through expected-tip compare-and-swap. Stale submissions return exact base/tip/diff facts for explicit reconciliation. CodeWiki performs no automatic semantic merge, force-push, last-write-wins, or silent Agent write.
-
-Coordination uses optimistic snapshot isolation and short compare-and-swap transactions. No lock spans user deliberation, DSH execution, Check execution, or Review; stale work stops for explicit reconciliation.
-
-Proposal correlation is metadata only. It has no shared lifecycle, Gate, authority, commit, or completion state.
-
-### Git commit graph
-
-Initial proposal history branches from the exact canonical project head. Each revision advances the linear managed Change ref and preserves append-only Trace prefix.
-
-Change Commit has parent order:
-
-1. current canonical project head;
-2. exact passed Proposed Change tip.
-
-Project Server validates the current Actor, Gate, Results, Change tip, active-Change compatibility, complete Project tree, Wiki delta, type, realization, and expected project head, then advances canonical and Change refs through expected-old-OID compare-and-swap.
-
-For `wiki-only`, the Change Commit records both `change.committed` and `change.completed`. The full committed snapshot already realizes the outcome.
-
-For `project`, the Change Commit records `change.committed`. Canonical Wiki now expresses accepted future intent; Alignment reports the owned realization gap while Planning and Implementation continue on the Change ref.
-
-Change Completion Commit has parent order:
-
-1. current canonical project head;
-2. exact reviewed Change tip.
-
-It applies only the reviewed realization, records `change.completed`, and advances canonical and Change refs under expected-head compare-and-swap. First-parent history remains canonical Project state; second-parent ancestry preserves complete Change collaboration and implementation lineage.
-
-Rejected, deferred, and withdrawn outcomes advance only the managed Change ref, never canonical project history. Delivery, publication, remote push, release, deployment, and observed outcome remain later separately authorized effects.
-
-### External work
-
-Unmatched Git commits are captured without advancing user or canonical refs. If exact bytes match one current Committed Change, Work Unit, base/dependencies, scope, and authority, they may enter the same Implementation Gate as an external-provenance Work result but inherit no DSH receipt. Otherwise they become Change Intake Material. External usefulness, local tests, provider review, or repository access never implies accepted intent, integration, completion, or Delivery.
-
-### Accountability
-
-The final authenticated Actor who executes `commitChange` owns the complete accepted intent. Earlier proposal contributors, producing Agents and DSH Runs, deciding Actor, Check executors, reviewers, and mechanical Project Server committer remain separately attributable through Trace and Git. Attribution grants no permanent lock, veto, or future authority.
-
-## Four lifecycle stages
-
-CodeWiki has exactly four stages:
+Required dependency graph:
 
 ```text
-Decision -> Planning -> Implementation -> Review
+api -> server -> kernel
+server -> ports
+ports -> public Kernel values
+adapters -> ports + public Kernel values
+product composition -> server + adapters
+kernel -X-> server, adapters, process, network, UI, providers, DSH, Preview
 ```
 
-They are phases of one Change lifecycle, not peer workflow engines.
+Rules:
 
-### Decision
+- Kernel is deterministic mechanism, never Project Server or runtime. Product-fixed role/check policy enters as immutable validated data rather than executable Kernel behavior.
+- Project Server is sole semantic control plane and authorizes every managed-ref write through Project Store.
+- Project Store, Check Runner, Agent Runtime, and Preview are separate narrow host-neutral ports; adapters own effects.
+- DSH implements Agent Runtime and AI/model-provider mechanics. It does not own semantic authority or Git, Delivery, remote, or Preview effects.
+- `preview.work` is scoped producer feedback; `preview.verify` is independent exact-subject observation. Neither Preview mode returns Gate authority.
+- Public package exports come from one reviewed manifest. Kernel API is Project Server-served Product UAPI; internal modules are private.
+- No generic `utils/**`, broad `runtime/**`, backend selector, dynamic semantic Plugin, or cross-layer barrel may hide ownership.
+- System Component Items declare target ownership only through `codewiki.component:ownership`. Semantic roles belong to lifecycle/check owners, singleton config and lock files have exact owners, and target readers never use `codewiki.legacy:*` metadata outside explicit provenance inspection.
+- Architecture checks enforce roots, imports, cycles, exports, ownership coverage, and forbidden edges from the first target commit.
 
-Decision aligns user intent before material implementation. Decision Agent is the only user-facing CodeWiki Agent role. It may query exact current and proposed Wiki/Dictionary Views and prepare proposal bytes, but cannot authenticate itself, select Checks, write refs, or commit a Change.
+## Controller continuity and SK3G handoff
 
-Decision Gate judges the exact Proposed Change tip. It always includes fixed Change-type/realization alignment and Wiki semantic-alignment Checks plus applicable project Decision Checks. A passed Gate grants eligibility only. Authenticated `commitChange`, `rejectChange`, `deferChange`, `resumeChange`, or `withdrawChange` commands create lifecycle authority.
+Immutable activated Product N remains the only semantic controller throughout SK3B–SK3F. It externally qualifies each exact committed checkpoint and performs any governed release admission/activation. Checkpoint installation, package activation, or passing tests never transfers project authority to the candidate.
 
-### Planning
-
-Planning runs only for a Committed Change with `realization: project`. It maps exact committed Wiki Item/facet targets to singly owned Work Units, dependencies, scope, capabilities, custody, and verification. It does not restate accepted outcome prose or select Workers/providers.
-
-Planning retains project-owned Check Packs. Fixed structural validation checks complete ownership, valid target refs, acyclic dependencies, overlap ordering, bounds, and identities. A separate type-conditioned Planning Gate judges decomposition quality, feasibility, risk, parallelism, and Review strategy. Passing planning facts append to Trace.
-
-There is no separately writable canonical Work Graph. Change Trace planning operations own Work Units and edges. Global Work View and readiness derive across active Traces.
-
-### Implementation
-
-Project Server schedules ready Work Units, creates Claims/Assignments and isolated Git worktrees, then authorizes bounded Worker DSH Runs. Workers receive exact committed Wiki targets and read-only Wiki tools. They may modify only admitted project-artifact scope and cannot edit accepted Wiki, Trace, managed refs, authority, or lifecycle.
-
-Each Work result is a full Project commit/tree. Implementation Gate active Checks derive from exact stage Pack snapshots, Change type, Work Unit subtype/scope, and subject facts. Passing current work integrates onto the managed Change ref through expected-tip compare-and-swap. Git ancestry is integration lineage; Trace records semantic admission and exact OIDs. No private integration-lineage authority or duplicate aggregate record exists.
-
-### Review
-
-Review starts after every current required Work Unit is passing, dependency-complete, and integrated. It compares one exact integrated full Project snapshot with the Committed Change and current canonical Project state. Review active Checks cover complete target realization, cross-unit behavior, full build/integration, provenance, scope, and applicable type-specific policy. Authenticated human review may enter as exact Evidence when active Checks require it; it never replaces Gate or Project Server authority.
-
-A failed Gate leaves the Change committed and incomplete. Work defects return to Implementation, decomposition defects to Planning, and meaning defects to a Superseding Change. A passed current Gate makes the exact Change tip eligible for Completion Commit. Delivery remains separate.
-
-## Checks, active selection, and Gates
-
-Project Check Packs remain under:
+The SK3G handoff must account for exact predecessor state rather than pretending a fresh bootstrap:
 
 ```text
-.codewiki/check-packs/<stage>/<pack>/
-  skill/<skill-name>/**        # optional producer guidance
-  <check-id>/
-    check.json
-    CHECK.md | CHECK.mjs
+.codewiki/config.json                 codewiki.project-config@2.0.0
+                                      inherited role routes; worktreeIsolation=none
+.codewiki/check-packs.lock.json       codewiki.check-pack-lock@1.0.0
+                                      source.kind=domain
+three active Trace headers            codewiki.change-trace@13.0.0
+active Trace operation protocol       codewiki.change-trace-operation@1.0.0
+SK3A Change                           accepted_incomplete; SK3B–SK3H remain open
 ```
 
-Stages are `decision`, `planning`, `implementation`, and `review`. Packs are editable project policy. Installation and adoption are passive; bootstrap/startup/upgrade never silently restore deleted or edited content. Fixed Kernel structural checks remain Build-bound code and are not hidden Packs.
+Product N first qualifies one exact SK3G Product/package closure and offline one-shot converter outside the candidate checkout. Exact state conversion is qualified only after handoff freeze. Handoff then proceeds in this order:
 
-### Active-Check resolver
+1. stop admission of new Runs, Checks, Preview handles, protected effects, and ref writes under Product N;
+2. prove all process/effect custody terminal or quiescent and freeze exact project/managed refs;
+3. create and verify complete repository, owner-private state, config, lock, and controller-state backups;
+4. under immutable Product N, dry-run conversion and replay against the exact frozen subject in a disposable external project, producing a qualification report bound to the exact handoff input, expected output, genesis mapping, Product, and converter;
+5. obtain explicit authenticated human authorization for those exact qualified bytes, controller state, and rollback cutoff;
+6. terminate Product N and prove no source-controller process or writer remains;
+7. with neither controller running, execute the bounded offline converter as a recovery mechanism—not a semantic controller;
+8. preserve predecessor Trace bytes in Git, create exact new genesis/handoff facts that link historical Change/requirement identities and carry unresolved SK3H work, and replace obsolete config/Domain-sourced lock semantics atomically;
+9. verify converted bytes equal the authorized output, then compare-and-swap external controller state to exact SK3G and start it as sole controller;
+10. prove replay, current authority, refs, open requirements, and no source-controller process before permitting new work.
 
-Gate construction uses one deterministic resolver:
+No source/target controller overlap is allowed. Rollback is permitted only before the fixed cutoff and only by restoring the complete verified backup; after the target performs its first authoritative write, recovery is forward-only. Normal SK3G startup cannot invoke the converter or read unsupported predecessor state.
 
-1. load and validate every exact Pack snapshot for the stage;
-2. add fixed required Kernel semantic Checks for that stage;
-3. treat a Check with no applicability selector as active;
-4. evaluate optional positive allowlists over `changeType`, `realization`, Work Unit subtype, and exact subject facts;
-5. reject unknown selector fields, values, negative rules, arbitrary expressions, or incomplete subject facts;
-6. sort active Check identities canonically;
-7. bind resolver Build identity, selector inputs, full available policy, active set, omissions, and digest into Gate.
-
-The minimum selector language is conjunction across declared fields and membership within each field's positive allowlist. No Agent, Worker, route, proposal, or Client selects Checks. Invalid policy stops Gate construction. Decision's fixed type-alignment Check protects against using classification to suppress policy.
-
-### Gate and Check Run
-
-Gate itself binds stage, exact subject commit/tree, Change/ref identity, Pack snapshots, frozen classification, active Checks, declared View/Evidence/configuration inputs, routes/execution identities where relevant, complete coverage, resolver identity, and digest. There is no separate Gate Evaluation Package.
-
-Each attempt to execute one active Check is a Check Run. A retry is a new Run. Completed execution yields at most one immutable `passed` or `failed` Result. Timeout, cancellation, unavailable capability, missing input, malformed output, stale identity, or exhausted retry yields no Result.
-
-Gate outcome is:
-
-- `passed` when every required active Check has a current passing Result;
-- `failed` when any required active Check has a current failed Result;
-- `stopped` when required operational material or Result is unavailable.
-
-Model Checks run through isolated DSH Runs. Project-authored Model Checks are tool-free in the SK3 minimum. A fixed Kernel semantic Model Check may receive only explicitly Gate-declared bounded read-only Wiki/View tools. Deterministic Code Checks run in separate credential-free, network-denied admitted sandboxes. Checks cannot mutate subjects, choose lifecycle stages, grant exceptions, or perform effects.
-
-## Wiki and document graph
-
-Wiki Item is the sole first-class semantic unit. One common envelope carries `itemId`, `itemType`, title, aliases, attributes, directed relationships, provenance, and body. Stable Item ID establishes identity. Normal authoring uses meaningful lowercase category directories and kebab-case filenames; title changes do not auto-rename files, and explicit moves preserve ID through Git history. Hash-derived paths remain valid historical/import artifacts, while content hashes and Git OIDs provide integrity rather than human navigation.
-
-Definition Items and Claim Items are typed Wiki Items:
-
-- `codewiki.wiki:definition` governs one reusable or ambiguous meaning/sense;
-- `codewiki.wiki:claim` governs one independently sourced, temporal, disputed, or mutable assertion.
-
-SK3 minimum does not add a second Definition/Claim store, required profile marker, persisted Term entity, mapping entity, or executable semantic DSL. Definition title/aliases/body/relationships provide minimum meaning. Claim-specific structured subject/predicate/object and valid-time fields remain a later governed extension when concrete query clients require them. Ordinary prose and relationships remain ordinary Wiki Item content; not every noun becomes a Definition and not every sentence becomes a Claim.
-
-Dictionary is a derived View from Definition Items over one exact commit or Proposed Change tip. It returns zero, one, or several senses and never silently treats term equality as identity. Claim is accepted Wiki meaning that may cite Evidence; it is not Evidence itself. Trace lifecycle events are not Claims.
-
-Canonical semantic links target Item IDs. Search, backlinks, history, attribution, semantic diff, graph, lexical, and vector facilities are bounded Views. Every response identifies repository, exact source OID or Change tip, derivation identity, authorization/redaction, coverage, ordering, truncation, freshness, unknowns, citations, and exact versus approximate channel. Approximation retrieves candidates only.
-
-## Agent Wiki enforcement
-
-CodeWiki makes Agents use Wiki through four controls:
-
-1. **Teach** — every governed DSH Run receives an immutable Kernel-owned role contract that project Skills cannot weaken.
-2. **Equip** — Project Server supplies exact mandatory target Items/Definitions and bounded read-only tools such as `wiki.get`, `wiki.list`, `wiki.search`, `wiki.resolve`, `wiki.links`, `wiki.history`, `wiki.diff`, `change.get`, and stage-specific status queries.
-3. **Constrain** — tools are fixed to exact Project/Change snapshots; role capabilities prevent unauthorized Wiki, Trace, ref, lifecycle, and artifact writes.
-4. **Verify** — type-conditioned stage Checks judge actual outputs against committed meaning and exact receipts.
-
-Run authorization binds repository, project commit, Change/ref tip, stage subject, role, authority, relevant Item IDs/blobs, Definitions, relationships, active Checks, capabilities, writable scope, budgets, and feedback. DSH owns internal Session recovery and compaction. Changed semantic input or retry creates another DSH Run. Tool-call theater is not proof of understanding; Results and exact outputs matter.
-
-Decision may propose Wiki changes. Planning maps Work Units to committed targets. Workers modify artifacts only. Review compares realization. Model Checks receive only Gate-declared inputs. Meaning gaps return to Decision or a Superseding Change.
-
-Stage outputs cite Change IDs, Work Unit IDs, Item/facet references, and Git OIDs rather than copying Wiki outcome prose. The ordinary DSH Run receipt already binds exact visible Wiki inputs, queries, outputs, and Gate context; SK3 adds no standalone Wiki Usage Receipt.
-
-Durable learning enters accepted Wiki meaning, project Check policy, or explicit Change feedback. Repeated mistakes never become hidden cross-Run Agent memory or an unreviewed private semantic store.
-
-## Public API and Client SDK
-
-Semantic operation names are version-neutral. Persisted envelopes, adapters, transport profiles, and fixtures carry versions. HTTP/local transports and Client SDKs add no hidden command, authority, or lifecycle state.
-
-### Minimum reusable SK3 read boundary
-
-Implement and externally qualify these authenticated read-only capabilities first:
-
-- Project discovery and capability document;
-- operational status and exact canonical/Change heads;
-- exact Wiki Item get/list;
-- bounded lexical search with exact source receipt;
-- outgoing/incoming links;
-- Definition resolution and usages;
-- Item history and attribution;
-- semantic diff between exact commits or one Proposed Change tip and its base;
-- pending Proposed Changes, Decisions, Gates, active Checks, Results, Work, and Review status;
-- proposed-Change-tip View receipts;
-- read-only role/capability discovery.
-
-Every source selector resolves once to an explicit Git OID. Exact ID reads and direct scans fall back to Git when indexes are absent. Stale or incomplete indexes report limitations and cannot answer exact queries silently.
-
-### Mutation boundary
-
-After source contracts adopt the new Change/Gate model, expose authenticated `proposeChanges`, revision, Decision outcome, Planning, Work admission, Review, and protected-effect commands with Actor-scoped idempotency and expected-head/tip compare-and-swap. External applications and Agents never write `.codewiki/**` or managed refs directly.
-
-Initial external reference client is a thin read-only Omarchy Agent Skill and shell panel built in a separate repository. It uses authenticated Client SDK/API only, receives least privilege, and tests only against packed immutable qualified CodeWiki releases. It must not read `.codewiki/**` directly or claim to sandbox arbitrary Omarchy plugins.
-
-## Refactoring map
-
-This is the area-level inventory for removing duplicate semantic owners while retaining only explicit readers for accepted historical protocols. Before changing any row, freeze its exact file/export/reference/test manifest with structural search and LSP references; fixture-only historical use must be distinguished from normal target execution.
-
-| Current area | Required cut |
-| --- | --- |
-| `src/project/bootstrap.ts`, bootstrap tests, and Pi bootstrap rendering | Create only config, empty Wiki/Change state, and passive release Check Pack files; never create `.codewiki/kb/**`, `.codewiki/traces/**`, runtime/views roots, or execute Domain code. |
-| `src/project/explain.ts`, `src/project/snapshot.ts`, CLI/Pi prompts and rendering, source ownership, and current path classifiers | Use exact Wiki/Change services and stable Item IDs, or delete obsolete surfaces; no target command or prompt names legacy roots as authority. |
-| `src/changes/store.ts`, `src/changes/trace/schema.ts`, preview exclusions, branch effect filters, and current Trace consumers | Move normal lifecycle storage to `.codewiki/changes/**`; legacy Trace paths are accepted only by named compatibility readers. |
-| `src/domains/**`, `src/domains/defaults.ts`, `projectServerContributionForDomain`, and all current consumers | Remove Domain from target execution and public identity. Retain one isolated exact historical reader only where accepted Backend-v1 records require it. |
-| Domain-owned default Check Pack preparation and transport source kind `domain` | Make release templates passive package resources with exact package/tree identity. Existing Domain-bound locks remain explicit read-only compatibility input and are never emitted for a new Project. |
-| `src/knowledge/state.ts`, checkpoint/compiler/OKF paths, and legacy source-map/explain services | Replace target Knowledge authority with Wiki Item services; keep stopped KB-to-Wiki migration readers and fixtures isolated from normal operation. |
-| Runtime Build, Run, Check subject, and package identities that still require current Domain fields | Separate retained Backend-v1 protocol readers from Domain-free target protocols; never synthesize historical fields into new records. |
-| `src/project-server/operations/kb-to-wiki-*`, `src/knowledge/kb-to-wiki-git.ts`, and exact migration fixtures | Keep stopped, backup-first historical migration/recovery behavior; expose no startup path, dual read, dual write, or target-state repair. |
-| `src/changes/completion-requirement.ts`, `src/changes/trace/v13-requirements.ts`, and requirement reducers | Delete target requirement authority; derive goal from Committed Change Wiki meaning and stage facts. |
-| Candidate schemas plus `src/changes/trace/semantic-kernel.ts` Candidate operations | Replace with exact Proposed Change tips, Work result commits, and reviewed Change tips while retaining historical readers. |
-| `src/changes/git-lifecycle.ts`, disposition reducers, `accepted_incomplete`, and confirmation transitions | Implement Change Commit/Completion Commit parent order and Proposed/Committed/Completed/Rejected/Deferred/Withdrawn reduction. |
-| `src/checks/gate-package.ts` and Check Invocation bindings | Fold exact inputs and active Checks into Gate; rename target execution attempt to Check Run. |
-| `src/loops/planning/work-graph.ts` and `CanonicalWorkGraphBody` | Store Change-owned planning operations in Trace; derive Work View. |
-| `src/changes/trace/integration.ts`, `src/project-server/integration/private-lineage.ts`, and private lineage state | Use Git ancestry plus Trace admission facts. |
-| Implementation aggregate and Review Attempt duplication | Review exact integrated Change tip directly. |
-| `src/runtime/contracts.ts` / `RunSessionBinding` semantic exposure | Replace public semantic boundary with DSH Run authorization/receipt; keep DSH Session mechanics internal. |
-| project context snapshot/bundle authority | Use exact Run inputs and receipted bounded queries; caches remain derived. |
-| `src/work-state/projector.ts` mutable status/requirement fields | Rebuild from Git, Trace, Gates, Results, Work facts, and receipts. |
-| `src/knowledge/wiki-tree.ts` validation-only maps | Add reusable exact lookup/query/View services. |
-
-Minimum code wins. Do not add a generic workflow engine, second Agent runtime, Wiki Store Plugin, backend selector, activation manifest, target Lexicon container, generic graph database, or project-local executable Plugin path.
-
-## Implementation sequence
+## Milestone ledger
 
 ### SK0 — universal contracts — complete
 
-Qualified stable semantic identity, Change/Trace foundations, and migration contracts. Historical exact schemas remain in `SEMANTIC_KERNEL_SK0_CONTRACTS.md`.
+Qualified historical semantic identity and migration foundations. See `SEMANTIC_KERNEL_SK0_CONTRACTS.md`.
 
 ### SK1 — Git-native semantic contracts — complete
 
-Qualified mandatory Git store, universal Wiki Item encoding, native ref/commit validation, and domain-free semantic foundations.
+Qualified mandatory Git storage, universal Wiki Item encoding, ref/commit validation, and Domain-free foundations.
 
-### SK2 — governed KB-to-Wiki migration — complete
+### SK2 — governed Wiki migration — complete
 
-Qualified and activated target roots, 47 Wiki Items, append-only Change traces, Domain-free config `2.0.0`, Backend Build `3.0.0`, endpoint-byte recovery, and bounded rollback. Migration machinery is stopped-only historical transition code.
+Qualified Wiki/Change roots and repository migration. Historical migration machinery is not target Product architecture.
 
-### SK3A — exact design and roadmap admission
+### SK3A — exact design and roadmap admission — complete
 
-- [ ] Establish this document as the sole refactoring ledger and keep Wiki Items/diagrams timeless as desired-state design rather than implementation status.
-- [ ] Reconcile documentation draft `8c191e3e` and landed stabilization commits `2077c8a0`, `c9de8b51`, and `d3488ddd` without claiming retrospective governance.
-- [ ] Validate every Item envelope, relationship, link, body limit, diagram, README reference, LSP diagnostic, Lens diagnostic, and `git diff --check`; run the full suite and record any executable drift without weakening desired-state assertions.
-- [ ] Produce one exact documentation diff hash.
-- [ ] Obtain explicit exact-byte authorization.
-- [ ] Admit the design and roadmap through the normal governed Change lifecycle using an immutable released controller.
+- [x] Establish Wiki as desired-state authority and this file as sole active ledger.
+- [x] Qualify exact candidate `985bc1bd...` externally with immutable controller `adc272d0...`.
+- [x] Obtain exact-byte authorization and accept `CHG-sk3a-exact-design-roadmap`.
+- [x] Activate merge `927e21f...` without changing candidate Wiki/source bytes.
 
-No further SK3 source implementation begins before this slice completes. The landed stabilization corrections above remain candidate evidence and do not waive this gate.
+### SK3B — legacy freeze and clean Kernel foundation
 
-### SK3B — post-migration target-state closure
+Accepted requirement: `cw:codewiki:requirement:xj62wfc6qeqpzvgqqpndu7h4dcrtalsleyerrfptisafmm7zlyha`.
 
-- [ ] Freeze and classify every legacy-root and Domain reference as normal target execution, explicit historical compatibility/migration, test fixture, or removable dead code.
-- [ ] Requalify the landed stale-test replacement at `2077c8a0`; target-behavior tests assert Wiki/Change roots, while legacy paths appear only in named compatibility/migration fixtures.
-- [ ] Make fresh bootstrap create only Domain-free config, valid empty Wiki/Change state, and passive release Check Pack templates; reject mixed or legacy target roots and never run Agents, Checks, Plugins, providers, or migration.
-- [ ] Move default Check Pack preparation from executable Domain contribution to passive package-owned resources. New locks bind exact package/resource identity and never emit source kind `domain`; retained Domain-bound locks are read-only compatibility input.
-- [ ] Remove Domain identity and contribution code from normal startup, Wiki query, proposal, Gate, Run/Build, Check subject, and project-operation paths. Preserve exact Backend-v1 identity only in one isolated fail-closed compatibility boundary.
-- [ ] Replace or retire current project, Client, prompt, explain, storage, path-classification, and source-ownership surfaces that still treat `.codewiki/kb/**` or `.codewiki/traces/**` as target authority.
-- [ ] Keep KB-to-Wiki migration and historical protocol readers stopped and backup-first, with no startup reachability, synthetic historical identity, target write, or dual authority.
-- [ ] Pass focused bootstrap/compatibility/migration tests plus all qualification rules on one exact externally governed candidate.
+- [ ] Qualify and activate the exact Wiki/roadmap cutover amendment before source work.
+- [ ] Seal activated legacy commit/tree, tags, release artifacts, qualification evidence, and verified Git bundle.
+- [ ] Preserve the uncommitted exploratory overlay externally; retain no overlay byte by default.
+- [ ] Freeze subsystem donor manifests with structural search, LSP references, dependency graphs, public exports, tests, and dynamic-entrypoint analysis.
+- [ ] Freeze the target file/export/test allowlist and architecture rules.
+- [ ] Replace the active source/test tree with the minimal target skeleton; do not relocate obsolete code into active archive directories.
+- [ ] Implement canonical values, typed outcomes, identity/digest primitives, Product-fixed policy value containers, target package composition, and architecture gates.
+- [ ] Implement native `codewiki.component:ownership`; assign semantic roles to lifecycle/check owners and exact ownership to `.codewiki/config.json`, `.codewiki/check-packs.lock.json`, `package-lock.json`, and their target readers/tests.
+- [ ] Remove target fallback to legacy ownership metadata and prove every `codewiki.legacy:*` attribute is provenance-only outside normal semantic retrieval.
+- [ ] Make bootstrap create only versioned Domain-free config, empty Wiki/Change state, and passive Check Pack resources.
+- [ ] Prove normal target entrypoints cannot reach Domain, KB/OKF, old Trace roots, Backend/Runtime Build compatibility, project-local extensions, or migration code.
+- [ ] Remove obsolete root exports, scripts, test globs, source ownership, runtime hooks, and package metadata; preserve `.pi` safety/governance instructions that remain true.
+- [ ] Qualify and activate one exact private development checkpoint containing only the clean foundation; retain Product N as sole controller.
 
-Success: a fresh or normally running Project has only Wiki/Change semantic roots and no executable Domain authority; every retained legacy reference is named, bounded, read-only historical evidence.
+Success: active Product source has only target roots/layers, current Wiki/Change ownership, and no executable pre-stable semantic owner. Historical bytes remain recoverable through Git, not production imports. Checkpoint activation does not promote its controller.
 
-### SK3C — Change, Gate, and Work contract cut
+### SK3C — semantic lifecycle Kernel
 
-- [ ] Add new Change type/realization and lifecycle contracts with frozen fixtures.
-- [ ] Implement full-snapshot proposal, Change Commit, and Completion Commit validation and expected-head/tip CAS.
-- [ ] Remove target Completion Requirements, Candidate authority, dispositions, Gate packages, private integration lineage, and canonical global Work Graph.
-- [ ] Implement Gate active-Check resolver and Check Run contracts.
-- [ ] Retain explicit historical readers/migration fixtures without dual target writes.
-- [ ] Rebuild WorkState and Alignment from new owners.
+Accepted requirement: `cw:codewiki:requirement:xej4slpzn4cnbpoo6dsxshnacedgqbm5limjncdofnqhvl5hec7a`.
 
-### SK3D — transactional Wiki and Views
+- [ ] Implement canonical Wiki Item, Change Trace, Work, Gate, Check Run, Result, Evidence-reference, Product Build, and Kernel Build contracts with bounded decoders.
+- [ ] Define exact semantic-event ownership separately from Trace encoding/segment ownership, populate native `traceEvents` metadata atomically, and reject duplicate or unowned current events.
+- [ ] Implement deterministic reducers and exhaustive Proposed/Committed/Completed/Rejected/Deferred/Withdrawn transitions.
+- [ ] Implement full-snapshot Change/Completion parent and ordering validation. An operation inside a commit binds exact input OIDs plus fixed `containing_commit`; Git context supplies the containing result OID.
+- [ ] Implement Project Store port and Git adapter with complete-object validation and expected-old-OID CAS. No other target path writes canonical or managed refs.
+- [ ] Implement active-Check resolution, typed Gate outcomes, and Check Runner port. Safety-critical activation is universal or derived only from deterministic exact-subject facts independent of producer classification.
+- [ ] Define the host-neutral Preview port values and `preview.work`/`preview.verify` capability identities without importing an adapter.
+- [ ] Derive WorkState/Work View from Git, Trace, Gates, Results, Work facts, and receipts.
+- [ ] Remove target Candidate, Completion Requirement, disposition, Gate package, canonical global Work Graph, private integration lineage, and Review Attempt authority.
+- [ ] Model/property-test containing-commit identity, exact event ownership, replay determinism, stale-writer rejection, idempotence, conflict behavior, and crash recovery.
+- [ ] Qualify and activate one exact semantic-lifecycle checkpoint; retain Product N as sole controller.
 
-- [ ] Promote validation maps into exact commit/Change-tip Wiki lookup services.
-- [ ] Implement Item get/list, bounded lexical search, links/backlinks, Definition resolution, history, attribution, and semantic diff.
-- [ ] Bind complete View receipts and exact Git fallback.
-- [ ] Preserve and validate readable portable paths for existing and new authoring without making path identity.
-- [ ] Prove Item moves preserve stable IDs, relationships, attribution, and Git history.
+### SK3D — transactional Wiki and bounded Views
 
-### SK3E — authenticated read API and Client SDK
+Accepted requirement: `cw:codewiki:requirement:4arr3gvualjet5fk4tq2w6xqzrrsuk4jcgclvqovnh7fr5ll37aq`.
 
-- [ ] Publish Project discovery, capabilities, status, Wiki, Change, Gate, Result, Work, and Review read operations.
-- [ ] Add local/HTTP transport profiles and versioned envelopes over version-neutral semantics.
-- [ ] Enforce Actor/client separation, AuthZ/redaction, source selection, bounds, cursors, and receipt verification.
-- [ ] Externally qualify package/API use from disposable projects.
+- [ ] Implement exact commit/Change-tip Wiki get/list and validated transaction post-state.
+- [ ] Implement bounded lexical search, links/backlinks, Definition resolution, history, attribution, and semantic diff.
+- [ ] Bind source OID, derivation identity, authorization, coverage, ordering, truncation, freshness, unknowns, and citations into every View response.
+- [ ] Provide exact Git fallback when private indexes are absent or stale.
+- [ ] Exclude `codewiki.legacy:*` attributes from normal term resolution, search ranking, semantic diff, ownership, applicability, authorization, Agent context, and generated Views; expose them only through exact provenance inspection.
+- [ ] Prove Item moves preserve IDs, relationships, attribution, and history.
+- [ ] Property/fuzz test Item envelopes, paths, relationships, Unicode, limits, malformed repository input, and adversarial provenance fields.
+- [ ] Qualify and activate one exact Wiki/View checkpoint; retain Product N as sole controller.
 
-### SK3F — mutation API and lifecycle
+### SK3E — Project Server and authenticated read API
 
-- [ ] Publish atomic `proposeChanges` and expected-tip revision operations.
-- [ ] Publish authenticated Decision, Planning, Work integration, Review, completion, and protected-effect commands.
-- [ ] Prove all-or-none batch admission plus independent later outcomes.
-- [ ] Prove stale-write rejection, explicit reconciliation, compensation/supersession, and recovery.
+Accepted requirement: `cw:codewiki:requirement:bdr2py6syqr74steqtfrxaz2k6hn6tyzyjmvlwlho77upknke6nq`.
 
-### SK3G — DSH Agent roles and Wiki enforcement
+- [ ] Compose Kernel with Project Store and Check Runner ports under Project Server authority; expose Agent Runtime and Preview only as unavailable typed capabilities until their qualified adapters exist.
+- [ ] Implement Project discovery, capability/status, exact Wiki, Change, Gate, Result, Work, Review, and Alignment reads.
+- [ ] Publish curated version-neutral Product UAPI/Client SDK operations, historically named Kernel API, plus explicit versioned transport envelopes.
+- [ ] Enforce Client/Actor separation, AuthZ/redaction, exact source resolution, bounds, cursors, idempotence, and stable errors.
+- [ ] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
+- [ ] Qualify packed API use from disposable external projects and activate only as a non-controller checkpoint.
 
-- [ ] Bind explicit Decision, Planning, Worker, Review, and Model Check routes.
-- [ ] Implement Kernel-owned role instructions, exact mandatory Wiki context, bounded tools, capability separation, and DSH Run receipts.
-- [ ] Prove Workers cannot mutate Wiki/Trace/refs and project Skills cannot weaken role contracts.
-- [ ] Qualify deterministic Code Check sandboxes separately from Model Check DSH Runs. The landed `c9de8b51` containment correction preserves the existing boundary but does not complete this target qualification.
+### SK3F — governed mutation and local lifecycle
 
-### SK3H — external reference client
+Accepted requirement: `cw:codewiki:requirement:2jzn73ks7jsma7qrn6yatbaour2gs25uvu4z6vfj52wdemlslspq`.
 
-- [ ] Build Omarchy read-only Agent Skill and shell panel in a separate repository.
-- [ ] Show status, pending Decisions, Gates/Checks, drift/Alignment, and handoff through public API only.
-- [ ] Test against packed immutable qualified release with least-privilege credentials.
+- [ ] Publish atomic `proposeChanges`, expected-tip revision, and Decision outcome commands.
+- [ ] Publish Planning, Work admission/integration, canonical reconciliation, Review, completion, and protected-effect commands.
+- [ ] Prove all-or-none batch proposal admission and independent later outcomes.
+- [ ] Before Review, reconcile the admitted Change artifact delta with current canonical history on the managed Change ref; conflicts or changed bytes invalidate affected Results and require fresh Checks.
+- [ ] Prove Review qualifies the exact prospective Completion project-artifact tree, Completion preserves every reviewed project-artifact byte, embedded Trace uses `containing_commit`, and canonical drift restarts reconciliation/Review.
+- [ ] Prove expected-head/tip rejection, explicit reconciliation, supersession, and no silent semantic auto-merge.
+- [ ] Fault-inject every object-write/ref-CAS/private-state boundary and prove deterministic restart.
+- [ ] Stress concurrent Changes, Work integration, recovery, and idempotent lifecycle commands through qualified deterministic test adapters.
+- [ ] Qualify and activate one exact mechanism-complete local-lifecycle checkpoint; retain Product N as sole controller.
 
-### SK4 — Plugins and protected external effects
+Success: local lifecycle semantics and effect authorization are complete under qualified deterministic test adapters. This checkpoint is not operationally Agent-capable and cannot become controller.
 
-Generalize admitted source, remote, workspace, verification, integration-preparation, and Delivery mechanics through bounded Plugin Request/Receipt contracts. Plugins never write canonical/managed refs, create Results, grant AuthZ, or complete Changes.
+### SK3G — DSH adapter and first self-dogfood
 
-### SK5 — Raw Data and temporal Evidence
+Accepted requirement: `cw:codewiki:requirement:kjmy5ktiltnicsnne6bzgfbkwrh4n4j5r6sqs4gkhwjsiajsiema`.
 
-Add policy-bound private Raw Data revisions, Evidence lineage, freshness, retraction, contradiction, and valid-time query extensions. External connections may open Change Intake but never write Wiki.
+- [ ] Implement host-neutral Agent Runtime port and bounded DSH adapter only; do not duplicate DSH Sessions, provider/model loops, tools, compaction, sandboxing, or process supervision.
+- [ ] Bind Decision, Planning, Worker, Review, and Model Check roles to exact subjects, Product-fixed role/check policy, context, routes, tools, capabilities, writable scope, budgets, and receipts.
+- [ ] Give every immutable authorization one Run/idempotency identity. Prove transport retry/reconciliation reuses it and cannot duplicate semantic execution; new semantic input/attempt receives a new Run only after predecessor terminal receipt or independently proven quiescence.
+- [ ] Implement Project Server cancellation requests through Agent Runtime port and qualify DSH/Execution Host enforcement, descendant custody, resource exhaustion, terminal receipts, transport loss, and recovery.
+- [ ] Implement the Preview port and bounded local adapter. Qualify scoped `preview.work` handles, independent immutable-subject `preview.verify`, profile-only launch, lease/TTL, loopback/network/resource/output limits, cancellation, process-tree cleanup, and unavailable/stale behavior.
+- [ ] Prove Worker Preview remains producer context; Check Preview runs fresh and only validated observation can become Evidence. Model Checks may consume prior immutable Preview Evidence but cannot launch Preview.
+- [ ] Qualify every declared Linux/Node version against Secure Code address-space bounds; Node `24.14.0` currently cannot instantiate its TypeScript-stripper WASM under the `8 GiB` sandbox limit, so narrow declared support, replace the transformer, or establish and requalify a safe higher bound before claiming closure.
+- [ ] Prove Workers cannot mutate Wiki/Trace/managed refs and project Skills cannot weaken role contracts. DSH AI/model routes cannot invoke Git, Delivery, remote, or other protected Plugin effects.
+- [ ] Qualify deterministic Code Check sandboxes separately from Model Check DSH Runs and Preview execution.
+- [ ] Run malformed output, malicious repository, path/symlink, environment/command injection, secret, network, duplicate transport, cancellation-race, stale Preview, and resource-exhaustion cases.
+- [ ] Use immutable activated Product N plus DSH to develop and externally qualify one exact SK3G candidate, handoff manifest, state conversion, and genesis mapping without loading candidate code as controller.
+- [ ] Execute the ordered quiescent, backup-first handoff in this plan. Preserve historical Trace bytes, carry open SK3H identity, atomically retire Product N, and start exact SK3G as sole controller only after explicit human authorization.
+- [ ] Use promoted SK3G to govern one bounded SK3H operation and prove no old-controller process or unsupported predecessor reader remains.
 
-### SK6 — DSH/Execution Host qualification
+Success: first Agent-capable private Product release completes a real Product N→N+1 cycle with exact receipts, independent human activation, one quiescent controller handoff, and zero controller overlap.
 
-Consolidate legacy Runtime protocols behind the DSH Run boundary, prove exact context/capability/receipt closure, and qualify Linux x64 containment without translating opaque DSH Session bytes.
+### SK3H — public-client proof and stable-development closure
 
-### SK7 — cross-platform qualification
+Accepted requirement: `cw:codewiki:requirement:jzsvjec4kalxya5t3qpyvl2hgygje5a24fvi5bxv7qpo7z64kc6q`.
 
-Support remote Linux clients first. Qualify WSL2/native Windows/macOS only when containment, paths, credentials, recovery, and evidence meet the same contract. Partial support is labeled partial.
+- [ ] Build the bounded read-only Omarchy reference client outside this repository using public API/SDK only.
+- [ ] Test only against packed immutable qualified Product bytes with least-privilege credentials.
+- [ ] Prove no direct `.codewiki/**`, private-state, internal module, or managed-ref access.
+- [ ] Complete final Wiki/source/API ownership and desired-versus-executable Alignment audit, including semantic roles, Trace events, singleton config/locks, ports, adapters, and Product-fixed policy.
+- [ ] Reach zero dependency cycles, zero unclassified public exports, zero unclassified unreachable production modules, and no unexplained clone-ratchet regression.
+- [ ] Reproduce package bytes, dependency closure, SBOM/provenance, install behavior, backup/restore, and recovery evidence.
+- [ ] Complete at least one additional Product N→N+1 dogfood cycle without semantic-state repair.
+- [ ] Qualify and activate the first stable development baseline.
 
-## Qualification rules
+## Cross-cutting hardening matrix
 
-Every executable slice must:
+Every applicable milestone records bounded evidence in these areas:
 
-1. start from one exact clean committed subject and exclude unrelated user files;
-2. preserve verified prior-state backup and bounded recovery;
-3. add focused invariant, failure, replay, migration, concurrency, and recovery tests;
-4. run primary LSP diagnostics before build/test work;
-5. pass typecheck, build, focused tests, full tests, production tests, readiness, package installation, and applicable external lifecycle gates;
-6. pass diagnostics ratchet and dependency/security audits;
-7. regenerate affected protocol, package, Runtime/Kernel Build, and Release identities;
-8. prove expected-head/tip stale-write rejection and deterministic restart;
-9. run packed installs only in disposable external projects;
-10. use released controller N and accepted protected-head policy to govern committed candidate N+1;
-11. leave no runtime/views roots, package tarball, credential, DSH Session, socket, cache, daemon, or project-local package link in this checkout;
-12. reject cryptographic self-reference or hash fixed-point construction; hash only complete bytes and cite them from enclosing/successor records;
-13. preserve the 10,000-character legacy System Component and 8,000-character Recovery Flow body limits until an explicitly governed schema change;
-14. ship one reviewed green commit per bounded slice.
+| Area | Required evidence |
+| --- | --- |
+| Architecture | Allowed roots, acyclic imports, forbidden-edge tests, ownership coverage, curated exports, no dynamic Kernel loading. |
+| Semantic correctness | Examples, properties, state-machine/model tests, exhaustive outcomes, containing-commit identity, exact Review/Completion subjects, replay and differential projection checks. |
+| Persistence/concurrency | Complete-object validation, CAS conflicts, concurrent writers, idempotence, reconciliation drift, crash injection, restart, rollback. |
+| Hostile input | Schema/JSON/Markdown/path/Git-ref fuzzing, Unicode, depth/size bounds, malformed/corrupt repositories. |
+| Security | Threat model, symlink/path escape, Git config/hooks, command/environment injection, credentials, network, least privilege. |
+| Execution | DSH/Check/Preview separation, same-Run transport idempotency, cancellation races, budgets, process-tree custody/quiescence, stale handles, OOM/resource limits, receipt mismatch, and unavailable routes. |
+| Supply chain | Exact locks, minimal production dependencies, audit, SBOM/provenance, package allowlist, reproducible pack, no install effects. |
+| Operations | Structured non-secret errors, deterministic recovery, backup/restore, external disposable lifecycle, real self-dogfood. |
+
+Line count, file structure, typechecking, coverage percentage, or raw test count alone never closes a hardening claim.
+
+## Development and promotion gates
+
+### Inner development checkpoint
+
+Run for bounded commits while a milestone remains mutable:
+
+1. verify clean intended scope and preserve unrelated user files;
+2. run primary LSP diagnostics before build/test work;
+3. pass architecture/import/export checks;
+4. pass typecheck and build;
+5. pass focused tests plus applicable property, replay, fault, or adversarial cases;
+6. record known gaps in this ledger before moving to another subsystem.
+
+Inner checkpoints are not candidates and receive no activation claim.
+
+### Immutable promotion candidate
+
+When a milestone outcome is coherent:
+
+1. freeze one exact clean committed subject and patch identity;
+2. run full smoke, production, readiness, package-install, and applicable external lifecycle tests;
+3. run diagnostics ratchet, dependency/security audit, architecture, fuzz/fault, recovery, and reproducibility gates applicable to the milestone;
+4. pack and test only in disposable external projects with isolated Pi settings and owner-private state;
+5. prove no source-checkout CodeWiki load, project-local package link, runtime/view scratch, credential, socket, daemon, or package artifact remains;
+6. use immutable activated Product N to qualify exact N+1 bytes;
+7. obtain explicit exact-byte authorization and activate the release through protected-head policy;
+8. retain Product N as sole controller unless this is the exact SK3G handoff subject and every ordered handoff condition above passes.
+
+Any correction after candidate freeze creates another candidate/package/qualification. Mutable inner-loop corrections do not pretend to be release subjects. Release activation never silently changes the controller.
 
 ## Deliberate deferrals
 
-SK3 minimum does not include:
+The clean Kernel and first stable development baseline do not require:
 
 - rich CodeWiki App UI;
-- standalone persisted Dictionary or Term entities;
-- mandatory structured Definition/Claim profiles or full valid-time Claim query algebra;
-- semantic auto-merge or model-authored conflict resolution;
-- generic workflow/ontology/rule engines;
+- remote, shareable, or long-lived Preview and a general Plugin ecosystem or project-local executable Plugins;
+- standalone persisted Dictionary/Term authority;
+- mandatory structured Definition/Claim profiles or full temporal Claim algebra;
 - graph database authority;
-- direct external Client filesystem access;
-- project-local executable Plugins;
-- arbitrary Agent sandbox claims;
-- deployment completion coupled to local Change completion.
+- semantic auto-merge or model-authored conflict resolution;
+- arbitrary host/platform support beyond exact qualified Linux closure;
+- deployment success coupled to local Change completion;
+- active readers for unsupported pre-stable formats;
+- Forge, Dev controller product, Pi wrapper, or another semantic controller.
 
-These remain future governed Changes only when concrete clients and qualification evidence justify added complexity.
+SK4+ work remains future governed Changes only after concrete users and evidence justify complexity: bounded remote/shareable Preview Plugins and other effects, Raw Data/temporal Evidence, additional DSH hosts, and additional platforms.
 
-## Stable-release closure and archive
+## Stable closure and archive
 
-This plan remains active until every non-deferred item is checked against externally qualified and activated evidence, an exact final alignment audit finds no unowned gap between Wiki and executable behavior, and the first stable release passes the complete package, lifecycle, recovery, containment, and independent-controller gates.
+This plan remains active until every non-deferred checklist item is bound to externally qualified and activated evidence, the final exact Alignment audit finds no unowned gap between Wiki and executable behavior, the package/API surface is intentionally frozen, and repeated Product N→N+1 dogfood proves recovery without candidate self-governance.
 
-Closure produces one final immutable ledger recording each slice, exact commits, qualification artifacts, explicit deferrals, and release identity. The plan is then archived as historical evidence and removed from active navigation. Wiki remains the desired-state authority; source/tests remain executable truth; no roadmap status or transitional wording is copied back into Wiki.
+Closure records exact milestone commits, trees, package digests, qualification/authorization/activation artifacts, explicit deferrals, supported predecessor/host matrices, and archive identity. The plan is then archived as historical evidence and removed from active navigation. Wiki remains desired-state authority; source/tests remain executable truth; roadmap status never migrates into Wiki.

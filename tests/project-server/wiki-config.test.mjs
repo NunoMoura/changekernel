@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +20,7 @@ import {
 	updateWikiConfigFile,
 } from "../../src/project/config-file.ts";
 import { CodewikiConfigError } from "../../src/project/config-errors.ts";
+import {PRE_SEMANTIC_KERNEL_CUTOVER_REVISION} from "../helpers/repository-wiki.mjs";
 
 describe("wiki_config core facade", () => {
 	it("resolves defaults and deep patches config", () => {
@@ -94,8 +96,12 @@ describe("wiki_config core facade", () => {
 		);
 	});
 
-	it("documents review pack configuration recipes", async () => {
-		const readme = await readFile("README.md", "utf8");
+	it("retains pre-cutover review pack configuration recipes", () => {
+		const readme = execFileSync(
+			"git",
+			["show", `${PRE_SEMANTIC_KERNEL_CUTOVER_REVISION}:README.md`],
+			{encoding: "utf8"},
+		);
 		const docs = readme;
 
 		for (const packId of DEFAULT_WIKI_CONFIG.quality.review.enabledPacks) {

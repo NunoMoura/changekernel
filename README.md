@@ -22,14 +22,14 @@ CodeWiki does not promise perfect model judgment. It provides bounded process in
 
 CodeWiki is private pre-production software. Package `@nunomoura/codewiki@0.3.0` is unpublished and retains `"private": true`.
 
-Backend v1, Semantic Kernel SK0/SK1, and corrected SK2 release `adc272d0d9b8f228fc8cedb150c8c6371c823997` passed external exact-subject qualification. SK2 migrated this repository at commit `7b4e5e9021b27ff09f6f93569bb2a93c1fb0ebdf`.
+Backend v1 and Semantic Kernel SK0/SK1/SK2 passed external exact-subject qualification. SK2 migrated this repository at `7b4e5e9021b27ff09f6f93569bb2a93c1fb0ebdf`. SK3A's exact desired-state Wiki and roadmap were qualified, authorized, admitted, and activated at `927e21f863ca954ba7826d771b8556dfe236827e`.
 
 Current truth boundaries:
 
 - `.codewiki/wiki/**` and `.codewiki/changes/**` — accepted semantic and lifecycle truth;
 - `src/**` and `tests/**` — executable truth;
 - Git — exact Project bytes, history, ancestry, refs, and checkpoint evidence;
-- external owner-private state — DSH internals, credentials, caches, leases, sockets, worktrees, and raw execution evidence;
+- external owner-private state — DSH/Preview internals, credentials, caches, leases, sockets, worktrees, and raw execution evidence;
 - generated Views — rebuildable, never source truth.
 
 `.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, and generated indexes below `.codewiki/wiki/**` must remain absent.
@@ -41,23 +41,26 @@ The Wiki defines desired stable behavior, while source and tests define current 
 ```text
 Clients / CodeWiki App / external Agents
                  |
-        authenticated Kernel API
+   authenticated Product UAPI (Kernel API)
                  |
           Project Server
-       /      |       |       \
-     Git     Wiki   Checks    DSH Run authorization
-      |       |       |                |
- full trees  meaning  Gates      DSH + Execution Host
- ancestry    links    Results    models/tools/providers
- refs        Views
+   /          /          |          |          \
+Semantic  Project     Check      Agent       Preview
+ Kernel   Store port  Runner port Runtime port port
+             |           |          |           |
+        Git adapter Check adapter DSH adapter Preview adapter
+                                  |
+                            Execution Host
 ```
 
-- **Project Server** owns Actor authorization, managed Git writes, Change lifecycle, Gate coordination, Work admission, protected effects, and recovery.
-- **Git Project Store** owns complete trees, commits, ancestry, canonical first-parent history, managed Change refs, and expected-old-OID compare-and-swap.
+- **Semantic Kernel** owns deterministic canonical validation, identity, Wiki/Change/Work/Gate/Evidence mechanisms, reductions, and transition preconditions.
+- **Project Server** owns Actor authorization, Change lifecycle, Gate coordination, Work admission, protected-effect authorization, and recovery. Every managed Git write runs through Project Store.
+- **Git Project Store** owns complete trees, commits, ancestry, canonical first-parent history, managed Change refs, and expected-old-OID compare-and-swap through its port/adapter boundary.
 - **Wiki** owns accepted descriptive, historical, and normative Project meaning through stable Wiki Item IDs.
 - **Change Trace** owns rationale, contributors, lifecycle events, Work facts, Results/receipts, and exact Git OIDs.
 - **Checks** judge one exact stage subject. Change type and subject facts deterministically select Gate active Checks from exact stage Pack snapshots.
-- **DSH** owns Agent execution mechanics, internal Sessions, models, tools, providers, and compaction. CodeWiki authorizes exact DSH Runs and validates receipts.
+- **DSH** implements the Agent Runtime port and owns Agent execution mechanics, internal Sessions, models, tools, AI/model providers, and compaction. CodeWiki authorizes exact DSH Runs and validates receipts.
+- **Preview** is a separate bounded capability and port. `preview.work` gives one Worker producer feedback; `preview.verify` captures independent exact-subject observations for Checks. Preview grants no Result or lifecycle authority.
 - **WorkState, Alignment, Dictionary, search, backlinks, history, and attribution** are derived Views.
 
 No Agent, Client, Check, provider, Plugin, or project file directly writes managed refs or grants lifecycle authority.
@@ -84,7 +87,7 @@ changeType: capability | correction | maintenance | policy | investigation
 realization: wiki-only | project
 ```
 
-A true Wiki-only Change completes in its Change Commit. A project-realization Change continues through Planning, independently gated Work Units, Review, and Change Completion Commit.
+A true Wiki-only Change completes in its Change Commit. A project-realization Change continues through Planning, independently gated Work Units, explicit reconciliation with current canonical history, Review of the exact prospective Completion project-artifact tree, and Change Completion Commit. Operations embedded in a commit use a fixed `containing_commit` marker; native Git context supplies that commit's OID.
 
 CodeWiki retains exactly four stages:
 
@@ -100,28 +103,29 @@ Wiki Item is the sole first-class semantic unit. Stable `itemId` establishes ide
 
 Definition Items and Claim Items are typed Wiki Items, not peer stores. Dictionary, graph, lexical, vector, history, attribution, and semantic-diff facilities are read-only Views over one exact commit or Proposed Change tip. Approximate retrieval finds candidates only; it never establishes identity, truth, or authority.
 
-All 47 migrated Items use readable `product/**` and `system/**` paths. Stable `itemId` and Git rename history preserve identity; paths remain non-authoritative navigation hints.
+The active Wiki contains 47 Items under readable `product/**` and `system/**` paths. Stable `itemId` and Git rename history preserve identity; paths remain non-authoritative navigation hints.
 
 ## Agent boundary
 
 Every CodeWiki-controlled Agent runs through DSH with:
 
-- immutable Kernel-owned role instructions;
+- immutable Product-fixed role instructions supplied as validated Kernel input;
 - exact Project/Change/stage subject;
 - mandatory relevant Wiki Items and Definitions;
 - bounded snapshot-fixed Wiki and status tools;
 - role-specific capability and writable scope;
-- exact DSH Run receipt;
+- one exact DSH Run/idempotency identity and receipt;
 - independent stage Checks.
 
-Decision may propose Wiki changes. Planning maps Work Units to committed targets. Workers modify project artifacts only. Review compares the integrated Project tree with committed meaning. Model Checks receive only Gate-declared inputs.
+Decision may propose Wiki changes. Planning maps Work Units to committed targets. Workers modify project artifacts only and may receive an explicit scoped `preview.work` handle. Review compares the reconciled prospective Completion tree with committed meaning. Model Checks receive only Gate-declared inputs and may consume prior immutable `preview.verify` Evidence; they cannot launch Preview or inherit Worker observations.
 
 ## Repository rules
 
 - Never load CodeWiki from this checkout, a mutable package path, or this repository's `.pi/` directory.
 - Dogfood only an immutable release that passed external exact-subject qualification and explicit activation.
-- Released controller N qualifies exact committed candidate N+1 in a disposable external project.
-- Every post-commit correction requires a new candidate, qualification, approval, and activation.
+- Immutable released Product N qualifies exact committed candidate N+1 in a disposable external project.
+- Release activation does not automatically promote a semantic controller; controller handoff requires explicit quiescence, backup, qualification, human authority, and zero overlap.
+- Every correction after candidate freeze requires a new candidate, qualification, approval, and activation.
 - Use Pi-native tools and compaction as independent repair paths.
 - Do not add project-local CodeWiki links, duplicate Skills, controller pins, or executable Plugin paths.
 - Keep credentials, DSH state, generated Views, caches, and runtime scratch outside project Git.
@@ -133,10 +137,10 @@ See [`AGENTS.md`](AGENTS.md) for repository-agent constraints.
 
 Requirements:
 
-- Node.js `>=22.19.0`;
-- package/runtime builds emitted to `dist/**`;
-- Pi integration supports declared peer versions only;
-- external smoke tests use disposable projects.
+- Node.js `>=22.19.0` for package tooling; Agent Runtime support is exact-build qualified rather than inferred from this floor;
+- Product and adapter builds emitted to `dist/**`;
+- exact DSH/Execution Host combinations qualify before Agent-capable release;
+- external smoke tests use disposable projects with isolated Pi settings.
 
 Core commands:
 
@@ -153,12 +157,6 @@ npm run audit:codewiki
 
 Do not run packed lifecycle tests against this source checkout.
 
-## Backend-v1 review evidence compatibility
-
-Legacy **Review evidence configuration** is accepted only through its explicit compatibility boundary. `autoEvidence` controls automatic collection, `includeCachedEvidence` allows eligible cached observations, `requiredPacks` requires relevant sensors to run, and `skippedPacks` explains unavailable or unmatched sensors. Explicit `reviewEvidenceReports` remain validated compatibility input. Its refactoring and retirement status belongs exclusively to `SEMANTIC_KERNEL_PLAN.md`.
-
-Built-in sensor IDs are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.pyright`, `go.test`, `go.vet`, `rust.cargo-test`, `rust.cargo-clippy`, and `shell.shellcheck`. Their output is Evidence, not Gate or completion authority.
-
 ## Documentation
 
 - [Semantic Kernel refactoring plan](SEMANTIC_KERNEL_PLAN.md) — sole active roadmap, completion ledger, and archive checklist
@@ -166,10 +164,12 @@ Built-in sensor IDs are `tsjs.typescript`, `tsjs.lint`, `python.ruff`, `python.p
 - [Refactoring plan](REFACTORING_PLAN.md) — completed historical evidence
 - [SK0 contracts](SEMANTIC_KERNEL_SK0_CONTRACTS.md) — qualified historical contract freeze
 - [System architecture](.codewiki/wiki/items/system/diagrams/system-architecture.md)
+- [Semantic Kernel](.codewiki/wiki/items/system/components/semantic-kernel.md)
 - [Change lifecycle](.codewiki/wiki/items/system/flows/change-lifecycle.md)
 - [Wiki](.codewiki/wiki/items/system/components/wiki.md)
 - [Change Trace](.codewiki/wiki/items/system/components/change-trace.md)
 - [Checks](.codewiki/wiki/items/system/components/checks.md)
 - [Project Server](.codewiki/wiki/items/system/components/project-server.md)
 - [DSH Run Execution](.codewiki/wiki/items/system/components/dsh-run-execution.md)
+- [Preview](.codewiki/wiki/items/system/components/preview.md)
 - [Alignment](.codewiki/wiki/items/system/components/alignment.md)

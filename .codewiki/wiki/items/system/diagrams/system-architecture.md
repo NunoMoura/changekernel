@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:architecture",
   "id": "architecture",
-  "purpose": "Show ownership among Clients, Project Server, Git/Wiki/Trace, four stages, Checks, DSH Runs, derived Views, Providers, release qualification, and legacy compatibility.",
+  "purpose": "Show Product UAPI, Semantic Kernel, Project Server, four ports, selected adapters, Git/Wiki/Trace, lifecycle, Checks, Preview, DSH, Evidence, derived Views, AI provider mechanics, and Product qualification.",
   "components": [
     {
       "id": "clients",
@@ -15,7 +15,13 @@
     {
       "id": "protocol",
       "concept": "cw:component:protocol",
-      "label": "Kernel API / Client SDK",
+      "label": "Product UAPI (Kernel API) / Client SDK",
+      "zone": "core"
+    },
+    {
+      "id": "semantic-kernel",
+      "concept": "cw:component:semantic-kernel",
+      "label": "Semantic Kernel mechanisms",
       "zone": "core"
     },
     {
@@ -57,8 +63,20 @@
     {
       "id": "checks",
       "concept": "cw:component:checks",
-      "label": "Gates / Check Runs / Results",
+      "label": "Gate and Result mechanisms",
       "zone": "core"
+    },
+    {
+      "id": "check-runner-port",
+      "concept": "cw:component:checks",
+      "label": "Check Runner port",
+      "zone": "core"
+    },
+    {
+      "id": "check-adapter",
+      "concept": "cw:component:checks",
+      "label": "Check adapter / qualified host",
+      "zone": "execution"
     },
     {
       "id": "work-state",
@@ -73,9 +91,15 @@
       "zone": "core"
     },
     {
-      "id": "project",
+      "id": "project-store-port",
       "concept": "cw:component:project",
-      "label": "Full-snapshot Git Project Store",
+      "label": "Project Store port",
+      "zone": "core"
+    },
+    {
+      "id": "git-adapter",
+      "concept": "cw:component:project",
+      "label": "Git adapter / repository",
       "zone": "repository"
     },
     {
@@ -97,27 +121,33 @@
       "zone": "core"
     },
     {
-      "id": "runtime",
+      "id": "agent-runtime-port",
       "concept": "cw:component:runtime",
-      "label": "DSH Run Execution",
+      "label": "Agent Runtime port",
+      "zone": "core"
+    },
+    {
+      "id": "dsh-adapter",
+      "concept": "cw:component:runtime",
+      "label": "DSH adapter / Execution Host",
       "zone": "execution"
     },
     {
       "id": "preview",
       "concept": "cw:component:preview",
-      "label": "Preview / bounded observation",
-      "zone": "execution"
+      "label": "Preview capability / port",
+      "zone": "core"
     },
     {
       "id": "provider",
       "concept": "cw:component:provider-boundary",
-      "label": "AI / Git / Delivery Providers",
+      "label": "AI / model provider",
       "zone": "provider"
     },
     {
       "id": "package",
       "concept": "cw:component:package",
-      "label": "Immutable package / admitted Plugins",
+      "label": "Immutable Product composition",
       "zone": "execution"
     },
     {
@@ -125,12 +155,6 @@
       "concept": "cw:component:benchmarks",
       "label": "Qualification / Benchmarks",
       "zone": "client"
-    },
-    {
-      "id": "domains",
-      "concept": "cw:component:domains",
-      "label": "Legacy Domain compatibility",
-      "zone": "core"
     }
   ],
   "connections": [
@@ -153,6 +177,20 @@
       "label": "supplies normalized request and Actor proof"
     },
     {
+      "id": "a-server-kernel",
+      "from": "project-server",
+      "to": "semantic-kernel",
+      "type": "invokes",
+      "label": "submits canonical values and transition input"
+    },
+    {
+      "id": "a-kernel-server",
+      "from": "semantic-kernel",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns deterministic typed outcome and effect preconditions"
+    },
+    {
       "id": "a-server-intake",
       "from": "project-server",
       "to": "intake",
@@ -167,25 +205,46 @@
       "label": "produces exact Proposed Change subject"
     },
     {
-      "id": "a-decision-planning",
+      "id": "a-decision-server",
       "from": "decision",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns exact Decision eligibility facts"
+    },
+    {
+      "id": "a-server-planning",
+      "from": "project-server",
       "to": "planning",
-      "type": "authorizes",
-      "label": "routes Committed Change requiring project realization"
+      "type": "invokes",
+      "label": "starts authorized Planning for Committed Change"
     },
     {
-      "id": "a-planning-implementation",
+      "id": "a-planning-server",
       "from": "planning",
-      "to": "implementation",
-      "type": "authorizes",
-      "label": "supplies accepted Work Units and dependencies"
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns gated Work Unit and dependency facts"
     },
     {
-      "id": "a-implementation-review",
+      "id": "a-server-implementation",
+      "from": "project-server",
+      "to": "implementation",
+      "type": "invokes",
+      "label": "claims and assigns ready Work Unit"
+    },
+    {
+      "id": "a-implementation-server",
       "from": "implementation",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns admitted integration and reconciliation facts"
+    },
+    {
+      "id": "a-server-review",
+      "from": "project-server",
       "to": "review",
-      "type": "produces",
-      "label": "supplies exact integrated Change tip"
+      "type": "invokes",
+      "label": "starts Review over prospective project-artifact tree"
     },
     {
       "id": "a-review-server",
@@ -199,52 +258,102 @@
       "from": "project-server",
       "to": "checks",
       "type": "invokes",
-      "label": "constructs exact Gate and active Check set"
+      "label": "constructs or reduces exact Gates through Kernel mechanisms"
     },
     {
       "id": "a-checks-server",
       "from": "checks",
       "to": "project-server",
       "type": "returns",
-      "label": "returns passed, failed, or stopped outcome"
+      "label": "returns typed selection or Gate outcome"
     },
     {
-      "id": "a-server-runtime",
+      "id": "a-server-check-runner",
       "from": "project-server",
-      "to": "runtime",
+      "to": "check-runner-port",
       "type": "authorizes",
-      "label": "authorizes exact role-bound DSH Run",
+      "label": "authorizes exact active Check Runs"
+    },
+    {
+      "id": "a-check-runner-adapter",
+      "from": "check-runner-port",
+      "to": "check-adapter",
+      "type": "invokes",
+      "label": "dispatches bounded Check execution",
       "boundary": {
         "type": "authority",
         "failure": "Reject stale subject, route, context, capability, or scope."
       }
     },
     {
-      "id": "a-runtime-server",
-      "from": "runtime",
-      "to": "project-server",
+      "id": "a-check-adapter-runner",
+      "from": "check-adapter",
+      "to": "check-runner-port",
       "type": "returns",
-      "label": "returns bounded output and DSH Run receipt",
+      "label": "returns untrusted Check output and closure",
       "boundary": {
         "type": "authority",
-        "failure": "Reject incomplete receipt; fabricate no transition or Result."
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
       }
     },
     {
-      "id": "a-runtime-provider",
-      "from": "runtime",
+      "id": "a-check-runner-server",
+      "from": "check-runner-port",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns typed output or operational stop"
+    },
+    {
+      "id": "a-server-agent-runtime",
+      "from": "project-server",
+      "to": "agent-runtime-port",
+      "type": "authorizes",
+      "label": "authorizes exact role-bound Agent Run"
+    },
+    {
+      "id": "a-agent-runtime-dsh",
+      "from": "agent-runtime-port",
+      "to": "dsh-adapter",
+      "type": "invokes",
+      "label": "dispatches one typed authorized Run",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "a-dsh-agent-runtime",
+      "from": "dsh-adapter",
+      "to": "agent-runtime-port",
+      "type": "returns",
+      "label": "returns untrusted DSH output and custody closure",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
+      }
+    },
+    {
+      "id": "a-agent-runtime-server",
+      "from": "agent-runtime-port",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns typed Run output or operational stop"
+    },
+    {
+      "id": "a-dsh-provider",
+      "from": "dsh-adapter",
       "to": "provider",
       "type": "invokes",
-      "label": "uses exact DSH-owned provider route",
+      "label": "uses exact DSH-owned AI/model route",
       "boundary": {
         "type": "network",
         "failure": "Stop on unavailable route, cancellation, or receipt failure."
       }
     },
     {
-      "id": "a-provider-runtime",
+      "id": "a-provider-dsh",
       "from": "provider",
-      "to": "runtime",
+      "to": "dsh-adapter",
       "type": "returns",
       "label": "returns provider output and receipt facts",
       "boundary": {
@@ -253,64 +362,89 @@
       }
     },
     {
-      "id": "a-runtime-preview",
-      "from": "runtime",
+      "id": "a-dsh-preview",
+      "from": "dsh-adapter",
       "to": "preview",
       "type": "invokes",
-      "label": "requests bounded subject observation"
+      "label": "uses only an authorized preview.work handle",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
     },
     {
-      "id": "a-preview-evidence",
+      "id": "a-check-adapter-preview",
+      "from": "check-adapter",
+      "to": "preview",
+      "type": "invokes",
+      "label": "uses only an authorized preview.verify handle",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "a-preview-server",
       "from": "preview",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns untrusted observation for validation or relay"
+    },
+    {
+      "id": "a-server-evidence",
+      "from": "project-server",
       "to": "evidence",
       "type": "produces",
-      "label": "returns provenance-bound observation metadata",
-      "boundary": {
-        "type": "trust",
-        "failure": "Record unavailable or unknown; invent no Evidence."
-      }
+      "label": "admits exact validated observation Evidence"
     },
     {
-      "id": "a-evidence-checks",
-      "from": "evidence",
-      "to": "checks",
+      "id": "a-checks-evidence",
+      "from": "checks",
+      "to": "evidence",
       "type": "consumes",
-      "label": "supplies only Gate-declared exact Evidence"
+      "label": "consumes only Gate-declared exact Evidence"
     },
     {
-      "id": "a-server-project",
+      "id": "a-server-project-store",
       "from": "project-server",
-      "to": "project",
+      "to": "project-store-port",
       "type": "writes",
-      "label": "advances refs through expected-old-OID compare-and-swap",
+      "label": "requests exact object and expected-state transaction"
+    },
+    {
+      "id": "a-project-store-git",
+      "from": "project-store-port",
+      "to": "git-adapter",
+      "type": "invokes",
+      "label": "executes bounded Git read or compare-and-swap",
       "boundary": {
         "type": "persistence",
-        "failure": "Preserve previous refs on object, authority, Gate, or CAS failure."
+        "failure": "Preserve prior refs on invalid object, authority, Gate, or CAS."
       }
     },
     {
-      "id": "a-project-knowledge",
-      "from": "project",
+      "id": "a-git-knowledge",
+      "from": "git-adapter",
       "to": "knowledge",
       "type": "produces",
       "label": "supplies exact Wiki tree and Item blobs"
     },
     {
-      "id": "a-project-trace",
-      "from": "project",
+      "id": "a-git-trace",
+      "from": "git-adapter",
       "to": "change-trace",
       "type": "produces",
       "label": "supplies exact Trace blobs and managed ancestry"
     },
     {
-      "id": "a-project-workstate",
-      "from": "project",
+      "id": "a-git-workstate",
+      "from": "git-adapter",
       "to": "work-state",
       "type": "produces",
-      "label": "supplies Git and Trace projection sources",
+      "label": "supplies exact Git and Trace projection sources",
       "boundary": {
         "type": "persistence",
-        "failure": "Stop projection on missing or contradictory source identity."
+        "failure": "Stop on missing, stale, or contradictory source identity."
       }
     },
     {
@@ -318,7 +452,7 @@
       "from": "work-state",
       "to": "project-server",
       "type": "returns",
-      "label": "returns derived readiness and current stage facts"
+      "label": "returns derived readiness and current-stage facts"
     },
     {
       "id": "a-knowledge-alignment",
@@ -328,7 +462,7 @@
       "label": "supplies committed semantic targets",
       "boundary": {
         "type": "persistence",
-        "failure": "Report unknown when exact Wiki source cannot be resolved."
+        "failure": "Stop on missing, stale, or contradictory source identity."
       }
     },
     {
@@ -343,7 +477,7 @@
       "from": "benchmarks",
       "to": "package",
       "type": "reads",
-      "label": "qualifies exact packed release bytes",
+      "label": "qualifies exact packed Product bytes",
       "boundary": {
         "type": "trust",
         "failure": "Reject unbound subject, policy, fixture, or evidence."
@@ -353,10 +487,10 @@
       "id": "a-package-server",
       "from": "package",
       "to": "project-server",
-      "type": "authorizes",
-      "label": "supplies immutable Kernel Build and admitted code",
+      "type": "produces",
+      "label": "supplies qualified Product and Kernel Build identities",
       "boundary": {
-        "type": "authority",
+        "type": "trust",
         "failure": "Reject mutable, drifted, unsupported, or unqualified identity."
       }
     }
@@ -369,22 +503,29 @@
           "connections": [
             "a-clients-protocol",
             "a-protocol-server",
+            "a-server-kernel",
+            "a-kernel-server",
             "a-server-intake",
             "a-intake-decision",
-            "a-decision-planning",
-            "a-planning-implementation",
-            "a-implementation-review",
-            "a-review-server",
-            "a-server-project",
-            "a-project-knowledge"
+            "a-decision-server",
+            "a-server-checks",
+            "a-checks-server",
+            "a-server-project-store",
+            "a-project-store-git",
+            "a-git-knowledge"
           ]
         },
         {
           "connections": [
-            "a-server-checks",
-            "a-checks-server",
-            "a-server-project",
-            "a-project-trace"
+            "a-server-planning",
+            "a-planning-server",
+            "a-server-implementation",
+            "a-implementation-server",
+            "a-server-review",
+            "a-review-server",
+            "a-server-project-store",
+            "a-project-store-git",
+            "a-git-trace"
           ]
         }
       ]
@@ -394,19 +535,31 @@
       "paths": [
         {
           "connections": [
-            "a-server-runtime",
-            "a-runtime-provider",
-            "a-provider-runtime",
-            "a-runtime-server",
-            "a-server-checks"
+            "a-server-agent-runtime",
+            "a-agent-runtime-dsh",
+            "a-dsh-provider",
+            "a-provider-dsh",
+            "a-dsh-agent-runtime",
+            "a-agent-runtime-server",
+            "a-server-check-runner",
+            "a-check-runner-adapter",
+            "a-check-adapter-runner",
+            "a-check-runner-server"
           ]
         },
         {
           "connections": [
-            "a-runtime-preview",
-            "a-preview-evidence",
-            "a-evidence-checks",
-            "a-checks-server"
+            "a-dsh-preview",
+            "a-preview-server",
+            "a-server-agent-runtime",
+            "a-agent-runtime-dsh"
+          ]
+        },
+        {
+          "connections": [
+            "a-check-adapter-preview",
+            "a-preview-server",
+            "a-server-evidence"
           ]
         }
       ]
@@ -416,23 +569,25 @@
       "paths": [
         {
           "connections": [
-            "a-project-workstate",
+            "a-git-workstate",
             "a-workstate-server",
-            "a-server-project"
+            "a-server-project-store",
+            "a-project-store-git"
           ]
         },
         {
           "connections": [
             "a-knowledge-alignment",
             "a-alignment-server",
-            "a-server-project"
+            "a-server-project-store",
+            "a-project-store-git"
           ]
         },
         {
           "connections": [
             "a-bench-package",
             "a-package-server",
-            "a-server-project"
+            "a-server-kernel"
           ]
         }
       ]

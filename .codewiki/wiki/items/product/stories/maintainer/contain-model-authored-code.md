@@ -9,7 +9,7 @@ As a maintainer, I want model-authored programs to run through qualified disposa
 
 Model-authored source, arguments, stdout/stderr, completion values, binding calls, scheduling, and resource demand are hostile. Protected assets include CodeWiki authority, exact Run inputs, DSH/provider capability, credentials, host files, Git refs, Wiki/Trace, Evidence custody, and descendant-process lifecycle.
 
-The trusted computing base is the qualified host/kernel, exact containment and Node executables, CodeWiki/DSH launch code, and explicitly admitted host bindings. Typed bindings are capabilities, not sanitization. A compromised host/kernel, privileged administrator, side channel, or malicious admitted binding is outside this boundary and requires stronger infrastructure or removal of capability.
+The trusted computing base is the qualified host operating system and its kernel, exact containment and Node executables, CodeWiki/DSH launch code, and explicitly admitted host bindings. Typed bindings are capabilities, not sanitization. A compromised host operating system/kernel, privileged administrator, side channel, or malicious admitted binding is outside this boundary and requires stronger infrastructure or removal of capability.
 
 ## Acceptance signals
 

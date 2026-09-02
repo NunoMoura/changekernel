@@ -7,7 +7,7 @@ Project Server runs Decision Gate over one exact Proposed Change tip. Gate freez
 
 A failed Gate returns bounded feedback for a revised Proposed Change. A stopped Gate preserves state. A passed Gate grants eligibility only. Authenticated `commitChange` revalidates Actor, authority, unchanged Change tip, current Gate/Results, active-Change compatibility, complete Git/Wiki/Trace closure, and expected canonical head.
 
-Change Commit has current canonical head as first parent and exact Proposed Change tip as second. It advances canonical and managed Change refs through expected-old-OID compare-and-swap and records `change.committed`.
+Change Commit has current canonical head as first parent and exact Proposed Change tip as second. It advances canonical and managed Change refs through expected-old-OID compare-and-swap and records `change.committed`. The embedded operation binds both parent OIDs and the fixed `containing_commit` result marker; native Git context supplies the resulting commit OID.
 
 For `realization: wiki-only`, the same full snapshot already realizes accepted outcome, so Change Commit also records `change.completed`; Planning does not run.
 

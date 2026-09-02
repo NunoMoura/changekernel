@@ -13,15 +13,15 @@ Generated Views and caches may be discarded. Missing/stale indexes trigger exact
 
 ## DSH Runs and Checks
 
-DSH owns internal Session recovery. CodeWiki sees one authorized DSH Run and requires a bound result/receipt or explicit operational stop. Changed semantic input, authority, role, route, tools, capability, Project/Change head, active Checks, or feedback creates another Run. A retry cannot inherit proposal, Work, Review, or Result authority from an incomplete process.
+DSH owns internal Session recovery. CodeWiki sees one immutable authorized DSH Run/idempotency identity and requires a bound result/receipt or explicit operational stop. Transport retry or reconciliation of unchanged authorization reuses that identity and cannot launch duplicate execution. DSH may recover internal Session mechanics only within the same Run and qualified closure. Changed semantic input, authority, role, route, tools, capability, Project/Change head, active Checks, feedback, or a new semantic attempt creates another Run only after the predecessor has a validated terminal receipt or independently proven process/effect quiescence and custody closure. Timeout, lease expiry, cancellation request, transport loss, or process exit grants no proposal, Work, Review, or Result authority.
 
-Completed Results remain reusable only when Gate, Check, implementation, exact subject/input, policy/resolver, route where relevant, and Evidence identities all match. Interrupted/stale Check Runs produce no Result. Eligible retry creates a new Check Run; unavailable capability, contradictory closure, or exhausted retry yields stopped Gate.
+Project Server requests Run cancellation through the Agent Runtime port. DSH and the qualified Execution Host enforce cancellation and process-tree cleanup; Project Server validates terminal closure. Preview handles close under the same rule. Completed Results remain reusable only when Gate, Check, implementation, exact subject/input, policy/resolver, route where relevant, and Evidence identities all match. Interrupted/stale Check Runs produce no Result. Eligible Check retry creates a new Check Run; unavailable capability, contradictory closure, or exhausted retry yields stopped Gate.
 
 ## Work and Git
 
 Accepted planning facts in Trace reconstruct Work Units and dependencies. Git ancestry plus Trace reconstructs integrated Work results. Durable Claim/Assignment records prove custody; stale leases may be reclaimed only after process/effect closure. Orphan worktrees and private refs are quarantined until exact ownership is known.
 
-A passing Work result integrates only under current expected Change tip. Review and Completion Commit require exact integrated tip and current canonical head. Crash between object creation and ref CAS is resolved from refs: unreachable objects grant no authority. Crash after verified CAS is recovered by replaying exact commit/Trace state without rerunning Agent or Check.
+A passing Work result integrates only under current expected Change tip. Before Review, Project Server explicitly reconciles the integrated Change tip with current canonical history and reruns every affected Check. Review and Completion Commit require the exact reconciled prospective Completion project-artifact tree and unchanged reviewed canonical parent. Crash between object creation and ref CAS is resolved from refs: unreachable objects grant no authority. Crash after verified CAS is recovered by replaying exact commit/Trace state without rerunning Agent or Check.
 
 ## Protected effects
 
@@ -35,4 +35,6 @@ Operational rollback may restore exact refs and private state only within a qual
 
 Repository migration/upgrade is backup-first, exact-subject, and expected-state CAS. Unknown schema, mixed Wiki roots, path escape, symlink, drifted executable/Build, incomplete backup, or unsupported conversion fails closed. `.codewiki/runtime/**` and `.codewiki/views/**` are never recreated.
 
-Backend-v1 Session Continuity, Run Request/Receipt, Runtime Build, private integration, and fault-recovery protocols remain accepted historical evidence only through explicit compatibility readers or internal adapters. They cannot dual-write, expose obsolete semantic owners, or upgrade old records by inference.
+Only predecessor schemas and runtime records explicitly advertised by the current release support matrix are eligible for conversion or recovery. Unsupported pre-stable records remain in Git, immutable releases, and qualification evidence rather than active Product readers. Recovery never dual-writes, exposes obsolete semantic owners, or upgrades records by inference.
+
+Controller promotion is a distinct protected operation, not an automatic consequence of package release activation. It requires source-controller quiescence, complete backup, exact target Build and state-conversion identity, externally qualified replay, authenticated human authority, atomic expected-state handoff, and a fixed rollback cutoff. Source and target controllers never overlap. The target refuses predecessor state outside the explicit handoff contract; historical bytes remain unchanged and reachable.

@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:runtime",
   "id": "runtime",
-  "purpose": "Show CodeWiki authorization around DSH execution, exact Wiki context, role scope, separate Code Check sandboxes, provider calls, receipts, and recovery.",
+  "purpose": "Show exact Project Server authorization through separate Agent, Check, Project Store, and Preview ports; DSH and execution adapters; role-scoped Git/Wiki capabilities; AI/model calls; untrusted receipts; Evidence; and recovery.",
   "components": [
     {
       "id": "project-server",
@@ -13,9 +13,15 @@
       "zone": "core"
     },
     {
-      "id": "runtime",
+      "id": "agent-runtime-port",
       "concept": "cw:component:runtime",
-      "label": "DSH Run",
+      "label": "Agent Runtime port",
+      "zone": "core"
+    },
+    {
+      "id": "dsh-adapter",
+      "concept": "cw:component:runtime",
+      "label": "DSH adapter",
       "zone": "execution"
     },
     {
@@ -25,21 +31,33 @@
       "zone": "execution"
     },
     {
-      "id": "code-sandbox",
-      "concept": "cw:component:checks",
-      "label": "Code Check sandbox",
+      "id": "runtime",
+      "concept": "cw:component:runtime",
+      "label": "DSH Agent Run",
       "zone": "execution"
     },
     {
       "id": "provider",
       "concept": "cw:component:provider-boundary",
-      "label": "AI Provider",
+      "label": "AI / model provider",
       "zone": "provider"
     },
     {
-      "id": "project",
+      "id": "project-store-port",
       "concept": "cw:component:project",
-      "label": "Git snapshot / isolated worktree",
+      "label": "Project Store port",
+      "zone": "core"
+    },
+    {
+      "id": "git-adapter",
+      "concept": "cw:component:project",
+      "label": "Git adapter / repository",
+      "zone": "repository"
+    },
+    {
+      "id": "worktree",
+      "concept": "cw:component:project",
+      "label": "Role-scoped isolated worktree",
       "zone": "repository"
     },
     {
@@ -57,8 +75,32 @@
     {
       "id": "checks",
       "concept": "cw:component:checks",
-      "label": "Gate / Check Runs",
+      "label": "Gate / Result mechanisms",
       "zone": "core"
+    },
+    {
+      "id": "check-runner-port",
+      "concept": "cw:component:checks",
+      "label": "Check Runner port",
+      "zone": "core"
+    },
+    {
+      "id": "code-sandbox",
+      "concept": "cw:component:checks",
+      "label": "Code Check sandbox",
+      "zone": "execution"
+    },
+    {
+      "id": "preview-port",
+      "concept": "cw:component:preview",
+      "label": "Preview capability / port",
+      "zone": "core"
+    },
+    {
+      "id": "preview-adapter",
+      "concept": "cw:component:preview",
+      "label": "Preview adapter / host",
+      "zone": "execution"
     },
     {
       "id": "work-state",
@@ -81,15 +123,29 @@
   ],
   "connections": [
     {
-      "id": "r-server-host",
+      "id": "r-server-port",
       "from": "project-server",
-      "to": "execution-host",
+      "to": "agent-runtime-port",
       "type": "authorizes",
-      "label": "authorizes exact role, context, tools, route, scope, and budget",
+      "label": "authorizes exact role, context, tools, route, scope, and budget"
+    },
+    {
+      "id": "r-port-adapter",
+      "from": "agent-runtime-port",
+      "to": "dsh-adapter",
+      "type": "invokes",
+      "label": "dispatches one typed authorized Run",
       "boundary": {
         "type": "authority",
-        "failure": "Reject stale subject, authority, route, context, or host profile."
+        "failure": "Reject stale subject, route, context, capability, or scope."
       }
+    },
+    {
+      "id": "r-adapter-host",
+      "from": "dsh-adapter",
+      "to": "execution-host",
+      "type": "invokes",
+      "label": "maps authorization to qualified DSH and host closure"
     },
     {
       "id": "r-host-dsh",
@@ -103,7 +159,7 @@
       "from": "runtime",
       "to": "provider",
       "type": "invokes",
-      "label": "uses exact DSH-owned model route",
+      "label": "uses exact DSH-owned AI/model route",
       "boundary": {
         "type": "network",
         "failure": "Stop on unavailable route, cancellation, or receipt failure."
@@ -128,14 +184,162 @@
       "label": "returns bounded output and internal execution closure"
     },
     {
-      "id": "r-host-server",
+      "id": "r-host-adapter",
       "from": "execution-host",
-      "to": "project-server",
+      "to": "dsh-adapter",
       "type": "returns",
-      "label": "returns DSH Run result and receipt or operational stop",
+      "label": "returns bounded output and host custody closure"
+    },
+    {
+      "id": "r-adapter-port",
+      "from": "dsh-adapter",
+      "to": "agent-runtime-port",
+      "type": "returns",
+      "label": "maps DSH closure to untrusted typed output",
       "boundary": {
         "type": "authority",
-        "failure": "Fabricate no proposal, Result, integration, or transition."
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
+      }
+    },
+    {
+      "id": "r-port-server",
+      "from": "agent-runtime-port",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns Run output/receipt for validation or operational stop"
+    },
+    {
+      "id": "r-server-store",
+      "from": "project-server",
+      "to": "project-store-port",
+      "type": "invokes",
+      "label": "requests exact reads or expected-state writes"
+    },
+    {
+      "id": "r-store-git",
+      "from": "project-store-port",
+      "to": "git-adapter",
+      "type": "invokes",
+      "label": "executes bounded Git operation",
+      "boundary": {
+        "type": "persistence",
+        "failure": "Preserve prior refs on invalid object, authority, Gate, or CAS."
+      }
+    },
+    {
+      "id": "r-git-store",
+      "from": "git-adapter",
+      "to": "project-store-port",
+      "type": "returns",
+      "label": "returns exact objects, refs, and Git receipt",
+      "boundary": {
+        "type": "persistence",
+        "failure": "Stop on missing, stale, or contradictory source identity."
+      }
+    },
+    {
+      "id": "r-store-server",
+      "from": "project-store-port",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns exact Project Store result"
+    },
+    {
+      "id": "r-git-worktree",
+      "from": "git-adapter",
+      "to": "worktree",
+      "type": "produces",
+      "label": "creates exact Assignment-scoped worktree"
+    },
+    {
+      "id": "r-dsh-worktree",
+      "from": "runtime",
+      "to": "worktree",
+      "type": "reads",
+      "label": "uses only authorized project-artifact scope",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "r-worktree-dsh",
+      "from": "worktree",
+      "to": "runtime",
+      "type": "returns",
+      "label": "returns scoped files and custody facts",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
+      }
+    },
+    {
+      "id": "r-dsh-query-port",
+      "from": "runtime",
+      "to": "agent-runtime-port",
+      "type": "queries",
+      "label": "uses bounded Wiki/Project query capability",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "r-query-port-server",
+      "from": "agent-runtime-port",
+      "to": "project-server",
+      "type": "queries",
+      "label": "forwards exact authorized snapshot query"
+    },
+    {
+      "id": "r-git-knowledge",
+      "from": "git-adapter",
+      "to": "knowledge",
+      "type": "produces",
+      "label": "supplies exact Wiki tree and target Items"
+    },
+    {
+      "id": "r-dsh-preview",
+      "from": "runtime",
+      "to": "preview-port",
+      "type": "invokes",
+      "label": "uses scoped preview.work handle",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "r-preview-port-adapter",
+      "from": "preview-port",
+      "to": "preview-adapter",
+      "type": "invokes",
+      "label": "dispatches authorized bounded Preview",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject stale subject, route, context, capability, or scope."
+      }
+    },
+    {
+      "id": "r-preview-adapter-port",
+      "from": "preview-adapter",
+      "to": "preview-port",
+      "type": "returns",
+      "label": "returns untrusted observation and closure",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
+      }
+    },
+    {
+      "id": "r-preview-port-dsh",
+      "from": "preview-port",
+      "to": "runtime",
+      "type": "returns",
+      "label": "relays bounded producer observation",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
       }
     },
     {
@@ -143,97 +347,95 @@
       "from": "project-server",
       "to": "checks",
       "type": "invokes",
-      "label": "freezes Gate and dispatches active Check Runs"
-    },
-    {
-      "id": "r-checks-sandbox",
-      "from": "checks",
-      "to": "code-sandbox",
-      "type": "executes",
-      "label": "runs deterministic Code Check",
-      "boundary": {
-        "type": "authority",
-        "failure": "Produce no Result on sandbox, input, limit, or output failure."
-      }
-    },
-    {
-      "id": "r-sandbox-checks",
-      "from": "code-sandbox",
-      "to": "checks",
-      "type": "returns",
-      "label": "returns bounded Check output or stop",
-      "boundary": {
-        "type": "authority",
-        "failure": "Reject malformed, stale, or excess output."
-      }
+      "label": "constructs or reduces exact Gate"
     },
     {
       "id": "r-checks-server",
       "from": "checks",
       "to": "project-server",
       "type": "returns",
-      "label": "returns passed, failed, or stopped Gate outcome"
+      "label": "returns typed selection or Gate outcome"
     },
     {
-      "id": "r-server-trace",
+      "id": "r-server-check-runner",
       "from": "project-server",
-      "to": "change-trace",
-      "type": "writes",
-      "label": "appends durable semantic receipt references",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Preserve prior ref when Trace, OIDs, receipts, or CAS fail."
-      }
+      "to": "check-runner-port",
+      "type": "authorizes",
+      "label": "authorizes exact active Check Run"
     },
     {
-      "id": "r-server-project",
-      "from": "project-server",
-      "to": "project",
-      "type": "reads",
-      "label": "resolves exact Project subject and writable scope",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Stop on missing objects, stale head, or invalid scope."
-      }
-    },
-    {
-      "id": "r-project-knowledge",
-      "from": "project",
-      "to": "knowledge",
-      "type": "produces",
-      "label": "supplies exact Wiki tree and target Item blobs"
-    },
-    {
-      "id": "r-knowledge-dsh",
-      "from": "knowledge",
-      "to": "runtime",
-      "type": "queries",
-      "label": "serves bounded snapshot-fixed Wiki tools",
+      "id": "r-runner-sandbox",
+      "from": "check-runner-port",
+      "to": "code-sandbox",
+      "type": "invokes",
+      "label": "runs deterministic Code Check",
       "boundary": {
         "type": "authority",
-        "failure": "Return explicit unknown on source, AuthZ, or coverage failure."
+        "failure": "Reject stale subject, route, context, capability, or scope."
       }
     },
     {
-      "id": "r-trace-server",
-      "from": "change-trace",
+      "id": "r-sandbox-runner",
+      "from": "code-sandbox",
+      "to": "check-runner-port",
+      "type": "returns",
+      "label": "returns bounded Check output or stop",
+      "boundary": {
+        "type": "authority",
+        "failure": "Reject incomplete or mismatched output; grant no semantic authority."
+      }
+    },
+    {
+      "id": "r-runner-server",
+      "from": "check-runner-port",
       "to": "project-server",
       "type": "returns",
-      "label": "reloads exact semantic history",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Stop on invalid prefix, object, or receipt reference."
-      }
+      "label": "returns untrusted Check/Preview output for validation"
     },
     {
-      "id": "r-project-workstate",
-      "from": "project",
+      "id": "r-runner-preview",
+      "from": "check-runner-port",
+      "to": "preview-port",
+      "type": "invokes",
+      "label": "uses exact preview.verify capability"
+    },
+    {
+      "id": "r-preview-runner",
+      "from": "preview-port",
+      "to": "check-runner-port",
+      "type": "returns",
+      "label": "returns exact observation and quiescence receipt"
+    },
+    {
+      "id": "r-server-evidence",
+      "from": "project-server",
+      "to": "evidence",
+      "type": "produces",
+      "label": "admits exact validated observation Evidence"
+    },
+    {
+      "id": "r-checks-evidence",
+      "from": "checks",
+      "to": "evidence",
+      "type": "consumes",
+      "label": "consumes only Gate-declared Evidence"
+    },
+    {
+      "id": "r-git-trace",
+      "from": "git-adapter",
+      "to": "change-trace",
+      "type": "produces",
+      "label": "persists or reloads exact Trace through Project Store"
+    },
+    {
+      "id": "r-git-workstate",
+      "from": "git-adapter",
       "to": "work-state",
       "type": "produces",
-      "label": "supplies projection source identities",
+      "label": "supplies exact projection sources",
       "boundary": {
         "type": "persistence",
-        "failure": "Stop on missing or contradictory source identity."
+        "failure": "Stop on missing, stale, or contradictory source identity."
       }
     },
     {
@@ -242,6 +444,13 @@
       "to": "alignment",
       "type": "produces",
       "label": "supplies current work and blocker facts"
+    },
+    {
+      "id": "r-alignment-server",
+      "from": "alignment",
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns derived owned gaps and support facts"
     }
   ],
   "flows": [
@@ -250,26 +459,73 @@
       "paths": [
         {
           "connections": [
-            "r-server-host",
+            "r-server-port",
+            "r-port-adapter",
+            "r-adapter-host",
             "r-host-dsh",
             "r-dsh-provider",
             "r-provider-dsh",
             "r-dsh-host",
-            "r-host-server",
+            "r-host-adapter",
+            "r-adapter-port",
+            "r-port-server",
             "r-server-checks",
-            "r-checks-sandbox",
-            "r-sandbox-checks",
-            "r-checks-server",
-            "r-server-trace"
+            "r-checks-server"
           ]
         },
         {
           "connections": [
-            "r-server-project",
-            "r-project-knowledge",
-            "r-knowledge-dsh",
+            "r-dsh-worktree",
+            "r-worktree-dsh",
             "r-dsh-host",
-            "r-host-server"
+            "r-host-adapter",
+            "r-adapter-port",
+            "r-port-server"
+          ]
+        },
+        {
+          "connections": [
+            "r-dsh-query-port",
+            "r-query-port-server",
+            "r-server-store",
+            "r-store-git",
+            "r-git-knowledge"
+          ]
+        },
+        {
+          "connections": [
+            "r-dsh-preview",
+            "r-preview-port-adapter",
+            "r-preview-adapter-port",
+            "r-preview-port-dsh",
+            "r-dsh-host"
+          ]
+        },
+        {
+          "connections": [
+            "r-server-check-runner",
+            "r-runner-sandbox",
+            "r-sandbox-runner",
+            "r-runner-server",
+            "r-server-evidence"
+          ]
+        },
+        {
+          "connections": [
+            "r-server-check-runner",
+            "r-runner-preview",
+            "r-preview-port-adapter",
+            "r-preview-adapter-port",
+            "r-preview-runner",
+            "r-runner-server",
+            "r-server-evidence"
+          ]
+        },
+        {
+          "connections": [
+            "r-server-store",
+            "r-store-git",
+            "r-git-trace"
           ]
         }
       ]
@@ -279,10 +535,13 @@
       "paths": [
         {
           "connections": [
-            "r-trace-server",
-            "r-server-project",
-            "r-project-workstate",
-            "r-workstate-alignment"
+            "r-git-store",
+            "r-store-server",
+            "r-server-store",
+            "r-store-git",
+            "r-git-workstate",
+            "r-workstate-alignment",
+            "r-alignment-server"
           ]
         }
       ]
@@ -292,9 +551,11 @@
       "paths": [
         {
           "connections": [
-            "r-knowledge-dsh",
-            "r-dsh-host",
-            "r-host-server"
+            "r-dsh-query-port",
+            "r-query-port-server",
+            "r-server-store",
+            "r-store-git",
+            "r-git-knowledge"
           ]
         }
       ]

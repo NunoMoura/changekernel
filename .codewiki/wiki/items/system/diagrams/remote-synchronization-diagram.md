@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:synchronization",
   "id": "synchronization",
-  "purpose": "Show local Git authority while remote observation, external-work intake, and publication remain separately authorized Plugin mechanics.",
+  "purpose": "Show local Git authority while remote observation, external-work intake, publication, and remote/shareable Preview remain separately authorized Plugin mechanics.",
   "components": [
     {
       "id": "project-server",
@@ -20,14 +20,14 @@
     },
     {
       "id": "plugins",
-      "concept": "cw:component:package",
-      "label": "Admitted Remote Plugin",
+      "concept": "cw:component:provider-boundary",
+      "label": "Admitted Remote / Delivery / Preview Plugin",
       "zone": "execution"
     },
     {
       "id": "provider",
       "concept": "cw:component:provider-boundary",
-      "label": "Git / Delivery Provider",
+      "label": "Git / Delivery / Preview Provider",
       "zone": "provider"
     },
     {
@@ -60,7 +60,7 @@
       "id": "s-server-plugin-observe",
       "from": "project-server",
       "to": "plugins",
-      "type": "invokes",
+      "type": "authorizes",
       "label": "requests bounded remote observation",
       "boundary": {
         "type": "authority",
@@ -119,7 +119,7 @@
       "from": "project-server",
       "to": "project",
       "type": "writes",
-      "label": "advances local refs only through validated CAS",
+      "label": "advances local refs or records receipt through validated CAS",
       "boundary": {
         "type": "persistence",
         "failure": "Preserve local refs on object, authority, Gate, or CAS failure."
@@ -155,7 +155,7 @@
       "from": "project-server",
       "to": "plugins",
       "type": "authorizes",
-      "label": "authorizes exact post-completion publication",
+      "label": "authorizes exact publication or remote Preview effect",
       "boundary": {
         "type": "authority",
         "failure": "Preserve local completion and require effect reconciliation."
@@ -166,7 +166,7 @@
       "from": "plugins",
       "to": "provider",
       "type": "synchronizes",
-      "label": "applies bounded effect at expected remote head",
+      "label": "applies bounded publication or remote Preview effect",
       "boundary": {
         "type": "network",
         "failure": "Return stopped or unknown without claiming acceptance."
@@ -195,17 +195,6 @@
       }
     },
     {
-      "id": "s-server-trace",
-      "from": "project-server",
-      "to": "change-trace",
-      "type": "writes",
-      "label": "records bounded effect receipt reference",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Preserve prior ref on invalid receipt, Trace, or CAS."
-      }
-    },
-    {
       "id": "s-trace-alignment",
       "from": "change-trace",
       "to": "alignment",
@@ -215,6 +204,13 @@
         "type": "persistence",
         "failure": "Report unknown on invalid Trace or stale receipt."
       }
+    },
+    {
+      "id": "s-project-trace",
+      "from": "project",
+      "to": "change-trace",
+      "type": "produces",
+      "label": "supplies exact protected-effect receipt reference"
     }
   ],
   "flows": [
@@ -236,7 +232,8 @@
             "s-plugin-provider-publish",
             "s-provider-plugin-publish",
             "s-plugin-server-publish",
-            "s-server-trace",
+            "s-server-project",
+            "s-project-trace",
             "s-trace-alignment",
             "s-alignment-server"
           ]

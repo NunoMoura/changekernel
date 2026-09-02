@@ -1,3 +1,4 @@
+import {execFileSync} from "node:child_process";
 import {readdirSync, readFileSync, statSync} from "node:fs";
 import {parse as parseYaml} from "yaml";
 import {
@@ -7,6 +8,8 @@ import {validateWikiTree} from "../../src/knowledge/wiki-tree.ts";
 import {serializeOkfDocument} from "../../src/knowledge/okf-frontmatter.ts";
 
 const WIKI_ITEMS_ROOT = ".codewiki/wiki/items";
+export const PRE_SEMANTIC_KERNEL_CUTOVER_REVISION =
+	"927e21f863ca954ba7826d771b8556dfe236827e";
 const LEGACY_MEDIA_TYPE = "codewiki.legacy:media-type";
 const LEGACY_METADATA = "codewiki.legacy:metadata";
 const LEGACY_SOURCE_PATH = "codewiki.legacy:source-path";
@@ -20,6 +23,20 @@ function collectFiles(root) {
 		});
 }
 
+function collectRevisionFiles(root, revision) {
+	return execFileSync(
+		"git",
+		["ls-tree", "-rz", "--name-only", revision, "--", root],
+	)
+		.toString("utf8")
+		.split("\0")
+		.filter(Boolean)
+		.map((path) => ({
+			path,
+			bytes: execFileSync("git", ["show", `${revision}:${path}`], {encoding: "utf8"}),
+		}));
+}
+
 function requiredLegacyAttribute(item, name) {
 	const value = item.attributes[name];
 	if (value === undefined) {
@@ -28,11 +45,7 @@ function requiredLegacyAttribute(item, name) {
 	return value;
 }
 
-export function repositoryWikiState() {
-	const entries = collectFiles(WIKI_ITEMS_ROOT).map((path) => ({
-		path,
-		bytes: readFileSync(path, "utf8"),
-	}));
+function wikiState(entries) {
 	const itemEntries = entries.map((entry) => ({
 		...entry,
 		item: parseWikiItemFile(entry.path, entry.bytes),
@@ -44,8 +57,17 @@ export function repositoryWikiState() {
 	};
 }
 
+export function repositoryWikiState() {
+	return wikiState(collectFiles(WIKI_ITEMS_ROOT).map((path) => ({
+		path,
+		bytes: readFileSync(path, "utf8"),
+	})));
+}
+
 export function repositoryLegacyKnowledgeState() {
-	const {entries, itemEntries, tree} = repositoryWikiState();
+	const {entries, itemEntries, tree} = wikiState(
+		collectRevisionFiles(WIKI_ITEMS_ROOT, PRE_SEMANTIC_KERNEL_CUTOVER_REVISION),
+	);
 	const legacyFiles = itemEntries.map(({item}) => {
 		const path = requiredLegacyAttribute(item, LEGACY_SOURCE_PATH);
 		const mediaType = requiredLegacyAttribute(item, LEGACY_MEDIA_TYPE);

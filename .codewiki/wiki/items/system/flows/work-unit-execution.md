@@ -3,7 +3,7 @@
 ---
 # Work Unit Execution
 
-Project Server selects one ready Work Unit from the Trace-derived Work View, creates an authorized Claim/Assignment and isolated Git worktree, freezes the exact committed Wiki target and dependency inputs, and starts one Worker DSH Run. The Worker may write only admitted project-artifact scope. It cannot write Wiki, Change Trace, managed refs, authority, Checks, or lifecycle state.
+Project Server selects one ready Work Unit from the Trace-derived Work View, creates an authorized Claim/Assignment and isolated Git worktree, freezes the exact committed Wiki target and dependency inputs, and starts one Worker DSH Run. The Worker may write only admitted project-artifact scope. It cannot write Wiki, Change Trace, managed refs, authority, Checks, or lifecycle state. If the Work Unit and Run explicitly grant `preview.work`, the Worker may use one scoped, revocable Preview handle against its current worktree generation or captured tree. Preview output is producer feedback, never independent Gate Evidence or Result.
 
 Every Work Unit result is one exact full Project commit/tree plus its DSH Run receipt. Project Server resolves exact Implementation Check Packs and uses Change type plus Work Unit subtype/scope to freeze the Gate's active Checks. The same policy universe applies across the stage, but irrelevant Checks do not run. A Worker, Agent, route, or result cannot choose or suppress the set.
 

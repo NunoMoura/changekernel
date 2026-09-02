@@ -57,7 +57,7 @@
     {
       "id": "runtime",
       "concept": "cw:component:runtime",
-      "label": "DSH Runs",
+      "label": "Agent Runtime port / DSH adapter",
       "zone": "execution"
     },
     {
@@ -86,8 +86,8 @@
     },
     {
       "id": "plugins",
-      "concept": "cw:component:package",
-      "label": "Delivery Plugin",
+      "concept": "cw:component:provider-boundary",
+      "label": "Admitted Delivery Plugin",
       "zone": "execution"
     }
   ],
@@ -118,11 +118,11 @@
       "label": "produces exact Proposed Change tip"
     },
     {
-      "id": "l-decision-checks",
+      "id": "l-decision-server",
       "from": "decision",
-      "to": "checks",
-      "type": "invokes",
-      "label": "submits exact Decision subject to Gate"
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns exact Decision eligibility facts"
     },
     {
       "id": "l-checks-server",
@@ -136,7 +136,7 @@
       "from": "project-server",
       "to": "project",
       "type": "writes",
-      "label": "creates proposal, Change, Work, or Completion commit",
+      "label": "creates proposal, Change, reconciliation, Work, or Completion commit",
       "boundary": {
         "type": "persistence",
         "failure": "Preserve refs unless object, Trace, Gate, authority, and CAS close."
@@ -154,14 +154,14 @@
       "from": "project",
       "to": "change-trace",
       "type": "produces",
-      "label": "supplies lifecycle and exact OID history"
+      "label": "supplies exact OIDs and containing-commit Trace facts"
     },
     {
       "id": "l-project-server",
       "from": "project",
       "to": "project-server",
       "type": "returns",
-      "label": "returns exact committed Project state",
+      "label": "returns exact committed or reconciled Project state",
       "boundary": {
         "type": "persistence",
         "failure": "Stop on missing objects, invalid ancestry, or stale refs."
@@ -175,11 +175,11 @@
       "label": "starts Planning for project realization"
     },
     {
-      "id": "l-planning-checks",
+      "id": "l-planning-server",
       "from": "planning",
-      "to": "checks",
-      "type": "invokes",
-      "label": "submits exact proposed plan to Gate"
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns proposed Work Unit and dependency facts"
     },
     {
       "id": "l-server-implementation",
@@ -189,53 +189,53 @@
       "label": "claims and assigns ready Work Unit"
     },
     {
-      "id": "l-implementation-runtime",
-      "from": "implementation",
+      "id": "l-server-runtime",
+      "from": "project-server",
       "to": "runtime",
-      "type": "invokes",
-      "label": "executes Worker in isolated worktree",
+      "type": "authorizes",
+      "label": "authorizes exact role-bound DSH Run",
       "boundary": {
         "type": "authority",
         "failure": "Reject stale Assignment, context, route, capability, or scope."
       }
     },
     {
-      "id": "l-runtime-implementation",
+      "id": "l-runtime-server",
       "from": "runtime",
-      "to": "implementation",
+      "to": "project-server",
       "type": "returns",
-      "label": "returns exact Work result commit and receipt",
+      "label": "returns untrusted Run output and closure for validation",
       "boundary": {
         "type": "authority",
         "failure": "Reject incomplete custody or changed subject bytes."
       }
     },
     {
-      "id": "l-implementation-checks",
+      "id": "l-implementation-server",
       "from": "implementation",
-      "to": "checks",
-      "type": "invokes",
-      "label": "submits exact Work result to Gate"
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns exact ready Work assignment facts"
     },
     {
       "id": "l-server-review",
       "from": "project-server",
       "to": "review",
       "type": "invokes",
-      "label": "starts Review over integrated Change tip"
+      "label": "starts Review over prospective project-artifact tree"
     },
     {
-      "id": "l-review-checks",
+      "id": "l-review-server",
       "from": "review",
-      "to": "checks",
-      "type": "invokes",
-      "label": "submits exact integrated Project tree to Gate"
+      "to": "project-server",
+      "type": "returns",
+      "label": "returns Review eligibility for exact project-artifact tree"
     },
     {
       "id": "l-server-plugins",
       "from": "project-server",
       "to": "plugins",
-      "type": "invokes",
+      "type": "authorizes",
       "label": "authorizes separate post-completion Delivery",
       "boundary": {
         "type": "authority",
@@ -270,6 +270,13 @@
       "to": "project-server",
       "type": "returns",
       "label": "returns derived readiness and blockers"
+    },
+    {
+      "id": "l-server-checks",
+      "from": "project-server",
+      "to": "checks",
+      "type": "invokes",
+      "label": "freezes exact stage subject and dispatches active Checks"
     }
   ],
   "flows": [
@@ -281,7 +288,8 @@
             "l-client-server",
             "l-server-intake",
             "l-intake-decision",
-            "l-decision-checks",
+            "l-decision-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-project",
             "l-project-knowledge"
@@ -291,15 +299,20 @@
           "connections": [
             "l-project-server",
             "l-server-planning",
-            "l-planning-checks",
+            "l-planning-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-implementation",
-            "l-implementation-runtime",
-            "l-runtime-implementation",
-            "l-implementation-checks",
+            "l-implementation-server",
+            "l-server-runtime",
+            "l-runtime-server",
+            "l-server-checks",
             "l-checks-server",
+            "l-server-project",
+            "l-project-server",
             "l-server-review",
-            "l-review-checks",
+            "l-review-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-project",
             "l-project-trace"
@@ -327,7 +340,8 @@
       "paths": [
         {
           "connections": [
-            "l-decision-checks",
+            "l-decision-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-project",
             "l-project-server",
@@ -341,7 +355,8 @@
       "paths": [
         {
           "connections": [
-            "l-planning-checks",
+            "l-planning-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-implementation"
           ]
@@ -353,7 +368,10 @@
       "paths": [
         {
           "connections": [
-            "l-implementation-checks",
+            "l-implementation-server",
+            "l-server-runtime",
+            "l-runtime-server",
+            "l-server-checks",
             "l-checks-server",
             "l-server-review"
           ]

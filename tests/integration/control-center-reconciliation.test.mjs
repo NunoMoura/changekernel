@@ -157,20 +157,28 @@ describe("control-center reconciliation integration", () => {
 		}
 	});
 
-	it("keeps only governed SK2 migration traces in source-repository state", () => {
+	it("keeps only governed migration and roadmap-admission traces in source state", () => {
 		const traceFiles = filesUnder(".codewiki/changes").filter((path) =>
 			/\/TRACE-.*\.jsonl$/.test(path),
 		);
 		assert.deepEqual(traceFiles, [
 			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration-adc272d.jsonl",
 			".codewiki/changes/TRACE-CHG-sk2-kb-to-wiki-migration.jsonl",
+			".codewiki/changes/TRACE-CHG-sk3a-exact-design-roadmap.jsonl",
 		]);
 		const traces = traceFiles.map((path) =>
 			parseChangeTrace(readFileSync(path, "utf8")),
 		);
 		assert.deepEqual(
 			traces.flatMap(({operations}) => operations.map(({kind}) => kind)),
-			["migration.applied"],
+			[
+				"migration.applied",
+				"change.proposed",
+				"decision.running",
+				"decision.passed",
+				"confirmation.recorded",
+				"change.accepted",
+			],
 		);
 	});
 

@@ -11,9 +11,10 @@ As a maintainer, I want project-owned standards applied independently to exact s
 - Packs are editable/removable project files; bootstrap and upgrade never silently restore changed policy.
 - Project Server snapshots every Pack for the stage and deterministically resolves Gate active Checks from required Change type/realization, Work Unit subtype/scope where relevant, and exact subject facts.
 - Checks with no selector apply to every subject in their stage. Selectors are positive bounded allowlists; unknown values, negative rules, arbitrary expressions, or incomplete facts stop Gate construction.
-- Every Decision Gate includes fixed Change-type/realization alignment and Wiki semantic-alignment Checks, preventing classification from suppressing applicable policy.
-- Fixed structural validation remains Kernel Build code and supplements rather than replaces project Planning or other stage Checks.
-- Code Checks run in isolated credential-free network-denied sandboxes. Model Checks use separate DSH Runs and receive no producer context.
+- Every Decision Gate includes Product-fixed Change-type/realization alignment and Wiki semantic-alignment Checks. They guard against classification error but do not make model judgment deterministic.
+- Safety-critical Checks are universal for their stage or selected only from deterministic exact-subject facts independent of producer-declared classification.
+- Deterministic Kernel Validation remains release code rather than a Check and supplements rather than replaces project Planning or other stage Checks.
+- Code Checks run in isolated credential-free network-denied sandboxes. Model Checks use separate DSH Runs and receive no producer context. Independent Preview verification uses `preview.verify`; Worker `preview.work` observations cannot satisfy it.
 - One Check Run executes one active Check. Completed Runs may yield one immutable Result; operational failure yields none. Gate outcome is passed, failed, or stopped.
 - Gate passage grants eligibility only; Project Server revalidates current Actor, subject, Gate, active Checks, Results, and expected heads before any transition.
 - Release N reads accepted protected-head Check Pack snapshots to judge exact committed release candidate N+1. Subject bytes cannot author or activate their own judging policy.
