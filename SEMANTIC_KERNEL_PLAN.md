@@ -203,18 +203,18 @@ Qualified Wiki/Change roots and repository migration. Historical migration machi
 
 Accepted requirement: `cw:codewiki:requirement:xj62wfc6qeqpzvgqqpndu7h4dcrtalsleyerrfptisafmm7zlyha`.
 
-- [ ] Qualify and activate the exact Wiki/roadmap cutover amendment before source work. Qualification must also preflight the released-controller-generated admission and completion Trace snapshots against candidate tests; a candidate test may enforce one Trace per Change and exact closed historical seeds, but never freeze the repository-wide Trace count. An accepted-incomplete Trace may freeze only its immutable prefix and reducer-valid state, never its total operation count.
-- [ ] Seal activated legacy commit/tree, tags, release artifacts, qualification evidence, and verified Git bundle.
-- [ ] Preserve the uncommitted exploratory overlay externally; retain no overlay byte by default.
-- [ ] Freeze subsystem donor manifests with structural search, LSP references, dependency graphs, public exports, tests, and dynamic-entrypoint analysis.
-- [ ] Freeze the target file/export/test allowlist and architecture rules.
-- [ ] Replace the active source/test tree with the minimal target skeleton; do not relocate obsolete code into active archive directories.
-- [ ] Implement canonical values, typed outcomes, identity/digest primitives, Product-fixed policy value containers, target package composition, and architecture gates.
-- [ ] Implement native `codewiki.component:ownership`; assign semantic roles to lifecycle/check owners and exact ownership to `.codewiki/config.json`, `.codewiki/check-packs.lock.json`, `package-lock.json`, and their target readers/tests.
-- [ ] Remove target fallback to legacy ownership metadata and prove every `codewiki.legacy:*` attribute is provenance-only outside normal semantic retrieval.
-- [ ] Make bootstrap create only versioned Domain-free config, empty Wiki/Change state, and passive Check Pack resources.
-- [ ] Prove normal target entrypoints cannot reach Domain, KB/OKF, old Trace roots, Backend/Runtime Build compatibility, project-local extensions, or migration code.
-- [ ] Remove obsolete root exports, scripts, test globs, source ownership, runtime hooks, and package metadata; preserve `.pi` safety/governance instructions that remain true.
+- [x] Qualify and activate the exact Wiki/roadmap cutover amendment before source work. Qualification must also preflight the released-controller-generated admission and completion Trace snapshots against candidate tests; a candidate test may enforce one Trace per Change and exact closed historical seeds, but never freeze the repository-wide Trace count. An accepted-incomplete Trace may freeze only its immutable prefix and reducer-valid state, never its total operation count.
+- [x] Seal activated legacy commit/tree, tags, release artifacts, qualification evidence, and verified Git bundle.
+- [x] Preserve the uncommitted exploratory overlay externally; retain no overlay byte by default.
+- [x] Freeze subsystem donor manifests with structural search, LSP references, dependency graphs, public exports, tests, and dynamic-entrypoint analysis.
+- [x] Freeze the target file/export/test allowlist and architecture rules.
+- [x] Replace the active source/test tree with the minimal target skeleton; do not relocate obsolete code into active archive directories.
+- [x] Implement canonical values, typed outcomes, identity/digest primitives, Product-fixed policy value containers, target package composition, and architecture gates.
+- [x] Implement native `codewiki.component:ownership`; assign semantic roles to lifecycle/check owners and exact ownership to `.codewiki/config.json`, `.codewiki/check-packs.lock.json`, `package-lock.json`, and their target readers/tests.
+- [x] Remove target fallback to legacy ownership metadata and prove every `codewiki.legacy:*` attribute is provenance-only outside normal semantic retrieval.
+- [x] Make bootstrap create only versioned Domain-free config, empty Wiki/Change state, and passive Check Pack resources.
+- [x] Prove normal target entrypoints cannot reach Domain, KB/OKF, old Trace roots, Backend/Runtime Build compatibility, project-local extensions, or migration code.
+- [x] Remove obsolete root exports, scripts, test globs, source ownership, runtime hooks, and package metadata; preserve `.pi` safety/governance instructions that remain true.
 - [ ] Qualify and activate one exact private development checkpoint containing only the clean foundation; retain Product N as sole controller.
 
 Success: active Product source has only target roots/layers, current Wiki/Change ownership, and no executable pre-stable semantic owner. Historical bytes remain recoverable through Git, not production imports. Checkpoint activation does not promote its controller.

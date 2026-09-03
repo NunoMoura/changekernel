@@ -1,9 +1,0 @@
-{
-  "scenario": "design",
-  "projectId": "design",
-  "changeId": "CHG-design-fixture",
-  "expectedState": "accepted_incomplete",
-  "itemCount": 3,
-  "completionRequirementCount": 2,
-  "adversarialCase": "binary asset changes while Wiki text remains unchanged"
-}

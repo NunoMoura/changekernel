@@ -1,9 +1,0 @@
-{
-  "scenario": "empty",
-  "projectId": "empty",
-  "changeId": null,
-  "expectedState": "empty",
-  "itemCount": 0,
-  "completionRequirementCount": 0,
-  "adversarialCase": "bootstrap and replay under Windows and POSIX path rules"
-}
