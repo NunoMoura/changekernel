@@ -1,6 +1,6 @@
 # CodeWiki
 
-CodeWiki is a governed development system built around a deterministic Semantic Kernel and one authoritative Project Server. This repository currently contains the clean Kernel foundation, Product policy, four narrow port contracts, a Project Server binding shell, and a bounded project bootstrap adapter.
+CodeWiki is a governed development system built around a deterministic Semantic Kernel and one authoritative Project Server. This repository currently contains the clean Kernel foundation, semantic lifecycle reducers, exact Git-backed Wiki reading, bounded derived Views, Product policy, four narrow port contracts, a Project Server binding shell, and a bounded project bootstrap adapter.
 
 The package remains `@nunomoura/codewiki`. This foundation deliberately removes the previous Domain, KB/OKF, Backend compatibility, Runtime Build compatibility, migration, provider, and Pi-extension implementation rather than carrying those systems behind aliases. Git history and sealed release evidence preserve the obsolete implementation.
 
@@ -12,12 +12,15 @@ The active source tree contains:
 - pure SHA-256, lowercase Base32, semantic digest, and semantic identity primitives;
 - native `codewiki.component:ownership` interpretation;
 - explicit provenance isolation for every `codewiki.legacy:*` attribute;
-- versioned Project Store, Check Runner, Agent Runtime, and Preview port identities;
+- append-only Change reduction, Work planning, active Check selection, Gate reduction, and disposable Work status;
+- a versioned Project Store for exact snapshots, trees, blobs, commit creation, and expected-head updates, alongside narrow Check Runner, Agent Runtime, and Preview ports;
+- canonical Wiki files, complete relationship and retired-ID validation, atomic transaction post-state, and deterministic bounded list, get, dictionary, search, graph, history, attribution, provenance-inspection, and semantic-diff Views;
+- exact Git fallback whenever optional private Wiki indexes are absent, stale, invalid, or forged;
 - immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and passive Check Pack resources;
 - a Project Server shell that binds exactly four explicit capabilities without granting transition authority; and
 - an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and digest-verified passive Check Packs.
 
-Lifecycle reduction, Git Project Store operations, Check execution, transactional Wiki mutation, the public Project Server API, Stage Loops, Preview effects, DSH execution, and Client surfaces are intentionally unavailable until their governed roadmap milestones are implemented and activated.
+Check execution, Wiki write commands, lifecycle mutation authority, the public Project Server API, Stage Loops, Preview effects, DSH execution, and Client surfaces remain intentionally unavailable until their governed roadmap milestones are implemented and activated.
 
 ## Install and import
 

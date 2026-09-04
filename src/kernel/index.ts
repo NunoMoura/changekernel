@@ -81,7 +81,12 @@ export {
 	type WikiAttributeIssue,
 	type WikiAttributeIssueCode,
 } from "./wiki/attributes.ts";
+export * from "./wiki/file.ts";
 export * from "./wiki/item.ts";
+export * from "./wiki/links.ts";
+export * from "./wiki/transaction.ts";
+export * from "./wiki/tree.ts";
+export * from "./wiki/views.ts";
 export {
 	COMPONENT_OWNERSHIP_ATTRIBUTE,
 	buildSemanticEventOwnership,

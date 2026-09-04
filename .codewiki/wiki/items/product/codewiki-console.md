@@ -5,9 +5,11 @@
 
 ## Purpose
 
-CodeWiki Semantic Kernel is headless. Core presentation is a small terminal-first Console and scriptable commands for exact inspection, recovery, and narrow authenticated operations. Rich Wiki authoring, Agent chat, project planning, IDE, desktop, and product experiences belong to external applications over public APIs.
+CodeWiki Semantic Kernel is headless. Core presentation is a small terminal-first Console and scriptable commands for truthful inspection, recovery, and narrow authenticated operations. Rich Wiki authoring, Agent chat, project planning, IDE, desktop, and product experiences belong to external applications over public APIs.
 
-Console behaves like an operations tool: it shows persisted Project Server facts and invokes explicit capabilities. It never reads `.codewiki/**` as an independent authority, calls models directly, fabricates state, or receives privileged imports unavailable to another Client.
+Console presents accountable work in concepts users understand. Change is the primary unit; status, Work, Checks, Decisions, outcome, next action, and required user action explain its progress. Kernel builds, Git refs and object IDs, digests, receipts, protocol versions, controller generations, DSH internals, and storage mechanics never become normal interaction vocabulary. They remain available only through explicit audit or troubleshooting operations.
+
+Console never reads `.codewiki/**` as an independent authority, calls models directly, fabricates state, or receives privileged imports unavailable to another Client.
 
 ## Product boundary
 
@@ -19,49 +21,51 @@ Initial external reference client is a separate read-only Omarchy Agent Skill an
 
 Console answers:
 
-1. Is Project Server healthy and which immutable Kernel Build is active?
-2. Which repository, canonical commit, Wiki tree, and managed Change tips are exact?
-3. Which Proposed, Committed, blocked, or Completed Changes need attention?
-4. Which Gates, active Checks, Check Runs, Results, Work Units, DSH Runs, or effects are failed, stopped, stale, or awaiting authority?
-5. Which exact recovery or reconciliation action is safe?
+1. Which Changes need attention?
+2. What changed and why does it matter?
+3. What Work and Checks are complete, blocked, or still needed?
+4. What happens next?
+5. Does the user need to decide or act?
 
-A compact header shows Project/repository identity, Project Server generation, Kernel Build, canonical commit, current Wiki identity, managed-ref state, host qualification, Alignment summary, and event freshness. Tables show active Changes, Work Units, Gates, DSH Runs, Plugin effects, and faults with inspectable stable IDs.
+A compact header shows the Project name, whether CodeWiki is ready, active Change count, attention required, and freshness in plain language. Change rows show title, intent, status, progress, blocker, next action, and whether a user decision is waiting. Internal identities never displace these answers.
 
 ## Views
 
 ### Changes and Work
 
-Show exact Proposed Change tip or Change/Completion Commit, `changeType`, realization route, current stage, committed Wiki targets, Work Unit/dependency state, blockers, and stale conditions. Do not restate Wiki meaning as a mutable requirement list.
+Show each Change's intent, current status, completed and remaining Work, blockers, and next action. Preserve stable links behind readable labels. Do not restate accepted Wiki meaning as a mutable requirement list.
 
-### Gates and Evidence
+### Checks and Decisions
 
-Show stage, exact subject, policy/resolver identity, active Checks, passed/failed/missing Results, advisory findings, Evidence coverage, and stop reason. Hide no required failure and expose no hidden model reasoning.
+Explain which Checks passed, what needs attention, why progress stopped, and which user Decision is required. Never hide a required failure, expose hidden model reasoning, or make users interpret execution records.
 
-### DSH Runs and custody
+### Activity and outcomes
 
-Show exact Run authorization, role, route identity without secrets, Assignment/worktree, budgets, process closure, cancellation, output/receipt state, and known custody gaps. DSH internal Session bytes remain opaque.
-
-### Effects and Delivery
-
-Show requested, authorized, executing, completed, failed, unknown, or recovery-required external effects with exact request, idempotency, expected provider head, and receipt. Local Change completion never appears contingent on later Delivery unless an explicit future policy says so.
+Describe Agent activity as planned, working, stopped, completed, or needing attention. Describe delivery and other external outcomes separately from local Change completion. Do not expose session, process, provider, retry, or custody mechanics in ordinary status.
 
 ### Recovery
 
-Show one owner, exact affected refs/state, last verified checkpoint, available bounded action, expected heads, backup identity, and recovery receipt. Never retry protected effects speculatively.
+State what is affected, the last known safe state, what CodeWiki can do, and whether the user must approve it. Never retry protected actions speculatively.
+
+### Audit and troubleshooting
+
+An explicit technical view may expose bounded immutable identities, evidence, freshness, and recovery diagnostics needed by an authorized operator or auditor. It is separate from normal navigation, copyable rather than memorized, and never reveals secrets, hidden reasoning, or unauthorized content.
 
 ## Interaction rules
 
 - Read-only by default; shipping Console grants no authority.
-- Resolve moving source selectors once and display explicit OIDs.
+- Every normal message answers what happened, why it matters, what happens next, and whether the user must act.
+- Use Change, status, Work, Checks, Decisions, outcome, and next action as the visible vocabulary.
+- Ask for semantic decisions such as “Accept this Change?” or “Update CodeWiki now?” while binding the exact authorized subject internally.
 - Keep selection separate from authenticated authorization.
-- Show exact subject, consequence, authority basis, expected heads, conflicts, external effects, and expected receipt before protected action.
-- Disable unavailable actions with one stable reason.
-- Refresh after event gap or generation change instead of guessing replay.
+- Translate stale or inconsistent internal state into a stable explanation and safe next action instead of leaking backend errors.
+- Disable unavailable actions with one stable user-facing reason.
+- Refresh after an event gap or replacement instead of guessing history.
 - Never infer activity, readiness, causality, acceptance, or completion from process existence or elapsed time.
 - Sanitize terminal escapes and untrusted text.
-- Exclude credentials, provider headers, raw DSH data, raw model output, hidden reasoning, private worktree content, and unauthorized Item existence.
+- Exclude credentials, provider headers, raw DSH data, raw model output, hidden reasoning, private worktree content, unauthorized Item existence, and backend identifiers from ordinary presentation.
 - Work without color, pointer, animation, or large terminal; deterministic command output remains automation-friendly.
 
 ## Degraded operation
 
-Console remains useful when AI providers, DSH, Plugins, external apps, or live Project Server are unavailable. It distinguishes last verified durable state, unverified filesystem observations, safe read-only diagnosis, stopped-server maintenance, and operations prohibited until authority/custody returns. Offline inspection never bypasses quiescence, authentication, expected-head comparison, backup, or recovery rules.
+Console remains useful when assistants, integrations, external apps, or the live service are unavailable. It distinguishes the last verified state, observations that may be stale, safe read-only diagnosis, and actions unavailable until recovery. Normal messaging explains the consequence and next safe action; explicit troubleshooting may reveal bounded technical evidence. Offline inspection never bypasses quiescence, authentication, expected-state comparison, backup, or recovery rules.

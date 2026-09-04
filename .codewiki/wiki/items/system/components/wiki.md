@@ -9,6 +9,8 @@ Every governed Project uses one local Git repository and configured project ref.
 
 Normal authored paths use meaningful lowercase category directories and kebab-case filenames, such as `.codewiki/wiki/items/system/components/checks.md`. A title change does not force a path change; an explicit move is an ordinary reviewed Git rename. Hash-derived filenames remain valid historical/import artifacts and content hashes/Git OIDs remain integrity identifiers, but normal authoring and Client links do not require opaque hash paths.
 
+Canonical Item paths are NFC UTF-8 below `.codewiki/wiki/items/`, use lowercase ASCII category and filename segments, and end in `.md`, `.yaml`, or `.yml`; only non-executable regular Git blobs are admitted. Files are BOM-free NFC UTF-8 with LF line endings and a final line boundary. Markdown carries the envelope as one exact canonical-JSON front-matter line. YAML uses the dependency-free canonical JSON-compatible YAML 1.2 profile with `body` in the same object. One file is at most 5 MiB, one body is at most 4 MiB, one exact tree contains at most 4,096 Items and 32 MiB, and one Item contains at most 4,096 canonical inline Wiki links. These are fail-closed source bounds, not pagination defaults.
+
 One common Item envelope carries title, aliases, attributes, explicit directed relationships, provenance, and body. Definition Items and Claim Items are typed Wiki Items, not peer stores or lifecycle objects. Binary material remains an ordinary Git artifact or policy-bound external material referenced by an Item. An empty Item tree is a valid empty Wiki.
 
 ## Definition Items and Dictionary View

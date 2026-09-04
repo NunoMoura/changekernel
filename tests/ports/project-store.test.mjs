@@ -5,7 +5,7 @@ import {projectStoreCasRequestDigest, PROJECT_STORE_PORT_PROTOCOL} from "../../s
 test("Project Store port has one frozen host-neutral protocol identity", () => {
 	assert.deepEqual(PROJECT_STORE_PORT_PROTOCOL, {
 		id: "codewiki.port.project-store",
-		version: "1.0.0",
+		version: "1.1.0",
 	});
 	assert.ok(Object.isFrozen(PROJECT_STORE_PORT_PROTOCOL));
 	assert.deepEqual(Object.keys(PROJECT_STORE_PORT_PROTOCOL).sort(), ["id", "version"]);

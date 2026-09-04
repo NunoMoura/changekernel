@@ -26,6 +26,9 @@ import {
 	type ProjectStoreIssue,
 	type ProjectStorePort,
 	type ProjectStoreReadRequest,
+	type ProjectStoreTree,
+	type ProjectStoreTreeEntry,
+	type ProjectStoreTreeRequest,
 } from "../../ports/project-store.ts";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -100,6 +103,60 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		const content = this.#bytes(["cat-file", "blob", oid.value.hex], "read_blob", request.maximumBytes);
 		if (!content.ok) return failure(this.#commandIssue(content.error, "read_blob", "Blob could not be read."));
 		return success(Object.freeze({oid: oid.value, bytes: new Uint8Array(content.value)}));
+	}
+
+	async readTree(request: ProjectStoreTreeRequest): Promise<Outcome<ProjectStoreTree, ProjectStoreIssue>> {
+		const preflight = this.#validateRepositoryBinding(request, "read_tree");
+		if (preflight) return failure(preflight);
+		const commit = decodeGitOid(request.commit);
+		if (!commit.ok || commit.value.algorithm !== this.#objectFormat) {
+			return failure(this.#issue("invalid_object", "read_tree", "Tree commit OID is invalid."));
+		}
+		if (!validTreePrefix(request.pathPrefix)) {
+			return failure(this.#issue("invalid_object", "read_tree", "Tree path prefix is invalid."));
+		}
+		if (!Number.isSafeInteger(request.maximumEntries) || request.maximumEntries < 1 || request.maximumEntries > 65_536) {
+			return failure(this.#issue("limit_exceeded", "read_tree", "Tree entry limit is invalid."));
+		}
+		const complete = this.#assertCompleteCommit(commit.value, "read_tree");
+		if (!complete.ok) return complete;
+		const listed = this.#text([
+			"ls-tree",
+			"-r",
+			"-z",
+			"--full-tree",
+			commit.value.hex,
+			"--",
+			`:(literal)${request.pathPrefix}`,
+		], "read_tree");
+		if (!listed.ok) return failure(this.#commandIssue(listed.error, "read_tree", "Tree could not be listed."));
+		const records = listed.value.split("\0");
+		if (records.pop() !== "") return failure(this.#issue("invalid_object", "read_tree", "Git tree listing was not NUL-terminated."));
+		if (records.length > request.maximumEntries) {
+			return failure(this.#issue("limit_exceeded", "read_tree", `Tree exceeds ${request.maximumEntries} entries.`));
+		}
+		const entries: ProjectStoreTreeEntry[] = [];
+		let previousPath = "";
+		for (const record of records) {
+			const separator = record.indexOf("\t");
+			const metadata = separator < 0 ? "" : record.slice(0, separator);
+			const path = separator < 0 ? "" : record.slice(separator + 1);
+			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
+			if (!match || path.length === 0 || (previousPath.length > 0 && previousPath >= path) ||
+				!(path === request.pathPrefix || path.startsWith(`${request.pathPrefix}/`))) {
+				return failure(this.#issue("invalid_object", "read_tree", "Git returned a malformed or non-canonical tree listing."));
+			}
+			const object = this.#oid(match[3] as string, "read_tree");
+			if (!object.ok) return object;
+			entries.push(Object.freeze({
+				path,
+				mode: match[1] as string,
+				kind: match[2] as "blob" | "commit",
+				oid: object.value,
+			}));
+			previousPath = path;
+		}
+		return success(Object.freeze({commit: commit.value, entries: Object.freeze(entries)}));
 	}
 
 	async createCommit(request: ProjectStoreCommitRequest): Promise<Outcome<GitOid, ProjectStoreIssue>> {
@@ -434,6 +491,13 @@ function boundedDiagnostic(bytes: Buffer): string {
 
 function validAuthority(value: string): boolean {
 	return typeof value === "string" && value.length <= 256 && /^[a-z][a-z0-9.-]*(?::[A-Za-z0-9][A-Za-z0-9._:@/-]*)+$/u.test(value);
+}
+
+function validTreePrefix(value: string): boolean {
+	const forbidden = ["\0", "\r", "\n", "\\", "*", "?", "["];
+	return typeof value === "string" && value.length > 0 && Buffer.byteLength(value, "utf8") <= 4_096 &&
+		value.normalize("NFC") === value && !value.startsWith("/") && !forbidden.some((character) => value.includes(character)) &&
+		value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
 }
 
 function validMessage(value: string, maximumBytes = MAX_COMMIT_MESSAGE_BYTES, requireTerminalLf = true): boolean {

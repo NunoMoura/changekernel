@@ -167,4 +167,13 @@ test("adapter supports repository-declared SHA-256 object format when Git does",
 	const head = oid("sha256", git(repo.root, ["rev-parse", "HEAD"]));
 	const snapshot = await repo.store.readSnapshot({repositoryId: "cw:repository:test", objectFormat: "sha256", selector: {kind: "oid", oid: head}});
 	assert.equal(snapshot.ok, true, snapshot.ok ? undefined : snapshot.error.message);
+	const tree = await repo.store.readTree({
+		repositoryId: "cw:repository:test",
+		objectFormat: "sha256",
+		commit: head,
+		pathPrefix: "README.md",
+		maximumEntries: 1,
+	});
+	assert.equal(tree.ok, true, tree.ok ? undefined : tree.error.message);
+	assert.equal(tree.value.entries[0].oid.algorithm, "sha256");
 });

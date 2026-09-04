@@ -225,43 +225,43 @@ Success: active Product source has only target roots/layers, current Wiki/Change
 
 Accepted requirement: `cw:codewiki:requirement:xej4slpzn4cnbpoo6dsxshnacedgqbm5limjncdofnqhvl5hec7a`.
 
-- [ ] Close the bootstrap validation gap before further source work: permanent tests must pass in a clean checkout of the exact checkpoint commit; one-time migration scope checks compare explicit base and candidate identities outside the shipped suite. Abandon unpromoted commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb`, whose clean checkout exposed the dirty-HEAD-dependent Wiki mutation test.
-- [ ] Assign the replacement checkpoint a unique prerelease package version so released Product N and checkpoint N+1 cannot share `@nunomoura/codewiki@0.3.0` with different bytes.
-- [ ] Implement canonical Wiki Item, Change Trace, Work, Gate, Check Run, Result, Evidence-reference, Product Build, and Kernel Build contracts with bounded decoders.
-- [ ] Define exact semantic-event ownership separately from Trace encoding/segment ownership, populate native `traceEvents` metadata atomically, and reject duplicate or unowned current events.
-- [ ] Implement deterministic reducers and exhaustive Proposed/Committed/Completed/Rejected/Deferred/Withdrawn transitions.
-- [ ] Implement full-snapshot Change/Completion parent and ordering validation. An operation inside a commit binds exact input OIDs plus fixed `containing_commit`; Git context supplies the containing result OID.
-- [ ] Implement Project Store port and Git adapter with complete-object validation and expected-old-OID CAS. No other target path writes canonical or managed refs.
-- [ ] Implement active-Check resolution, typed Gate outcomes, and Check Runner port. Safety-critical activation is universal or derived only from deterministic exact-subject facts independent of producer classification.
-- [ ] Define the host-neutral Preview port values and `preview.work`/`preview.verify` capability identities without importing an adapter.
-- [ ] Derive WorkState/Work View from Git, Trace, Gates, Results, Work facts, and receipts.
-- [ ] Remove target Candidate, Completion Requirement, disposition, Gate package, canonical global Work Graph, private integration lineage, and Review Attempt authority.
-- [ ] Model/property-test containing-commit identity, exact event ownership, replay determinism, stale-writer rejection, idempotence, conflict behavior, and crash recovery.
+- [x] Close the bootstrap validation gap before further source work: permanent tests must pass in a clean checkout of the exact checkpoint commit; one-time migration scope checks compare explicit base and candidate identities outside the shipped suite. Abandon unpromoted commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb`, whose clean checkout exposed the dirty-HEAD-dependent Wiki mutation test.
+- [x] Assign the replacement checkpoint a unique prerelease package version so released Product N and checkpoint N+1 cannot share `@nunomoura/codewiki@0.3.0` with different bytes.
+- [x] Implement canonical Wiki Item, Change Trace, Work, Gate, Check Run, Result, Evidence-reference, Product Build, and Kernel Build contracts with bounded decoders.
+- [x] Define exact semantic-event ownership separately from Trace encoding/segment ownership, populate native `traceEvents` metadata atomically, and reject duplicate or unowned current events.
+- [x] Implement deterministic reducers and exhaustive Proposed/Committed/Completed/Rejected/Deferred/Withdrawn transitions.
+- [x] Implement full-snapshot Change/Completion parent and ordering validation. An operation inside a commit binds exact input OIDs plus fixed `containing_commit`; Git context supplies the containing result OID.
+- [x] Implement Project Store port and Git adapter with complete-object validation and expected-old-OID CAS. No other target path writes canonical or managed refs.
+- [x] Implement active-Check resolution, typed Gate outcomes, and Check Runner port. Safety-critical activation is universal or derived only from deterministic exact-subject facts independent of producer classification.
+- [x] Define the host-neutral Preview port values and `preview.work`/`preview.verify` capability identities without importing an adapter.
+- [x] Derive WorkState/Work View from Git, Trace, Gates, Results, Work facts, and receipts.
+- [x] Remove target Candidate, Completion Requirement, disposition, Gate package, canonical global Work Graph, private integration lineage, and Review Attempt authority.
+- [x] Model/property-test containing-commit identity, exact event ownership, replay determinism, stale-writer rejection, idempotence, conflict behavior, and crash recovery.
 
 Implementation checkpoint facts (not completion or activation):
 
-- Bounded SK3C implementation is materialized in the detached external worktree from `5b6460dca1e69019498997cab9b7747ee147bde8` for replacement checkpoint closure.
-- Prospective commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb` has exact intended tree `5dd15dffa613d8f263ff69389e7d5c9e00031c9a` and no ref, but is abandoned: its stored development run passed only with the candidate over base `HEAD`; a clean exact-commit checkout failed `tests/kernel/invariants/architecture.test.mjs` because that permanent test inspected the dirty diff.
-- The active target contains 34 source files and 33 test files within the frozen implementation allowlist before the bounded bootstrap correction.
+- Exact engineering checkpoint `ecccedede7de671e79dbc9ed042ec160a64ed583` with tree `7ab3d5fe312c0f439c5bb5dcfc527c03f7629af3` is retained on unprotected branch `bootstrap/semantic-kernel` at unique prerelease `0.4.0-sk3c.1`; Product N, `main`, governed refs, Trace, and controller state did not move.
+- One clean detached-checkout receipt at `~/.local/state/codewiki/checkpoints/ecccedede7de671e79dbc9ed042ec160a64ed583/ci-receipt.json` (SHA-256 `cdab7ee1895fe9d63e4c71217f4f99478a98c4823f6d7c5996c3ece10c71c00f`) binds 158 passing tests, build, reproducible package SHA-256 `8ef9fef9cd95d777c0c04a6723966bfc5972a49eac2d2a271cc2a8b9ec7dba24`, disposable packed import, zero production vulnerabilities, diagnostics, and exact Wiki migration scope.
+- Abandoned prospective commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb` retains no ref and receives no qualification or activation.
 - Pure Kernel contracts now cover native Wiki Items, Change-owned Work and planning, Change Trace `14.0.0`, semantic events and reduction, exact snapshots, Check Definitions, active-Check selection, Gates, Check Runs, Results, Evidence references, Product/Kernel Build identities, Preview values, and disposable WorkState.
 - The Git Project Store adapter now uses bounded fixed plumbing, complete-object checks, deterministic commit creation, request-bound authorization digests, and expected-old-OID compare-and-swap for managed refs.
 - Exactly seven native ownership records assign all 17 current semantic events once; no target Candidate, Completion Requirement, disposition, Gate package, mutable global Work Graph, private integration ref, Review Attempt, Domain contract, or Trace `13.0.0` compatibility reader was introduced.
 - Root package exports, governed Change Traces, canonical refs, and controller state remain outside this implementation mutation; the replacement intentionally changes only package/Product version identity and the scheduled Wiki/process contract in addition to the bounded Kernel checkpoint.
 
-- [ ] Land one exact semantic-lifecycle engineering checkpoint with a clean committed-subject CI receipt; do not admit, complete, activate, or promote it. Retain Product N as sole controller.
+- [x] Land one exact semantic-lifecycle engineering checkpoint with a clean committed-subject CI receipt; do not admit, complete, activate, or promote it. Retain Product N as sole controller.
 
 ### SK3D — transactional Wiki and bounded Views
 
 Accepted requirement: `cw:codewiki:requirement:4arr3gvualjet5fk4tq2w6xqzrrsuk4jcgclvqovnh7fr5ll37aq`.
 
-- [ ] Implement exact commit/Change-tip Wiki get/list and validated transaction post-state.
-- [ ] Implement bounded lexical search, links/backlinks, Definition resolution, history, attribution, and semantic diff.
-- [ ] Bind source OID, derivation identity, authorization, coverage, ordering, truncation, freshness, unknowns, and citations into every View response.
-- [ ] Provide exact Git fallback when private indexes are absent or stale.
-- [ ] Exclude `codewiki.legacy:*` attributes from normal term resolution, search ranking, semantic diff, ownership, applicability, authorization, Agent context, and generated Views; expose them only through exact provenance inspection.
-- [ ] Prove Item moves preserve IDs, relationships, attribution, and history.
-- [ ] Property/fuzz test Item envelopes, paths, relationships, Unicode, limits, malformed repository input, and adversarial provenance fields.
-- [ ] Land one exact Wiki/View engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
+- [x] Implement exact commit/Change-tip Wiki get/list and validated transaction post-state.
+- [x] Implement bounded lexical search, links/backlinks, Definition resolution, history, attribution, and semantic diff.
+- [x] Bind source OID, derivation identity, authorization, coverage, ordering, truncation, freshness, unknowns, and citations into every View response.
+- [x] Provide exact Git fallback when private indexes are absent or stale.
+- [x] Exclude `codewiki.legacy:*` attributes from normal term resolution, search ranking, semantic diff, ownership, applicability, authorization, Agent context, and generated Views; expose them only through exact provenance inspection.
+- [x] Prove Item moves preserve IDs, relationships, attribution, and history.
+- [x] Property/fuzz test Item envelopes, paths, relationships, Unicode, limits, malformed repository input, and adversarial provenance fields.
+- [x] Land one exact Wiki/View engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
 
 ### SK3E — Project Server and authenticated read API
 
@@ -270,6 +270,7 @@ Accepted requirement: `cw:codewiki:requirement:bdr2py6syqr74steqtfrxaz2k6hn6tyzy
 - [ ] Compose Kernel with Project Store and Check Runner ports under Project Server authority; expose Agent Runtime and Preview only as unavailable typed capabilities until their qualified adapters exist.
 - [ ] Implement Project discovery, capability/status, exact Wiki, Change, Gate, Result, Work, Review, and Alignment reads.
 - [ ] Publish curated version-neutral Product UAPI/Client SDK operations, historically named Kernel API, plus explicit versioned transport envelopes.
+- [ ] Project user-facing reads and messages through Change, status, Work, Checks, Decisions, next action, and required user action. Keep builds, digests, refs, receipts, protocol identities, controller generations, DSH internals, and storage mechanics out of normal interaction; expose bounded technical evidence only through explicit audit or troubleshooting operations.
 - [ ] Enforce Client/Actor separation, AuthZ/redaction, exact source resolution, bounds, cursors, idempotence, and stable errors.
 - [ ] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
 - [ ] Land one exact API engineering checkpoint with clean committed-subject checks, including packed use from a disposable external project; do not activate it.
@@ -315,6 +316,7 @@ Success: first Agent-capable private Product release completes a real Product N�
 Accepted requirement: `cw:codewiki:requirement:jzsvjec4kalxya5t3qpyvl2hgygje5a24fvi5bxv7qpo7z64kc6q`.
 
 - [ ] Build the bounded read-only Omarchy reference client outside this repository using public API/SDK only.
+- [ ] Make the terminal-first Console default to plain user language: what changed, why it matters, what happens next, and whether the user must act. Technical identities remain absent unless the user explicitly requests audit or troubleshooting detail.
 - [ ] Test only against packed immutable qualified Product bytes with least-privilege credentials.
 - [ ] Prove no direct `.codewiki/**`, private-state, internal module, or managed-ref access.
 - [ ] Complete final Wiki/source/API ownership and desired-versus-executable Alignment audit, including semantic roles, Trace events, singleton config/locks, ports, adapters, and Product-fixed policy.

@@ -6,7 +6,7 @@ import type {Sha256Digest} from "../kernel/identity/sha256.ts";
 
 export const PROJECT_STORE_PORT = Object.freeze({
 	id: "codewiki.port.project-store",
-	version: "1.0.0",
+	version: "1.1.0",
 });
 export const PROJECT_STORE_PORT_PROTOCOL = PROJECT_STORE_PORT;
 
@@ -26,6 +26,26 @@ export interface ProjectStoreBlobRequest {
 export interface ProjectStoreBlob {
 	readonly oid: GitOid;
 	readonly bytes: Uint8Array;
+}
+
+export interface ProjectStoreTreeRequest {
+	readonly repositoryId: string;
+	readonly objectFormat: GitObjectFormat;
+	readonly commit: GitOid;
+	readonly pathPrefix: string;
+	readonly maximumEntries: number;
+}
+
+export interface ProjectStoreTreeEntry {
+	readonly path: string;
+	readonly mode: string;
+	readonly kind: "blob" | "commit";
+	readonly oid: GitOid;
+}
+
+export interface ProjectStoreTree {
+	readonly commit: GitOid;
+	readonly entries: readonly ProjectStoreTreeEntry[];
 }
 
 export interface GitCommitIdentity {
@@ -92,7 +112,7 @@ export interface ProjectStoreIssue {
 		| "repository_mismatch"
 		| "stale_ref"
 		| "timeout";
-	readonly operation: "cas" | "create_commit" | "read_blob" | "read_snapshot";
+	readonly operation: "cas" | "create_commit" | "read_blob" | "read_snapshot" | "read_tree";
 	readonly message: string;
 }
 
@@ -101,6 +121,7 @@ export interface ProjectStorePort {
 	readonly protocol: typeof PROJECT_STORE_PORT;
 	readSnapshot(request: ProjectStoreReadRequest): Promise<Outcome<ProjectSnapshot, ProjectStoreIssue>>;
 	readBlob(request: ProjectStoreBlobRequest): Promise<Outcome<ProjectStoreBlob, ProjectStoreIssue>>;
+	readTree(request: ProjectStoreTreeRequest): Promise<Outcome<ProjectStoreTree, ProjectStoreIssue>>;
 	createCommit(request: ProjectStoreCommitRequest): Promise<Outcome<GitOid, ProjectStoreIssue>>;
 	compareAndSwapRef(request: ProjectStoreCasRequest): Promise<Outcome<ProjectStoreCasReceipt, ProjectStoreIssue>>;
 }
