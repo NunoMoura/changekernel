@@ -1,65 +1,557 @@
+import type {
+	AlignmentReadInput,
+	AuditReadInput,
+	ChangesReadInput,
+	ChecksReadInput,
+	ProductReadInput,
+	ProjectSourceSelector,
+	ReviewReadInput,
+	WikiReadInput,
+	WorkReadInput,
+} from "../api/contracts/read.ts";
+import {decodeProductReadInput} from "../api/contracts/read.ts";
+import {
+	createProductTransportResponse,
+	decodeProductTransportRequest,
+	productError,
+	type ProductError,
+	type ProductTransportRequest,
+	type ProductTransportResponse,
+} from "../api/transport/envelope.ts";
+import {isNamespacedIdentifier, protocolIdentity} from "../kernel/canonical/contract.ts";
+import {isCanonicalObject, type CanonicalValue} from "../kernel/canonical/json.ts";
 import {failure, success, type Outcome} from "../kernel/canonical/outcome.ts";
+import {decodeGitRef, type GitObjectFormat, type GitRef} from "../kernel/identity/git.ts";
+import {decodeSha256Digest, type Sha256Digest} from "../kernel/identity/sha256.ts";
+import {CHANGE_TRACE_PROTOCOL, MAX_TRACE_BYTES} from "../kernel/changes/trace.ts";
+import {MAXIMUM_WIKI_FILE_BYTES} from "../kernel/wiki/file.ts";
+import {WIKI_ITEM_PROTOCOL} from "../kernel/wiki/item.ts";
+import {MAXIMUM_WIKI_ITEMS, MAXIMUM_WIKI_TOTAL_BYTES} from "../kernel/wiki/tree.ts";
+import {CHECK_RUNNER_PORT_PROTOCOL, type CheckRunnerPort} from "../ports/check-runner.ts";
+import {PROJECT_STORE_PORT_PROTOCOL, type ProjectStorePort} from "../ports/project-store.ts";
 import {
-	AGENT_RUNTIME_PORT_PROTOCOL,
-	type AgentRuntimePort,
-} from "../ports/agent-runtime.ts";
+	PROJECT_ACCESS_POLICY_PROTOCOL,
+	type AuthorizedProjectActor,
+	type ProjectAccessPolicy,
+} from "./authorization/policy.ts";
 import {
-	CHECK_RUNNER_PORT_PROTOCOL,
-	type CheckRunnerPort,
-} from "../ports/check-runner.ts";
-import {PREVIEW_PORT_PROTOCOL, type PreviewPort} from "../ports/preview.ts";
+	discoverProject,
+	readAlignment,
+	readAudit,
+	readChanges,
+	readChecks,
+	readProjectCapabilities,
+	readProjectStatus,
+	readReview,
+	readWork,
+} from "./queries/project.ts";
+import {executeWikiRead} from "./queries/wiki.ts";
 import {
-	PROJECT_STORE_PORT_PROTOCOL,
-	type ProjectStorePort,
-} from "../ports/project-store.ts";
+	resolveProjectSource,
+	type ProjectReadConfiguration,
+	type ProjectReadLimits,
+	type ProjectSourceIssue,
+} from "./queries/source.ts";
 
-export const PROJECT_SERVER_FOUNDATION_PROTOCOL = Object.freeze({
-	id: "codewiki.project-server-foundation",
-	version: "1.0.0",
-} as const);
+export const PROJECT_SERVER_FOUNDATION_PROTOCOL = protocolIdentity("codewiki.project-server-foundation", "1.1.0");
+export const PROJECT_SERVER_PROTOCOL = protocolIdentity("codewiki.project-server", "1.0.0");
 
 export interface ProjectServerPorts {
 	readonly projectStore: ProjectStorePort;
 	readonly checkRunner: CheckRunnerPort;
-	readonly agentRuntime: AgentRuntimePort;
-	readonly preview: PreviewPort;
 }
 
 export interface ProjectServerFoundation {
 	readonly protocol: typeof PROJECT_SERVER_FOUNDATION_PROTOCOL;
+	readonly capabilities: Readonly<{
+		projectStore: "available";
+		checkRunner: "available";
+		agentRuntime: "unavailable";
+		preview: "unavailable";
+	}>;
+}
+
+export interface ProjectServerProject {
+	readonly projectName: string;
+	readonly repositoryId: string;
+	readonly objectFormat: GitObjectFormat;
+	readonly canonicalRef: GitRef;
+	readonly kernelBuildDigest: Sha256Digest;
+	readonly retiredWikiItemIds: readonly string[];
+}
+
+export interface ProjectServerInput {
 	readonly ports: ProjectServerPorts;
+	readonly accessPolicy: ProjectAccessPolicy;
+	readonly project: ProjectServerProject;
+	readonly limits?: Partial<ProjectReadLimits>;
+	readonly maximumReplayEntries?: number;
+}
+
+export interface ProjectServer {
+	readonly protocol: typeof PROJECT_SERVER_PROTOCOL;
+	handle(input: unknown): Promise<unknown>;
 }
 
 export interface ProjectServerBindingFailure {
-	readonly code: "invalid_port_protocol";
-	readonly port: keyof ProjectServerPorts;
+	readonly code: "invalid_access_policy" | "invalid_configuration" | "invalid_port_protocol";
+	readonly field: string;
 	readonly message: string;
 }
 
-/**
- * Binds four explicit capabilities without granting lifecycle authority.
- * SK3C and later milestones add authenticated commands and transition reducers.
- */
+const DEFAULT_LIMITS: ProjectReadLimits = Object.freeze({
+	maximumWikiItems: MAXIMUM_WIKI_ITEMS,
+	maximumWikiFileBytes: MAXIMUM_WIKI_FILE_BYTES,
+	maximumWikiTotalBytes: MAXIMUM_WIKI_TOTAL_BYTES,
+	maximumChangeTraces: 1_024,
+	maximumTraceBytes: MAX_TRACE_BYTES,
+	maximumHistoryCommits: 64,
+	maximumHistoryBytes: 32 * 1024 * 1024,
+});
+
+/** Binds the two qualified internal ports while keeping unavailable capabilities explicit. */
 export function bindProjectServerFoundation(
 	ports: ProjectServerPorts,
 ): Outcome<ProjectServerFoundation, ProjectServerBindingFailure> {
-	const checks = [
-		["projectStore", ports.projectStore.protocol, PROJECT_STORE_PORT_PROTOCOL],
-		["checkRunner", ports.checkRunner.protocol, CHECK_RUNNER_PORT_PROTOCOL],
-		["agentRuntime", ports.agentRuntime.protocol, AGENT_RUNTIME_PORT_PROTOCOL],
-		["preview", ports.preview.protocol, PREVIEW_PORT_PROTOCOL],
-	] as const;
-	for (const [port, actual, expected] of checks) {
-		if (actual.id !== expected.id || actual.version !== expected.version) {
-			return failure(Object.freeze({
-				code: "invalid_port_protocol",
-				port,
-				message: `${port} must bind ${expected.id}@${expected.version}.`,
-			}));
-		}
+	if (typeof ports !== "object" || ports === null || !hasOnlyKeys(ports, ["projectStore", "checkRunner"]) ||
+		typeof ports.projectStore !== "object" || ports.projectStore === null ||
+		!sameProtocol(ports.projectStore.protocol, PROJECT_STORE_PORT_PROTOCOL) ||
+		!hasMethods(ports.projectStore, ["readSnapshot", "readBlob", "readTree", "createCommit", "compareAndSwapRef"])) {
+		return failure(bindingFailure("invalid_port_protocol", "projectStore", `projectStore must bind ${PROJECT_STORE_PORT_PROTOCOL.id}@${PROJECT_STORE_PORT_PROTOCOL.version}.`));
+	}
+	if (typeof ports.checkRunner !== "object" || ports.checkRunner === null ||
+		!sameProtocol(ports.checkRunner.protocol, CHECK_RUNNER_PORT_PROTOCOL) || !hasMethods(ports.checkRunner, ["run"])) {
+		return failure(bindingFailure("invalid_port_protocol", "checkRunner", `checkRunner must bind ${CHECK_RUNNER_PORT_PROTOCOL.id}@${CHECK_RUNNER_PORT_PROTOCOL.version}.`));
 	}
 	return success(Object.freeze({
 		protocol: PROJECT_SERVER_FOUNDATION_PROTOCOL,
-		ports: Object.freeze({...ports}),
+		capabilities: Object.freeze({
+			projectStore: "available" as const,
+			checkRunner: "available" as const,
+			agentRuntime: "unavailable" as const,
+			preview: "unavailable" as const,
+		}),
 	}));
+}
+
+export function createProjectServer(
+	input: ProjectServerInput,
+): Outcome<ProjectServer, ProjectServerBindingFailure> {
+	if (typeof input !== "object" || input === null ||
+		!hasOnlyKeys(input, ["ports", "accessPolicy", "project", "limits", "maximumReplayEntries"])) {
+		return failure(bindingFailure("invalid_configuration", "$", "Project Server input is malformed."));
+	}
+	const foundation = bindProjectServerFoundation(input.ports);
+	if (!foundation.ok) return foundation;
+	if (typeof input.accessPolicy !== "object" || input.accessPolicy === null ||
+		!sameProtocol(input.accessPolicy.protocol, PROJECT_ACCESS_POLICY_PROTOCOL) || !hasMethods(input.accessPolicy, ["authorize"])) {
+		return failure(bindingFailure("invalid_access_policy", "accessPolicy", "Project access policy is invalid."));
+	}
+	const configuration = projectConfiguration(input.project, input.limits);
+	if (!configuration.ok) return configuration;
+	const maximumReplayEntries = input.maximumReplayEntries ?? 1_024;
+	if (!Number.isSafeInteger(maximumReplayEntries) || maximumReplayEntries < 1 || maximumReplayEntries > 10_000) {
+		return failure(bindingFailure("invalid_configuration", "maximumReplayEntries", "Replay bound must be an integer from 1 to 10000."));
+	}
+	const replay = new Map<string, Readonly<{requestDigest: Sha256Digest; response: ProductTransportResponse}>>();
+	const accessPolicy = input.accessPolicy;
+	const projectStore = input.ports.projectStore;
+	const server = Object.freeze({
+		protocol: PROJECT_SERVER_PROTOCOL,
+		async handle(raw: unknown): Promise<unknown> {
+			const request = decodeProductTransportRequest(raw);
+			if (!request.ok) return responseFor(invalidEnvelopeRequest(), failure(productError(
+				"invalid_request",
+				"The Project request is malformed.",
+				"Refresh the action and retry.",
+				false,
+			)));
+			try {
+				const actor = accessPolicy.authorize(request.value);
+				if (!actor.ok) return responseFor(request.value, actor);
+				if (request.value.repositoryId !== configuration.value.repositoryId) return responseFor(request.value, failure(productError(
+					"source_not_found",
+					"The requested Project is not available through this service.",
+					"Choose the configured Project and retry.",
+					false,
+				)));
+				const replayed = replayResponse(replay, actor.value, request.value);
+				if (replayed !== null) return replayed;
+				const decodedInput = decodeProductReadInput(request.value.operation, request.value.input);
+				if (!decodedInput.ok) return responseFor(request.value, failure(productError(
+					"invalid_request",
+					"The Project read is malformed.",
+					"Correct the read fields and retry.",
+					false,
+				)));
+				const prepared = await prepareRead(projectStore, configuration.value, actor.value, request.value, decodedInput.value);
+				if (!prepared.ok) return responseFor(request.value, prepared);
+				const outcome = await executeRead(projectStore, configuration.value, actor.value, request.value, prepared.value.input);
+				const split = splitReadOutcome(outcome);
+				const response = responseFor(request.value, split.outcome, responseBinding(prepared.value.binding, split.outcome, split.technicalEvidence));
+				if (isTransportResponse(response)) rememberResponse(replay, maximumReplayEntries, actor.value, request.value, response);
+				return response;
+			} catch {
+				return responseFor(request.value, failure(productError(
+					"internal_failure",
+					"The Project service could not complete this read safely.",
+					"Retry after the Project service is healthy.",
+					false,
+				)));
+			}
+		},
+	});
+	return success(server);
+}
+
+async function executeRead(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	actor: AuthorizedProjectActor,
+	request: ProductTransportRequest,
+	input: ProductReadInput,
+): Promise<Outcome<unknown, ProductError>> {
+	switch (request.operation) {
+		case "project.discover":
+			return success(discoverProject(configuration));
+		case "project.capabilities":
+			return success(readProjectCapabilities(actor));
+		case "project.status":
+			return readProjectStatus(store, configuration, actor, (input as Readonly<{source: ProjectSourceSelector}>).source);
+		case "wiki.read":
+			return executeWikiRead(store, configuration, actor, input as WikiReadInput);
+		case "changes.read":
+			return readChanges(store, configuration, actor, input as ChangesReadInput);
+		case "checks.read":
+			return readChecks(store, configuration, actor, input as ChecksReadInput);
+		case "work.read":
+			return readWork(store, configuration, actor, input as WorkReadInput);
+		case "review.read":
+			return readReview(store, configuration, actor, input as ReviewReadInput);
+		case "alignment.read":
+			return readAlignment(store, configuration, actor, input as AlignmentReadInput);
+		case "audit.read":
+			return readAudit(store, configuration, actor, input as AuditReadInput);
+		default:
+			return failure(productError("invalid_request", "The Project read is unsupported.", "Choose an available read and retry.", false));
+	}
+}
+
+interface PreparedRead {
+	readonly input: ProductReadInput;
+	readonly binding: CanonicalValue;
+}
+
+async function prepareRead(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	actor: AuthorizedProjectActor,
+	request: ProductTransportRequest,
+	input: ProductReadInput,
+): Promise<Outcome<PreparedRead, ProductError>> {
+	const baseBinding = Object.freeze({
+		repositoryId: configuration.repositoryId,
+		operation: request.operation,
+		authorization: Object.freeze({
+			authorizationId: actor.authorizationId,
+			wiki: actor.wikiItemIds === null ? "all" : "filtered",
+			changes: actor.changeIds === null ? "all" : "filtered",
+		}),
+		derivation: Object.freeze({kernelBuildDigest: configuration.kernelBuildDigest}),
+		interpretation: Object.freeze({
+			changeTrace: Object.freeze({id: CHANGE_TRACE_PROTOCOL.id, version: CHANGE_TRACE_PROTOCOL.version}),
+			wikiItem: WIKI_ITEM_PROTOCOL,
+		}),
+	});
+	if (request.operation === "project.discover" || request.operation === "project.capabilities") {
+		return success(Object.freeze({
+			input,
+			binding: Object.freeze({
+				...baseBinding,
+				source: null,
+				freshness: "configuration",
+				ordering: "fixed",
+				bounds: Object.freeze({operation: Object.freeze({}), project: canonicalMetadata(configuration.limits)}),
+			}),
+		}));
+	}
+	const sourceInput = input as Readonly<{source: ProjectSourceSelector}>;
+	const snapshot = await resolveProjectSource(store, configuration, sourceInput.source);
+	if (!snapshot.ok) return failure(sourceError(snapshot.error));
+	const exactSource = Object.freeze({kind: "commit" as const, commit: snapshot.value.commit});
+	let preparedInput = Object.freeze({...sourceInput, source: exactSource}) as ProductReadInput;
+	let baseline: CanonicalValue = null;
+	if (request.operation === "wiki.read" && (input as WikiReadInput).view === "diff") {
+		const diff = input as Extract<WikiReadInput, Readonly<{view: "diff"}>>;
+		const baselineSnapshot = await resolveProjectSource(store, configuration, diff.baselineSource);
+		if (!baselineSnapshot.ok) return failure(sourceError(baselineSnapshot.error));
+		preparedInput = Object.freeze({...diff, source: exactSource, baselineSource: Object.freeze({kind: "commit" as const, commit: baselineSnapshot.value.commit})});
+		baseline = canonicalMetadata(baselineSnapshot.value);
+	}
+	return success(Object.freeze({
+		input: preparedInput,
+		binding: Object.freeze({
+			...baseBinding,
+			source: canonicalMetadata(snapshot.value),
+			baseline,
+			freshness: "exact",
+			ordering: operationOrdering(request.operation, input),
+			bounds: Object.freeze({operation: operationBounds(input), project: canonicalMetadata(configuration.limits)}),
+		}),
+	}));
+}
+
+interface SplitReadOutcome {
+	readonly outcome: Outcome<unknown, ProductError>;
+	readonly technicalEvidence: CanonicalValue;
+}
+
+function splitReadOutcome(outcome: Outcome<unknown, ProductError>): SplitReadOutcome {
+	if (!outcome.ok || typeof outcome.value !== "object" || outcome.value === null ||
+		!("presentation" in outcome.value) || !("technicalEvidence" in outcome.value)) {
+		return Object.freeze({outcome, technicalEvidence: null});
+	}
+	const wrapped = outcome.value as Readonly<{presentation: unknown; technicalEvidence: unknown}>;
+	return Object.freeze({
+		outcome: success(wrapped.presentation),
+		technicalEvidence: canonicalMetadata(wrapped.technicalEvidence),
+	});
+}
+
+function responseBinding(
+	binding: CanonicalValue,
+	outcome: Outcome<unknown, ProductError>,
+	technicalEvidence: CanonicalValue,
+): CanonicalValue {
+	if (!isCanonicalObject(binding) || !outcome.ok || typeof outcome.value !== "object" || outcome.value === null) return binding;
+	const value = outcome.value as Readonly<Record<string, unknown>>;
+	return Object.freeze({
+		...binding,
+		coverage: value.coverage === undefined
+			? Object.freeze({complete: true})
+			: canonicalMetadata(value.coverage),
+		truncation: value.nextCursor === undefined && value.more === undefined
+			? Object.freeze({nextCursor: null, more: false})
+			: Object.freeze({nextCursor: canonicalMetadata(value.nextCursor), more: canonicalMetadata(value.more)}),
+		unknowns: value.unknowns === undefined ? Object.freeze([]) : canonicalMetadata(value.unknowns),
+		citations: evidenceCitations(technicalEvidence, binding),
+		viewEvidence: technicalEvidence,
+	});
+}
+
+function operationOrdering(operation: ProductTransportRequest["operation"], input: ProductReadInput): string {
+	if (operation === "wiki.read") return `wiki-${(input as WikiReadInput).view}-canonical`;
+	if (operation === "changes.read") return (input as ChangesReadInput).view === "decisions"
+		? "change-id-and-event-order"
+		: "change-id-ascending";
+	if (operation === "checks.read") return "change-id-stage-and-work-id-ascending";
+	if (operation === "work.read") return "change-id-and-work-id-ascending";
+	if (operation === "alignment.read") return "change-id-and-item-id-ascending";
+	return "single-result";
+}
+
+function operationBounds(input: ProductReadInput): CanonicalValue {
+	if (typeof input === "object" && input !== null && "limit" in input && typeof input.limit === "number") {
+		return Object.freeze({limit: input.limit});
+	}
+	return Object.freeze({limit: null});
+}
+
+function canonicalMetadata(value: unknown): CanonicalValue {
+	if (value === null || typeof value === "string" || typeof value === "boolean" ||
+		(typeof value === "number" && Number.isSafeInteger(value))) return value;
+	if (Array.isArray(value)) return Object.freeze(value.flatMap((entry) => {
+		const canonical = canonicalMetadata(entry);
+		return canonical === null && entry !== null ? [] : [canonical];
+	}));
+	if (typeof value === "object" && value !== null) {
+		const output: Record<string, CanonicalValue> = Object.create(null) as Record<string, CanonicalValue>;
+		for (const [key, entry] of Object.entries(value)) {
+			const canonical = canonicalMetadata(entry);
+			if (canonical !== null || entry === null) output[key] = canonical;
+		}
+		return Object.freeze(output);
+	}
+	return null;
+}
+
+function evidenceCitations(value: CanonicalValue, binding: Readonly<Record<string, CanonicalValue>>): CanonicalValue {
+	if (isCanonicalObject(value) && value.metadata !== undefined && isCanonicalObject(value.metadata) &&
+		Array.isArray(value.metadata.citations) && value.metadata.citations.length > 0) return value.metadata.citations;
+	return binding.source === null || binding.source === undefined
+		? Object.freeze([])
+		: Object.freeze([Object.freeze({kind: "project-source", source: binding.source})]);
+}
+
+function projectConfiguration(
+	project: ProjectServerProject,
+	inputLimits: Partial<ProjectReadLimits> | undefined,
+): Outcome<ProjectReadConfiguration, ProjectServerBindingFailure> {
+	if (typeof project !== "object" || project === null || !hasOnlyKeys(project, [
+		"projectName", "repositoryId", "objectFormat", "canonicalRef", "kernelBuildDigest", "retiredWikiItemIds",
+	]) || typeof project.projectName !== "string" ||
+		project.projectName.length === 0 || new TextEncoder().encode(project.projectName).byteLength > 256 ||
+		project.projectName.normalize("NFC") !== project.projectName ||
+		/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u.test(project.projectName) ||
+		!isNamespacedIdentifier(project.repositoryId)) {
+		return failure(bindingFailure("invalid_configuration", "project", "Project identity is invalid."));
+	}
+	if (!(project.objectFormat === "sha1" || project.objectFormat === "sha256") || !decodeSha256Digest(project.kernelBuildDigest).ok) {
+		return failure(bindingFailure("invalid_configuration", "project", "Project object or build identity is invalid."));
+	}
+	const canonicalRef = decodeGitRef(project.canonicalRef);
+	if (!canonicalRef.ok || canonicalRef.value !== "refs/heads/main") {
+		return failure(bindingFailure("invalid_configuration", "canonicalRef", "Canonical Project ref is invalid."));
+	}
+	if (!validRetiredIds(project.retiredWikiItemIds)) {
+		return failure(bindingFailure("invalid_configuration", "retiredWikiItemIds", "Retired Wiki Item IDs must be sorted and unique."));
+	}
+	const limits = readLimits(inputLimits);
+	if (!limits.ok) return limits;
+	return success(Object.freeze({
+		projectName: project.projectName,
+		repositoryId: project.repositoryId,
+		objectFormat: project.objectFormat,
+		canonicalRef: canonicalRef.value,
+		kernelBuildDigest: project.kernelBuildDigest,
+		retiredWikiItemIds: Object.freeze([...project.retiredWikiItemIds]),
+		limits: limits.value,
+	}));
+}
+
+function readLimits(input: Partial<ProjectReadLimits> | undefined): Outcome<ProjectReadLimits, ProjectServerBindingFailure> {
+	if (input !== undefined && (typeof input !== "object" || input === null || !hasOnlyKeys(input, [
+		"maximumWikiItems", "maximumWikiFileBytes", "maximumWikiTotalBytes", "maximumChangeTraces", "maximumTraceBytes",
+		"maximumHistoryCommits", "maximumHistoryBytes",
+	]))) return failure(bindingFailure("invalid_configuration", "limits", "Read limits are malformed."));
+	const limits: ProjectReadLimits = Object.freeze({
+		maximumWikiItems: input?.maximumWikiItems ?? DEFAULT_LIMITS.maximumWikiItems,
+		maximumWikiFileBytes: input?.maximumWikiFileBytes ?? DEFAULT_LIMITS.maximumWikiFileBytes,
+		maximumWikiTotalBytes: input?.maximumWikiTotalBytes ?? DEFAULT_LIMITS.maximumWikiTotalBytes,
+		maximumChangeTraces: input?.maximumChangeTraces ?? DEFAULT_LIMITS.maximumChangeTraces,
+		maximumTraceBytes: input?.maximumTraceBytes ?? DEFAULT_LIMITS.maximumTraceBytes,
+		maximumHistoryCommits: input?.maximumHistoryCommits ?? DEFAULT_LIMITS.maximumHistoryCommits,
+		maximumHistoryBytes: input?.maximumHistoryBytes ?? DEFAULT_LIMITS.maximumHistoryBytes,
+	});
+	const bounds: readonly Readonly<{field: keyof ProjectReadLimits; minimum: number; maximum: number}>[] = [
+		{field: "maximumWikiItems", minimum: 1, maximum: MAXIMUM_WIKI_ITEMS},
+		{field: "maximumWikiFileBytes", minimum: 1, maximum: MAXIMUM_WIKI_FILE_BYTES},
+		{field: "maximumWikiTotalBytes", minimum: 1, maximum: MAXIMUM_WIKI_TOTAL_BYTES},
+		{field: "maximumChangeTraces", minimum: 1, maximum: 4_096},
+		{field: "maximumTraceBytes", minimum: 1, maximum: MAX_TRACE_BYTES},
+		{field: "maximumHistoryCommits", minimum: 1, maximum: 256},
+		{field: "maximumHistoryBytes", minimum: 1, maximum: 64 * 1024 * 1024},
+	];
+	for (const bound of bounds) {
+		const value = limits[bound.field];
+		if (!Number.isSafeInteger(value) || value < bound.minimum || value > bound.maximum) {
+			return failure(bindingFailure("invalid_configuration", bound.field, `${bound.field} is outside its safe bound.`));
+		}
+	}
+	if (limits.maximumWikiFileBytes > limits.maximumWikiTotalBytes) {
+		return failure(bindingFailure("invalid_configuration", "limits", "Wiki file bound cannot exceed the total Wiki bound."));
+	}
+	return success(limits);
+}
+
+function replayResponse(
+	replay: ReadonlyMap<string, Readonly<{requestDigest: Sha256Digest; response: ProductTransportResponse}>>,
+	actor: AuthorizedProjectActor,
+	request: ProductTransportRequest,
+): ProductTransportResponse | null {
+	const found = replay.get(replayKey(actor, request));
+	if (!found) return null;
+	if (found.requestDigest === request.requestDigest) return found.response;
+	const conflict = responseFor(request, failure(productError(
+		"idempotency_conflict",
+		"This request ID was already used for a different read.",
+		"Retry with a new request ID.",
+		false,
+	)));
+	return isTransportResponse(conflict) ? conflict : null;
+}
+
+function rememberResponse(
+	replay: Map<string, Readonly<{requestDigest: Sha256Digest; response: ProductTransportResponse}>>,
+	maximum: number,
+	actor: AuthorizedProjectActor,
+	request: ProductTransportRequest,
+	response: ProductTransportResponse,
+): void {
+	if (replay.size >= maximum) {
+		const oldest = replay.keys().next().value;
+		if (typeof oldest === "string") replay.delete(oldest);
+	}
+	replay.set(replayKey(actor, request), Object.freeze({requestDigest: request.requestDigest, response}));
+}
+
+function responseFor(
+	request: Pick<ProductTransportRequest, "requestId" | "requestDigest" | "operation">,
+	outcome: Outcome<unknown, ProductError>,
+	binding: unknown | null = null,
+): ProductTransportResponse | Readonly<{status: "error"}> {
+	const response = createProductTransportResponse(request, outcome, binding);
+	if (response.ok) return response.value;
+	const fallback = createProductTransportResponse(request, failure(productError(
+		"internal_failure",
+		"The Project service could not encode a safe response.",
+		"Retry after the Project service is healthy.",
+		false,
+	)));
+	return fallback.ok ? fallback.value : Object.freeze({status: "error" as const});
+}
+
+function invalidEnvelopeRequest(): Pick<ProductTransportRequest, "requestId" | "requestDigest" | "operation"> {
+	return Object.freeze({
+		requestId: "cw:request:invalid",
+		requestDigest: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+		operation: "project.discover",
+	});
+}
+
+function isTransportResponse(value: unknown): value is ProductTransportResponse {
+	return typeof value === "object" && value !== null && "responseDigest" in value;
+}
+
+function replayKey(actor: AuthorizedProjectActor, request: ProductTransportRequest): string {
+	return `${actor.actorId}\0${request.requestId}`;
+}
+
+function validRetiredIds(input: readonly string[]): boolean {
+	if (!Array.isArray(input) || input.length > MAXIMUM_WIKI_ITEMS) return false;
+	for (let index = 0; index < input.length; index += 1) {
+		const value = input[index];
+		if (typeof value !== "string" || !isNamespacedIdentifier(value) || (index > 0 && (input[index - 1] ?? "") >= value)) return false;
+	}
+	return true;
+}
+
+function hasOnlyKeys(value: object, keys: readonly string[]): boolean {
+	return Object.keys(value).every((key) => keys.includes(key));
+}
+
+function hasMethods(value: object, methods: readonly string[]): boolean {
+	return methods.every((method) => method in value && typeof (value as Readonly<Record<string, unknown>>)[method] === "function");
+}
+
+function sameProtocol(
+	actual: Readonly<{id: string; version: string}> | undefined,
+	expected: Readonly<{id: string; version: string}>,
+): boolean {
+	return actual?.id === expected.id && actual.version === expected.version;
+}
+
+function sourceError(value: ProjectSourceIssue): ProductError {
+	if (value.code === "source_not_found") return productError("source_not_found", "The requested Project source does not exist.", "Choose the current Project or another available Change.", false);
+	if (value.code === "source_stale") return productError("source_stale", "The Project changed before this read completed.", "Refresh and retry from the current Project state.", false);
+	if (value.code === "limit_exceeded") return productError("limit_exceeded", "The requested Project information exceeds the safe read bounds.", "Narrow the request and retry.", false);
+	return productError("invalid_project_state", "The selected Project state could not be validated.", "Ask a maintainer to inspect the Project state.", true);
+}
+
+function bindingFailure(
+	code: ProjectServerBindingFailure["code"],
+	field: string,
+	message: string,
+): ProjectServerBindingFailure {
+	return Object.freeze({code, field, message});
 }

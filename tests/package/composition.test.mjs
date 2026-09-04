@@ -15,6 +15,7 @@ test("Product policy is immutable canonical build data", () => {
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT));
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.lifecycle));
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.checks.resources));
+	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.api));
 	assert.deepEqual(CODEWIKI_PRODUCT.lifecycle.stages, [
 		"decision",
 		"planning",
@@ -25,19 +26,34 @@ test("Product policy is immutable canonical build data", () => {
 		".codewiki/wiki/items",
 		".codewiki/changes",
 	]);
+	assert.deepEqual(CODEWIKI_PRODUCT.api.operations, [
+		"project.discover", "project.capabilities", "project.status", "wiki.read", "changes.read",
+		"checks.read", "work.read", "review.read", "alignment.read", "audit.read",
+	]);
+	assert.equal(CODEWIKI_PRODUCT.api.requestProtocol.id, "codewiki.product-request");
+	assert.deepEqual(CODEWIKI_PRODUCT.api.unavailable, ["Agent Work", "Preview"]);
 	assert.equal(
 		semanticDigest("codewiki.product-policy@1.0.0", CODEWIKI_PRODUCT).value,
 		CODEWIKI_PRODUCT_POLICY_DIGEST,
 	);
 });
 
-test("root package surface exposes Product and bootstrap, not direct Kernel operations", () => {
+test("root package surface exposes curated Product, Client, and Project Server operations without direct Kernel access", () => {
 	assert.deepEqual(Object.keys(publicApi).sort(), [
 		"CODEWIKI_PRODUCT",
 		"CODEWIKI_PRODUCT_POLICY_DIGEST",
+		"PRODUCT_TRANSPORT_REQUEST_PROTOCOL",
+		"PRODUCT_TRANSPORT_RESPONSE_PROTOCOL",
+		"PROJECT_SERVER_PROTOCOL",
 		"bootstrapCodewikiProject",
+		"createCodewikiClient",
+		"createProductTransportRequest",
+		"createProjectAccessPolicy",
+		"createProjectServer",
+		"decodeProductTransportResponse",
+		"projectAccessProofDigest",
 	]);
-	for (const forbidden of ["canonicalJson", "semanticDigest", "bindProjectServerFoundation", "CODEWIKI_EXTENSION_AVAILABLE"]) {
+	for (const forbidden of ["canonicalJson", "semanticDigest", "bindProjectServerFoundation", "readExactWiki", "CODEWIKI_EXTENSION_AVAILABLE"]) {
 		assert.equal(forbidden in publicApi, false, forbidden);
 	}
 });

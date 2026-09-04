@@ -263,17 +263,23 @@ Accepted requirement: `cw:codewiki:requirement:4arr3gvualjet5fk4tq2w6xqzrrsuk4jc
 - [x] Property/fuzz test Item envelopes, paths, relationships, Unicode, limits, malformed repository input, and adversarial provenance fields.
 - [x] Land one exact Wiki/View engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
 
+SK3D checkpoint facts:
+
+- Exact commit `d7835ba4ac1ff0b0fdab87876e97166d8a93bcdb` packaged uniquely as `@nunomoura/codewiki@0.4.0-sk3d.1`; 182/182 clean committed-subject tests, build, byte-identical double-pack, external packed import, production dependency audit, primary diagnostics, and fresh structural/security diagnostics passed.
+- Package SHA-256 `fb45f6e9c8431b06b3e6536af0ac134261253fceadf6b74da926d62fd792a890`; the sole retained checkpoint receipt is `/home/canina7/.local/state/codewiki/checkpoints/d7835ba4ac1ff0b0fdab87876e97166d8a93bcdb/ci-receipt.json` with SHA-256 `5f6eb5fe6f590d50cb5a7ae8bc78102ccce7a4792db122f2a1df1addd90bee41`.
+- No release was admitted, completed, activated, or promoted; `main` and Product N controller state did not move.
+
 ### SK3E — Project Server and authenticated read API
 
 Accepted requirement: `cw:codewiki:requirement:bdr2py6syqr74steqtfrxaz2k6hn6tyzyjmvlwlho77upknke6nq`.
 
-- [ ] Compose Kernel with Project Store and Check Runner ports under Project Server authority; expose Agent Runtime and Preview only as unavailable typed capabilities until their qualified adapters exist.
-- [ ] Implement Project discovery, capability/status, exact Wiki, Change, Gate, Result, Work, Review, and Alignment reads.
-- [ ] Publish curated version-neutral Product UAPI/Client SDK operations, historically named Kernel API, plus explicit versioned transport envelopes.
-- [ ] Project user-facing reads and messages through Change, status, Work, Checks, Decisions, next action, and required user action. Keep builds, digests, refs, receipts, protocol identities, controller generations, DSH internals, and storage mechanics out of normal interaction; expose bounded technical evidence only through explicit audit or troubleshooting operations.
-- [ ] Enforce Client/Actor separation, AuthZ/redaction, exact source resolution, bounds, cursors, idempotence, and stable errors.
-- [ ] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
-- [ ] Land one exact API engineering checkpoint with clean committed-subject checks, including packed use from a disposable external project; do not activate it.
+- [x] Compose Kernel with Project Store and Check Runner ports under Project Server authority; expose Agent Runtime and Preview only as unavailable typed capabilities until their qualified adapters exist.
+- [x] Implement Project discovery, capability/status, exact Wiki, Change, Gate, Result, Work, Review, and Alignment reads.
+- [x] Publish curated version-neutral Product UAPI/Client SDK operations, historically named Kernel API, plus explicit versioned transport envelopes.
+- [x] Project user-facing reads and messages through Change, status, Work, Checks, Decisions, next action, and required user action. Keep builds, digests, refs, receipts, protocol identities, controller generations, DSH internals, and storage mechanics out of normal interaction; expose bounded technical evidence only through explicit audit or troubleshooting operations.
+- [x] Enforce Client/Actor separation, AuthZ/redaction, exact source resolution, bounds, cursors, idempotence, and stable errors.
+- [x] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
+- [x] Land one exact API engineering checkpoint with clean committed-subject checks, including packed use from a disposable external project; do not activate it.
 
 ### SK3F — governed mutation and local lifecycle
 

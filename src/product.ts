@@ -1,3 +1,8 @@
+import {PRODUCT_READ_OPERATIONS} from "./api/contracts/read.ts";
+import {
+	PRODUCT_TRANSPORT_REQUEST_PROTOCOL,
+	PRODUCT_TRANSPORT_RESPONSE_PROTOCOL,
+} from "./api/transport/envelope.ts";
 import {
 	decodeCanonicalValue,
 	type CanonicalValue,
@@ -8,11 +13,13 @@ import {AGENT_RUNTIME_PORT_PROTOCOL} from "./ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL} from "./ports/check-runner.ts";
 import {PREVIEW_PORT_PROTOCOL} from "./ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL} from "./ports/project-store.ts";
+import {PROJECT_ACCESS_POLICY_PROTOCOL} from "./server/authorization/policy.ts";
+import {PROJECT_SERVER_PROTOCOL} from "./server/index.ts";
 
 export interface CodewikiProductPolicy {
 	readonly protocol: Readonly<{id: "codewiki.product-policy"; version: "1.0.0"}>;
 	readonly productId: "codewiki";
-	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3d.1"}>;
+	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3e.1"}>;
 	readonly projectConfiguration: Readonly<{
 		protocol: Readonly<{id: "codewiki.project-config"; version: "2.0.0"}>;
 		semanticRoots: readonly [".codewiki/wiki/items", ".codewiki/changes"];
@@ -29,6 +36,15 @@ export interface CodewikiProductPolicy {
 		gateAuthority: "facts-only";
 	}>;
 	readonly ports: readonly CanonicalValue[];
+	readonly api: Readonly<{
+		operations: typeof PRODUCT_READ_OPERATIONS;
+		requestProtocol: typeof PRODUCT_TRANSPORT_REQUEST_PROTOCOL;
+		responseProtocol: typeof PRODUCT_TRANSPORT_RESPONSE_PROTOCOL;
+		serverProtocol: typeof PROJECT_SERVER_PROTOCOL;
+		accessPolicyProtocol: typeof PROJECT_ACCESS_POLICY_PROTOCOL;
+		normalVocabulary: readonly ["Changes", "status", "Work", "Checks", "Decisions", "next action", "required user action"];
+		unavailable: readonly ["Agent Work", "Preview"];
+	}>;
 	readonly checks: Readonly<{
 		selectionAuthority: "product-and-project";
 		proposalSelection: "forbidden";
@@ -44,7 +60,7 @@ export interface CodewikiProductPolicy {
 const POLICY_INPUT = {
 	protocol: {id: "codewiki.product-policy", version: "1.0.0"},
 	productId: "codewiki",
-	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3d.1"},
+	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3e.1"},
 	projectConfiguration: {
 		protocol: {id: "codewiki.project-config", version: "2.0.0"},
 		semanticRoots: [".codewiki/wiki/items", ".codewiki/changes"],
@@ -66,6 +82,15 @@ const POLICY_INPUT = {
 		AGENT_RUNTIME_PORT_PROTOCOL,
 		PREVIEW_PORT_PROTOCOL,
 	],
+	api: {
+		operations: PRODUCT_READ_OPERATIONS,
+		requestProtocol: {...PRODUCT_TRANSPORT_REQUEST_PROTOCOL},
+		responseProtocol: {...PRODUCT_TRANSPORT_RESPONSE_PROTOCOL},
+		serverProtocol: {...PROJECT_SERVER_PROTOCOL},
+		accessPolicyProtocol: {...PROJECT_ACCESS_POLICY_PROTOCOL},
+		normalVocabulary: ["Changes", "status", "Work", "Checks", "Decisions", "next action", "required user action"],
+		unavailable: ["Agent Work", "Preview"],
+	},
 	checks: {
 		selectionAuthority: "product-and-project",
 		proposalSelection: "forbidden",

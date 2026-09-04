@@ -1,7 +1,7 @@
 {
 	"name": "@nunomoura/codewiki",
-	"version": "0.4.0-sk3d.1",
-	"description": "Deterministic Semantic Kernel, exact Git-backed Wiki Views, and bounded bootstrap for governed CodeWiki projects.",
+	"version": "0.4.0-sk3e.1",
+	"description": "Deterministic Semantic Kernel, authenticated exact-source Project reads, and bounded bootstrap for governed CodeWiki projects.",
 	"keywords": [
 		"documentation",
 		"wiki",
@@ -22,7 +22,7 @@
 		"build": "npm run clean && tsc -p tsconfig.build.json",
 		"prepack": "npm run build",
 		"typecheck": "tsc --noEmit",
-		"test:smoke": "node --experimental-strip-types --test tests/adapters/git/*.test.mjs tests/kernel/canonical/*.test.mjs tests/kernel/identity/*.test.mjs tests/kernel/invariants/*.test.mjs tests/kernel/wiki/*.test.mjs tests/package/*.test.mjs tests/ports/*.test.mjs tests/server/*.test.mjs",
+		"test:smoke": "node --experimental-strip-types --test tests/adapters/git/*.test.mjs tests/api/client/*.test.mjs tests/api/contracts/*.test.mjs tests/api/transport/*.test.mjs tests/kernel/canonical/*.test.mjs tests/kernel/identity/*.test.mjs tests/kernel/invariants/*.test.mjs tests/kernel/wiki/*.test.mjs tests/package/*.test.mjs tests/ports/*.test.mjs tests/server/*.test.mjs tests/server/authorization/*.test.mjs tests/server/queries/*.test.mjs",
 		"test:pack": "npm pack --dry-run",
 		"test": "npm run typecheck && npm run test:smoke",
 		"audit:codewiki": "npm test && npm run build && npm run test:pack && npm audit --omit=dev && git diff --check"

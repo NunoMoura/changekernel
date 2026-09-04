@@ -15,7 +15,7 @@ const oid = (hex) => ({algorithm: "sha1", hex: hex.repeat(40)});
 export function productBuildFixture() {
 	const result = createProductBuild({
 		packageName: "@nunomoura/codewiki",
-		packageVersion: "0.4.0-sk3d.1",
+		packageVersion: "0.4.0-sk3e.1",
 		sourceCommit: oid("1"),
 		sourceTree: oid("2"),
 		productPolicyDigest: digest("a"),

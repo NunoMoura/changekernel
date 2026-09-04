@@ -28,6 +28,9 @@ const SOURCE_ALLOWLIST = [
 	"src/adapters/git/project-config.ts",
 	"src/adapters/git/project-store.ts",
 	"src/adapters/git/wiki.ts",
+	"src/api/client/index.ts",
+	"src/api/contracts/read.ts",
+	"src/api/transport/envelope.ts",
 	"src/index.ts",
 	"src/kernel/canonical/contract.ts",
 	"src/kernel/canonical/json.ts",
@@ -63,13 +66,20 @@ const SOURCE_ALLOWLIST = [
 	"src/ports/preview.ts",
 	"src/ports/project-store.ts",
 	"src/product.ts",
+	"src/server/authorization/policy.ts",
 	"src/server/index.ts",
+	"src/server/queries/project.ts",
+	"src/server/queries/source.ts",
+	"src/server/queries/wiki.ts",
 ];
 const TEST_ALLOWLIST = [
 	"tests/adapters/git/bootstrap.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
 	"tests/adapters/git/project-store.test.mjs",
 	"tests/adapters/git/wiki.test.mjs",
+	"tests/api/client/index.test.mjs",
+	"tests/api/contracts/read.test.mjs",
+	"tests/api/transport/envelope.test.mjs",
 	"tests/kernel/canonical/canonical-json.test.mjs",
 	"tests/kernel/canonical/contract.test.mjs",
 	"tests/kernel/canonical/outcome.test.mjs",
@@ -104,7 +114,9 @@ const TEST_ALLOWLIST = [
 	"tests/ports/check-runner.test.mjs",
 	"tests/ports/preview.test.mjs",
 	"tests/ports/project-store.test.mjs",
+	"tests/server/authorization/policy.test.mjs",
 	"tests/server/index.test.mjs",
+	"tests/server/queries/read-api.test.mjs",
 ];
 const DELETED_ROOTS = [
 	"benchmarks",
@@ -274,6 +286,15 @@ test("Kernel imports only Kernel modules and has no ambient effects", async () =
 		for (const token of ["process.", "Date.now", "Math.random", "fetch(", "WebSocket", "randomUUID", "node:"]) {
 			assert.equal(text.includes(token), false, `${path}: ${token}`);
 		}
+	}
+});
+
+test("Client and transport APIs cannot import adapters, ports, Product policy, or Project Server internals", async () => {
+	const {graph, external} = await sourceGraph();
+	for (const [path, targets] of graph) {
+		if (!path.startsWith("src/api/")) continue;
+		assert.equal(external.has(path), false, path);
+		assert.ok(targets.every((target) => target.startsWith("src/api/") || target.startsWith("src/kernel/")), `${path}: ${targets.join(", ")}`);
 	}
 });
 
