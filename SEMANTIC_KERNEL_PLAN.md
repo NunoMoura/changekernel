@@ -215,7 +215,7 @@ Accepted requirement: `cw:codewiki:requirement:xj62wfc6qeqpzvgqqpndu7h4dcrtalsle
 - [x] Make bootstrap create only versioned Domain-free config, empty Wiki/Change state, and passive Check Pack resources.
 - [x] Prove normal target entrypoints cannot reach Domain, KB/OKF, old Trace roots, Backend/Runtime Build compatibility, project-local extensions, or migration code.
 - [x] Remove obsolete root exports, scripts, test globs, source ownership, runtime hooks, and package metadata; preserve `.pi` safety/governance instructions that remain true.
-- [ ] Qualify and activate one exact private development checkpoint containing only the clean foundation; retain Product N as sole controller.
+- [x] Qualify and activate one exact private development checkpoint containing only the clean foundation; retain Product N as sole controller.
 
 Success: active Product source has only target roots/layers, current Wiki/Change ownership, and no executable pre-stable semantic owner. Historical bytes remain recoverable through Git, not production imports. Checkpoint activation does not promote its controller.
 
