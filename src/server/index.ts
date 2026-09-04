@@ -526,11 +526,11 @@ function validRetiredIds(input: readonly string[]): boolean {
 	return true;
 }
 
-function hasOnlyKeys(value: object, keys: readonly string[]): boolean {
+function hasOnlyKeys<Value extends object>(value: Value, keys: readonly string[]): boolean {
 	return Object.keys(value).every((key) => keys.includes(key));
 }
 
-function hasMethods(value: object, methods: readonly string[]): boolean {
+function hasMethods<Value extends object>(value: Value, methods: readonly string[]): boolean {
 	return methods.every((method) => method in value && typeof (value as Readonly<Record<string, unknown>>)[method] === "function");
 }
 

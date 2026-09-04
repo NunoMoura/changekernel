@@ -67,7 +67,7 @@ export async function readProjectStatus(
 	const loaded = await authorizedProject(store, configuration, actor, source);
 	if (!loaded.ok) return loaded;
 	const changes = loaded.value.changes;
-	const states: Record<ChangeLifecycleState, number> = {
+	const states = {
 		committed: 0,
 		completed: 0,
 		deferred: 0,
@@ -75,7 +75,7 @@ export async function readProjectStatus(
 		rejected: 0,
 		superseded: 0,
 		withdrawn: 0,
-	};
+	} satisfies Record<ChangeLifecycleState, number>;
 	let passedChecks = 0;
 	let failedChecks = 0;
 	let stoppedChecks = 0;
@@ -551,7 +551,9 @@ function wikiIdVisible(actor: AuthorizedProjectActor, itemId: string): boolean {
 }
 
 function compareText(left: string, right: string): number {
-	return left < right ? -1 : left > right ? 1 : 0;
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
 }
 
 function sourceError(value: ProjectSourceIssue): ProductError {
