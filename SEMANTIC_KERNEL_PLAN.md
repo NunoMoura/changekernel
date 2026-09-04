@@ -6,15 +6,17 @@ This file is the sole active CodeWiki refactoring roadmap, status ledger, qualif
 
 Wiki does not directly authorize source work. Every implementation change must map to an incomplete item below. Unscheduled gaps enter this ledger before source changes. Wiki records stable behavior; this plan alone records cutover mechanics, temporary gaps, sequencing, evidence, and deferrals.
 
-No mutable checkout governs or qualifies itself. Native Pi, Git, deterministic checks, and human authority are bootstrap and recovery paths. After bootstrap, immutable externally installed Product N governs exact committed candidate N+1. Candidate N+1 never enters Product N's module graph or qualification authority.
+No mutable checkout governs or qualifies itself. Native Pi, Git, deterministic checks, and human authority are bootstrap and recovery paths. After bootstrap, immutable externally installed Product N governs exact committed release candidate N+1. Candidate N+1 never enters Product N's module graph or qualification authority.
 
-Release activation and controller promotion are distinct. SK3B–SK3F may activate immutable qualified checkpoint packages, but Product N remains the sole semantic controller. Controller promotion occurs only at the explicit SK3G quiescent handoff below; source and target controllers never overlap.
+The transitional bootstrap distinguishes engineering checkpoints from release candidates. SK3C–SK3F land as ordinary immutable commits with clean exact-commit checks and one bounded CI receipt; they receive no admission, completion, package activation, or controller claim. Product N remains the sole semantic controller. Only an intentionally frozen release candidate receives external Product N qualification and one exact human activation decision. Controller promotion occurs only at the explicit SK3G quiescent handoff below; source and target controllers never overlap.
 
-A checklist item is marked complete only when its bound release subject is externally qualified, explicitly authorized, and activated. Inner-loop commits and green development checks are evidence, not release completion. Activation alone never implies controller promotion.
+Creating a commit or moving an unprotected development ref is not a lifecycle effect and needs no prospective-OID authorization. Every packed identity is nevertheless immutable: one package name/version maps to exactly one archive digest, source commit/tree, Product Build, and Kernel Build. A correction receives a new commit and, after release-candidate freeze, a new package version.
+
+A checklist implementation item may be marked complete when its exact engineering checkpoint and CI receipt pass. Release, activation, handoff, and dogfood items additionally require their stated external qualification and human authority. Activation alone never implies controller promotion.
 
 ## Activated baseline
 
-CodeWiki remains private pre-production software. Package `@nunomoura/codewiki@0.3.0` is unpublished and private.
+CodeWiki remains private pre-production software. Released controller N is unpublished private package `@nunomoura/codewiki@0.3.0`, source commit `adc272d0d9b8f228fc8cedb150c8c6371c823997`, package SHA-256 `63e926d638e0f74f0e785cf8ab6222bb45ee04abfb6e848501b29de99726489d`. Transitional checkpoint and release-candidate packages must use unique prerelease versions; `0.3.0` may never identify different bytes.
 
 ### Completed semantic releases
 
@@ -149,7 +151,7 @@ Rules:
 
 ## Controller continuity and SK3G handoff
 
-Immutable activated Product N remains the only semantic controller throughout SK3B–SK3F. It externally qualifies each exact committed checkpoint and performs any governed release admission/activation. Checkpoint installation, package activation, or passing tests never transfers project authority to the candidate.
+Immutable activated Product N remains the only semantic controller throughout SK3B–SK3F. Exact engineering checkpoints receive clean committed-subject CI receipts but no release lifecycle. Product N performs full external qualification only for an intentionally frozen SK3G release candidate. Checkpoint commits, packages, or passing tests never transfer project authority to the candidate.
 
 The SK3G handoff must account for exact predecessor state rather than pretending a fresh bootstrap:
 
@@ -223,6 +225,8 @@ Success: active Product source has only target roots/layers, current Wiki/Change
 
 Accepted requirement: `cw:codewiki:requirement:xej4slpzn4cnbpoo6dsxshnacedgqbm5limjncdofnqhvl5hec7a`.
 
+- [ ] Close the bootstrap validation gap before further source work: permanent tests must pass in a clean checkout of the exact checkpoint commit; one-time migration scope checks compare explicit base and candidate identities outside the shipped suite. Abandon unpromoted commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb`, whose clean checkout exposed the dirty-HEAD-dependent Wiki mutation test.
+- [ ] Assign the replacement checkpoint a unique prerelease package version so released Product N and checkpoint N+1 cannot share `@nunomoura/codewiki@0.3.0` with different bytes.
 - [ ] Implement canonical Wiki Item, Change Trace, Work, Gate, Check Run, Result, Evidence-reference, Product Build, and Kernel Build contracts with bounded decoders.
 - [ ] Define exact semantic-event ownership separately from Trace encoding/segment ownership, populate native `traceEvents` metadata atomically, and reject duplicate or unowned current events.
 - [ ] Implement deterministic reducers and exhaustive Proposed/Committed/Completed/Rejected/Deferred/Withdrawn transitions.
@@ -233,7 +237,18 @@ Accepted requirement: `cw:codewiki:requirement:xej4slpzn4cnbpoo6dsxshnacedgqbm5l
 - [ ] Derive WorkState/Work View from Git, Trace, Gates, Results, Work facts, and receipts.
 - [ ] Remove target Candidate, Completion Requirement, disposition, Gate package, canonical global Work Graph, private integration lineage, and Review Attempt authority.
 - [ ] Model/property-test containing-commit identity, exact event ownership, replay determinism, stale-writer rejection, idempotence, conflict behavior, and crash recovery.
-- [ ] Qualify and activate one exact semantic-lifecycle checkpoint; retain Product N as sole controller.
+
+Implementation checkpoint facts (not completion or activation):
+
+- Bounded SK3C implementation is materialized in the detached external worktree from `5b6460dca1e69019498997cab9b7747ee147bde8` for replacement checkpoint closure.
+- Prospective commit `9e54196ff1add946ebb93e2a81a16b95c1d3f7bb` has exact intended tree `5dd15dffa613d8f263ff69389e7d5c9e00031c9a` and no ref, but is abandoned: its stored development run passed only with the candidate over base `HEAD`; a clean exact-commit checkout failed `tests/kernel/invariants/architecture.test.mjs` because that permanent test inspected the dirty diff.
+- The active target contains 34 source files and 33 test files within the frozen implementation allowlist before the bounded bootstrap correction.
+- Pure Kernel contracts now cover native Wiki Items, Change-owned Work and planning, Change Trace `14.0.0`, semantic events and reduction, exact snapshots, Check Definitions, active-Check selection, Gates, Check Runs, Results, Evidence references, Product/Kernel Build identities, Preview values, and disposable WorkState.
+- The Git Project Store adapter now uses bounded fixed plumbing, complete-object checks, deterministic commit creation, request-bound authorization digests, and expected-old-OID compare-and-swap for managed refs.
+- Exactly seven native ownership records assign all 17 current semantic events once; no target Candidate, Completion Requirement, disposition, Gate package, mutable global Work Graph, private integration ref, Review Attempt, Domain contract, or Trace `13.0.0` compatibility reader was introduced.
+- Root package exports, governed Change Traces, canonical refs, and controller state remain outside this implementation mutation; the replacement intentionally changes only package/Product version identity and the scheduled Wiki/process contract in addition to the bounded Kernel checkpoint.
+
+- [ ] Land one exact semantic-lifecycle engineering checkpoint with a clean committed-subject CI receipt; do not admit, complete, activate, or promote it. Retain Product N as sole controller.
 
 ### SK3D — transactional Wiki and bounded Views
 
@@ -246,7 +261,7 @@ Accepted requirement: `cw:codewiki:requirement:4arr3gvualjet5fk4tq2w6xqzrrsuk4jc
 - [ ] Exclude `codewiki.legacy:*` attributes from normal term resolution, search ranking, semantic diff, ownership, applicability, authorization, Agent context, and generated Views; expose them only through exact provenance inspection.
 - [ ] Prove Item moves preserve IDs, relationships, attribution, and history.
 - [ ] Property/fuzz test Item envelopes, paths, relationships, Unicode, limits, malformed repository input, and adversarial provenance fields.
-- [ ] Qualify and activate one exact Wiki/View checkpoint; retain Product N as sole controller.
+- [ ] Land one exact Wiki/View engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
 
 ### SK3E — Project Server and authenticated read API
 
@@ -257,7 +272,7 @@ Accepted requirement: `cw:codewiki:requirement:bdr2py6syqr74steqtfrxaz2k6hn6tyzy
 - [ ] Publish curated version-neutral Product UAPI/Client SDK operations, historically named Kernel API, plus explicit versioned transport envelopes.
 - [ ] Enforce Client/Actor separation, AuthZ/redaction, exact source resolution, bounds, cursors, idempotence, and stable errors.
 - [ ] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
-- [ ] Qualify packed API use from disposable external projects and activate only as a non-controller checkpoint.
+- [ ] Land one exact API engineering checkpoint with clean committed-subject checks, including packed use from a disposable external project; do not activate it.
 
 ### SK3F — governed mutation and local lifecycle
 
@@ -271,7 +286,7 @@ Accepted requirement: `cw:codewiki:requirement:2jzn73ks7jsma7qrn6yatbaour2gs25uv
 - [ ] Prove expected-head/tip rejection, explicit reconciliation, supersession, and no silent semantic auto-merge.
 - [ ] Fault-inject every object-write/ref-CAS/private-state boundary and prove deterministic restart.
 - [ ] Stress concurrent Changes, Work integration, recovery, and idempotent lifecycle commands through qualified deterministic test adapters.
-- [ ] Qualify and activate one exact mechanism-complete local-lifecycle checkpoint; retain Product N as sole controller.
+- [ ] Land one exact mechanism-complete local-lifecycle engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
 
 Success: local lifecycle semantics and effect authorization are complete under qualified deterministic test adapters. This checkpoint is not operationally Agent-capable and cannot become controller.
 
@@ -327,33 +342,33 @@ Line count, file structure, typechecking, coverage percentage, or raw test count
 
 ## Development and promotion gates
 
-### Inner development checkpoint
+### Engineering checkpoint
 
-Run for bounded commits while a milestone remains mutable:
+Run for bounded commits while SK3 remains on Product N:
 
-1. verify clean intended scope and preserve unrelated user files;
-2. run primary LSP diagnostics before build/test work;
-3. pass architecture/import/export checks;
-4. pass typecheck and build;
-5. pass focused tests plus applicable property, replay, fault, or adversarial cases;
-6. record known gaps in this ledger before moving to another subsystem.
+1. record unscheduled gaps in this ledger before source changes;
+2. preserve unrelated user files and keep development in an isolated worktree or ordinary unprotected branch;
+3. run primary LSP diagnostics, architecture/import/export checks, typecheck, build, and risk-relevant focused/property/fault tests;
+4. create a normal commit without prospective-OID or commit-creation authorization;
+5. rerun the complete applicable suite from a clean checkout of that exact commit;
+6. emit one machine-readable CI receipt binding commit, tree, package version when packed, commands, outcomes, and toolchain; and
+7. delete disposable installs, copied repositories, `node_modules`, successful raw logs, and other scratch after receipt generation.
 
-Inner checkpoints are not candidates and receive no activation claim.
+Engineering checkpoints are not release candidates and receive no admission, completion, activation, or controller claim. One-time diff/history assertions belong in checkpoint qualification with explicit base and candidate identities, not in permanent current-state tests.
 
-### Immutable promotion candidate
+### Immutable release candidate
 
-When a milestone outcome is coherent:
+Only when an Agent-capable SK3G or stable SK3H outcome is coherent:
 
-1. freeze one exact clean committed subject and patch identity;
-2. run full smoke, production, readiness, package-install, and applicable external lifecycle tests;
-3. run diagnostics ratchet, dependency/security audit, architecture, fuzz/fault, recovery, and reproducibility gates applicable to the milestone;
-4. pack and test only in disposable external projects with isolated Pi settings and owner-private state;
-5. prove no source-checkout CodeWiki load, project-local package link, runtime/view scratch, credential, socket, daemon, or package artifact remains;
-6. use immutable activated Product N to qualify exact N+1 bytes, construct the prospective admission/completion Trace-only snapshots in a disposable external project, and rerun affected candidate tests against both snapshots;
-7. obtain explicit exact-byte authorization and activate the release through protected-head policy;
-8. retain Product N as sole controller unless this is the exact SK3G handoff subject and every ordered handoff condition above passes.
+1. assign a unique package version and freeze one candidate manifest binding controller N, exact source commit/tree, package SHA-256, Product Build, Kernel Build, and policy;
+2. run clean exact-commit tests plus only the architecture, security, supply-chain, recovery, and hostile-input gates applicable to changed risk;
+3. reproduce the package and install those exact bytes only in disposable external projects with isolated settings and owner-private state;
+4. use immutable Product N to qualify the exact manifest and emit one qualification receipt;
+5. retain exactly one content-addressed package/bundle, candidate manifest, qualification receipt, exact human authorization bytes, and activation receipt—never copied per attempt;
+6. obtain one exact human decision only for activation, then execute the backup-first compare-and-swap activation or SK3G controller handoff; and
+7. retain Product N and its verified backup through the stated rollback cutoff.
 
-Any correction after candidate freeze creates another candidate/package/qualification. Mutable inner-loop corrections do not pretend to be release subjects. Release activation never silently changes the controller.
+A failed or corrected release candidate receives a new commit and package version. Failed scratch is retained only when needed to diagnose the bounded failure; all other attempt state has a short cleanup TTL. Release activation never silently changes the controller.
 
 ## Deliberate deferrals
 
@@ -374,6 +389,6 @@ SK4+ work remains future governed Changes only after concrete users and evidence
 
 ## Stable closure and archive
 
-This plan remains active until every non-deferred checklist item is bound to externally qualified and activated evidence, the final exact Alignment audit finds no unowned gap between Wiki and executable behavior, the package/API surface is intentionally frozen, and repeated Product N→N+1 dogfood proves recovery without candidate self-governance.
+This plan remains active until every non-deferred implementation item is bound to an exact clean-checkpoint receipt, the SK3G and SK3H release items are externally qualified and activated, the final exact Alignment audit finds no unowned gap between Wiki and executable behavior, the package/API surface is intentionally frozen, and repeated Product N→N+1 dogfood proves recovery without candidate self-governance.
 
-Closure records exact milestone commits, trees, package digests, qualification/authorization/activation artifacts, explicit deferrals, supported predecessor/host matrices, and archive identity. The plan is then archived as historical evidence and removed from active navigation. Wiki remains desired-state authority; source/tests remain executable truth; roadmap status never migrates into Wiki.
+Closure records checkpoint commit/tree receipts, unique released package digests, final qualification/authorization/activation receipts, explicit deferrals, supported predecessor/host matrices, and archive identity. Generated summaries are views, not additional authority. The plan is then archived as historical evidence and removed from active navigation. Wiki remains desired-state authority; source/tests remain executable truth; roadmap status never migrates into Wiki.

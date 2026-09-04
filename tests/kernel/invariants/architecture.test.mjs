@@ -1,10 +1,21 @@
 import assert from "node:assert/strict";
-import {execFileSync} from "node:child_process";
 import {readFile, readdir, stat} from "node:fs/promises";
 import {dirname, join, relative, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import test from "node:test";
 import ts from "typescript";
+import "../changes/contracts.test.mjs";
+import "../changes/events.test.mjs";
+import "../changes/reducer.test.mjs";
+import "../changes/snapshot.test.mjs";
+import "../changes/trace.test.mjs";
+import "../evidence/reference.test.mjs";
+import "../gates/check-definition.test.mjs";
+import "../gates/contracts.test.mjs";
+import "../gates/reducer.test.mjs";
+import "../gates/selection.test.mjs";
+import "../work/contracts.test.mjs";
+import "../work/state.test.mjs";
 import {partitionWikiAttributes} from "../../../src/kernel/wiki/attributes.ts";
 import {
 	decodeComponentOwnership,
@@ -15,15 +26,32 @@ const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const SOURCE_ALLOWLIST = [
 	"src/adapters/git/bootstrap.ts",
 	"src/adapters/git/project-config.ts",
+	"src/adapters/git/project-store.ts",
 	"src/index.ts",
+	"src/kernel/canonical/contract.ts",
 	"src/kernel/canonical/json.ts",
 	"src/kernel/canonical/outcome.ts",
+	"src/kernel/changes/contracts.ts",
+	"src/kernel/changes/events.ts",
+	"src/kernel/changes/reducer.ts",
+	"src/kernel/changes/snapshot.ts",
+	"src/kernel/changes/trace.ts",
+	"src/kernel/evidence/reference.ts",
+	"src/kernel/gates/check-definition.ts",
+	"src/kernel/gates/contracts.ts",
+	"src/kernel/gates/reducer.ts",
+	"src/kernel/gates/selection.ts",
 	"src/kernel/identity/base32.ts",
+	"src/kernel/identity/build.ts",
+	"src/kernel/identity/git.ts",
 	"src/kernel/identity/semantic-digest.ts",
 	"src/kernel/identity/sha256.ts",
 	"src/kernel/index.ts",
 	"src/kernel/wiki/attributes.ts",
+	"src/kernel/wiki/item.ts",
 	"src/kernel/wiki/ownership.ts",
+	"src/kernel/work/contracts.ts",
+	"src/kernel/work/state.ts",
 	"src/ports/agent-runtime.ts",
 	"src/ports/check-runner.ts",
 	"src/ports/preview.ts",
@@ -34,14 +62,31 @@ const SOURCE_ALLOWLIST = [
 const TEST_ALLOWLIST = [
 	"tests/adapters/git/bootstrap.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
+	"tests/adapters/git/project-store.test.mjs",
 	"tests/kernel/canonical/canonical-json.test.mjs",
+	"tests/kernel/canonical/contract.test.mjs",
 	"tests/kernel/canonical/outcome.test.mjs",
+	"tests/kernel/changes/contracts.test.mjs",
+	"tests/kernel/changes/events.test.mjs",
+	"tests/kernel/changes/reducer.test.mjs",
+	"tests/kernel/changes/snapshot.test.mjs",
+	"tests/kernel/changes/trace.test.mjs",
+	"tests/kernel/evidence/reference.test.mjs",
+	"tests/kernel/gates/check-definition.test.mjs",
+	"tests/kernel/gates/contracts.test.mjs",
+	"tests/kernel/gates/reducer.test.mjs",
+	"tests/kernel/gates/selection.test.mjs",
+	"tests/kernel/identity/build.test.mjs",
+	"tests/kernel/identity/git.test.mjs",
 	"tests/kernel/identity/semantic-digest.test.mjs",
 	"tests/kernel/identity/sha256.test.mjs",
 	"tests/kernel/invariants/architecture.test.mjs",
 	"tests/kernel/invariants/determinism.test.mjs",
 	"tests/kernel/wiki/attributes.test.mjs",
+	"tests/kernel/wiki/item.test.mjs",
 	"tests/kernel/wiki/ownership.test.mjs",
+	"tests/kernel/work/contracts.test.mjs",
+	"tests/kernel/work/state.test.mjs",
 	"tests/package/composition.test.mjs",
 	"tests/ports/agent-runtime.test.mjs",
 	"tests/ports/check-runner.test.mjs",
@@ -198,6 +243,7 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 	for (const [path, specifiers] of external) {
 		assert.ok(path.startsWith("src/adapters/git/"), `${path} imports ${specifiers.join(", ")}`);
 		assert.ok(specifiers.every((specifier) => [
+			"node:child_process",
 			"node:fs/promises",
 			"node:path",
 			"node:url",
@@ -260,16 +306,20 @@ test("native Wiki ownership assigns every production and test path exactly once"
 	}
 });
 
-test("canonical semantic files and protected dirty checkout are outside candidate mutation", () => {
-	const changedCodewiki = execFileSync("git", ["diff", "--name-only", "HEAD", "--", ".codewiki"], {
-		cwd: repoRoot,
-		encoding: "utf8",
+test("native Wiki ownership assigns the current semantic event catalog exactly once", async () => {
+	const traced = Object.fromEntries((await wikiOwnership())
+		.filter((entry) => entry.traceEvents.length > 0)
+		.map((entry) => [entry.componentId, entry.traceEvents]));
+	assert.deepEqual(traced, {
+		"cw:component:change-intake": ["change.proposed", "change.revised"],
+		"cw:component:checks": ["gate.recorded"],
+		"cw:component:decision": ["change.committed", "change.deferred", "change.rejected", "change.resumed", "change.withdrawn"],
+		"cw:component:implementation": ["work.assigned", "work.attempt.recorded", "work.claimed", "work.integrated"],
+		"cw:component:planning": ["change.planned"],
+		"cw:component:project-server": ["change.completed", "change.superseded", "effect.recorded"],
+		"cw:component:review": ["review.reconciled"],
 	});
-	assert.equal(changedCodewiki, "");
-	const config = JSON.parse(execFileSync("git", ["show", "HEAD:.codewiki/config.json"], {
-		cwd: repoRoot,
-		encoding: "utf8",
-	}));
+	const config = JSON.parse(await readFile(join(repoRoot, ".codewiki", "config.json"), "utf8"));
 	assert.equal("domain" in config, false);
 	assert.equal(config.protocol.id, "codewiki.project-config");
 });

@@ -5,11 +5,15 @@ import {partitionWikiAttributes, type WikiAttributeIssue} from "./attributes.ts"
 export const COMPONENT_OWNERSHIP_ATTRIBUTE = "codewiki.component:ownership";
 
 export type OwnershipIssueCode =
+	| "duplicate_event_owner"
 	| "invalid_component_id"
 	| "invalid_ownership"
 	| "invalid_path"
 	| "invalid_pattern"
-	| "invalid_wiki_attributes";
+	| "invalid_trace_event"
+	| "invalid_wiki_attributes"
+	| "missing_event_owner"
+	| "unknown_trace_event";
 
 export interface OwnershipIssue {
 	readonly code: OwnershipIssueCode;
@@ -31,6 +35,7 @@ export interface ComponentOwnership {
 	readonly testPatterns: readonly string[];
 	readonly roles: readonly ComponentSemanticRole[];
 	readonly generatedViews: readonly string[];
+	readonly traceEvents: readonly string[];
 	readonly testPolicy: "external" | null;
 	readonly testRationale: string | null;
 }
@@ -42,6 +47,7 @@ const OWNERSHIP_FIELDS = Object.freeze([
 	"testPatterns",
 	"testPolicy",
 	"testRationale",
+	"traceEvents",
 ] as const);
 
 export function decodeComponentOwnership(
@@ -93,6 +99,8 @@ export function decodeComponentOwnership(
 	if (!roles.ok) return roles;
 	const generatedViews = decodeGeneratedViews(raw.generatedViews);
 	if (!generatedViews.ok) return generatedViews;
+	const traceEvents = decodeTraceEvents(raw.traceEvents);
+	if (!traceEvents.ok) return traceEvents;
 	const testPolicy = raw.testPolicy;
 	if (testPolicy !== undefined && testPolicy !== "external") {
 		return failure(ownershipIssue(
@@ -125,6 +133,7 @@ export function decodeComponentOwnership(
 		testPatterns: testPatterns.value,
 		roles: roles.value,
 		generatedViews: generatedViews.value,
+		traceEvents: traceEvents.value,
 		testPolicy: testPolicy === "external" ? testPolicy : null,
 		testRationale: typeof testRationale === "string" ? testRationale : null,
 	}));
@@ -159,6 +168,55 @@ export function ownersForPath(
 	}
 	owners.sort(compareText);
 	return success(Object.freeze(owners));
+}
+
+export function buildSemanticEventOwnership(
+	ownership: readonly ComponentOwnership[],
+	currentEvents: readonly string[],
+): Outcome<Readonly<{[event: string]: string}>, OwnershipIssue> {
+	const catalog = [...currentEvents].sort(compareText);
+	if (new Set(catalog).size !== catalog.length || catalog.some((event) => !isTraceEvent(event))) {
+		return failure(ownershipIssue(
+			"invalid_trace_event",
+			"currentEvents",
+			"Current semantic event catalog must contain unique canonical event identities.",
+		));
+	}
+	const current = new Set(catalog);
+	const owners = new Map<string, string>();
+	for (const component of ownership) {
+		for (const event of component.traceEvents) {
+			if (!current.has(event)) {
+				return failure(ownershipIssue(
+					"unknown_trace_event",
+					`${component.componentId}.traceEvents`,
+					`Component claims unknown semantic event ${event}.`,
+				));
+			}
+			const previous = owners.get(event);
+			if (previous !== undefined) {
+				return failure(ownershipIssue(
+					"duplicate_event_owner",
+					`${component.componentId}.traceEvents`,
+					`Semantic event ${event} is also owned by ${previous}.`,
+				));
+			}
+			owners.set(event, component.componentId);
+		}
+	}
+	const output: {[event: string]: string} = Object.create(null) as {[event: string]: string};
+	for (const event of catalog) {
+		const owner = owners.get(event);
+		if (owner === undefined) {
+			return failure(ownershipIssue(
+				"missing_event_owner",
+				"currentEvents",
+				`Semantic event ${event} has no native owner.`,
+			));
+		}
+		output[event] = owner;
+	}
+	return success(Object.freeze(output));
 }
 
 function decodeRoles(
@@ -199,6 +257,40 @@ function decodeRoles(
 		));
 	}
 	return success(Object.freeze(roles));
+}
+
+function decodeTraceEvents(
+	input: CanonicalValue | undefined,
+): Outcome<readonly string[], OwnershipIssue> {
+	if (input === undefined) return success(Object.freeze([]));
+	if (!Array.isArray(input) || input.length > 256) {
+		return failure(ownershipIssue(
+			"invalid_trace_event",
+			`${COMPONENT_OWNERSHIP_ATTRIBUTE}.traceEvents`,
+			"Semantic Trace events must be a bounded array.",
+		));
+	}
+	const events: string[] = [];
+	for (let index = 0; index < input.length; index += 1) {
+		const value = input[index];
+		if (typeof value !== "string" || !isTraceEvent(value)) {
+			return failure(ownershipIssue(
+				"invalid_trace_event",
+				`${COMPONENT_OWNERSHIP_ATTRIBUTE}.traceEvents[${index}]`,
+				"Semantic Trace event identity is not canonical.",
+			));
+		}
+		events.push(value);
+	}
+	events.sort(compareText);
+	if (new Set(events).size !== events.length) {
+		return failure(ownershipIssue(
+			"invalid_trace_event",
+			`${COMPONENT_OWNERSHIP_ATTRIBUTE}.traceEvents`,
+			"Semantic Trace event identities must be unique.",
+		));
+	}
+	return success(Object.freeze(events));
 }
 
 function decodeGeneratedViews(
@@ -340,6 +432,10 @@ function segmentMatches(pattern: string, value: string): boolean {
 		}
 	}
 	return table[pattern.length]?.[value.length] ?? false;
+}
+
+function isTraceEvent(value: string): boolean {
+	return value.length <= 128 && value.normalize("NFC") === value && /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/u.test(value);
 }
 
 function isComponentId(value: string): boolean {

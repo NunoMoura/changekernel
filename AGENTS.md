@@ -15,8 +15,9 @@
 - Dogfood only an immutable release that passed external exact-subject qualification and explicit activation.
 - Never load CodeWiki from this checkout, a mutable package path, or this repository’s `.pi/`. Candidate N+1 never governs itself.
 - Use CodeWiki tools only from the activated release; otherwise use Pi-native tools and compaction.
-- Released controller N qualifies exact committed candidate N+1 outside this checkout. Any correction requires a new candidate and qualification.
-- Pack and test candidates only in disposable external projects with isolated Pi settings.
+- Transitional SK3C–SK3F engineering checkpoints are normal immutable commits with clean exact-commit checks and one CI receipt; they are not release candidates and receive no lifecycle activation.
+- Released controller N qualifies exact committed release candidate N+1 outside this checkout. Any post-freeze correction requires a new commit, unique package version, and qualification.
+- Pack and test release candidates only in disposable external projects with isolated Pi settings.
 - Do not add project-local CodeWiki package links, duplicate skills, executable Plugin paths, or controller pins.
 - Governed KB→Wiki migration is complete. `.codewiki/wiki/**` and `.codewiki/changes/**` are intended truth; `.codewiki/kb/**` and `.codewiki/traces/**` must remain absent. Never dual-read or dual-write.
 - `.codewiki/wiki/**` is desired-state design truth; it contains stable behavior, not refactoring progress or temporary implementation status.
