@@ -37,6 +37,8 @@ export function eventFixture(kind = "change.proposed", payload = {change: change
 		ownerItemId: EVENT_OWNERS[kind],
 		actorId: "cw:actor:maintainer",
 		authorityId: "cw:authority:project-server",
+		commandId: "cw:command:test-event",
+		commandDigest: digest("c"),
 		occurredAt: "2026-09-01T00:00:00Z",
 		expectedProjectHead: oid("1"),
 		expectedChangeTip: kind === "change.proposed" ? null : oid("9"),
@@ -57,11 +59,13 @@ test("semantic event catalog is closed, owned, and exact", () => {
 	assert.equal(event.containingCommit, CONTAINING_COMMIT);
 });
 
-test("event identity binds actor, authority, time, expected heads, predecessor, and payload", () => {
+test("event identity binds actor, authority, command, time, expected heads, predecessor, and payload", () => {
 	const first = eventFixture();
 	for (const override of [
 		{actorId: "cw:actor:other"},
 		{authorityId: "cw:authority:other"},
+		{commandId: "cw:command:other"},
+		{commandDigest: digest("d")},
 		{occurredAt: "2026-09-01T00:00:01Z"},
 		{expectedProjectHead: oid("2")},
 	]) assert.notEqual(eventFixture("change.proposed", first.payload, override).eventDigest, first.eventDigest);
@@ -88,6 +92,8 @@ test("event payload contracts reject legacy parallel authority concepts", () => 
 			ownerItemId: EVENT_OWNERS[kind],
 			actorId: "cw:actor:test",
 			authorityId: "cw:authority:project-server",
+			commandId: "cw:command:legacy-payload",
+			commandDigest: digest("c"),
 			occurredAt: "2026-09-01T00:00:00Z",
 			expectedProjectHead: oid("1"),
 			expectedChangeTip: oid("2"),

@@ -39,7 +39,10 @@ test("Client SDK sends versioned envelopes but returns only semantic Product dat
 	assert.equal(observed.operation, "project.discover");
 	assert.equal(observed.authentication.proof, "proof");
 	assert.deepEqual(Object.keys(client.value).sort(), [
-		"alignment", "audit", "capabilities", "changes", "checks", "discover", "review", "status", "wiki", "work",
+		"admitPlanning", "admitWork", "alignment", "audit", "capabilities", "changes", "checks", "commitDecision",
+		"completeChange", "deferDecision", "discover", "evaluateDecision", "evaluatePlanning", "evaluateReview",
+		"evaluateWork", "integrateWork", "proposeChanges", "reconcileReview", "rejectDecision", "requestProtectedEffect",
+		"resumeDecision", "review", "reviseChange", "status", "supersedeChange", "wiki", "withdrawDecision", "work",
 	]);
 });
 

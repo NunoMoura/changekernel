@@ -63,7 +63,7 @@ export interface ReducedChange {
 }
 
 export interface ChangeReductionIssue {
-	readonly code: "invalid_transition" | "reduction_failed";
+	readonly code: "duplicate_identity" | "invalid_transition" | "reduction_failed";
 	readonly eventIndex: number;
 	readonly message: string;
 }
@@ -101,12 +101,15 @@ export function reduceChangeTrace(trace: ChangeTrace): Outcome<ReducedChange, Ch
 		supersedingChangeId: null,
 		effects: [],
 	};
+	const commandIds = new Set<string>();
 	for (let index = 0; index < trace.events.length; index += 1) {
 		const event = trace.events[index];
 		if (!event) return failure(issue(index, "Trace event is absent."));
 		if (index === 0 ? event.expectedChangeTip !== null : event.expectedChangeTip === null) {
 			return failure(issue(index, "Only first proposal event may have a null expected Change tip."));
 		}
+		if (commandIds.has(event.commandId)) return failure(issue(index, "Change Event command identity is duplicated.", "duplicate_identity"));
+		commandIds.add(event.commandId);
 		const reduced = applyEvent(state, event, index);
 		if (!reduced.ok) return reduced;
 	}

@@ -24,7 +24,7 @@ import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 import {decodeWorkValue, validateWorkPlan, workPlanDigest, type Work} from "../work/contracts.ts";
 import {decodeChangeValue, type Change} from "./contracts.ts";
 
-export const CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "1.0.0");
+export const CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "1.1.0");
 export const CONTAINING_COMMIT = "containing_commit" as const;
 export const CHANGE_EVENT_KINDS = Object.freeze([
 	"change.committed",
@@ -129,6 +129,8 @@ export interface ChangeEventBody {
 	readonly ownerItemId: string;
 	readonly actorId: string;
 	readonly authorityId: string;
+	readonly commandId: string;
+	readonly commandDigest: Sha256Digest;
 	readonly occurredAt: string;
 	readonly expectedProjectHead: GitOid;
 	readonly expectedChangeTip: GitOid | null;
@@ -166,6 +168,8 @@ export function decodeChangeEventValue(
 	const record = exactRecord("Change event", value, path, [
 		"actorId",
 		"authorityId",
+		"commandDigest",
+		"commandId",
 		"containingCommit",
 		"eventDigest",
 		"expectedChangeTip",
@@ -199,6 +203,8 @@ export function decodeChangeEventValue(
 		ownerItemId,
 		actorId: namespacedField(record, "actorId", path),
 		authorityId: namespacedField(record, "authorityId", path),
+		commandId: namespacedField(record, "commandId", path),
+		commandDigest: digestField(record, "commandDigest", path),
 		occurredAt: textField("Change event", record, "occurredAt", path, {
 			maximumBytes: 35,
 			pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u,

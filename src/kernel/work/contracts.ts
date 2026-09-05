@@ -184,12 +184,69 @@ export function validateWorkPlan(changeId: string, work: readonly Work[]): Outco
 	for (const workId of byId.keys()) {
 		if (!visit(workId)) return failure(workPlanIssue(workId, "Work dependencies must form an acyclic graph."));
 	}
+	for (let leftIndex = 0; leftIndex < work.length; leftIndex += 1) {
+		for (let rightIndex = leftIndex + 1; rightIndex < work.length; rightIndex += 1) {
+			const left = work[leftIndex] as Work;
+			const right = work[rightIndex] as Work;
+			if (workScopesConflict(left, right) && !dependsTransitively(left.workId, right.workId, byId) && !dependsTransitively(right.workId, left.workId, byId)) {
+				return failure(workPlanIssue(`${left.workId}:${right.workId}`, "Overlapping writable Work scopes require an explicit dependency order."));
+			}
+		}
+	}
 	const ordered = [...work].sort((left, right) => left.ordinal - right.ordinal || compareText(left.workId, right.workId));
 	return success(Object.freeze(ordered));
 }
 
 export function workScopesConflict(left: Work, right: Work): boolean {
 	return left.writablePaths.some((leftPath) => right.writablePaths.some((rightPath) => patternsOverlap(leftPath, rightPath)));
+}
+
+export function workAllowsPath(work: Work, path: string): boolean {
+	return isPortableProjectPath(path) && work.writablePaths.some((pattern) => patternMatchesPath(pattern, path));
+}
+
+function dependsTransitively(workId: string, dependencyId: string, byId: ReadonlyMap<string, Work>): boolean {
+	const pending = [...(byId.get(workId)?.dependencies ?? [])];
+	const visited = new Set<string>();
+	while (pending.length > 0) {
+		const current = pending.pop() as string;
+		if (current === dependencyId) return true;
+		if (visited.has(current)) continue;
+		visited.add(current);
+		pending.push(...(byId.get(current)?.dependencies ?? []));
+	}
+	return false;
+}
+
+function patternMatchesPath(pattern: string, path: string): boolean {
+	let expression = "^";
+	for (let index = 0; index < pattern.length; index += 1) {
+		const character = pattern[index] as string;
+		if (character === "*" && pattern[index + 1] === "*") {
+			expression += ".*";
+			index += 1;
+		} else if (character === "*") expression += "[^/]*";
+		else if (character === "?") expression += "[^/]";
+		else if (character === "{") {
+			const close = pattern.indexOf("}", index + 1);
+			if (close < 0) return false;
+			const alternatives = pattern.slice(index + 1, close).split(",");
+			if (alternatives.some((entry) => entry.length === 0)) return false;
+			expression += `(?:${alternatives.map(escapeRegularExpression).join("|")})`;
+			index = close;
+		} else expression += escapeRegularExpression(character);
+	}
+	return new RegExp(`${expression}$`, "u").test(path);
+}
+
+function escapeRegularExpression(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function isPortableProjectPath(path: string): boolean {
+	return typeof path === "string" && path.length > 0 && path.length <= 4_096 && path.normalize("NFC") === path &&
+		!path.startsWith("/") && !path.endsWith("/") && !/[\\\0\r\n]/u.test(path) &&
+		path.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== ".." && segment !== ".git");
 }
 
 function decodeTargets(input: readonly CanonicalValue[], parentPath: string): readonly WorkTarget[] {

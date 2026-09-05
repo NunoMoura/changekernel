@@ -5,7 +5,7 @@ import {projectStoreCasRequestDigest, PROJECT_STORE_PORT_PROTOCOL} from "../../s
 test("Project Store port has one frozen host-neutral protocol identity", () => {
 	assert.deepEqual(PROJECT_STORE_PORT_PROTOCOL, {
 		id: "codewiki.port.project-store",
-		version: "1.1.0",
+		version: "1.2.0",
 	});
 	assert.ok(Object.isFrozen(PROJECT_STORE_PORT_PROTOCOL));
 	assert.deepEqual(Object.keys(PROJECT_STORE_PORT_PROTOCOL).sort(), ["id", "version"]);
@@ -16,9 +16,11 @@ test("Project Store request digest binds every CAS field except itself", () => {
 	const request = {
 		repositoryId: "cw:repository:test",
 		objectFormat: "sha1",
-		ref: "refs/codewiki/changes/CHG-test",
-		expectedOld: null,
-		newOid: oid,
+		updates: [{
+			ref: "refs/codewiki/changes/CHG-test",
+			expectedOld: null,
+			newOid: oid,
+		}],
 		reflogMessage: "test",
 		authorizationId: "cw:authorization:test",
 		requestDigest: "sha256:" + "0".repeat(64),

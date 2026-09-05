@@ -21,6 +21,7 @@ import {createWork, workPlanDigest} from "../../../src/kernel/work/contracts.ts"
 import {CHECK_RUNNER_PORT_PROTOCOL} from "../../../src/ports/check-runner.ts";
 import {createProjectAccessPolicy, projectAccessProofDigest} from "../../../src/server/authorization/policy.ts";
 import {createProjectServer} from "../../../src/server/index.ts";
+import {createMemoryProjectServerFacts} from "../../../src/server/recovery/facts.ts";
 
 const REPOSITORY_ID = "cw:repository:server-api-test";
 const CHANGE_ID = "CHG-server-api-test";
@@ -33,6 +34,7 @@ let server;
 let client;
 let snapshotReads = 0;
 let requestOrdinal = 0;
+const facts = createMemoryProjectServerFacts().value;
 
 before(async () => {
 	root = await mkdtemp(join(tmpdir(), "codewiki-sk3e-server-"));
@@ -81,7 +83,7 @@ before(async () => {
 	});
 	const policy = accessPolicy({changeIds: null, wikiItemIds: null});
 	const createdServer = createProjectServer({
-		ports: {projectStore: countedStore, checkRunner: checkRunner()},
+		ports: {projectStore: countedStore, checkRunner: checkRunner(), facts},
 		accessPolicy: policy,
 		project: {
 			projectName: "Server API Test",
@@ -225,7 +227,7 @@ test("audit is the explicit source for commits, digests, refs, provenance, and r
 
 test("authorization hides Change existence and transitively unsafe Wiki Items", async () => {
 	const limitedServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner()},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts},
 		accessPolicy: accessPolicy({changeIds: [CHANGE_ID], wikiItemIds: ["cw:component:project-server"]}),
 		project: {
 			projectName: "Server API Test",
@@ -283,7 +285,7 @@ test("a moving canonical selector resolves once and every dependent read stays o
 		},
 	});
 	const racingServer = createProjectServer({
-		ports: {projectStore: racingStore, checkRunner: checkRunner()},
+		ports: {projectStore: racingStore, checkRunner: checkRunner(), facts},
 		accessPolicy: accessPolicy({changeIds: null, wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
@@ -316,7 +318,7 @@ test("malformed current Change state stops normal reads while source audit remai
 	assert.equal(audit.ok, true);
 	assert.equal(audit.value.snapshot.commit.algorithm, "sha1");
 	const hiddenServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner()},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts},
 		accessPolicy: accessPolicy({changeIds: [], wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
@@ -337,7 +339,7 @@ test("malformed current Change state stops normal reads while source audit remai
 	assert.equal(hiddenStatus.ok, true);
 	assert.equal(hiddenStatus.value.changes.total, 0);
 	const boundedServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner()},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts},
 		accessPolicy: accessPolicy({changeIds: null, wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
@@ -475,6 +477,8 @@ function append(trace, owners, projectHead, kind, payload) {
 		ownerItemId: owners[kind],
 		actorId: "cw:actor:integration",
 		authorityId: "cw:authority:project-server",
+		commandId: `cw:command:read-api-${trace.events.length + 1}`,
+		commandDigest: digest("f"),
 		occurredAt: `2026-09-05T00:00:0${trace.events.length + 1}Z`,
 		expectedProjectHead: oid(projectHead),
 		expectedChangeTip: previous === null ? null : oid("9".repeat(40)),

@@ -29,6 +29,7 @@ const SOURCE_ALLOWLIST = [
 	"src/adapters/git/project-store.ts",
 	"src/adapters/git/wiki.ts",
 	"src/api/client/index.ts",
+	"src/api/contracts/command.ts",
 	"src/api/contracts/read.ts",
 	"src/api/transport/envelope.ts",
 	"src/index.ts",
@@ -67,10 +68,14 @@ const SOURCE_ALLOWLIST = [
 	"src/ports/project-store.ts",
 	"src/product.ts",
 	"src/server/authorization/policy.ts",
+	"src/server/commands/gates.ts",
+	"src/server/commands/lifecycle.ts",
+	"src/server/commands/repository.ts",
 	"src/server/index.ts",
 	"src/server/queries/project.ts",
 	"src/server/queries/source.ts",
 	"src/server/queries/wiki.ts",
+	"src/server/recovery/facts.ts",
 ];
 const TEST_ALLOWLIST = [
 	"tests/adapters/git/bootstrap.test.mjs",
@@ -115,6 +120,7 @@ const TEST_ALLOWLIST = [
 	"tests/ports/preview.test.mjs",
 	"tests/ports/project-store.test.mjs",
 	"tests/server/authorization/policy.test.mjs",
+	"tests/server/commands/lifecycle.test.mjs",
 	"tests/server/index.test.mjs",
 	"tests/server/queries/read-api.test.mjs",
 ];

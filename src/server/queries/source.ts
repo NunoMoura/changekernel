@@ -167,7 +167,8 @@ async function readChanges(
 		const blob = await store.readBlob({
 			repositoryId: configuration.repositoryId,
 			objectFormat: configuration.objectFormat,
-			oid: entry.oid,
+			commit: snapshot.commit,
+			path: entry.path,
 			maximumBytes: configuration.limits.maximumTraceBytes,
 		});
 		if (!blob.ok) return failure(storeIssue(blob.error, "read_changes"));

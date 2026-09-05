@@ -1,5 +1,5 @@
-import {PRODUCT_READ_OPERATIONS} from "./api/contracts/read.ts";
 import {
+	PRODUCT_OPERATIONS,
 	PRODUCT_TRANSPORT_REQUEST_PROTOCOL,
 	PRODUCT_TRANSPORT_RESPONSE_PROTOCOL,
 } from "./api/transport/envelope.ts";
@@ -15,11 +15,12 @@ import {PREVIEW_PORT_PROTOCOL} from "./ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL} from "./ports/project-store.ts";
 import {PROJECT_ACCESS_POLICY_PROTOCOL} from "./server/authorization/policy.ts";
 import {PROJECT_SERVER_PROTOCOL} from "./server/index.ts";
+import {PROJECT_SERVER_FACTS_PROTOCOL} from "./server/recovery/facts.ts";
 
 export interface CodewikiProductPolicy {
 	readonly protocol: Readonly<{id: "codewiki.product-policy"; version: "1.0.0"}>;
 	readonly productId: "codewiki";
-	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3e.2"}>;
+	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3f.1"}>;
 	readonly projectConfiguration: Readonly<{
 		protocol: Readonly<{id: "codewiki.project-config"; version: "2.0.0"}>;
 		semanticRoots: readonly [".codewiki/wiki/items", ".codewiki/changes"];
@@ -34,10 +35,12 @@ export interface CodewikiProductPolicy {
 		stages: readonly ["decision", "planning", "implementation", "review"];
 		roles: readonly ["decision", "planning", "worker", "review", "model-check"];
 		gateAuthority: "facts-only";
+		mutationAuthority: "project-server";
+		protectedEffects: "separate-capability";
 	}>;
 	readonly ports: readonly CanonicalValue[];
 	readonly api: Readonly<{
-		operations: typeof PRODUCT_READ_OPERATIONS;
+		operations: typeof PRODUCT_OPERATIONS;
 		requestProtocol: typeof PRODUCT_TRANSPORT_REQUEST_PROTOCOL;
 		responseProtocol: typeof PRODUCT_TRANSPORT_RESPONSE_PROTOCOL;
 		serverProtocol: typeof PROJECT_SERVER_PROTOCOL;
@@ -60,7 +63,7 @@ export interface CodewikiProductPolicy {
 const POLICY_INPUT = {
 	protocol: {id: "codewiki.product-policy", version: "1.0.0"},
 	productId: "codewiki",
-	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3e.2"},
+	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3f.1"},
 	projectConfiguration: {
 		protocol: {id: "codewiki.project-config", version: "2.0.0"},
 		semanticRoots: [".codewiki/wiki/items", ".codewiki/changes"],
@@ -75,15 +78,18 @@ const POLICY_INPUT = {
 		stages: ["decision", "planning", "implementation", "review"],
 		roles: ["decision", "planning", "worker", "review", "model-check"],
 		gateAuthority: "facts-only",
+		mutationAuthority: "project-server",
+		protectedEffects: "separate-capability",
 	},
 	ports: [
 		PROJECT_STORE_PORT_PROTOCOL,
 		CHECK_RUNNER_PORT_PROTOCOL,
+		{...PROJECT_SERVER_FACTS_PROTOCOL},
 		AGENT_RUNTIME_PORT_PROTOCOL,
 		PREVIEW_PORT_PROTOCOL,
 	],
 	api: {
-		operations: PRODUCT_READ_OPERATIONS,
+		operations: PRODUCT_OPERATIONS,
 		requestProtocol: {...PRODUCT_TRANSPORT_REQUEST_PROTOCOL},
 		responseProtocol: {...PRODUCT_TRANSPORT_RESPONSE_PROTOCOL},
 		serverProtocol: {...PROJECT_SERVER_PROTOCOL},

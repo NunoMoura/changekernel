@@ -1,6 +1,6 @@
 # CodeWiki
 
-CodeWiki is a governed development system built around a deterministic Semantic Kernel and one authoritative Project Server. This repository currently contains the clean Kernel foundation, semantic lifecycle reducers, exact Git-backed Wiki reading, bounded derived Views, Product policy, authenticated read-only Project Server and Client SDK surfaces, four narrow port contracts, and a bounded project bootstrap adapter.
+CodeWiki is a governed development system built around a deterministic Semantic Kernel and one authoritative Project Server. This repository currently contains the clean Kernel foundation, semantic lifecycle reducers, exact Git-backed Wiki reading and mutation, bounded derived Views, Product policy, authenticated Project Server and Client SDK surfaces, four narrow host-neutral port contracts, a private Gate-facts boundary, and a bounded project bootstrap adapter.
 
 The package remains `@nunomoura/codewiki`. This foundation deliberately removes the previous Domain, KB/OKF, Backend compatibility, Runtime Build compatibility, migration, provider, and Pi-extension implementation rather than carrying those systems behind aliases. Git history and sealed release evidence preserve the obsolete implementation.
 
@@ -17,12 +17,13 @@ The active source tree contains:
 - canonical Wiki files, complete relationship and retired-ID validation, atomic transaction post-state, and deterministic bounded list, get, dictionary, search, graph, history, attribution, provenance-inspection, and semantic-diff Views;
 - exact Git fallback whenever optional private Wiki indexes are absent, stale, invalid, or forged;
 - immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and passive Check Pack resources;
-- an authenticated Project Server that composes the qualified Project Store and Check Runner, resolves one exact source, applies Actor authorization/redaction, retains bounded request replay, and serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads;
-- a version-neutral Client SDK over digest-bound `codewiki.product-request@1.0.0` and `codewiki.product-response@1.0.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
+- an authenticated Project Server that composes the qualified Project Store, Check Runner, and immutable Gate-facts boundary; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
+- atomic Change proposal and revision, Decision, Planning, Work admission and integration, Review reconciliation, completion, supersession, and separately authorized protected-effect commands with exact expected-head binding and deterministic recovery;
+- a version-neutral Client SDK over digest-bound `codewiki.product-request@1.1.0` and `codewiki.product-response@1.1.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
 - typed unavailable Agent Runtime and Preview capabilities until qualified adapters exist; and
 - an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and digest-verified passive Check Packs.
 
-Check execution commands, Wiki writes, lifecycle mutation authority, Stage Loops, Preview effects, and DSH execution remain intentionally unavailable until their governed roadmap milestones are implemented and activated.
+Local Check execution, Wiki mutation, and lifecycle transitions are implemented behind Project Server authority. Agent Runtime, Preview execution, DSH execution, and release activation remain intentionally unavailable until their governed roadmap milestones are implemented and qualified.
 
 ## Install and import
 
@@ -35,13 +36,14 @@ import {
   bootstrapCodewikiProject,
   createCodewikiClient,
   createProductTransportRequest,
+  createMemoryProjectServerFacts,
   createProjectAccessPolicy,
   createProjectServer,
   decodeProductTransportResponse,
 } from "@nunomoura/codewiki";
 ```
 
-Custom transport Clients can use `createProductTransportRequest` and `decodeProductTransportResponse` without importing Kernel internals. Normal Client methods are `discover`, `capabilities`, `status`, `wiki`, `changes`, `checks`, `work`, `review`, and `alignment`. `audit` is the explicit technical-evidence read. Every call supplies a repository identity, request identity, expiry, and authenticated proof; state reads additionally select an exact or once-resolved source and carry operation-specific bounds. No `./project-server`, `./runtime`, `./checks`, or Pi extension subpath is published.
+Custom transport Clients can use `createProductTransportRequest` and `decodeProductTransportResponse` without importing Kernel internals. Normal Client reads are `discover`, `capabilities`, `status`, `wiki`, `changes`, `checks`, `work`, `review`, and `alignment`; lifecycle methods cover proposal through completion, supersession, and protected effects. `audit` is the explicit technical-evidence read. Every call supplies a repository identity, request identity, expiry, and authenticated proof; state reads additionally select an exact or once-resolved source and carry operation-specific bounds. No `./project-server`, `./runtime`, `./checks`, or Pi extension subpath is published.
 
 ## Bootstrap
 
@@ -77,12 +79,14 @@ The bootstrap never creates `.codewiki/kb/`, `.codewiki/traces/`, `.codewiki/run
 
 The Kernel imports only bounded deterministic Kernel modules. It has no filesystem, Git, process, network, provider, UI, clock, randomness, adapter, or environment access. Expected validation failures return typed outcomes.
 
-The Project Server is the sole semantic control plane. It currently binds Project Store and Check Runner internally while reporting Agent Runtime and Preview as unavailable; no Client receives any port or adapter handle. Ports report or perform bounded effects but never grant lifecycle authority:
+The Project Server is the sole semantic control plane. It binds Project Store, Check Runner, and owner-private immutable Gate facts internally while reporting Agent Runtime and Preview as unavailable; no Client receives any port, fact-store, adapter, credential, ref, or raw writer handle. Ports report or perform bounded effects but never grant lifecycle authority:
 
 1. Project Store
 2. Check Runner
 3. Agent Runtime
 4. Preview
+
+Gate facts remain a separate Project Server recovery boundary rather than a Client capability or authority source.
 
 Product policy and tracked Project configuration authorize capabilities. Gates report facts; they do not authorize transitions. Product N remains the external controller throughout the SK3 transition, so this candidate never governs, qualifies, admits, completes, activates, or promotes itself.
 

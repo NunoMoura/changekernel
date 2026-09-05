@@ -11,21 +11,47 @@ export type {BootstrapFailure, BootstrapReceipt, BootstrapRequest, BootstrapResu
 export type {CodewikiProductPolicy} from "./product.ts";
 export {createProjectAccessPolicy, projectAccessProofDigest} from "./server/authorization/policy.ts";
 export {createProjectServer, PROJECT_SERVER_PROTOCOL} from "./server/index.ts";
+export {createMemoryProjectServerFacts} from "./server/recovery/facts.ts";
 
 export type {
 	AlignmentReadCall,
 	AuditReadCall,
 	ChangesReadCall,
 	ChecksReadCall,
+	ChangeCommandCall,
 	CodewikiClient,
+	PlanningCommandCall,
 	ProductCallOptions,
 	ProductClientInput,
 	ProductTransport,
 	ProjectStatusCall,
+	ProposeChangesCall,
+	ProtectedEffectCall,
+	ReasonedChangeCommandCall,
 	ReviewReadCall,
+	ReviseChangeCall,
+	SupersedeChangeCall,
 	WikiReadCall,
+	WorkCandidateCall,
+	WorkCommandCall,
 	WorkReadCall,
 } from "./api/client/index.ts";
+export type {
+	ChangeCommandInput,
+	PlanWorkInput,
+	PlanningCommandInput,
+	ProductCommandInput,
+	ProductCommandOperation,
+	ProposalInput,
+	ProposeChangesInput,
+	ProtectedEffectInput,
+	ReasonedChangeCommandInput,
+	ReviseChangeInput,
+	SupersedeChangeInput,
+	WikiPatchInput,
+	WorkCandidateInput,
+	WorkCommandInput,
+} from "./api/contracts/command.ts";
 export type {
 	AlignmentReadInput,
 	AuditReadInput,
@@ -40,6 +66,8 @@ export type {
 } from "./api/contracts/read.ts";
 export type {
 	ProductError,
+	ProductInput,
+	ProductOperation,
 	ProductTransportRequest,
 	ProductTransportResponse,
 } from "./api/transport/envelope.ts";
@@ -53,3 +81,5 @@ export type {
 	ProjectServerInput,
 	ProjectServerProject,
 } from "./server/index.ts";
+export type {ProtectedEffectConfiguration} from "./server/commands/lifecycle.ts";
+export type {ProjectServerFactsPort} from "./server/recovery/facts.ts";

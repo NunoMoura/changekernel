@@ -13,11 +13,12 @@ import {
 import type {CanonicalValue} from "../../kernel/canonical/json.ts";
 import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
 import {decodeSha256Digest, sha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
-import {PRODUCT_READ_OPERATIONS, type ProductReadOperation} from "../../api/contracts/read.ts";
 import {
+	PRODUCT_OPERATIONS,
 	isCanonicalRequestTimestamp,
 	productError,
 	type ProductError,
+	type ProductOperation,
 	type ProductTransportRequest,
 } from "../../api/transport/envelope.ts";
 
@@ -29,7 +30,7 @@ export interface ProjectAccessGrant {
 	readonly actorId: string;
 	readonly proofDigest: Sha256Digest;
 	readonly expiresAt: string;
-	readonly capabilities: readonly ProductReadOperation[];
+	readonly capabilities: readonly ProductOperation[];
 	readonly wikiItemIds: readonly string[] | null;
 	readonly changeIds: readonly string[] | null;
 }
@@ -38,7 +39,7 @@ export interface AuthorizedProjectActor {
 	readonly authorizationId: string;
 	readonly identityRef: string;
 	readonly actorId: string;
-	readonly capabilities: readonly ProductReadOperation[];
+	readonly capabilities: readonly ProductOperation[];
 	readonly wikiItemIds: readonly string[] | null;
 	readonly changeIds: readonly string[] | null;
 }
@@ -176,10 +177,10 @@ function decodeGrant(value: CanonicalValue, index: number): ProjectAccessGrant {
 	const expiresAt = textField(CONTRACT, record, "expiresAt", path, {maximumBytes: 20});
 	if (!isCanonicalRequestTimestamp(expiresAt)) rejectContract("invalid_field", CONTRACT, `${path}.expiresAt`, "Expiry timestamp is invalid.");
 	const capabilities = sortedUniqueTextArray(CONTRACT, requiredField(CONTRACT, record, "capabilities", path), `${path}.capabilities`, {
-		maximumEntries: PRODUCT_READ_OPERATIONS.length,
+		maximumEntries: PRODUCT_OPERATIONS.length,
 		maximumBytes: 64,
 	});
-	if (capabilities.length === 0 || !capabilities.every(isProductReadOperation)) {
+	if (capabilities.length === 0 || !capabilities.every(isProductOperation)) {
 		rejectContract("invalid_field", CONTRACT, `${path}.capabilities`, "Access grant capabilities are invalid.");
 	}
 	return Object.freeze({
@@ -213,8 +214,8 @@ function namespacedField(record: Readonly<{[key: string]: CanonicalValue}>, fiel
 	return value;
 }
 
-function isProductReadOperation(value: string): value is ProductReadOperation {
-	return (PRODUCT_READ_OPERATIONS as readonly string[]).includes(value);
+function isProductOperation(value: string): value is ProductOperation {
+	return (PRODUCT_OPERATIONS as readonly string[]).includes(value);
 }
 
 function constantTimeText(left: string, right: string): boolean {

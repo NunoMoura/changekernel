@@ -18,25 +18,36 @@ import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts"
 import {semanticDigest, type SemanticIdentityIssue} from "../../kernel/identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {
+	PRODUCT_COMMAND_OPERATIONS,
+	decodeProductCommandInput,
+	type ProductCommandInput,
+	type ProductCommandOperation,
+} from "../contracts/command.ts";
+import {
 	PRODUCT_READ_OPERATIONS,
 	decodeProductReadInput,
 	type ProductReadInput,
 	type ProductReadOperation,
 } from "../contracts/read.ts";
 
-export const PRODUCT_TRANSPORT_REQUEST_PROTOCOL = protocolIdentity("codewiki.product-request", "1.0.0");
-export const PRODUCT_TRANSPORT_RESPONSE_PROTOCOL = protocolIdentity("codewiki.product-response", "1.0.0");
+export const PRODUCT_TRANSPORT_REQUEST_PROTOCOL = protocolIdentity("codewiki.product-request", "1.1.0");
+export const PRODUCT_TRANSPORT_RESPONSE_PROTOCOL = protocolIdentity("codewiki.product-response", "1.1.0");
 export const PRODUCT_CLIENT_KINDS = Object.freeze(["app", "cli", "agent", "mcp", "sdk", "other"] as const);
 export const PRODUCT_ERROR_CODES = Object.freeze([
 	"authentication_required",
 	"authorization_denied",
+	"conflict",
 	"expired_request",
+	"gate_failed",
+	"gate_stopped",
 	"idempotency_conflict",
 	"internal_failure",
 	"invalid_project_state",
 	"invalid_request",
 	"limit_exceeded",
 	"not_found",
+	"operation_unknown",
+	"reconciliation_required",
 	"source_not_found",
 	"source_stale",
 	"transport_unavailable",
@@ -45,6 +56,12 @@ export const PRODUCT_ERROR_CODES = Object.freeze([
 
 export type ProductClientKind = (typeof PRODUCT_CLIENT_KINDS)[number];
 export type ProductErrorCode = (typeof PRODUCT_ERROR_CODES)[number];
+export type ProductOperation = ProductReadOperation | ProductCommandOperation;
+export type ProductInput = ProductReadInput | ProductCommandInput;
+export const PRODUCT_OPERATIONS: readonly ProductOperation[] = Object.freeze([
+	...PRODUCT_READ_OPERATIONS,
+	...PRODUCT_COMMAND_OPERATIONS,
+].sort(compareText));
 
 export interface ProductClientIdentity {
 	readonly kind: ProductClientKind;
@@ -63,7 +80,7 @@ export interface ProductTransportRequestBody {
 	readonly client: ProductClientIdentity;
 	readonly authentication: ProductAuthentication;
 	readonly expiresAt: string;
-	readonly operation: ProductReadOperation;
+	readonly operation: ProductOperation;
 	readonly input: CanonicalValue;
 }
 
@@ -82,7 +99,7 @@ export interface ProductTransportResponseBody {
 	readonly protocol: typeof PRODUCT_TRANSPORT_RESPONSE_PROTOCOL;
 	readonly requestId: string;
 	readonly requestDigest: Sha256Digest;
-	readonly operation: ProductReadOperation;
+	readonly operation: ProductOperation;
 	readonly status: "ok" | "error";
 	readonly data: CanonicalValue | null;
 	readonly binding: CanonicalValue | null;
@@ -95,8 +112,8 @@ export interface ProductTransportResponse extends ProductTransportResponseBody {
 
 export type TransportEnvelopeIssue = CanonicalIssue | ContractIssue | SemanticIdentityIssue;
 
-const REQUEST_CONTRACT = "codewiki.product-request@1.0.0";
-const RESPONSE_CONTRACT = "codewiki.product-response@1.0.0";
+const REQUEST_CONTRACT = "codewiki.product-request@1.1.0";
+const RESPONSE_CONTRACT = "codewiki.product-response@1.1.0";
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u;
 
 export function createProductTransportRequest(input: Readonly<{
@@ -105,10 +122,10 @@ export function createProductTransportRequest(input: Readonly<{
 	client: ProductClientIdentity;
 	authentication: ProductAuthentication;
 	expiresAt: string;
-	operation: ProductReadOperation;
-	input: ProductReadInput;
+	operation: ProductOperation;
+	input: ProductInput;
 }>): Outcome<ProductTransportRequest, TransportEnvelopeIssue> {
-	const canonicalInput = decodeProductReadInput(input.operation, input.input);
+	const canonicalInput = decodeOperationInput(input.operation, input.input);
 	if (!canonicalInput.ok) return canonicalInput;
 	const body = Object.freeze({
 		protocol: PRODUCT_TRANSPORT_REQUEST_PROTOCOL,
@@ -140,7 +157,7 @@ export function decodeProductTransportRequest(
 			client: decodeClient(requiredField(REQUEST_CONTRACT, record, "client")),
 			authentication: decodeAuthentication(requiredField(REQUEST_CONTRACT, record, "authentication")),
 			expiresAt: timestampField(record, "expiresAt"),
-			operation: literalField(REQUEST_CONTRACT, record, "operation", PRODUCT_READ_OPERATIONS),
+			operation: literalField(REQUEST_CONTRACT, record, "operation", PRODUCT_OPERATIONS),
 			input: requiredField(REQUEST_CONTRACT, record, "input"),
 		});
 		const requestDigest = digestField(record, "requestDigest");
@@ -197,7 +214,7 @@ export function decodeProductTransportResponse(
 			protocol: PRODUCT_TRANSPORT_RESPONSE_PROTOCOL,
 			requestId: namespacedField(record, "requestId", RESPONSE_CONTRACT),
 			requestDigest: digestField(record, "requestDigest", RESPONSE_CONTRACT),
-			operation: literalField(RESPONSE_CONTRACT, record, "operation", PRODUCT_READ_OPERATIONS),
+			operation: literalField(RESPONSE_CONTRACT, record, "operation", PRODUCT_OPERATIONS),
 			status,
 			data,
 			binding,
@@ -224,6 +241,19 @@ export function isCanonicalRequestTimestamp(value: string): boolean {
 	if (!TIMESTAMP.test(value)) return false;
 	const parsed = Date.parse(value);
 	return Number.isFinite(parsed) && new Date(parsed).toISOString().replace(".000Z", "Z") === value;
+}
+
+function decodeOperationInput(
+	operation: ProductOperation,
+	input: ProductInput,
+): Outcome<ProductInput, ContractIssue> {
+	return isReadOperation(operation)
+		? decodeProductReadInput(operation, input)
+		: decodeProductCommandInput(operation, input);
+}
+
+function isReadOperation(operation: ProductOperation): operation is ProductReadOperation {
+	return (PRODUCT_READ_OPERATIONS as readonly ProductOperation[]).includes(operation);
 }
 
 function normalizeResponseOutcome(
@@ -287,4 +317,10 @@ function digestField(record: CanonicalRecord, field: string, contract = REQUEST_
 	const decoded = decodeSha256Digest(value);
 	if (!decoded.ok) rejectContract("invalid_field", contract, `$.${field}`, decoded.error.message);
 	return decoded.value;
+}
+
+function compareText(left: string, right: string): number {
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
 }

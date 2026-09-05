@@ -15,25 +15,35 @@ import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
 import {decodeSha256Digest} from "../../kernel/identity/sha256.ts";
 import {
 	PROJECT_STORE_PORT,
+	projectStoreBlobWriteRequestDigest,
 	projectStoreCasRequestDigest,
 	projectStoreCommitRequestDigest,
+	projectStoreTreeWriteRequestDigest,
 	type GitCommitIdentity,
 	type ProjectStoreBlob,
 	type ProjectStoreBlobRequest,
+	type ProjectStoreBlobWriteReceipt,
+	type ProjectStoreBlobWriteRequest,
 	type ProjectStoreCasReceipt,
 	type ProjectStoreCasRequest,
 	type ProjectStoreCommitRequest,
 	type ProjectStoreIssue,
 	type ProjectStorePort,
 	type ProjectStoreReadRequest,
+	type ProjectStoreRefUpdate,
 	type ProjectStoreTree,
 	type ProjectStoreTreeEntry,
+	type ProjectStoreTreeMutation,
 	type ProjectStoreTreeRequest,
+	type ProjectStoreTreeWriteReceipt,
+	type ProjectStoreTreeWriteRequest,
 } from "../../ports/project-store.ts";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const MAX_COMMIT_MESSAGE_BYTES = 1024 * 1024;
+const MAX_OBJECT_BYTES = 4 * 1024 * 1024;
+const MAX_TREE_MUTATIONS = 65_536;
 const TEXT = new TextDecoder("utf-8", {fatal: true});
 
 export interface GitProjectStoreOptions {
@@ -47,6 +57,11 @@ export interface GitProjectStoreOptions {
 interface GitCommandFailure {
 	readonly kind: "failed" | "limit" | "timeout";
 	readonly message: string;
+}
+
+interface MutableTreeNode {
+	readonly entries: Map<string, ProjectStoreTreeEntry>;
+	readonly directories: Map<string, MutableTreeNode>;
 }
 
 class GitProjectStoreAdapter implements ProjectStorePort {
@@ -77,7 +92,10 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (request.selector.kind === "ref") {
 			const ref = decodeGitRef(request.selector.ref);
 			if (!ref.ok || !isManagedProjectRef(ref.value)) return failure(this.#issue("invalid_ref", "read_snapshot", "Ref is not canonical Project Store state."));
-			revision = ref.value;
+			const current = this.#readOptionalRef(ref.value, "read_snapshot");
+			if (!current.ok) return current;
+			if (current.value === null) return failure(this.#issue("not_found", "read_snapshot", "Requested Project ref is absent."));
+			revision = current.value.hex;
 		} else {
 			const oid = decodeGitOid(request.selector.oid);
 			if (!oid.ok || oid.value.algorithm !== this.#objectFormat) return failure(this.#issue("invalid_object", "read_snapshot", "Commit OID is invalid."));
@@ -93,13 +111,20 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	async readBlob(request: ProjectStoreBlobRequest): Promise<Outcome<ProjectStoreBlob, ProjectStoreIssue>> {
 		const preflight = this.#validateRepositoryBinding(request, "read_blob");
 		if (preflight) return failure(preflight);
-		const oid = decodeGitOid(request.oid);
-		if (!oid.ok || oid.value.algorithm !== this.#objectFormat) return failure(this.#issue("invalid_object", "read_blob", "Blob OID is invalid."));
+		const commit = decodeGitOid(request.commit);
+		if (!commit.ok || commit.value.algorithm !== this.#objectFormat || !validRepositoryPath(request.path)) {
+			return failure(this.#issue("invalid_object", "read_blob", "Blob commit or path is invalid."));
+		}
 		if (!Number.isSafeInteger(request.maximumBytes) || request.maximumBytes < 1 || request.maximumBytes > this.#maximumOutputBytes) {
 			return failure(this.#issue("limit_exceeded", "read_blob", "Blob byte limit is invalid."));
 		}
-		const type = this.#text(["cat-file", "-t", oid.value.hex], "read_blob");
-		if (!type.ok || type.value.trim() !== "blob") return failure(this.#issue("invalid_object", "read_blob", "Requested object is not a blob."));
+		const complete = this.#assertCompleteCommit(commit.value, "read_blob");
+		if (!complete.ok) return complete;
+		const listed = this.#text(["ls-tree", "-z", "--full-tree", commit.value.hex, "--", `:(literal)${request.path}`], "read_blob");
+		if (!listed.ok) return failure(this.#commandIssue(listed.error, "read_blob", "Blob path could not be resolved."));
+		const match = /^([0-7]{6}) blob ([0-9a-f]+)\t([^\0]+)\0$/u.exec(listed.value);
+		const oid = match && match[3] === request.path ? this.#oid(match[2] as string, "read_blob") : null;
+		if (!oid?.ok) return failure(this.#issue("invalid_object", "read_blob", "Requested path is absent or is not a blob."));
 		const content = this.#bytes(["cat-file", "blob", oid.value.hex], "read_blob", request.maximumBytes);
 		if (!content.ok) return failure(this.#commandIssue(content.error, "read_blob", "Blob could not be read."));
 		return success(Object.freeze({oid: oid.value, bytes: new Uint8Array(content.value)}));
@@ -112,7 +137,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (!commit.ok || commit.value.algorithm !== this.#objectFormat) {
 			return failure(this.#issue("invalid_object", "read_tree", "Tree commit OID is invalid."));
 		}
-		if (!validTreePrefix(request.pathPrefix)) {
+		if (request.pathPrefix !== "" && !validTreePrefix(request.pathPrefix)) {
 			return failure(this.#issue("invalid_object", "read_tree", "Tree path prefix is invalid."));
 		}
 		if (!Number.isSafeInteger(request.maximumEntries) || request.maximumEntries < 1 || request.maximumEntries > 65_536) {
@@ -120,15 +145,9 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		}
 		const complete = this.#assertCompleteCommit(commit.value, "read_tree");
 		if (!complete.ok) return complete;
-		const listed = this.#text([
-			"ls-tree",
-			"-r",
-			"-z",
-			"--full-tree",
-			commit.value.hex,
-			"--",
-			`:(literal)${request.pathPrefix}`,
-		], "read_tree");
+		const args = ["ls-tree", "-r", "-z", "--full-tree", commit.value.hex];
+		if (request.pathPrefix !== "") args.push("--", `:(literal)${request.pathPrefix}`);
+		const listed = this.#text(args, "read_tree");
 		if (!listed.ok) return failure(this.#commandIssue(listed.error, "read_tree", "Tree could not be listed."));
 		const records = listed.value.split("\0");
 		if (records.pop() !== "") return failure(this.#issue("invalid_object", "read_tree", "Git tree listing was not NUL-terminated."));
@@ -143,7 +162,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			const path = separator < 0 ? "" : record.slice(separator + 1);
 			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
 			if (!match || path.length === 0 || (previousPath.length > 0 && previousPath >= path) ||
-				!(path === request.pathPrefix || path.startsWith(`${request.pathPrefix}/`))) {
+				(request.pathPrefix !== "" && !(path === request.pathPrefix || path.startsWith(`${request.pathPrefix}/`)))) {
 				return failure(this.#issue("invalid_object", "read_tree", "Git returned a malformed or non-canonical tree listing."));
 			}
 			const object = this.#oid(match[3] as string, "read_tree");
@@ -157,6 +176,61 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			previousPath = path;
 		}
 		return success(Object.freeze({commit: commit.value, entries: Object.freeze(entries)}));
+	}
+
+	async writeBlob(request: ProjectStoreBlobWriteRequest): Promise<Outcome<ProjectStoreBlobWriteReceipt, ProjectStoreIssue>> {
+		const preflight = this.#validateBlobWriteRequest(request);
+		if (preflight) return failure(preflight);
+		const written = this.#spawn(["hash-object", "-w", "--stdin"], Buffer.from(request.bytes), undefined, 4_096);
+		if (!written.ok) return failure(this.#commandIssue(written.error, "write_blob", "Blob object creation failed."));
+		const oid = this.#oid(TEXT.decode(written.value).trim(), "write_blob");
+		if (!oid.ok) return oid;
+		const stored = this.#bytes(["cat-file", "blob", oid.value.hex], "write_blob", request.bytes.byteLength + 1);
+		if (!stored.ok || !stored.value.equals(Buffer.from(request.bytes))) {
+			return failure(this.#issue("invalid_object", "write_blob", "Created blob differs from requested exact bytes."));
+		}
+		const body = Object.freeze({
+			repositoryId: this.#repositoryId,
+			objectFormat: this.#objectFormat,
+			oid: oid.value,
+			byteLength: request.bytes.byteLength,
+			authorizationId: request.authorizationId,
+			requestDigest: request.requestDigest,
+		});
+		const digest = semanticDigest("codewiki.project-store.write-blob-receipt@1.0.0", body);
+		return digest.ok
+			? success(Object.freeze({...body, receiptDigest: digest.value}))
+			: failure(this.#issue("command_failed", "write_blob", digest.error.message));
+	}
+
+	async writeTree(request: ProjectStoreTreeWriteRequest): Promise<Outcome<ProjectStoreTreeWriteReceipt, ProjectStoreIssue>> {
+		const preflight = this.#validateTreeWriteRequest(request);
+		if (preflight) return failure(preflight);
+		const entries = new Map<string, ProjectStoreTreeEntry>();
+		if (request.baseTree !== null) {
+			const base = this.#readTreeObject(request.baseTree, "write_tree");
+			if (!base.ok) return base;
+			for (const entry of base.value) entries.set(entry.path, entry);
+		}
+		for (const mutation of request.mutations) {
+			if (mutation.oid === null) entries.delete(mutation.path);
+			else entries.set(mutation.path, Object.freeze({path: mutation.path, mode: mutation.mode, kind: mutation.kind, oid: mutation.oid}));
+		}
+		const written = this.#writeFlatTree([...entries.values()]);
+		if (!written.ok) return written;
+		const body = Object.freeze({
+			repositoryId: this.#repositoryId,
+			objectFormat: this.#objectFormat,
+			baseTree: request.baseTree,
+			tree: written.value,
+			changedPaths: Object.freeze(request.mutations.map((entry) => entry.path)),
+			authorizationId: request.authorizationId,
+			requestDigest: request.requestDigest,
+		});
+		const digest = semanticDigest("codewiki.project-store.write-tree-receipt@1.0.0", body);
+		return digest.ok
+			? success(Object.freeze({...body, receiptDigest: digest.value}))
+			: failure(this.#issue("command_failed", "write_tree", digest.error.message));
 	}
 
 	async createCommit(request: ProjectStoreCommitRequest): Promise<Outcome<GitOid, ProjectStoreIssue>> {
@@ -197,48 +271,119 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		return success(oid.value);
 	}
 
-	async compareAndSwapRef(request: ProjectStoreCasRequest): Promise<Outcome<ProjectStoreCasReceipt, ProjectStoreIssue>> {
+	async compareAndSwapRefs(request: ProjectStoreCasRequest): Promise<Outcome<ProjectStoreCasReceipt, ProjectStoreIssue>> {
 		const preflight = this.#validateCasRequest(request);
 		if (preflight) return failure(preflight);
-		const ref = decodeGitRef(request.ref);
-		const newOid = decodeGitOid(request.newOid);
-		if (!ref.ok || !newOid.ok) return failure(this.#issue("invalid_ref", "cas", "CAS ref or new OID is invalid."));
-		const complete = this.#assertCompleteCommit(newOid.value, "cas");
-		if (!complete.ok) return complete;
-		const before = this.#readOptionalRef(ref.value);
-		if (!before.ok) return before;
-		if (!optionalOidEqual(before.value, request.expectedOld)) return failure(this.#issue("stale_ref", "cas", "Expected-old-OID compare-and-swap failed."));
-		const zero = "0".repeat(this.#objectFormat === "sha1" ? 40 : 64);
-		const updated = this.#text([
-			"update-ref",
-			"--create-reflog",
-			"-m",
-			request.reflogMessage,
-			ref.value,
-			newOid.value.hex,
-			request.expectedOld?.hex ?? zero,
-		], "cas");
-		if (!updated.ok) {
-			const current = this.#readOptionalRef(ref.value);
-			if (current.ok && !optionalOidEqual(current.value, request.expectedOld)) return failure(this.#issue("stale_ref", "cas", "Ref changed before compare-and-swap."));
-			return failure(this.#commandIssue(updated.error, "cas", "Ref compare-and-swap failed."));
+		const before: (GitOid | null)[] = [];
+		let alreadyApplied = true;
+		for (const update of request.updates) {
+			const current = this.#readOptionalRef(update.ref);
+			if (!current.ok) return current;
+			before.push(current.value);
+			if (!optionalOidEqual(current.value, update.newOid)) alreadyApplied = false;
 		}
-		const after = this.#readOptionalRef(ref.value);
-		if (!after.ok || after.value === null || !sameGitOid(after.value, newOid.value)) {
-			return failure(this.#issue("command_failed", "cas", "Ref update completed without verifiable resulting value."));
+		if (!alreadyApplied) {
+			for (let index = 0; index < request.updates.length; index += 1) {
+				if (!optionalOidEqual(before[index] ?? null, request.updates[index]?.expectedOld ?? null)) {
+					return failure(this.#issue("stale_ref", "cas", "Expected ref set differs from current Project state."));
+				}
+			}
+			const zero = "0".repeat(this.#objectFormat === "sha1" ? 40 : 64);
+			const input = ["start"];
+			for (const update of request.updates) input.push(`update ${update.ref} ${update.newOid.hex} ${update.expectedOld?.hex ?? zero}`);
+			input.push("prepare", "commit", "");
+			const updated = this.#text(["update-ref", "--stdin", "--create-reflog", "-m", request.reflogMessage], "cas", input.join("\n"));
+			if (!updated.ok) {
+				const reconciled = this.#allRefsEqual(request.updates);
+				if (reconciled.ok && reconciled.value) alreadyApplied = true;
+				else if (reconciled.ok) return failure(this.#issue("stale_ref", "cas", "Ref set changed before atomic compare-and-swap."));
+				else return failure(this.#commandIssue(updated.error, "cas", "Atomic ref compare-and-swap failed."));
+			}
 		}
+		const verified = this.#allRefsEqual(request.updates);
+		if (!verified.ok) return verified;
+		if (!verified.value) return failure(this.#issue("command_failed", "cas", "Atomic ref update completed without verifiable resulting values."));
 		const receipt = {
 			repositoryId: this.#repositoryId,
 			objectFormat: this.#objectFormat,
-			ref: ref.value,
-			oldOid: before.value,
-			newOid: newOid.value,
+			updates: Object.freeze(request.updates.map((entry) => Object.freeze({ref: entry.ref, oldOid: entry.expectedOld, newOid: entry.newOid}))),
+			status: alreadyApplied ? "reconciled" as const : "applied" as const,
 			authorizationId: request.authorizationId,
 			requestDigest: request.requestDigest,
 		};
-		const digest = semanticDigest("codewiki.project-store-cas-receipt@1.0.0", receipt);
+		const digest = semanticDigest("codewiki.project-store-cas-receipt@1.1.0", receipt);
 		if (!digest.ok) return failure(this.#issue("command_failed", "cas", digest.error.message));
 		return success(Object.freeze({...receipt, receiptDigest: digest.value}));
+	}
+
+	#readTreeObject(tree: GitOid, operation: ProjectStoreIssue["operation"]): Outcome<readonly ProjectStoreTreeEntry[], ProjectStoreIssue> {
+		if (tree.algorithm !== this.#objectFormat) return failure(this.#issue("invalid_object", operation, "Tree object format differs from repository."));
+		const type = this.#text(["cat-file", "-t", tree.hex], operation);
+		if (!type.ok || type.value.trim() !== "tree") return failure(this.#issue("invalid_object", operation, "Base tree object is absent or has wrong type."));
+		const listed = this.#text(["ls-tree", "-r", "-z", "--full-tree", tree.hex], operation);
+		if (!listed.ok) return failure(this.#commandIssue(listed.error, operation, "Tree object could not be listed."));
+		const records = listed.value.split("\0");
+		if (records.pop() !== "" || records.length > MAX_TREE_MUTATIONS) return failure(this.#issue("limit_exceeded", operation, "Tree object exceeds the supported entry bound."));
+		const entries: ProjectStoreTreeEntry[] = [];
+		let previousPath = "";
+		for (const record of records) {
+			const separator = record.indexOf("\t");
+			const metadata = separator < 0 ? "" : record.slice(0, separator);
+			const path = separator < 0 ? "" : record.slice(separator + 1);
+			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
+			const oid = match ? this.#oid(match[3] as string, operation) : null;
+			if (!match || !oid?.ok || !validRepositoryPath(path) || (previousPath !== "" && previousPath >= path)) {
+				return failure(this.#issue("invalid_object", operation, "Git returned a malformed tree object."));
+			}
+			entries.push(Object.freeze({path, mode: match[1] as string, kind: match[2] as "blob" | "commit", oid: oid.value}));
+			previousPath = path;
+		}
+		return success(Object.freeze(entries));
+	}
+
+	#writeFlatTree(entries: readonly ProjectStoreTreeEntry[]): Outcome<GitOid, ProjectStoreIssue> {
+		const node = (): MutableTreeNode => ({entries: new Map(), directories: new Map()});
+		const root = node();
+		for (const entry of entries) {
+			const segments = entry.path.split("/");
+			let cursor = root;
+			for (const segment of segments.slice(0, -1)) {
+				if (cursor.entries.has(segment)) return failure(this.#issue("invalid_object", "write_tree", "Tree path collides with a file entry."));
+				let directory = cursor.directories.get(segment);
+				if (!directory) {
+					directory = node();
+					cursor.directories.set(segment, directory);
+				}
+				cursor = directory;
+			}
+			const name = segments.at(-1) as string;
+			if (cursor.directories.has(name) || cursor.entries.has(name)) return failure(this.#issue("invalid_object", "write_tree", "Tree path identity is duplicated or colliding."));
+			cursor.entries.set(name, entry);
+		}
+		const materialize = (current: MutableTreeNode): Outcome<GitOid, ProjectStoreIssue> => {
+			const values: Readonly<{name: string; mode: string; kind: "blob" | "commit" | "tree"; oid: GitOid}>[] = [];
+			for (const [name, entry] of current.entries) values.push({name, mode: entry.mode, kind: entry.kind, oid: entry.oid});
+			for (const [name, directory] of current.directories) {
+				const child = materialize(directory);
+				if (!child.ok) return child;
+				values.push({name, mode: "040000", kind: "tree", oid: child.value});
+			}
+			values.sort((left, right) => Buffer.compare(Buffer.from(`${left.name}${left.kind === "tree" ? "/" : ""}`, "utf8"), Buffer.from(`${right.name}${right.kind === "tree" ? "/" : ""}`, "utf8")));
+			const payload = Buffer.concat(values.map((entry) => Buffer.from(`${entry.mode} ${entry.kind} ${entry.oid.hex}\t${entry.name}\0`, "utf8")));
+			const created = this.#spawn(["mktree", "-z"], payload, undefined, 4_096);
+			if (!created.ok) return failure(this.#commandIssue(created.error, "write_tree", "Tree object creation failed."));
+			return this.#oid(TEXT.decode(created.value).trim(), "write_tree");
+		};
+		return materialize(root);
+	}
+
+	#allRefsEqual(updates: readonly ProjectStoreRefUpdate[]): Outcome<boolean, ProjectStoreIssue> {
+		for (const update of updates) {
+			const current = this.#readOptionalRef(update.ref);
+			if (!current.ok) return current;
+			if (!optionalOidEqual(current.value, update.newOid)) return success(false);
+		}
+		return success(true);
 	}
 
 	async #readCommitSnapshot(oid: GitOid): Promise<Outcome<ProjectSnapshot, ProjectStoreIssue>> {
@@ -278,12 +423,12 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		return success(null);
 	}
 
-	#readOptionalRef(ref: GitRef): Outcome<GitOid | null, ProjectStoreIssue> {
-		const value = this.#text(["show-ref", "--verify", "--hash", ref], "cas");
+	#readOptionalRef(ref: GitRef, operation: ProjectStoreIssue["operation"] = "cas"): Outcome<GitOid | null, ProjectStoreIssue> {
+		const value = this.#text(["show-ref", "--verify", "--hash", ref], operation);
 		if (!value.ok) return value.error.kind === "failed" && value.error.message.includes("status 1")
 			? success(null)
-			: failure(this.#commandIssue(value.error, "cas", "Ref could not be read."));
-		return this.#oid(value.value.trim(), "cas");
+			: failure(this.#commandIssue(value.error, operation, "Ref could not be read."));
+		return this.#oid(value.value.trim(), operation);
 	}
 
 	#validateRepositoryBinding(
@@ -292,6 +437,41 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	): ProjectStoreIssue | null {
 		if (typeof request !== "object" || request === null || request.repositoryId !== this.#repositoryId || request.objectFormat !== this.#objectFormat) {
 			return this.#issue("repository_mismatch", operation, "Request repository identity or object format differs from adapter." );
+		}
+		return null;
+	}
+
+	#validateBlobWriteRequest(request: ProjectStoreBlobWriteRequest): ProjectStoreIssue | null {
+		const binding = this.#validateRepositoryBinding(request, "write_blob");
+		if (binding) return binding;
+		const digest = projectStoreBlobWriteRequestDigest(request);
+		if (!(request.bytes instanceof Uint8Array) || request.bytes.byteLength > MAX_OBJECT_BYTES) return this.#issue("limit_exceeded", "write_blob", "Blob bytes are invalid or exceed the write bound.");
+		if (!validAuthority(request.authorizationId) || !decodeSha256Digest(request.requestDigest).ok || !digest.ok || digest.value !== request.requestDigest) {
+			return this.#issue("authorization_binding_invalid", "write_blob", "Blob write authorization binding is invalid.");
+		}
+		return null;
+	}
+
+	#validateTreeWriteRequest(request: ProjectStoreTreeWriteRequest): ProjectStoreIssue | null {
+		const binding = this.#validateRepositoryBinding(request, "write_tree");
+		if (binding) return binding;
+		const digest = projectStoreTreeWriteRequestDigest(request);
+		if (!validAuthority(request.authorizationId) || !decodeSha256Digest(request.requestDigest).ok || !digest.ok || digest.value !== request.requestDigest) {
+			return this.#issue("authorization_binding_invalid", "write_tree", "Tree write authorization binding is invalid.");
+		}
+		if (request.baseTree !== null && (!decodeGitOid(request.baseTree).ok || request.baseTree.algorithm !== this.#objectFormat)) return this.#issue("invalid_object", "write_tree", "Base tree identity is invalid.");
+		if (!Array.isArray(request.mutations) || request.mutations.length < 1 || request.mutations.length > MAX_TREE_MUTATIONS) return this.#issue("limit_exceeded", "write_tree", "Tree mutation count is invalid.");
+		let previousPath = "";
+		for (const mutation of request.mutations) {
+			if (!validRepositoryPath(mutation.path) || (previousPath !== "" && previousPath >= mutation.path)) return this.#issue("invalid_object", "write_tree", "Tree mutation paths must be portable, sorted, and unique.");
+			previousPath = mutation.path;
+			if (mutation.oid === null) {
+				if (mutation.mode !== null || mutation.kind !== null) return this.#issue("invalid_object", "write_tree", "Tree deletion must contain only null object fields.");
+				continue;
+			}
+			if (!decodeGitOid(mutation.oid).ok || mutation.oid.algorithm !== this.#objectFormat || !validMutableEntry(mutation)) return this.#issue("invalid_object", "write_tree", "Tree mutation object or mode is invalid.");
+			const actualType = this.#text(["cat-file", "-t", mutation.oid.hex], "write_tree");
+			if (!actualType.ok || actualType.value.trim() !== mutation.kind) return this.#issue("invalid_object", "write_tree", "Tree mutation object is absent or has wrong type.");
 		}
 		return null;
 	}
@@ -313,14 +493,21 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	#validateCasRequest(request: ProjectStoreCasRequest): ProjectStoreIssue | null {
 		const binding = this.#validateRepositoryBinding(request, "cas");
 		if (binding) return binding;
-		const ref = decodeGitRef(request.ref);
-		if (!ref.ok || !isManagedProjectRef(ref.value)) return this.#issue("invalid_ref", "cas", "Only canonical and managed Change refs may be written.");
 		const requestDigest = projectStoreCasRequestDigest(request);
 		if (!validAuthority(request.authorizationId) || !decodeSha256Digest(request.requestDigest).ok || !requestDigest.ok || requestDigest.value !== request.requestDigest) {
 			return this.#issue("authorization_binding_invalid", "cas", "CAS authorization binding is invalid.");
 		}
-		if (!decodeGitOid(request.newOid).ok || request.newOid.algorithm !== this.#objectFormat) return this.#issue("invalid_object", "cas", "CAS new OID is invalid.");
-		if (request.expectedOld !== null && (!decodeGitOid(request.expectedOld).ok || request.expectedOld.algorithm !== this.#objectFormat)) return this.#issue("invalid_object", "cas", "CAS expected old OID is invalid.");
+		if (!Array.isArray(request.updates) || request.updates.length < 1 || request.updates.length > 64) return this.#issue("limit_exceeded", "cas", "CAS update count is invalid.");
+		let previousRef = "";
+		for (const update of request.updates) {
+			const ref = decodeGitRef(update.ref);
+			if (!ref.ok || !isManagedProjectRef(ref.value) || (previousRef !== "" && previousRef >= ref.value)) return this.#issue("invalid_ref", "cas", "CAS refs must be managed, sorted, and unique.");
+			previousRef = ref.value;
+			if (!decodeGitOid(update.newOid).ok || update.newOid.algorithm !== this.#objectFormat) return this.#issue("invalid_object", "cas", "CAS new OID is invalid.");
+			if (update.expectedOld !== null && (!decodeGitOid(update.expectedOld).ok || update.expectedOld.algorithm !== this.#objectFormat)) return this.#issue("invalid_object", "cas", "CAS expected old OID is invalid.");
+			const complete = this.#assertCompleteCommit(update.newOid, "cas");
+			if (!complete.ok) return complete.error;
+		}
 		if (!validMessage(request.reflogMessage, 1_024, false)) return this.#issue("limit_exceeded", "cas", "Reflog message is invalid.");
 		return null;
 	}
@@ -494,10 +681,20 @@ function validAuthority(value: string): boolean {
 }
 
 function validTreePrefix(value: string): boolean {
+	return validRepositoryPath(value);
+}
+
+function validRepositoryPath(value: string): boolean {
 	const forbidden = ["\0", "\r", "\n", "\\", "*", "?", "["];
 	return typeof value === "string" && value.length > 0 && Buffer.byteLength(value, "utf8") <= 4_096 &&
-		value.normalize("NFC") === value && !value.startsWith("/") && !forbidden.some((character) => value.includes(character)) &&
-		value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+		value.normalize("NFC") === value && !value.startsWith("/") && !value.endsWith("/") &&
+		!forbidden.some((character) => value.includes(character)) &&
+		value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== ".." && segment !== ".git");
+}
+
+function validMutableEntry(mutation: Exclude<ProjectStoreTreeMutation, {oid: null}>): boolean {
+	return (mutation.kind === "blob" && (mutation.mode === "100644" || mutation.mode === "100755")) ||
+		(mutation.kind === "commit" && mutation.mode === "160000");
 }
 
 function validMessage(value: string, maximumBytes = MAX_COMMIT_MESSAGE_BYTES, requireTerminalLf = true): boolean {

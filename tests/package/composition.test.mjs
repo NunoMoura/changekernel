@@ -8,6 +8,7 @@ import {
 	CODEWIKI_PRODUCT_POLICY_DIGEST,
 } from "../../src/product.ts";
 import {semanticDigest} from "../../src/kernel/identity/semantic-digest.ts";
+import {PRODUCT_OPERATIONS} from "../../src/api/transport/envelope.ts";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -26,10 +27,7 @@ test("Product policy is immutable canonical build data", () => {
 		".codewiki/wiki/items",
 		".codewiki/changes",
 	]);
-	assert.deepEqual(CODEWIKI_PRODUCT.api.operations, [
-		"project.discover", "project.capabilities", "project.status", "wiki.read", "changes.read",
-		"checks.read", "work.read", "review.read", "alignment.read", "audit.read",
-	]);
+	assert.deepEqual(CODEWIKI_PRODUCT.api.operations, PRODUCT_OPERATIONS);
 	assert.equal(CODEWIKI_PRODUCT.api.requestProtocol.id, "codewiki.product-request");
 	assert.deepEqual(CODEWIKI_PRODUCT.api.unavailable, ["Agent Work", "Preview"]);
 	assert.equal(
@@ -47,6 +45,7 @@ test("root package surface exposes curated Product, Client, and Project Server o
 		"PROJECT_SERVER_PROTOCOL",
 		"bootstrapCodewikiProject",
 		"createCodewikiClient",
+		"createMemoryProjectServerFacts",
 		"createProductTransportRequest",
 		"createProjectAccessPolicy",
 		"createProjectServer",

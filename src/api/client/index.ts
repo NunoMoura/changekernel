@@ -1,10 +1,21 @@
 import type {
+	ChangeCommandInput,
+	PlanningCommandInput,
+	ProductCommandInput,
+	ProposeChangesInput,
+	ProtectedEffectInput,
+	ReasonedChangeCommandInput,
+	ReviseChangeInput,
+	SupersedeChangeInput,
+	WorkCandidateInput,
+	WorkCommandInput,
+} from "../contracts/command.ts";
+import type {
 	AlignmentReadInput,
 	AuditReadInput,
 	ChangesReadInput,
 	ChecksReadInput,
 	ProductReadInput,
-	ProductReadOperation,
 	ProjectSourceSelector,
 	ReviewReadInput,
 	WikiReadInput,
@@ -18,6 +29,8 @@ import {
 	type ProductAuthentication,
 	type ProductClientIdentity,
 	type ProductError,
+	type ProductInput,
+	type ProductOperation,
 } from "../transport/envelope.ts";
 import {isNamespacedIdentifier} from "../../kernel/canonical/contract.ts";
 import type {CanonicalValue} from "../../kernel/canonical/json.ts";
@@ -47,6 +60,15 @@ export type WorkReadCall = WorkReadInput & ProductCallOptions;
 export type ReviewReadCall = ReviewReadInput & ProductCallOptions;
 export type AlignmentReadCall = AlignmentReadInput & ProductCallOptions;
 export type AuditReadCall = AuditReadInput & ProductCallOptions;
+export type ChangeCommandCall = ChangeCommandInput & ProductCallOptions;
+export type PlanningCommandCall = PlanningCommandInput & ProductCallOptions;
+export type ProposeChangesCall = ProposeChangesInput & ProductCallOptions;
+export type ProtectedEffectCall = ProtectedEffectInput & ProductCallOptions;
+export type ReasonedChangeCommandCall = ReasonedChangeCommandInput & ProductCallOptions;
+export type ReviseChangeCall = ReviseChangeInput & ProductCallOptions;
+export type SupersedeChangeCall = SupersedeChangeInput & ProductCallOptions;
+export type WorkCandidateCall = WorkCandidateInput & ProductCallOptions;
+export type WorkCommandCall = WorkCommandInput & ProductCallOptions;
 
 export interface CodewikiClient {
 	discover(options: ProductCallOptions): Promise<Outcome<CanonicalValue, ProductError>>;
@@ -59,6 +81,24 @@ export interface CodewikiClient {
 	review(request: ReviewReadCall): Promise<Outcome<CanonicalValue, ProductError>>;
 	alignment(request: AlignmentReadCall): Promise<Outcome<CanonicalValue, ProductError>>;
 	audit(request: AuditReadCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	proposeChanges(request: ProposeChangesCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	reviseChange(request: ReviseChangeCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	evaluateDecision(request: ChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	commitDecision(request: ChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	rejectDecision(request: ReasonedChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	deferDecision(request: ReasonedChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	withdrawDecision(request: ReasonedChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	resumeDecision(request: ReasonedChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	evaluatePlanning(request: PlanningCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	admitPlanning(request: PlanningCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	admitWork(request: WorkCandidateCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	evaluateWork(request: WorkCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	integrateWork(request: WorkCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	reconcileReview(request: ChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	evaluateReview(request: ChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	completeChange(request: ChangeCommandCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	supersedeChange(request: SupersedeChangeCall): Promise<Outcome<CanonicalValue, ProductError>>;
+	requestProtectedEffect(request: ProtectedEffectCall): Promise<Outcome<CanonicalValue, ProductError>>;
 }
 
 export function createCodewikiClient(input: ProductClientInput): Outcome<CodewikiClient, ProductError> {
@@ -73,8 +113,8 @@ export function createCodewikiClient(input: ProductClientInput): Outcome<Codewik
 	const authentication = Object.freeze({identityRef: input.authentication.identityRef, proof: input.authentication.proof});
 	const send = input.transport.send.bind(input.transport);
 	const invoke = async (
-		operation: ProductReadOperation,
-		payload: ProductReadInput,
+		operation: ProductOperation,
+		payload: ProductInput,
 		options: ProductCallOptions,
 	): Promise<Outcome<CanonicalValue, ProductError>> => {
 		const request = createProductTransportRequest({
@@ -121,13 +161,31 @@ export function createCodewikiClient(input: ProductClientInput): Outcome<Codewik
 		review: (request: ReviewReadCall) => invoke("review.read", withoutCallOptions(request), request),
 		alignment: (request: AlignmentReadCall) => invoke("alignment.read", withoutCallOptions(request), request),
 		audit: (request: AuditReadCall) => invoke("audit.read", withoutCallOptions(request), request),
+		proposeChanges: (request: ProposeChangesCall) => invoke("changes.propose", withoutCallOptions(request), request),
+		reviseChange: (request: ReviseChangeCall) => invoke("changes.revise", withoutCallOptions(request), request),
+		evaluateDecision: (request: ChangeCommandCall) => invoke("decision.evaluate", withoutCallOptions(request), request),
+		commitDecision: (request: ChangeCommandCall) => invoke("decision.commit", withoutCallOptions(request), request),
+		rejectDecision: (request: ReasonedChangeCommandCall) => invoke("decision.reject", withoutCallOptions(request), request),
+		deferDecision: (request: ReasonedChangeCommandCall) => invoke("decision.defer", withoutCallOptions(request), request),
+		withdrawDecision: (request: ReasonedChangeCommandCall) => invoke("decision.withdraw", withoutCallOptions(request), request),
+		resumeDecision: (request: ReasonedChangeCommandCall) => invoke("decision.resume", withoutCallOptions(request), request),
+		evaluatePlanning: (request: PlanningCommandCall) => invoke("planning.evaluate", withoutCallOptions(request), request),
+		admitPlanning: (request: PlanningCommandCall) => invoke("planning.admit", withoutCallOptions(request), request),
+		admitWork: (request: WorkCandidateCall) => invoke("work.admit", withoutCallOptions(request), request),
+		evaluateWork: (request: WorkCommandCall) => invoke("work.evaluate", withoutCallOptions(request), request),
+		integrateWork: (request: WorkCommandCall) => invoke("work.integrate", withoutCallOptions(request), request),
+		reconcileReview: (request: ChangeCommandCall) => invoke("review.reconcile", withoutCallOptions(request), request),
+		evaluateReview: (request: ChangeCommandCall) => invoke("review.evaluate", withoutCallOptions(request), request),
+		completeChange: (request: ChangeCommandCall) => invoke("changes.complete", withoutCallOptions(request), request),
+		supersedeChange: (request: SupersedeChangeCall) => invoke("changes.supersede", withoutCallOptions(request), request),
+		requestProtectedEffect: (request: ProtectedEffectCall) => invoke("effects.request", withoutCallOptions(request), request),
 	});
 	return success(client);
 }
 
-function withoutCallOptions<Request extends ProductReadInput & ProductCallOptions>(request: Request): ProductReadInput {
+function withoutCallOptions<Request extends (ProductReadInput | ProductCommandInput) & ProductCallOptions>(request: Request): ProductInput {
 	const {requestId: _requestId, expiresAt: _expiresAt, ...input} = request;
-	return Object.freeze(input) as ProductReadInput;
+	return Object.freeze(input) as ProductInput;
 }
 
 function validClientInput(input: ProductClientInput): boolean {

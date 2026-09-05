@@ -1,9 +1,11 @@
+import {decodeProductCommandInput, PRODUCT_COMMAND_OPERATIONS, type ProductCommandOperation} from "../api/contracts/command.ts";
 import type {
 	AlignmentReadInput,
 	AuditReadInput,
 	ChangesReadInput,
 	ChecksReadInput,
 	ProductReadInput,
+	ProductReadOperation,
 	ProjectSourceSelector,
 	ReviewReadInput,
 	WikiReadInput,
@@ -45,6 +47,8 @@ import {
 	readReview,
 	readWork,
 } from "./queries/project.ts";
+import {executeLifecycleCommand, type ProtectedEffectConfiguration} from "./commands/lifecycle.ts";
+import {PROJECT_SERVER_FACTS_PROTOCOL, type ProjectServerFactsPort} from "./recovery/facts.ts";
 import {executeWikiRead} from "./queries/wiki.ts";
 import {
 	resolveProjectSource,
@@ -53,12 +57,13 @@ import {
 	type ProjectSourceIssue,
 } from "./queries/source.ts";
 
-export const PROJECT_SERVER_FOUNDATION_PROTOCOL = protocolIdentity("codewiki.project-server-foundation", "1.1.0");
-export const PROJECT_SERVER_PROTOCOL = protocolIdentity("codewiki.project-server", "1.0.0");
+export const PROJECT_SERVER_FOUNDATION_PROTOCOL = protocolIdentity("codewiki.project-server-foundation", "1.2.0");
+export const PROJECT_SERVER_PROTOCOL = protocolIdentity("codewiki.project-server", "1.1.0");
 
 export interface ProjectServerPorts {
 	readonly projectStore: ProjectStorePort;
 	readonly checkRunner: CheckRunnerPort;
+	readonly facts: ProjectServerFactsPort;
 }
 
 export interface ProjectServerFoundation {
@@ -66,6 +71,7 @@ export interface ProjectServerFoundation {
 	readonly capabilities: Readonly<{
 		projectStore: "available";
 		checkRunner: "available";
+		facts: "available";
 		agentRuntime: "unavailable";
 		preview: "unavailable";
 	}>;
@@ -86,6 +92,8 @@ export interface ProjectServerInput {
 	readonly project: ProjectServerProject;
 	readonly limits?: Partial<ProjectReadLimits>;
 	readonly maximumReplayEntries?: number;
+	readonly protectedEffects?: readonly ProtectedEffectConfiguration[];
+	readonly clock?: () => string;
 }
 
 export interface ProjectServer {
@@ -109,25 +117,69 @@ const DEFAULT_LIMITS: ProjectReadLimits = Object.freeze({
 	maximumHistoryBytes: 32 * 1024 * 1024,
 });
 
-/** Binds the two qualified internal ports while keeping unavailable capabilities explicit. */
+function protectedEffectConfiguration(
+	input: readonly ProtectedEffectConfiguration[],
+): Outcome<readonly ProtectedEffectConfiguration[], ProjectServerBindingFailure> {
+	if (!Array.isArray(input) || input.length > 64) {
+		return failure(bindingFailure("invalid_configuration", "protectedEffects", "Protected effects must be a bounded array."));
+	}
+	const capabilities = new Set<string>();
+	const refs = new Set<string>();
+	const output: ProtectedEffectConfiguration[] = [];
+	for (let index = 0; index < input.length; index += 1) {
+		const entry = input[index];
+		if (typeof entry !== "object" || entry === null || !hasOnlyKeys(entry, ["capability", "ref", "actorIds"]) ||
+			!isNamespacedIdentifier(entry.capability) || !decodeGitRef(entry.ref).ok || !entry.ref.startsWith("refs/codewiki/effects/") ||
+			!Array.isArray(entry.actorIds) || entry.actorIds.length === 0 || entry.actorIds.length > 256 ||
+			entry.actorIds.some((actorId: string) => !isNamespacedIdentifier(actorId)) ||
+			new Set(entry.actorIds).size !== entry.actorIds.length || capabilities.has(entry.capability) || refs.has(entry.ref)) {
+			return failure(bindingFailure("invalid_configuration", `protectedEffects[${index}]`, "Protected effect authority is malformed or duplicated."));
+		}
+		capabilities.add(entry.capability);
+		refs.add(entry.ref);
+		output.push(Object.freeze({
+			capability: entry.capability,
+			ref: entry.ref,
+			actorIds: Object.freeze([...entry.actorIds].sort(compareText)),
+		}));
+	}
+	return success(Object.freeze(output.sort((left, right) => compareText(left.capability, right.capability))));
+}
+
+function compareText(left: string, right: string): number {
+	if (left < right) return -1;
+	if (left > right) return 1;
+	return 0;
+}
+
+function systemTimestamp(): string {
+	return new Date(Math.floor(Date.now() / 1_000) * 1_000).toISOString().replace(".000Z", "Z");
+}
+
+/** Binds the qualified internal ports while keeping unavailable capabilities explicit. */
 export function bindProjectServerFoundation(
 	ports: ProjectServerPorts,
 ): Outcome<ProjectServerFoundation, ProjectServerBindingFailure> {
-	if (typeof ports !== "object" || ports === null || !hasOnlyKeys(ports, ["projectStore", "checkRunner"]) ||
+	if (typeof ports !== "object" || ports === null || !hasOnlyKeys(ports, ["projectStore", "checkRunner", "facts"]) ||
 		typeof ports.projectStore !== "object" || ports.projectStore === null ||
 		!sameProtocol(ports.projectStore.protocol, PROJECT_STORE_PORT_PROTOCOL) ||
-		!hasMethods(ports.projectStore, ["readSnapshot", "readBlob", "readTree", "createCommit", "compareAndSwapRef"])) {
+		!hasMethods(ports.projectStore, ["readSnapshot", "readBlob", "readTree", "writeBlob", "writeTree", "createCommit", "compareAndSwapRefs"])) {
 		return failure(bindingFailure("invalid_port_protocol", "projectStore", `projectStore must bind ${PROJECT_STORE_PORT_PROTOCOL.id}@${PROJECT_STORE_PORT_PROTOCOL.version}.`));
 	}
 	if (typeof ports.checkRunner !== "object" || ports.checkRunner === null ||
 		!sameProtocol(ports.checkRunner.protocol, CHECK_RUNNER_PORT_PROTOCOL) || !hasMethods(ports.checkRunner, ["run"])) {
 		return failure(bindingFailure("invalid_port_protocol", "checkRunner", `checkRunner must bind ${CHECK_RUNNER_PORT_PROTOCOL.id}@${CHECK_RUNNER_PORT_PROTOCOL.version}.`));
 	}
+	if (typeof ports.facts !== "object" || ports.facts === null ||
+		!sameProtocol(ports.facts.protocol, PROJECT_SERVER_FACTS_PROTOCOL) || !hasMethods(ports.facts, ["readGateBundle", "writeGateBundle"])) {
+		return failure(bindingFailure("invalid_port_protocol", "facts", `facts must bind ${PROJECT_SERVER_FACTS_PROTOCOL.id}@${PROJECT_SERVER_FACTS_PROTOCOL.version}.`));
+	}
 	return success(Object.freeze({
 		protocol: PROJECT_SERVER_FOUNDATION_PROTOCOL,
 		capabilities: Object.freeze({
 			projectStore: "available" as const,
 			checkRunner: "available" as const,
+			facts: "available" as const,
 			agentRuntime: "unavailable" as const,
 			preview: "unavailable" as const,
 		}),
@@ -138,7 +190,7 @@ export function createProjectServer(
 	input: ProjectServerInput,
 ): Outcome<ProjectServer, ProjectServerBindingFailure> {
 	if (typeof input !== "object" || input === null ||
-		!hasOnlyKeys(input, ["ports", "accessPolicy", "project", "limits", "maximumReplayEntries"])) {
+		!hasOnlyKeys(input, ["ports", "accessPolicy", "project", "limits", "maximumReplayEntries", "protectedEffects", "clock"])) {
 		return failure(bindingFailure("invalid_configuration", "$", "Project Server input is malformed."));
 	}
 	const foundation = bindProjectServerFoundation(input.ports);
@@ -149,6 +201,11 @@ export function createProjectServer(
 	}
 	const configuration = projectConfiguration(input.project, input.limits);
 	if (!configuration.ok) return configuration;
+	const protectedEffects = protectedEffectConfiguration(input.protectedEffects ?? []);
+	if (!protectedEffects.ok) return protectedEffects;
+	if (input.clock !== undefined && typeof input.clock !== "function") {
+		return failure(bindingFailure("invalid_configuration", "clock", "Project Server clock must be callable."));
+	}
 	const maximumReplayEntries = input.maximumReplayEntries ?? 1_024;
 	if (!Number.isSafeInteger(maximumReplayEntries) || maximumReplayEntries < 1 || maximumReplayEntries > 10_000) {
 		return failure(bindingFailure("invalid_configuration", "maximumReplayEntries", "Replay bound must be an integer from 1 to 10000."));
@@ -156,6 +213,8 @@ export function createProjectServer(
 	const replay = new Map<string, Readonly<{requestDigest: Sha256Digest; response: ProductTransportResponse}>>();
 	const accessPolicy = input.accessPolicy;
 	const projectStore = input.ports.projectStore;
+	const commandOperations = new Set<ProductCommandOperation>(PRODUCT_COMMAND_OPERATIONS);
+	const now = input.clock ?? systemTimestamp;
 	const server = Object.freeze({
 		protocol: PROJECT_SERVER_PROTOCOL,
 		async handle(raw: unknown): Promise<unknown> {
@@ -177,24 +236,48 @@ export function createProjectServer(
 				)));
 				const replayed = replayResponse(replay, actor.value, request.value);
 				if (replayed !== null) return replayed;
-				const decodedInput = decodeProductReadInput(request.value.operation, request.value.input);
-				if (!decodedInput.ok) return responseFor(request.value, failure(productError(
-					"invalid_request",
-					"The Project read is malformed.",
-					"Correct the read fields and retry.",
-					false,
-				)));
-				const prepared = await prepareRead(projectStore, configuration.value, actor.value, request.value, decodedInput.value);
-				if (!prepared.ok) return responseFor(request.value, prepared);
-				const outcome = await executeRead(projectStore, configuration.value, actor.value, request.value, prepared.value.input);
-				const split = splitReadOutcome(outcome);
-				const response = responseFor(request.value, split.outcome, responseBinding(prepared.value.binding, split.outcome, split.technicalEvidence));
+				let response: unknown;
+				if (commandOperations.has(request.value.operation as ProductCommandOperation)) {
+					const decoded = decodeProductCommandInput(request.value.operation as ProductCommandOperation, request.value.input);
+					if (!decoded.ok) return responseFor(request.value, failure(productError(
+						"invalid_request",
+						"The lifecycle action is malformed.",
+						"Correct the bounded action fields and retry.",
+						false,
+					)));
+					const outcome = await executeLifecycleCommand({
+						store: projectStore,
+						checkRunner: input.ports.checkRunner,
+						facts: input.ports.facts,
+						configuration: configuration.value,
+						committer: Object.freeze({name: "CodeWiki Project Server", email: "codewiki@localhost"}),
+						maximumTreeEntries: 65_536,
+						now,
+						protectedEffects: protectedEffects.value,
+					}, actor.value, request.value.operation as ProductCommandOperation, decoded.value);
+					response = outcome.ok
+						? responseFor(request.value, success(outcome.value.data), outcome.value.binding)
+						: responseFor(request.value, outcome);
+				} else {
+					const decodedInput = decodeProductReadInput(request.value.operation as ProductReadOperation, request.value.input);
+					if (!decodedInput.ok) return responseFor(request.value, failure(productError(
+						"invalid_request",
+						"The Project read is malformed.",
+						"Correct the read fields and retry.",
+						false,
+					)));
+					const prepared = await prepareRead(projectStore, configuration.value, actor.value, request.value, decodedInput.value);
+					if (!prepared.ok) return responseFor(request.value, prepared);
+					const outcome = await executeRead(projectStore, configuration.value, actor.value, request.value, prepared.value.input);
+					const split = splitReadOutcome(outcome);
+					response = responseFor(request.value, split.outcome, responseBinding(prepared.value.binding, split.outcome, split.technicalEvidence));
+				}
 				if (isTransportResponse(response)) rememberResponse(replay, maximumReplayEntries, actor.value, request.value, response);
 				return response;
 			} catch {
 				return responseFor(request.value, failure(productError(
 					"internal_failure",
-					"The Project service could not complete this read safely.",
+					"The Project service could not complete this request safely.",
 					"Retry after the Project service is healthy.",
 					false,
 				)));

@@ -20,6 +20,8 @@ function append(trace, kind, payload) {
 		ownerItemId: EVENT_OWNERS[kind],
 		actorId: "cw:actor:maintainer",
 		authorityId: "cw:authority:project-server",
+		commandId: `cw:command:event-${String(trace.events.length).padStart(2, "0")}`,
+		commandDigest: digest("c"),
 		occurredAt: `2026-09-01T00:00:${String(trace.events.length).padStart(2, "0")}Z`,
 		expectedProjectHead: oid("1"),
 		expectedChangeTip: previous === null ? null : oid("9"),

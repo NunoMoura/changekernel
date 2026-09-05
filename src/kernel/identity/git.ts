@@ -78,7 +78,9 @@ export function isCanonicalGitRef(ref: string): boolean {
 }
 
 export function isManagedProjectRef(ref: GitRef): boolean {
-	return ref === "refs/heads/main" || /^refs\/codewiki\/changes\/CHG-[A-Za-z0-9][A-Za-z0-9._-]{0,191}$/u.test(ref);
+	return ref === "refs/heads/main" ||
+		/^refs\/codewiki\/changes\/CHG-[A-Za-z0-9][A-Za-z0-9._-]{0,191}$/u.test(ref) ||
+		/^refs\/codewiki\/effects\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(ref);
 }
 
 export function nullableGitOidField(

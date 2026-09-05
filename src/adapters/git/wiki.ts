@@ -133,7 +133,8 @@ export async function readExactWiki(
 		const blob = await store.readBlob({
 			repositoryId: request.repositoryId,
 			objectFormat: request.objectFormat,
-			oid: entry.oid,
+			commit: snapshot.value.commit,
+			path: entry.path,
 			maximumBytes: limits.value.maximumFileBytes,
 		});
 		if (!blob.ok) return failure(readIssue("project_store_failure", "read_wiki", blob.error.message, blob.error));

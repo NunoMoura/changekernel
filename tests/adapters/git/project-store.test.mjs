@@ -66,10 +66,11 @@ test("Git Project Store reads complete snapshots and bounded blobs", async (t) =
 	assert.equal(snapshot.ok, true, snapshot.ok ? undefined : snapshot.error.message);
 	assert.equal(snapshot.value.complete, true);
 	const blobOid = oid("sha1", git(repo.root, ["rev-parse", "HEAD:README.md"]));
-	const blob = await repo.store.readBlob({repositoryId: "cw:repository:test", objectFormat: "sha1", oid: blobOid, maximumBytes: 100});
+	const blob = await repo.store.readBlob({repositoryId: "cw:repository:test", objectFormat: "sha1", commit: snapshot.value.commit, path: "README.md", maximumBytes: 100});
 	assert.equal(blob.ok, true);
 	assert.equal(new TextDecoder().decode(blob.value.bytes), "fixture\n");
-	assert.equal((await repo.store.readBlob({repositoryId: "cw:repository:test", objectFormat: "sha1", oid: blobOid, maximumBytes: 1})).error.code, "limit_exceeded");
+	assert.equal(blob.value.oid.hex, blobOid.hex);
+	assert.equal((await repo.store.readBlob({repositoryId: "cw:repository:test", objectFormat: "sha1", commit: snapshot.value.commit, path: "README.md", maximumBytes: 1})).error.code, "limit_exceeded");
 });
 
 test("incomplete transitive object closure is rejected without fetching", async (t) => {
@@ -108,19 +109,19 @@ test("managed ref CAS is atomic, stale-safe, and hook-isolated", async (t) => {
 	const candidate = await repo.store.createCommit(commitRequest(repo));
 	assert.equal(candidate.ok, true);
 	const ref = decodeGitRef("refs/codewiki/changes/CHG-test").value;
-	const request = casRequest({repositoryId: "cw:repository:test", objectFormat: "sha1", ref, expectedOld: null, newOid: candidate.value, authorizationId: "cw:authorization:test", reflogMessage: "codewiki test CAS"});
-	const first = await repo.store.compareAndSwapRef(request);
+	const request = casRequest({repositoryId: "cw:repository:test", objectFormat: "sha1", updates: [{ref, expectedOld: null, newOid: candidate.value}], authorizationId: "cw:authorization:test", reflogMessage: "codewiki test CAS"});
+	const first = await repo.store.compareAndSwapRefs(request);
 	assert.equal(first.ok, true, first.ok ? undefined : first.error.message);
 	assert.equal(first.value.repositoryId, "cw:repository:test");
 	assert.equal(first.value.authorizationId, request.authorizationId);
 	assert.equal(first.value.objectFormat, "sha1");
 	assert.equal(git(repo.root, ["rev-parse", ref]), candidate.value.hex);
-	const tampered = await repo.store.compareAndSwapRef({...request, reflogMessage: "tampered"});
+	const tampered = await repo.store.compareAndSwapRefs({...request, reflogMessage: "tampered"});
 	assert.equal(tampered.error.code, "authorization_binding_invalid");
 	assert.equal(await readFile(marker, "utf8").then(() => true, () => false), false);
-	const stale = await repo.store.compareAndSwapRef(request);
-	assert.equal(stale.ok, false);
-	assert.equal(stale.error.code, "stale_ref");
+	const stale = await repo.store.compareAndSwapRefs(request);
+	assert.equal(stale.ok, true);
+	assert.equal(stale.value.status, "reconciled");
 	assert.equal(git(repo.root, ["rev-parse", ref]), candidate.value.hex);
 });
 
@@ -130,10 +131,10 @@ test("concurrent expected-old CAS admits one writer and rejects one stale writer
 	const firstCommit = await repo.store.createCommit(commitRequest(repo, {message: "first\n"}));
 	const secondCommit = await repo.store.createCommit(commitRequest(repo, {message: "second\n"}));
 	const ref = decodeGitRef("refs/codewiki/changes/CHG-race").value;
-	const base = {repositoryId: "cw:repository:test", objectFormat: "sha1", ref, expectedOld: null, authorizationId: "cw:authorization:test", reflogMessage: "race"};
+	const base = {repositoryId: "cw:repository:test", objectFormat: "sha1", authorizationId: "cw:authorization:test", reflogMessage: "race"};
 	const outcomes = await Promise.all([
-		repo.store.compareAndSwapRef(casRequest({...base, newOid: firstCommit.value})),
-		repo.store.compareAndSwapRef(casRequest({...base, newOid: secondCommit.value})),
+		repo.store.compareAndSwapRefs(casRequest({...base, updates: [{ref, expectedOld: null, newOid: firstCommit.value}]})),
+		repo.store.compareAndSwapRefs(casRequest({...base, updates: [{ref, expectedOld: null, newOid: secondCommit.value}]})),
 	]);
 	assert.deepEqual(outcomes.map((entry) => entry.ok).sort(), [false, true]);
 	assert.equal(outcomes.find((entry) => !entry.ok).error.code, "stale_ref");
@@ -144,7 +145,7 @@ test("adapter rejects unsafe refs, repository mismatch, and malformed commit aut
 	t.after(() => rm(repo.root, {recursive: true, force: true}));
 	const head = oid("sha1", git(repo.root, ["rev-parse", "HEAD"]));
 	const tag = decodeGitRef("refs/tags/not-writable").value;
-	const rejected = await repo.store.compareAndSwapRef(casRequest({repositoryId: "cw:repository:test", objectFormat: "sha1", ref: tag, expectedOld: null, newOid: head, authorizationId: "cw:authorization:test", reflogMessage: "reject"}));
+	const rejected = await repo.store.compareAndSwapRefs(casRequest({repositoryId: "cw:repository:test", objectFormat: "sha1", updates: [{ref: tag, expectedOld: null, newOid: head}], authorizationId: "cw:authorization:test", reflogMessage: "reject"}));
 	assert.equal(rejected.error.code, "invalid_ref");
 	assert.equal((await repo.store.readSnapshot({repositoryId: "cw:repository:other", objectFormat: "sha1", selector: {kind: "oid", oid: head}})).error.code, "repository_mismatch");
 	assert.equal((await repo.store.createCommit(commitRequest(repo, {message: "missing terminal newline"}))).ok, false);

@@ -281,19 +281,27 @@ Accepted requirement: `cw:codewiki:requirement:bdr2py6syqr74steqtfrxaz2k6hn6tyzy
 - [x] Prove no Client receives direct pure-Kernel invocation, Git writer, port/adapter handle, private-state path, credential, or moving View handle.
 - [x] Land one exact API engineering checkpoint with clean committed-subject checks, including packed use from a disposable external project; do not activate it.
 
+SK3E checkpoint facts:
+
+- Exact commit `f71d083a1dbc8e30bf95cf3ac0487a9d8ca8e2f9` packaged uniquely as `@nunomoura/codewiki@0.4.0-sk3e.2`; 204/204 clean committed-subject tests, build, byte-identical double-pack, external packed Project Server/Client/transport use, production dependency audit, primary diagnostics, and fresh structural/security diagnostics passed.
+- The diagnostic-rejected `0.4.0-sk3e.1` identity remains abandoned without a receipt. Qualified package SHA-256 is `a10d435514eedee18360c90859a2ad7504ff8473419e611241d1226d09b1b63a`; the sole retained checkpoint receipt is `/home/canina7/.local/state/codewiki/checkpoints/f71d083a1dbc8e30bf95cf3ac0487a9d8ca8e2f9/ci-receipt.json` with SHA-256 `6131e914d126186c7180472ea3ff54f76de078ff76975ce3c8b62773f9d2f93d`.
+- No release was admitted, completed, activated, or promoted; `main` and Product N controller state did not move.
+
 ### SK3F — governed mutation and local lifecycle
 
 Accepted requirement: `cw:codewiki:requirement:2jzn73ks7jsma7qrn6yatbaour2gs25uvu4z6vfj52wdemlslspq`.
 
-- [ ] Publish atomic `proposeChanges`, expected-tip revision, and Decision outcome commands.
-- [ ] Publish Planning, Work admission/integration, canonical reconciliation, Review, completion, and protected-effect commands.
-- [ ] Prove all-or-none batch proposal admission and independent later outcomes.
-- [ ] Before Review, reconcile the admitted Change artifact delta with current canonical history on the managed Change ref; conflicts or changed bytes invalidate affected Results and require fresh Checks.
-- [ ] Prove Review qualifies the exact prospective Completion project-artifact tree, Completion preserves every reviewed project-artifact byte, embedded Trace uses `containing_commit`, and canonical drift restarts reconciliation/Review.
-- [ ] Prove expected-head/tip rejection, explicit reconciliation, supersession, and no silent semantic auto-merge.
-- [ ] Fault-inject every object-write/ref-CAS/private-state boundary and prove deterministic restart.
-- [ ] Stress concurrent Changes, Work integration, recovery, and idempotent lifecycle commands through qualified deterministic test adapters.
+- [x] Publish atomic `proposeChanges`, expected-tip revision, and Decision outcome commands.
+- [x] Publish Planning, Work admission/integration, canonical reconciliation, Review, completion, and protected-effect commands.
+- [x] Prove all-or-none batch proposal admission and independent later outcomes.
+- [x] Before Review, reconcile the admitted Change artifact delta with current canonical history on the managed Change ref; conflicts or changed bytes invalidate affected Results and require fresh Checks.
+- [x] Prove Review qualifies the exact prospective Completion project-artifact tree, Completion preserves every reviewed project-artifact byte, embedded Trace uses `containing_commit`, and canonical drift restarts reconciliation/Review.
+- [x] Prove expected-head/tip rejection, explicit reconciliation, supersession, and no silent semantic auto-merge.
+- [x] Fault-inject every object-write/ref-CAS/private-state boundary and prove deterministic restart.
+- [x] Stress concurrent Changes, Work integration, recovery, and idempotent lifecycle commands through qualified deterministic test adapters.
 - [ ] Land one exact mechanism-complete local-lifecycle engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
+
+Current SK3F candidate evidence covers complete Wiki-only and project-realization flows through real Git storage, deterministic passed and stopped Check execution, stale-source rejection, conflicting replay rejection, multi-file Wiki mutation, lost blob/tree/commit/batch-CAS/private-facts read/write response reconciliation, independent batch outcomes after explicit revision, concurrent non-overlapping Work integration, overlapping-artifact conflict rejection, Work scope admission, canonical-drift Review restart, exact Review/Completion, accepted supersession, and atomic protected-effect recording. Exact committed-subject qualification remains before candidate sealing.
 
 Success: local lifecycle semantics and effect authorization are complete under qualified deterministic test adapters. This checkpoint is not operationally Agent-capable and cannot become controller.
 

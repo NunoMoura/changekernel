@@ -3,6 +3,7 @@ import test from "node:test";
 import {CHECK_RUNNER_PORT_PROTOCOL} from "../../src/ports/check-runner.ts";
 import {PROJECT_STORE_PORT_PROTOCOL} from "../../src/ports/project-store.ts";
 import {PROJECT_ACCESS_POLICY_PROTOCOL} from "../../src/server/authorization/policy.ts";
+import {PROJECT_SERVER_FACTS_PROTOCOL} from "../../src/server/recovery/facts.ts";
 import {
 	PROJECT_SERVER_FOUNDATION_PROTOCOL,
 	PROJECT_SERVER_PROTOCOL,
@@ -20,10 +21,13 @@ function validPorts() {
 			readSnapshot: unavailable,
 			readBlob: unavailable,
 			readTree: unavailable,
+			writeBlob: unavailable,
+			writeTree: unavailable,
 			createCommit: unavailable,
-			compareAndSwapRef: unavailable,
+			compareAndSwapRefs: unavailable,
 		},
 		checkRunner: {protocol: CHECK_RUNNER_PORT_PROTOCOL, run: unavailable},
+		facts: {protocol: PROJECT_SERVER_FACTS_PROTOCOL, readGateBundle: unavailable, writeGateBundle: unavailable},
 	};
 }
 
@@ -55,6 +59,7 @@ test("Project Server foundation binds only qualified internal ports and exposes 
 	assert.deepEqual(result.value.capabilities, {
 		projectStore: "available",
 		checkRunner: "available",
+		facts: "available",
 		agentRuntime: "unavailable",
 		preview: "unavailable",
 	});
@@ -63,7 +68,7 @@ test("Project Server foundation binds only qualified internal ports and exposes 
 });
 
 test("Project Server rejects wrong ports, access policy, identity, refs, and bounds", () => {
-	for (const port of ["projectStore", "checkRunner"]) {
+	for (const port of ["projectStore", "checkRunner", "facts"]) {
 		const ports = validPorts();
 		ports[port] = {protocol: {...ports[port].protocol, version: "999.0.0"}};
 		const result = bindProjectServerFoundation(ports);
