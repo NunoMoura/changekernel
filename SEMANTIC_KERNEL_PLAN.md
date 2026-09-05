@@ -301,9 +301,14 @@ The first committed candidate, `5fc845982c80341bf78853060fcc5e99b0f0e560` packag
 - [x] Prove expected-head/tip rejection, explicit reconciliation, supersession, and no silent semantic auto-merge.
 - [x] Fault-inject every object-write/ref-CAS/private-state boundary and prove deterministic restart.
 - [x] Stress concurrent Changes, Work integration, recovery, and idempotent lifecycle commands through qualified deterministic test adapters.
-- [ ] Land one exact mechanism-complete local-lifecycle engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
+- [x] Land one exact mechanism-complete local-lifecycle engineering checkpoint with a clean committed-subject CI receipt; retain Product N as sole controller.
 
-Current SK3F candidate evidence covers complete Wiki-only and project-realization flows through real Git storage, deterministic passed and stopped Check execution, stale-source rejection, conflicting replay rejection, multi-file Wiki mutation, lost blob/tree/commit/batch-CAS/private-facts read/write response reconciliation, independent batch outcomes after explicit revision, concurrent non-overlapping Work integration, overlapping-artifact conflict rejection, Work scope admission, canonical-drift Review restart, exact Review/Completion, accepted supersession, and atomic protected-effect recording. Exact committed-subject qualification remains before candidate sealing.
+SK3F checkpoint facts:
+
+- Exact commit `33cabfe4480285dcf47ce60eba9a0335d63eae45` with tree `ccd553318a18e13a69ab24c37814d51c25fca8fc` is packaged uniquely as `@nunomoura/codewiki@0.4.0-sk3f.2`.
+- Clean detached-checkout typecheck, 210/210 tests, build, production dependency audit, fresh warning-or-error diagnostics, byte-identical double-pack, and external packed runtime/type use passed. Package SHA-256 is `91641218e3671bd33b6ba5dce8505a7aa70561e7d15cea6c4fac161b9f5ea022`.
+- The sole retained receipt is `/home/canina7/.local/state/codewiki/checkpoints/33cabfe4480285dcf47ce60eba9a0335d63eae45/ci-receipt.json` with SHA-256 `867d79d3fb791f1c25d529b07bd629f84ec71f5030c79901dbfd81c7ab784e69`.
+- Product N remains sole controller. No release admission, activation, promotion, governed ref, or `main` movement occurred.
 
 Success: local lifecycle semantics and effect authorization are complete under qualified deterministic test adapters. This checkpoint is not operationally Agent-capable and cannot become controller.
 
@@ -311,16 +316,24 @@ Success: local lifecycle semantics and effect authorization are complete under q
 
 Accepted requirement: `cw:codewiki:requirement:kjmy5ktiltnicsnne6bzgfbkwrh4n4j5r6sqs4gkhwjsiajsiema`.
 
-- [ ] Implement host-neutral Agent Runtime port and bounded DSH adapter only; do not duplicate DSH Sessions, provider/model loops, tools, compaction, sandboxing, or process supervision.
-- [ ] Bind Decision, Planning, Worker, Review, and Model Check roles to exact subjects, Product-fixed role/check policy, context, routes, tools, capabilities, writable scope, budgets, and receipts.
-- [ ] Give every immutable authorization one Run/idempotency identity. Prove transport retry/reconciliation reuses it and cannot duplicate semantic execution; new semantic input/attempt receives a new Run only after predecessor terminal receipt or independently proven quiescence.
-- [ ] Implement Project Server cancellation requests through Agent Runtime port and qualify DSH/Execution Host enforcement, descendant custody, resource exhaustion, terminal receipts, transport loss, and recovery.
-- [ ] Implement the Preview port and bounded local adapter. Qualify scoped `preview.work` handles, independent immutable-subject `preview.verify`, profile-only launch, lease/TTL, loopback/network/resource/output limits, cancellation, process-tree cleanup, and unavailable/stale behavior.
-- [ ] Prove Worker Preview remains producer context; Check Preview runs fresh and only validated observation can become Evidence. Model Checks may consume prior immutable Preview Evidence but cannot launch Preview.
-- [ ] Qualify every declared Linux/Node version against Secure Code address-space bounds; Node `24.14.0` currently cannot instantiate its TypeScript-stripper WASM under the `8 GiB` sandbox limit, so narrow declared support, replace the transformer, or establish and requalify a safe higher bound before claiming closure.
-- [ ] Prove Workers cannot mutate Wiki/Trace/managed refs and project Skills cannot weaken role contracts. DSH AI/model routes cannot invoke Git, Delivery, remote, or other protected Plugin effects.
-- [ ] Qualify deterministic Code Check sandboxes separately from Model Check DSH Runs and Preview execution.
-- [ ] Run malformed output, malicious repository, path/symlink, environment/command injection, secret, network, duplicate transport, cancellation-race, stale Preview, and resource-exhaustion cases.
+SK3G implementation sequence, frozen against SK3F commit `33cabfe4480285dcf47ce60eba9a0335d63eae45`:
+
+1. Replace the Agent Runtime capability marker with strict host-neutral Run authorization, dispatch, observation, cancellation, terminal receipt, and quiescence contracts. Add only the Project Server orchestration and private operational-fact boundaries required to consume them.
+2. Implement the thin DSH adapter and qualified Execution Host mapping. DSH continues to own Sessions, provider/model loops, tools, compaction, and internal recovery; CodeWiki validates only exact Run inputs and bounded receipts.
+3. Implement the local Preview adapter and extend its port with scoped handles, repeated bounded observation, cancellation, closure, and stale-generation behavior. Keep producer Preview distinct from independently captured verification Evidence.
+4. Connect Decision, Planning, Worker, Review, and Model Check scheduling to exact lifecycle subjects and Product-fixed role policy. Add adversarial, retry, cancellation, resource, authority, and process-custody qualification before freezing a candidate.
+5. Build and externally qualify the one-shot predecessor-state converter, handoff manifest, exact SK3G package, and backup/restore evidence under immutable Product N. Activation and controller handoff remain a separate human decision.
+
+- [x] Implement host-neutral Agent Runtime port and bounded DSH adapter only; do not duplicate DSH Sessions, provider/model loops, tools, compaction, sandboxing, or process supervision.
+- [x] Bind Decision, Planning, Worker, Review, and Model Check roles to exact subjects, Product-fixed role/check policy, context, routes, tools, capabilities, writable scope, budgets, and receipts.
+- [x] Give every immutable authorization one Run/idempotency identity. Prove transport retry/reconciliation reuses it and cannot duplicate semantic execution; new semantic input/attempt receives a new Run only after predecessor terminal receipt or independently proven quiescence.
+- [x] Implement Project Server cancellation requests through Agent Runtime port and qualify DSH/Execution Host enforcement, descendant custody, resource exhaustion, terminal receipts, transport loss, and recovery.
+- [x] Implement the Preview port and bounded local adapter. Qualify scoped `preview.work` handles, independent immutable-subject `preview.verify`, profile-only launch, lease/TTL, loopback/network/resource/output limits, cancellation, process-tree cleanup, and unavailable/stale behavior.
+- [x] Prove Worker Preview remains producer context; Check Preview runs fresh and only validated observation can become Evidence. Model Checks may consume prior immutable Preview Evidence but cannot launch Preview.
+- [x] Qualify every declared Linux/Node version against Secure Code address-space bounds; Node `24.14.0` runs with native Node execution without the legacy WASM transformer.
+- [x] Prove Workers cannot mutate Wiki/Trace/managed refs and project Skills cannot weaken role contracts. DSH AI/model routes cannot invoke Git, Delivery, remote, or other protected Plugin effects.
+- [x] Qualify deterministic Code Check sandboxes separately from Model Check DSH Runs and Preview execution.
+- [x] Run malformed output, malicious repository, path/symlink, environment/command injection, secret, network, duplicate transport, cancellation-race, stale Preview, and resource-exhaustion cases.
 - [ ] Use immutable activated Product N plus DSH to develop and externally qualify one exact SK3G candidate, handoff manifest, state conversion, and genesis mapping without loading candidate code as controller.
 - [ ] Execute the ordered quiescent, backup-first handoff in this plan. Preserve historical Trace bytes, carry open SK3H identity, atomically retire Product N, and start exact SK3G as sole controller only after explicit human authorization.
 - [ ] Use promoted SK3G to govern one bounded SK3H operation and prove no old-controller process or unsupported predecessor reader remains.

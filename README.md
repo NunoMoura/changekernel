@@ -20,10 +20,10 @@ The active source tree contains:
 - an authenticated Project Server that composes the qualified Project Store, Check Runner, and immutable Gate-facts boundary; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
 - atomic Change proposal and revision, Decision, Planning, Work admission and integration, Review reconciliation, completion, supersession, and separately authorized protected-effect commands with exact expected-head binding and deterministic recovery;
 - a version-neutral Client SDK over digest-bound `codewiki.product-request@1.1.0` and `codewiki.product-response@1.1.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
-- typed unavailable Agent Runtime and Preview capabilities until qualified adapters exist; and
+- host-neutral Agent Runtime and Preview ports with qualified local DSH and Preview adapters; and
 - an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and digest-verified passive Check Packs.
 
-Local Check execution, Wiki mutation, and lifecycle transitions are implemented behind Project Server authority. Agent Runtime, Preview execution, DSH execution, and release activation remain intentionally unavailable until their governed roadmap milestones are implemented and qualified.
+Local Check execution, Wiki mutation, lifecycle transitions, Agent Runtime runs, and Preview execution are implemented behind Project Server authority. Release activation and controller promotion remain reserved until external qualification and human authorization.
 
 ## Install and import
 

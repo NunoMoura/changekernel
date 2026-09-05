@@ -14,13 +14,14 @@ import {CHECK_RUNNER_PORT_PROTOCOL} from "./ports/check-runner.ts";
 import {PREVIEW_PORT_PROTOCOL} from "./ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL} from "./ports/project-store.ts";
 import {PROJECT_ACCESS_POLICY_PROTOCOL} from "./server/authorization/policy.ts";
+import {AGENT_ROLE_POLICY_DIGEST, AGENT_ROLE_POLICY_PROTOCOL} from "./server/effects/agent-runs.ts";
 import {PROJECT_SERVER_PROTOCOL} from "./server/index.ts";
 import {PROJECT_SERVER_FACTS_PROTOCOL} from "./server/recovery/facts.ts";
 
 export interface CodewikiProductPolicy {
 	readonly protocol: Readonly<{id: "codewiki.product-policy"; version: "1.0.0"}>;
 	readonly productId: "codewiki";
-	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3f.2"}>;
+	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3g.1"}>;
 	readonly projectConfiguration: Readonly<{
 		protocol: Readonly<{id: "codewiki.project-config"; version: "2.0.0"}>;
 		semanticRoots: readonly [".codewiki/wiki/items", ".codewiki/changes"];
@@ -37,6 +38,10 @@ export interface CodewikiProductPolicy {
 		gateAuthority: "facts-only";
 		mutationAuthority: "project-server";
 		protectedEffects: "separate-capability";
+		agentRolePolicy: Readonly<{
+			protocol: typeof AGENT_ROLE_POLICY_PROTOCOL;
+			digest: Sha256Digest;
+		}>;
 	}>;
 	readonly ports: readonly CanonicalValue[];
 	readonly api: Readonly<{
@@ -63,7 +68,7 @@ export interface CodewikiProductPolicy {
 const POLICY_INPUT = {
 	protocol: {id: "codewiki.product-policy", version: "1.0.0"},
 	productId: "codewiki",
-	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3f.2"},
+	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3g.1"},
 	projectConfiguration: {
 		protocol: {id: "codewiki.project-config", version: "2.0.0"},
 		semanticRoots: [".codewiki/wiki/items", ".codewiki/changes"],
@@ -80,6 +85,7 @@ const POLICY_INPUT = {
 		gateAuthority: "facts-only",
 		mutationAuthority: "project-server",
 		protectedEffects: "separate-capability",
+		agentRolePolicy: Object.freeze({protocol: {...AGENT_ROLE_POLICY_PROTOCOL}, digest: AGENT_ROLE_POLICY_DIGEST}),
 	},
 	ports: [
 		PROJECT_STORE_PORT_PROTOCOL,

@@ -15,6 +15,7 @@ import {createWork} from "../../../src/kernel/work/contracts.ts";
 import {createProjectAccessPolicy, projectAccessProofDigest} from "../../../src/server/authorization/policy.ts";
 import {createProjectServer} from "../../../src/server/index.ts";
 import {createMemoryProjectServerFacts} from "../../../src/server/recovery/facts.ts";
+import {AGENT_RUNTIME_PORT_PROTOCOL} from "../../../src/ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL} from "../../../src/ports/check-runner.ts";
 
 const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
@@ -62,8 +63,14 @@ async function fixture(
 		now: () => timestamp,
 	});
 	assert.equal(policy.ok, true, policy.ok ? "" : policy.error.message);
+	const unavailableAgentRuntime = async () => { throw new Error("Agent Runtime is not invoked by lifecycle command fixtures."); };
 	const server = createProjectServer({
-		ports: {projectStore: decorateProjectStore(store.value), checkRunner, facts: decorateFacts(facts.value)},
+		ports: {
+			projectStore: decorateProjectStore(store.value),
+			checkRunner,
+			facts: decorateFacts(facts.value),
+			agentRuntime: {protocol: AGENT_RUNTIME_PORT_PROTOCOL, start: unavailableAgentRuntime, inspect: unavailableAgentRuntime, cancel: unavailableAgentRuntime},
+		},
 		accessPolicy: policy.value,
 		project: {
 			projectName: "Lifecycle fixture",

@@ -24,10 +24,14 @@ import {
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const SOURCE_ALLOWLIST = [
+	"src/adapters/dsh/agent-runtime.ts",
+	"src/adapters/dsh/local-execution-host.ts",
+	"src/adapters/dsh/session-runner.ts",
 	"src/adapters/git/bootstrap.ts",
 	"src/adapters/git/project-config.ts",
 	"src/adapters/git/project-store.ts",
 	"src/adapters/git/wiki.ts",
+	"src/adapters/preview/local.ts",
 	"src/api/client/index.ts",
 	"src/api/contracts/command.ts",
 	"src/api/contracts/read.ts",
@@ -71,6 +75,7 @@ const SOURCE_ALLOWLIST = [
 	"src/server/commands/gates.ts",
 	"src/server/commands/lifecycle.ts",
 	"src/server/commands/repository.ts",
+	"src/server/effects/agent-runs.ts",
 	"src/server/index.ts",
 	"src/server/queries/project.ts",
 	"src/server/queries/source.ts",
@@ -78,10 +83,15 @@ const SOURCE_ALLOWLIST = [
 	"src/server/recovery/facts.ts",
 ];
 const TEST_ALLOWLIST = [
+	"tests/adapters/dsh/agent-runtime.test.mjs",
+	"tests/adapters/dsh/fixtures/replay-session.jsonl",
+	"tests/adapters/dsh/local-execution-host.test.mjs",
+	"tests/adapters/dsh/session-runner.test.mjs",
 	"tests/adapters/git/bootstrap.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
 	"tests/adapters/git/project-store.test.mjs",
 	"tests/adapters/git/wiki.test.mjs",
+	"tests/adapters/preview/local.test.mjs",
 	"tests/api/client/index.test.mjs",
 	"tests/api/contracts/read.test.mjs",
 	"tests/api/transport/envelope.test.mjs",
@@ -121,6 +131,8 @@ const TEST_ALLOWLIST = [
 	"tests/ports/project-store.test.mjs",
 	"tests/server/authorization/policy.test.mjs",
 	"tests/server/commands/lifecycle.test.mjs",
+	"tests/server/effects/agent-runs.test.mjs",
+	"tests/server/effects/containment.test.mjs",
 	"tests/server/index.test.mjs",
 	"tests/server/queries/read-api.test.mjs",
 ];
@@ -271,14 +283,28 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 	assert.deepEqual(cycles(graph), []);
 	assert.deepEqual([...calls], []);
 	for (const [path, specifiers] of external) {
-		assert.ok(path.startsWith("src/adapters/git/"), `${path} imports ${specifiers.join(", ")}`);
-		assert.ok(specifiers.every((specifier) => [
+		const allowed = path.startsWith("src/adapters/git/") ? [
 			"node:child_process",
 			"node:crypto",
 			"node:fs/promises",
 			"node:path",
 			"node:url",
-		].includes(specifier)), `${path}: ${specifiers.join(", ")}`);
+		] : path.startsWith("src/adapters/dsh/") ? [
+			"@deepseek-ai/cordis",
+			"@deepseek-ai/dsh-agent",
+			"@deepseek-ai/dsh-agent-loop",
+			"@deepseek-ai/dsh-agent-loop/invariant",
+			"@deepseek-ai/dsh-agent/invariant",
+			"@deepseek-ai/dsh-invariants",
+			"@deepseek-ai/dsh-llm",
+			"@deepseek-ai/dsh-session",
+			"@deepseek-ai/dsh-session/invariant",
+			"@deepseek-ai/dsh-session-persistence-jsonl",
+			"@deepseek-ai/dsh-system-prompt",
+			"@deepseek-ai/dsh-tools",
+			"node:path",
+		] : [];
+		assert.ok(allowed.length > 0 && specifiers.every((specifier) => allowed.includes(specifier)), `${path}: ${specifiers.join(", ")}`);
 	}
 });
 
@@ -316,7 +342,17 @@ test("public reachability contains only target foundation paths", async () => {
 	}
 	const pkg = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 	assert.deepEqual(Object.keys(pkg.exports), [".", "./package.json"]);
-	assert.equal(pkg.dependencies, undefined);
+	assert.deepEqual(pkg.dependencies, {
+		"@deepseek-ai/cordis": "4.0.1",
+		"@deepseek-ai/dsh-agent": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-agent-loop": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-invariants": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-llm": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-session": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-session-persistence-jsonl": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2",
+		"@deepseek-ai/dsh-tools": "0.1.1-rc.2",
+	});
 	assert.equal(pkg.peerDependencies, undefined);
 	assert.equal(pkg.pi, undefined);
 });

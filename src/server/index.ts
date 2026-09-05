@@ -29,7 +29,9 @@ import {CHANGE_TRACE_PROTOCOL, MAX_TRACE_BYTES} from "../kernel/changes/trace.ts
 import {MAXIMUM_WIKI_FILE_BYTES} from "../kernel/wiki/file.ts";
 import {WIKI_ITEM_PROTOCOL} from "../kernel/wiki/item.ts";
 import {MAXIMUM_WIKI_ITEMS, MAXIMUM_WIKI_TOTAL_BYTES} from "../kernel/wiki/tree.ts";
+import {AGENT_RUNTIME_PORT_PROTOCOL, type AgentRuntimePort} from "../ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL, type CheckRunnerPort} from "../ports/check-runner.ts";
+import {PREVIEW_PORT_PROTOCOL, type PreviewPort} from "../ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL, type ProjectStorePort} from "../ports/project-store.ts";
 import {
 	PROJECT_ACCESS_POLICY_PROTOCOL,
@@ -57,13 +59,15 @@ import {
 	type ProjectSourceIssue,
 } from "./queries/source.ts";
 
-export const PROJECT_SERVER_FOUNDATION_PROTOCOL = protocolIdentity("codewiki.project-server-foundation", "1.2.0");
-export const PROJECT_SERVER_PROTOCOL = protocolIdentity("codewiki.project-server", "1.1.0");
+export const PROJECT_SERVER_FOUNDATION_PROTOCOL = protocolIdentity("codewiki.project-server-foundation", "1.3.0");
+export const PROJECT_SERVER_PROTOCOL = protocolIdentity("codewiki.project-server", "1.2.0");
 
 export interface ProjectServerPorts {
 	readonly projectStore: ProjectStorePort;
 	readonly checkRunner: CheckRunnerPort;
 	readonly facts: ProjectServerFactsPort;
+	readonly agentRuntime: AgentRuntimePort;
+	readonly preview?: PreviewPort;
 }
 
 export interface ProjectServerFoundation {
@@ -72,8 +76,8 @@ export interface ProjectServerFoundation {
 		projectStore: "available";
 		checkRunner: "available";
 		facts: "available";
-		agentRuntime: "unavailable";
-		preview: "unavailable";
+		agentRuntime: "available";
+		preview: "available" | "unavailable";
 	}>;
 }
 
@@ -160,7 +164,7 @@ function systemTimestamp(): string {
 export function bindProjectServerFoundation(
 	ports: ProjectServerPorts,
 ): Outcome<ProjectServerFoundation, ProjectServerBindingFailure> {
-	if (typeof ports !== "object" || ports === null || !hasOnlyKeys(ports, ["projectStore", "checkRunner", "facts"]) ||
+	if (typeof ports !== "object" || ports === null || !hasOnlyKeys(ports, ["projectStore", "checkRunner", "facts", "agentRuntime", "preview"]) ||
 		typeof ports.projectStore !== "object" || ports.projectStore === null ||
 		!sameProtocol(ports.projectStore.protocol, PROJECT_STORE_PORT_PROTOCOL) ||
 		!hasMethods(ports.projectStore, ["readSnapshot", "readBlob", "readTree", "writeBlob", "writeTree", "createCommit", "compareAndSwapRefs"])) {
@@ -174,14 +178,26 @@ export function bindProjectServerFoundation(
 		!sameProtocol(ports.facts.protocol, PROJECT_SERVER_FACTS_PROTOCOL) || !hasMethods(ports.facts, ["readGateBundle", "writeGateBundle"])) {
 		return failure(bindingFailure("invalid_port_protocol", "facts", `facts must bind ${PROJECT_SERVER_FACTS_PROTOCOL.id}@${PROJECT_SERVER_FACTS_PROTOCOL.version}.`));
 	}
+	if (typeof ports.agentRuntime !== "object" || ports.agentRuntime === null ||
+		!sameProtocol(ports.agentRuntime.protocol, AGENT_RUNTIME_PORT_PROTOCOL) || !hasMethods(ports.agentRuntime, ["start", "inspect", "cancel"])) {
+		return failure(bindingFailure("invalid_port_protocol", "agentRuntime", `agentRuntime must bind ${AGENT_RUNTIME_PORT_PROTOCOL.id}@${AGENT_RUNTIME_PORT_PROTOCOL.version}.`));
+	}
+	let previewCapability: "available" | "unavailable" = "unavailable";
+	if (ports.preview !== undefined) {
+		if (typeof ports.preview !== "object" || ports.preview === null ||
+			!sameProtocol(ports.preview.protocol, PREVIEW_PORT_PROTOCOL) || !hasMethods(ports.preview, ["observe"])) {
+			return failure(bindingFailure("invalid_port_protocol", "preview", `preview must bind ${PREVIEW_PORT_PROTOCOL.id}@${PREVIEW_PORT_PROTOCOL.version}.`));
+		}
+		previewCapability = "available";
+	}
 	return success(Object.freeze({
 		protocol: PROJECT_SERVER_FOUNDATION_PROTOCOL,
 		capabilities: Object.freeze({
 			projectStore: "available" as const,
 			checkRunner: "available" as const,
 			facts: "available" as const,
-			agentRuntime: "unavailable" as const,
-			preview: "unavailable" as const,
+			agentRuntime: "available" as const,
+			preview: previewCapability,
 		}),
 	}));
 }

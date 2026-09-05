@@ -18,6 +18,7 @@ import {createChangeTraceHeader, createEmptyChangeTrace, encodeChangeTrace} from
 import {decodeGitOid} from "../../../src/kernel/identity/git.ts";
 import {buildSemanticEventOwnership, decodeComponentOwnership} from "../../../src/kernel/wiki/ownership.ts";
 import {createWork, workPlanDigest} from "../../../src/kernel/work/contracts.ts";
+import {AGENT_RUNTIME_PORT_PROTOCOL} from "../../../src/ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL} from "../../../src/ports/check-runner.ts";
 import {createProjectAccessPolicy, projectAccessProofDigest} from "../../../src/server/authorization/policy.ts";
 import {createProjectServer} from "../../../src/server/index.ts";
@@ -35,6 +36,8 @@ let client;
 let snapshotReads = 0;
 let requestOrdinal = 0;
 const facts = createMemoryProjectServerFacts().value;
+const unavailableAgentRuntime = async () => { throw new Error("Agent Runtime is not invoked by read fixtures."); };
+const agentRuntime = {protocol: AGENT_RUNTIME_PORT_PROTOCOL, start: unavailableAgentRuntime, inspect: unavailableAgentRuntime, cancel: unavailableAgentRuntime};
 
 before(async () => {
 	root = await mkdtemp(join(tmpdir(), "codewiki-sk3e-server-"));
@@ -83,7 +86,7 @@ before(async () => {
 	});
 	const policy = accessPolicy({changeIds: null, wikiItemIds: null});
 	const createdServer = createProjectServer({
-		ports: {projectStore: countedStore, checkRunner: checkRunner(), facts},
+		ports: {projectStore: countedStore, checkRunner: checkRunner(), facts, agentRuntime},
 		accessPolicy: policy,
 		project: {
 			projectName: "Server API Test",
@@ -227,7 +230,7 @@ test("audit is the explicit source for commits, digests, refs, provenance, and r
 
 test("authorization hides Change existence and transitively unsafe Wiki Items", async () => {
 	const limitedServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner(), facts},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts, agentRuntime},
 		accessPolicy: accessPolicy({changeIds: [CHANGE_ID], wikiItemIds: ["cw:component:project-server"]}),
 		project: {
 			projectName: "Server API Test",
@@ -285,7 +288,7 @@ test("a moving canonical selector resolves once and every dependent read stays o
 		},
 	});
 	const racingServer = createProjectServer({
-		ports: {projectStore: racingStore, checkRunner: checkRunner(), facts},
+		ports: {projectStore: racingStore, checkRunner: checkRunner(), facts, agentRuntime},
 		accessPolicy: accessPolicy({changeIds: null, wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
@@ -318,7 +321,7 @@ test("malformed current Change state stops normal reads while source audit remai
 	assert.equal(audit.ok, true);
 	assert.equal(audit.value.snapshot.commit.algorithm, "sha1");
 	const hiddenServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner(), facts},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts, agentRuntime},
 		accessPolicy: accessPolicy({changeIds: [], wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
@@ -339,7 +342,7 @@ test("malformed current Change state stops normal reads while source audit remai
 	assert.equal(hiddenStatus.ok, true);
 	assert.equal(hiddenStatus.value.changes.total, 0);
 	const boundedServer = createProjectServer({
-		ports: {projectStore: store, checkRunner: checkRunner(), facts},
+		ports: {projectStore: store, checkRunner: checkRunner(), facts, agentRuntime},
 		accessPolicy: accessPolicy({changeIds: null, wikiItemIds: null}),
 		project: {
 			projectName: "Server API Test",
