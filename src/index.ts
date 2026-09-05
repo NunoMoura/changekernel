@@ -12,6 +12,7 @@ export {
 	PRODUCT_TRANSPORT_REQUEST_PROTOCOL,
 	PRODUCT_TRANSPORT_RESPONSE_PROTOCOL,
 	createProductTransportRequest,
+	createProductTransportResponse,
 	decodeProductTransportResponse,
 } from "./api/transport/envelope.ts";
 export {CODEWIKI_PRODUCT, CODEWIKI_PRODUCT_POLICY_DIGEST} from "./product.ts";

@@ -47,6 +47,7 @@ test("root package surface exposes curated Product, Client, and Project Server o
 		"createCodewikiClient",
 		"createMemoryProjectServerFacts",
 		"createProductTransportRequest",
+		"createProductTransportResponse",
 		"createProjectAccessPolicy",
 		"createProjectServer",
 		"decodeProductTransportResponse",
