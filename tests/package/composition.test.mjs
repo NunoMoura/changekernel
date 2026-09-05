@@ -51,6 +51,12 @@ test("root package surface exposes curated Product, Client, and Project Server o
 		"createProjectServer",
 		"decodeProductTransportResponse",
 		"projectAccessProofDigest",
+		"renderChangeDetailConsole",
+		"renderChangesConsole",
+		"renderChecksConsole",
+		"renderConsole",
+		"renderProjectStatusConsole",
+		"sanitizeTerminalText",
 	]);
 	for (const forbidden of ["canonicalJson", "semanticDigest", "bindProjectServerFoundation", "readExactWiki", "CODEWIKI_EXTENSION_AVAILABLE"]) {
 		assert.equal(forbidden in publicApi, false, forbidden);

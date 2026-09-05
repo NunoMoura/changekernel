@@ -1,6 +1,14 @@
 export {bootstrapCodewikiProject} from "./adapters/git/bootstrap.ts";
 export {createCodewikiClient} from "./api/client/index.ts";
 export {
+	renderChangeDetailConsole,
+	renderChangesConsole,
+	renderChecksConsole,
+	renderConsole,
+	renderProjectStatusConsole,
+	sanitizeTerminalText,
+} from "./api/client/console.ts";
+export {
 	PRODUCT_TRANSPORT_REQUEST_PROTOCOL,
 	PRODUCT_TRANSPORT_RESPONSE_PROTOCOL,
 	createProductTransportRequest,
