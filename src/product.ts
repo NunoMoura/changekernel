@@ -20,7 +20,7 @@ import {PROJECT_SERVER_FACTS_PROTOCOL} from "./server/recovery/facts.ts";
 export interface CodewikiProductPolicy {
 	readonly protocol: Readonly<{id: "codewiki.product-policy"; version: "1.0.0"}>;
 	readonly productId: "codewiki";
-	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3f.1"}>;
+	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3f.2"}>;
 	readonly projectConfiguration: Readonly<{
 		protocol: Readonly<{id: "codewiki.project-config"; version: "2.0.0"}>;
 		semanticRoots: readonly [".codewiki/wiki/items", ".codewiki/changes"];
@@ -63,7 +63,7 @@ export interface CodewikiProductPolicy {
 const POLICY_INPUT = {
 	protocol: {id: "codewiki.product-policy", version: "1.0.0"},
 	productId: "codewiki",
-	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3f.1"},
+	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3f.2"},
 	projectConfiguration: {
 		protocol: {id: "codewiki.project-config", version: "2.0.0"},
 		semanticRoots: [".codewiki/wiki/items", ".codewiki/changes"],

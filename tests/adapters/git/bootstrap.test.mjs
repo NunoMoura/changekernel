@@ -81,9 +81,9 @@ test("bootstrap creates only Domain-free semantic roots and verified passive Che
 		assert.deepEqual(installed.source, {
 			kind: "npm",
 			locator: "@nunomoura/codewiki",
-			resolvedRevision: "0.4.0-sk3f.1",
+			resolvedRevision: "0.4.0-sk3f.2",
 		});
-		assert.equal(installed.planDigest, "sha256:bbe3b101796b3a49550edb55be20a92f88a97e362a43e9c666e3bcb8b0cf365a");
+		assert.equal(installed.planDigest, "sha256:d908ae6fc524eaf36fe538c5e52d8b5dba409192705fe5dfa847b39929a60e7a");
 		assert.equal(installed.localDivergence, false);
 		assert.equal(installed.resources.length, 4);
 

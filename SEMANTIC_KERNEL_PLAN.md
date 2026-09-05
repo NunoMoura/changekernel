@@ -291,6 +291,8 @@ SK3E checkpoint facts:
 
 Accepted requirement: `cw:codewiki:requirement:2jzn73ks7jsma7qrn6yatbaour2gs25uvu4z6vfj52wdemlslspq`.
 
+The first committed candidate, `5fc845982c80341bf78853060fcc5e99b0f0e560` packaged as `@nunomoura/codewiki@0.4.0-sk3f.1`, is abandoned without qualification or receipt. Fresh security diagnostics rejected its dynamic writable-path regular expression after its archive identity had been frozen; the bounded non-regular-expression matcher and every later correction therefore use the distinct `0.4.0-sk3f.2` identity.
+
 - [x] Publish atomic `proposeChanges`, expected-tip revision, and Decision outcome commands.
 - [x] Publish Planning, Work admission/integration, canonical reconciliation, Review, completion, and protected-effect commands.
 - [x] Prove all-or-none batch proposal admission and independent later outcomes.

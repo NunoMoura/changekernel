@@ -218,29 +218,65 @@ function dependsTransitively(workId: string, dependencyId: string, byId: Readonl
 	return false;
 }
 
+type PathPatternToken =
+	| Readonly<{kind: "literal"; value: string}>
+	| Readonly<{kind: "alternatives"; values: readonly string[]}>
+	| Readonly<{kind: "globstar" | "question" | "star"}>;
+
 function patternMatchesPath(pattern: string, path: string): boolean {
-	let expression = "^";
-	for (let index = 0; index < pattern.length; index += 1) {
-		const character = pattern[index] as string;
-		if (character === "*" && pattern[index + 1] === "*") {
-			expression += ".*";
-			index += 1;
-		} else if (character === "*") expression += "[^/]*";
-		else if (character === "?") expression += "[^/]";
-		else if (character === "{") {
-			const close = pattern.indexOf("}", index + 1);
-			if (close < 0) return false;
-			const alternatives = pattern.slice(index + 1, close).split(",");
-			if (alternatives.some((entry) => entry.length === 0)) return false;
-			expression += `(?:${alternatives.map(escapeRegularExpression).join("|")})`;
-			index = close;
-		} else expression += escapeRegularExpression(character);
-	}
-	return new RegExp(`${expression}$`, "u").test(path);
+	const tokens = tokenizePathPattern(pattern);
+	if (tokens === null) return false;
+	const memo = new Map<string, boolean>();
+	const match = (tokenIndex: number, pathIndex: number): boolean => {
+		const key = `${tokenIndex}:${pathIndex}`;
+		const known = memo.get(key);
+		if (known !== undefined) return known;
+		const token = tokens[tokenIndex];
+		let matched = token === undefined ? pathIndex === path.length : false;
+		if (token?.kind === "literal") matched = path.startsWith(token.value, pathIndex) && match(tokenIndex + 1, pathIndex + token.value.length);
+		else if (token?.kind === "question") matched = pathIndex < path.length && path[pathIndex] !== "/" && match(tokenIndex + 1, pathIndex + 1);
+		else if (token?.kind === "alternatives") matched = token.values.some((value) => path.startsWith(value, pathIndex) && match(tokenIndex + 1, pathIndex + value.length));
+		else if (token?.kind === "star" || token?.kind === "globstar") {
+			const maximum = token.kind === "globstar" ? path.length : nextSeparator(path, pathIndex);
+			for (let candidate = pathIndex; candidate <= maximum && !matched; candidate += 1) matched = match(tokenIndex + 1, candidate);
+		}
+		memo.set(key, matched);
+		return matched;
+	};
+	return match(0, 0);
 }
 
-function escapeRegularExpression(value: string): string {
-	return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+function tokenizePathPattern(pattern: string): readonly PathPatternToken[] | null {
+	const tokens: PathPatternToken[] = [];
+	let literal = "";
+	const flushLiteral = (): void => {
+		if (literal.length > 0) tokens.push(Object.freeze({kind: "literal", value: literal}));
+		literal = "";
+	};
+	for (let index = 0; index < pattern.length; index += 1) {
+		const character = pattern[index] as string;
+		if (character === "*" || character === "?" || character === "{") flushLiteral();
+		if (character === "*" && pattern[index + 1] === "*") {
+			tokens.push(Object.freeze({kind: "globstar"}));
+			index += 1;
+		} else if (character === "*") tokens.push(Object.freeze({kind: "star"}));
+		else if (character === "?") tokens.push(Object.freeze({kind: "question"}));
+		else if (character === "{") {
+			const close = pattern.indexOf("}", index + 1);
+			if (close < 0) return null;
+			const values = pattern.slice(index + 1, close).split(",");
+			if (values.some((value) => value.length === 0)) return null;
+			tokens.push(Object.freeze({kind: "alternatives", values: Object.freeze(values)}));
+			index = close;
+		} else literal += character;
+	}
+	flushLiteral();
+	return Object.freeze(tokens);
+}
+
+function nextSeparator(path: string, start: number): number {
+	const separator = path.indexOf("/", start);
+	return separator < 0 ? path.length : separator;
 }
 
 function isPortableProjectPath(path: string): boolean {

@@ -1,6 +1,6 @@
 {
 	"name": "@nunomoura/codewiki",
-	"version": "0.4.0-sk3f.1",
+	"version": "0.4.0-sk3f.2",
 	"description": "Deterministic Semantic Kernel, governed local lifecycle, authenticated Project API, and bounded bootstrap for CodeWiki projects.",
 	"keywords": [
 		"documentation",
