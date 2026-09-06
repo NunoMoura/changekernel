@@ -149,6 +149,24 @@ Rules:
 - System Component Items declare target ownership only through `codewiki.component:ownership`. Semantic roles belong to lifecycle/check owners, singleton config and lock files have exact owners, and target readers never use `codewiki.legacy:*` metadata outside explicit provenance inspection.
 - Architecture checks enforce roots, imports, cycles, exports, ownership coverage, and forbidden edges from the first target commit.
 
+## Target-tree disposition and dogfood-driven backlog
+
+The SK3H desired-versus-executable alignment audit found that SK3C–SK3F implemented the mechanism-complete minimal Kernel while the target tree above and the Wiki `codewiki.component:ownership` attributes encode the full vision. The divergence was incremental and was not recorded per subsystem at the time. This section is the governing disposition: every deviation from the target tree is classified as `permanent re-home` (Wiki amended), `dogfood backlog` (desired state stays; a future governed Change builds it when demand exists), or `deferred` (explicitly not built). The Unix rule applies to every primitive: do one thing only and do it well; new surface arrives only as a dogfed Change with concrete demand.
+
+| Target-tree entry | Executable truth | Disposition |
+| --- | --- | --- |
+| `server/lifecycle/{decision,planning,implementation,review}/` | Stage semantics complete in kernel reducers plus flat `src/server/commands/lifecycle.ts` and `gates.ts` | **dogfood backlog** — stage-scoped modules extracted when lifecycle operations grow beyond one command module per concern; Wiki patterns stay |
+| `server/intake/` | Mechanism core exists (`change.proposed`/`change.revised`, atomic batch `proposeChanges`, revision with expected-tip) inside `commands/lifecycle.ts`; producer/normalize/dedupe/route machinery from Product N was clean-cut in SK3B and not transplanted | **dogfood backlog** — Intake is its own concept, never part of Decision: funnel untrusted material from all actors into the Proposed backlog, where authorized Decision validation admits Changes into the pipeline. Restore as `src/server/intake/` when real actors demand producers and deduplication; Wiki patterns stay |
+| `server/projections/work/` | Deterministic WorkState/Work View derivation lives in `src/kernel/work/state.ts` | **permanent re-home** — deterministic mechanism belongs in the Kernel; Wiki `work-state` claims `src/kernel/work/**` only |
+| `server/projections/alignment/` | Alignment read composed inside `src/server/queries/project.ts` (owned by `project-server`); Definition resolution lives in `src/kernel/wiki/**` (owned by `knowledge`) | **permanent re-home** — `alignment` owns no source paths today; extraction becomes a dogfed backlog entry |
+| `adapters/checks/` | Check Runner port exists; every composition reports it unavailable; no deterministic sandbox adapter shipped | **dogfood backlog** — Wiki patterns stay; sandbox adapter arrives as a governed Change |
+| `api/index.ts` | Public exports are the reviewed manifest `src/index.ts`; `src/api/**` split into `client/contracts/transport` | **permanent re-home** — Wiki `protocol` claims only the three real roots |
+| `tests/product/**` | Package/product composition tested in `tests/package/**` | **permanent re-home** — Wiki `package` claims `tests/package/**` only |
+| `benchmarks/**` | Deleted in the SK3B clean foundation; plan keeps benchmarks outside the shipped package | **deferred** — Wiki patterns stay; benchmarks return only with concrete evidence they pay |
+| `tests/server/recovery/**` | Recovery-fact reads exercised via `tests/server/index.test.mjs` and `tests/server/queries/read-api.test.mjs` | **dogfood backlog** — dedicated recovery tests return when recovery work resumes |
+
+Post-stable dogfood backlog (each entry becomes its own governed Change with concrete demand, never scheduled speculatively): intake module and producer/deduplication machinery, stage-scoped lifecycle modules, deterministic Check sandbox adapter, alignment read extraction, dedicated recovery test scope, benchmarks.
+
 ## Controller continuity and SK3G handoff
 
 Immutable activated Product N remains the only semantic controller throughout SK3B–SK3F. Exact engineering checkpoints receive clean committed-subject CI receipts but no release lifecycle. Product N performs full external qualification only for an intentionally frozen SK3G release candidate. Checkpoint commits, packages, or passing tests never transfer project authority to the candidate.
