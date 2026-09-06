@@ -7,161 +7,186 @@ import {
 	renderChecksConsole,
 	renderConsole,
 	renderProjectStatusConsole,
+	renderStageProgression,
+	renderTraceConsole,
 	sanitizeTerminalText,
 } from "../../../src/api/client/console.ts";
 
 test("sanitizeTerminalText removes ANSI escape codes and dangerous control characters", () => {
-	const textWithAnsi = "\x1B[31mRed Alert!\x1B[0m\x1B[2J\x1B[HSystem Online";
-	assert.equal(sanitizeTerminalText(textWithAnsi), "Red Alert!System Online");
-
-	const textWithOsc = "\x1B]0;Fake Title\x07Hello World";
-	assert.equal(sanitizeTerminalText(textWithOsc), "Hello World");
-
-	const textWithControlChars = "Normal\x00\x07\x08Text\nLine 2\tTabbed";
-	assert.equal(sanitizeTerminalText(textWithControlChars), "NormalText\nLine 2\tTabbed");
+	assert.equal(sanitizeTerminalText("\x1B[31mRed\x1B[0m\x1B[2J\x1B[HOnline"), "RedOnline");
+	assert.equal(sanitizeTerminalText("\x1B]0;Fake\x07Hello"), "Hello");
+	assert.equal(sanitizeTerminalText("A\x00\x07\x08B\nC\tD"), "AB\nC\tD");
 });
 
-test("renderProjectStatusConsole produces plain-language status answering key questions", () => {
-	const statusData = {
-		project: "codewiki",
-		status: "attention_needed",
-		changes: {
-			total: 3,
-			states: {
-				committed: 1,
-				completed: 1,
-				deferred: 0,
-				proposed: 1,
-				rejected: 0,
-				superseded: 0,
-				withdrawn: 0,
-			},
-		},
-		work: {
-			total: 4,
-			ready: 2,
-		},
-		checks: {
-			passed: 5,
-			failed: 1,
-			stopped: 0,
-		},
-		nextActions: [
-			{
-				changeId: "CHG-001",
-				action: "Accept or reject the proposed change.",
-				userActionRequired: true,
-			},
-			{
-				changeId: "CHG-002",
-				action: "Executing planned work units.",
-				userActionRequired: false,
-			},
-		],
-	};
+test("renderStageProgression derives stage from kernel facts only", () => {
+	// proposed -> decision stage
+	const proposed = renderStageProgression({
+		status: "proposed",
+		gates: [],
+		userActionRequired: true,
+	});
+	assert.equal(proposed.label, "decision");
+	assert.equal(proposed.attention, true);
+	assert.match(proposed.gateSummary, /decision:/u);
 
-	const rendered = renderProjectStatusConsole(statusData);
-	assert.ok(rendered.includes("CodeWiki Project:  codewiki"));
-	assert.ok(rendered.includes("Overall Status:    Attention Needed"));
-	assert.ok(rendered.includes("1 item(s) require human attention"));
-	assert.ok(rendered.includes("Change CHG-001: [ACTION REQUIRED]"));
-	assert.ok(rendered.includes("Change CHG-002: [IN PROGRESS]"));
-	assert.ok(rendered.includes("Accept or reject the proposed change."));
-
-	// Edge case: null or empty
-	assert.equal(renderProjectStatusConsole(null), "No project status available.");
-});
-
-test("renderChangesConsole formats change list clearly", () => {
-	const changesData = {
-		items: [
-			{
-				changeId: "CHG-001",
-				intent: "Refactor storage subsystem for determinism",
-				status: "proposed",
-				realization: "wiki-and-project",
-				work: {total: 2, integrated: 0},
-				checks: {passed: 1, failed: 0},
-				nextAction: "Review change proposal.",
-				userActionRequired: true,
-			},
-		],
-	};
-
-	const rendered = renderChangesConsole(changesData);
-	assert.ok(rendered.includes("Change:       CHG-001"));
-	assert.ok(rendered.includes("Status:       PROPOSED (ACTION REQUIRED)"));
-	assert.ok(rendered.includes("Intent:       Refactor storage subsystem for determinism"));
-	assert.ok(rendered.includes("Work Units:   0/2 integrated"));
-	assert.ok(rendered.includes("Next Action:  Review change proposal."));
-
-	// Empty list
-	assert.equal(renderChangesConsole({items: []}), "No changes recorded in this project.\n");
-});
-
-test("renderChangeDetailConsole provides thorough plain-language answers", () => {
-	const detailData = {
-		changeId: "CHG-001",
-		intent: "Add terminal console",
-		rationale: "Operators need plain-language visibility",
+	// committed with only decision gate passed -> planning stage
+	const planning = renderStageProgression({
 		status: "committed",
-		realization: "project-only",
-		acceptance: ["Console answers the 5 core questions", "Terminal escapes are sanitized"],
-		work: {total: 3, integrated: 2},
-		checks: {passed: 4, failed: 0, stopped: 0},
-		nextAction: "Execute remaining work unit.",
+		gates: [{stage: "decision", status: "passed"}],
 		userActionRequired: false,
-	};
+	});
+	assert.equal(planning.label, "planning");
+	assert.equal(planning.attention, false);
 
-	const rendered = renderChangeDetailConsole(detailData);
-	assert.ok(rendered.includes("Change:       CHG-001"));
-	assert.ok(rendered.includes("What Changed: Add terminal console"));
-	assert.ok(rendered.includes("Why Matters:  Operators need plain-language visibility"));
-	assert.ok(rendered.includes("Console answers the 5 core questions"));
-	assert.ok(rendered.includes("Work:   2/3 integrated"));
-	assert.ok(rendered.includes("Checks: 4 passed, 0 failed, 0 stopped"));
-	assert.ok(rendered.includes("What Happens Next:"));
-	assert.ok(rendered.includes("Execute remaining work unit."));
-	assert.ok(rendered.includes("No user action required at this time"));
+	// committed with planning passed -> implementation
+	const implementation = renderStageProgression({
+		status: "committed",
+		gates: [
+			{stage: "decision", status: "passed"},
+			{stage: "planning", status: "passed"},
+			{stage: "implementation", status: "failed"},
+		],
+		userActionRequired: true,
+	});
+	assert.equal(implementation.label, "implementation");
+	assert.equal(implementation.attention, true);
+	assert.match(implementation.gateSummary, /implementation:✗/u);
+
+	// committed with review passed -> completion
+	const completion = renderStageProgression({
+		status: "committed",
+		gates: [
+			{stage: "decision", status: "passed"},
+			{stage: "planning", status: "passed"},
+			{stage: "implementation", status: "passed"},
+			{stage: "review", status: "passed"},
+		],
+		userActionRequired: false,
+	});
+	assert.equal(completion.label, "completion");
+
+	// terminal states are terminal
+	assert.equal(renderStageProgression({status: "completed", gates: [], userActionRequired: false}).label, "completed");
+	assert.equal(renderStageProgression({status: "deferred", gates: [], userActionRequired: false}).label, "deferred");
+	assert.equal(renderStageProgression({status: "rejected", gates: [], userActionRequired: false}).label, "rejected");
 });
 
-test("renderChecksConsole formats verification status and audit counts", () => {
-	const checksData = {
+test("renderChangesConsole renders the process table over Changes", () => {
+	const data = {
 		items: [
 			{
-				changeId: "CHG-001",
-				stage: "review",
-				status: "passed",
-				runs: 3,
-				results: 3,
-				evidence: 1,
-				nextAction: "Continue with change completion.",
-				userActionRequired: false,
+				changeId: "CHG-a92f8b7c6d5e",
+				status: "proposed",
+				gates: [],
+				work: {total: 0, integrated: 0},
+				checks: {passed: 0, failed: 0, stopped: 0},
+				userActionRequired: true,
 			},
 			{
-				changeId: "CHG-002",
-				stage: "implementation",
-				status: "failed",
-				runs: 1,
-				results: 1,
-				evidence: 0,
-				nextAction: "Fix failing test check.",
+				changeId: "CHG-b7c1",
+				status: "committed",
+				gates: [{stage: "decision", status: "passed"}, {stage: "planning", status: "failed"}],
+				work: {total: 4, integrated: 1},
+				checks: {passed: 2, failed: 1, stopped: 0},
 				userActionRequired: true,
+			},
+			{
+				changeId: "CHG-c3d9",
+				status: "completed",
+				gates: [],
+				work: {total: 4, integrated: 4},
+				checks: {passed: 6, failed: 0, stopped: 0},
+				userActionRequired: false,
 			},
 		],
 	};
 
-	const rendered = renderChecksConsole(checksData);
-	assert.ok(rendered.includes("Stage:        review -> PASSED"));
-	assert.ok(rendered.includes("Stage:        implementation -> FAILED [ATTENTION NEEDED]"));
-	assert.ok(rendered.includes("Audit Counts: 3 runs, 3 results, 1 evidence items"));
-	assert.ok(rendered.includes("Next Action:  Fix failing test check."));
+	const out = renderChangesConsole(data);
+	assert.match(out, /ID\s+STAGE\s+WORK\s+CHECKS\s+ATTENTION/u);
+	assert.match(out, /CHG-a92f8b7c…\s+decision\s+—\s+—\s+needs you/u);
+	assert.match(out, /CHG-b7c1\s+planning\s+1\/4\s+2\/3\s+needs you/u);
+	assert.match(out, /CHG-c3d9\s+completed\s+4\/4\s+6\/6\s+—/u);
+	assert.match(out, /Detail: codewiki change <id>/u);
+
+	assert.equal(renderChangesConsole({items: []}), "No Changes in this project.\nPropose one through the Project Server to begin.\n");
 });
 
-test("renderConsole dispatches supported views and falls back on invalid input", () => {
-	assert.ok(renderConsole("status", {project: "test"}).includes("test"));
-	assert.ok(renderConsole("changes", {items: []}).includes("No changes"));
-	assert.ok(renderConsole("change", {changeId: "CHG-99"}).includes("CHG-99"));
-	assert.ok(renderConsole("checks", {items: []}).includes("No checks"));
+test("renderChangeDetailConsole renders per-stage sections with verification strip", () => {
+	const out = renderChangeDetailConsole({
+		changeId: "CHG-b7c1",
+		intent: "Add export pipeline",
+		rationale: "reduce packaging drift",
+		status: "committed",
+		gates: [{stage: "decision", status: "passed"}, {stage: "planning", status: "failed"}],
+		work: {total: 4, integrated: 1},
+		checks: {passed: 2, failed: 1, stopped: 0},
+		acceptance: ["Pipeline is deterministic", "No residual state"],
+		nextAction: "Resolve the planning Check outcome before continuing.",
+		userActionRequired: true,
+	});
+	assert.match(out, /CHG-b7c1 — planning — "Add export pipeline"/u);
+	assert.match(out, /Why: reduce packaging drift/u);
+	assert.match(out, /decision:✓ planning:✗/u);
+	assert.match(out, /Work:\s+1\/4 integrated/u);
+	assert.match(out, /Acceptance:/u);
+	assert.match(out, /Next: Resolve the planning Check/u);
+	assert.match(out, /User action: yes/u);
+});
+
+test("renderChecksConsole renders the verification table", () => {
+	const out = renderChecksConsole({
+		items: [
+			{changeId: "CHG-b7c1", stage: "planning", status: "failed", userActionRequired: true},
+			{changeId: "CHG-c3d9", stage: "review", status: "passed", userActionRequired: false},
+		],
+	});
+	assert.match(out, /CHANGE\s+STAGE\s+STATUS/u);
+	assert.match(out, /planning\s+failed — needs you/u);
+	assert.match(out, /review\s+passed/u);
+	assert.equal(renderChecksConsole({items: []}), "No active Gates or Checks.\n");
+});
+
+test("renderProjectStatusConsole answers the five questions in three lines", () => {
+	const out = renderProjectStatusConsole({
+		project: "demo",
+		status: "attention_needed",
+		changes: {total: 3},
+		work: {total: 8},
+		checks: {passed: 5, failed: 1, stopped: 0},
+		nextActions: [{changeId: "CHG-a92f", userActionRequired: true}],
+	});
+	assert.match(out, /demo — Attention needed/u);
+	assert.match(out, /Changes: 3\s+Work: 8/u);
+	assert.match(out, /Needs you: 1 decision — run: codewiki changes/u);
+
+	const clear = renderProjectStatusConsole({
+		project: "demo",
+		status: "ready",
+		changes: {total: 0},
+		work: {total: 0},
+		checks: {passed: 0, failed: 0, stopped: 0},
+		nextActions: [],
+	});
+	assert.match(clear, /Needs you: nothing — all clear/u);
+});
+
+test("renderTraceConsole keeps technical identities in the audit view", () => {
+	const out = renderTraceConsole({
+		changeId: "CHG-c3d9",
+		state: "completed",
+		latestEventDigest: "sha256:" + "a".repeat(64),
+		traceDigest: "sha256:" + "b".repeat(64),
+	});
+	assert.match(out, /Change Trace: CHG-c3d9/u);
+	assert.match(out, /Lifecycle:\s+completed/u);
+	assert.match(out, /Latest event: sha256:aaaa/u);
+});
+
+test("renderConsole dispatches all views and falls back for unsupported ones", () => {
+	assert.match(renderConsole("status", {project: "p", status: "ready", nextActions: []}), /p — Ready/u);
+	assert.match(renderConsole("changes", {items: []}), /No Changes/u);
+	assert.match(renderConsole("change", {changeId: "CHG-x"}), /CHG-x/u);
+	assert.match(renderConsole("checks", {items: []}), /No active Gates/u);
+	assert.match(renderConsole("trace", {changeId: "CHG-y"}), /Change Trace: CHG-y/u);
 	assert.equal(renderConsole("unknown", {}), "Unsupported console view.\n");
 });

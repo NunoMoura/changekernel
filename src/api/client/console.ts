@@ -1,31 +1,38 @@
 import {isCanonicalObject, type CanonicalValue} from "../../kernel/canonical/json.ts";
 
 /**
- * Sanitizes terminal output by removing ANSI escape sequences and non-printable control characters.
- * Guarantees safe rendering in any terminal without terminal injection or escape sequence risks.
+ * Lifecycle console projections over public read responses.
+ * Stage progression renders two kernel entity fields only — `state.state`
+ * (ChangeLifecycleState) and `gates[].stage/status` (CHECK_STAGES) — never a
+ * console-invented state machine. All server text passes terminal sanitization.
+ */
+
+const GATE_ORDER = ["decision", "planning", "implementation", "review"] as const;
+
+/** Terminal position per ChangeLifecycleState, in lifecycle order. */
+const STATE_LABELS: Readonly<Record<string, string>> = Object.freeze({
+	proposed: "decision",
+	committed: "", // stage comes from gate progression
+	deferred: "deferred",
+	rejected: "rejected",
+	withdrawn: "withdrawn",
+	superseded: "superseded",
+	completed: "completed",
+});
+
+/**
+ * Sanitizes terminal output by removing ANSI escape sequences and non-printable
+ * control characters. Guarantees safe rendering in any terminal.
  */
 export function sanitizeTerminalText(input: string): string {
 	// Strip OSC (Operating System Command) sequences: ESC ] ... BEL or ESC \
 	let stripped = input.replace(/\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)/gu, "");
 	// Strip CSI (Control Sequence Introducer) sequences: ESC [ ... [command char]
 	stripped = stripped.replace(/\x1B\[[0-?]*[ -/]*[@-~]/gu, "");
-	// Strip other 2-character escape sequences: ESC followed by ASCII control/command
+	// Strip other 2-character escape sequences
 	stripped = stripped.replace(/\x1B[ -/]*[@-~]/gu, "");
 	// Replace non-printable control characters (except newline \n and tab \t)
 	return stripped.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/gu, "");
-}
-
-function formatStatusLabel(rawStatus: string): string {
-	if (rawStatus === "ready") {
-		return "Ready (All active requirements and checks satisfied)";
-	}
-	if (rawStatus === "in_progress") {
-		return "In Progress (Active changes and work underway)";
-	}
-	if (rawStatus === "attention_needed") {
-		return "Attention Needed (Checks failed, stopped, or user action required)";
-	}
-	return rawStatus;
 }
 
 function safeString(value: unknown, fallback = ""): string {
@@ -50,14 +57,186 @@ function asArray(value: unknown): readonly unknown[] {
 	return Array.isArray(value) ? value : [];
 }
 
+interface StageProgression {
+	readonly label: string;
+	readonly gateSummary: string;
+	readonly attention: boolean;
+}
+
 /**
- * Renders the primary Project Status dashboard in plain user language.
- * Answers:
- * 1. Which Changes need attention?
- * 2. What changed and why does it matter?
- * 3. What Work and Checks are complete, blocked, or still needed?
- * 4. What happens next?
- * 5. Does the user need to decide or act?
+ * Stage progression from kernel facts only: `state.state` plus per-stage gate
+ * facts. `proposed` Change sits at the decision stage gate; `committed` Change
+ * advances through planning/implementation/review gate facts; terminal states
+ * are terminal. No fifth stage is invented.
+ */
+export function renderStageProgression(change: unknown): StageProgression {
+	const rec = asRecord(change);
+	if (!rec) return {label: "unknown", gateSummary: "", attention: false};
+	const state = safeString(rec.status, "unknown");
+	const gates = asArray(rec.gates)
+		.map((gate) => {
+			const g = asRecord(gate);
+			return g ? {stage: safeString(g.stage), status: safeString(g.status)} : null;
+		})
+		.filter((g): g is {stage: string; status: string} => g !== null);
+
+	const gateSummary = GATE_ORDER.map((stage) => {
+		const gate = gates.filter((g) => g.stage === stage).at(-1);
+		if (!gate) return `${stage}:—`;
+		const mark = gate.status === "passed" ? "✓" : gate.status === "failed" ? "✗" : "…";
+		return `${stage}:${mark}`;
+	}).join(" ");
+
+	if (state === "proposed") {
+		const decision = gates.filter((g) => g.stage === "decision").at(-1);
+		const attention = (!decision || decision.status !== "passed") || safeBoolean(rec.userActionRequired);
+		return {label: "decision", gateSummary, attention};
+	}
+	if (state === "deferred") return {label: "deferred", gateSummary, attention: safeBoolean(rec.userActionRequired)};
+	if (state === "committed") {
+		const stage = gates.filter((g) => g.status === "passed").map((g) => g.stage).at(-1);
+		let label = "committed";
+		if (stage === "decision") label = "planning";
+		else if (stage === "planning") label = "implementation";
+		else if (stage === "implementation") label = "review";
+		else if (stage === "review") label = "completion";
+		return {label, gateSummary, attention: safeBoolean(rec.userActionRequired)};
+	}
+	const label = STATE_LABELS[state] ?? state;
+	return {label, gateSummary, attention: false};
+}
+
+function attentionMark(progression: StageProgression): string {
+	if (!progression.attention) return "—";
+	return "needs you";
+}
+
+/**
+ * Process-table over Changes: one row per Change with stage, Work, Checks, and
+ * attention. The Change is the tracked primitive; the table is `ps` for them.
+ */
+export function renderChangesConsole(data: unknown): string {
+	const record = asRecord(data);
+	if (!record) return "No changes data available.";
+
+	const items = asArray(record.items);
+	if (items.length === 0) {
+		return "No Changes in this project.\nPropose one through the Project Server to begin.\n";
+	}
+
+	const header = `${"ID".padEnd(14)}${"STAGE".padEnd(15)}${"WORK".padEnd(9)}${"CHECKS".padEnd(9)}ATTENTION`;
+	const lines: string[] = [header, "-".repeat(header.length)];
+
+	for (const item of items) {
+		const rec = asRecord(item);
+		if (!rec) continue;
+		const changeId = safeString(rec.changeId, "unknown");
+		const displayId = changeId.length > 12 ? `${changeId.slice(0, 12)}…` : changeId;
+		const progression = renderStageProgression(rec);
+		const workRec = asRecord(rec.work);
+		const workTotal = safeNumber(workRec?.total);
+		const workIntegrated = safeNumber(workRec?.integrated);
+		const checksRec = asRecord(rec.checks);
+		const checksPassed = safeNumber(checksRec?.passed);
+		const checksFailed = safeNumber(checksRec?.failed);
+		const totalChecks = checksPassed + checksFailed;
+		const workCell = workTotal === 0 ? "—" : `${workIntegrated}/${workTotal}`;
+		const checksCell = totalChecks === 0 ? "—" : `${checksPassed}/${totalChecks}`;
+
+		lines.push(
+			displayId.padEnd(14) +
+			progression.label.padEnd(15) +
+			workCell.padEnd(9) +
+			checksCell.padEnd(9) +
+			attentionMark(progression),
+		);
+	}
+
+	lines.push("", "Detail: codewiki change <id>   Verification: codewiki checks   Audit: codewiki trace <id>");
+	return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Per-stage detail for one Change. Sections render only what exists at the
+ * current stage; the verification strip (gates) is always visible.
+ */
+export function renderChangeDetailConsole(data: unknown): string {
+	const rec = asRecord(data);
+	if (!rec) return "No change details available.";
+
+	const changeId = safeString(rec.changeId, "unknown");
+	const intent = safeString(rec.intent, "No intent stated.");
+	const rationale = safeString(rec.rationale, "");
+	const progression = renderStageProgression(rec);
+
+	const lines: string[] = [
+		`${changeId} — ${progression.label} — "${intent}"`,
+	];
+	if (rationale) lines.push(`Why: ${rationale}`);
+	lines.push("", `  Gates:  ${progression.gateSummary}`);
+
+	const workRec = asRecord(rec.work);
+	const workTotal = safeNumber(workRec?.total);
+	const workIntegrated = safeNumber(workRec?.integrated);
+	if (workTotal > 0) lines.push(`  Work:   ${workIntegrated}/${workTotal} integrated`);
+
+	const checksRec = asRecord(rec.checks);
+	const checksPassed = safeNumber(checksRec?.passed);
+	const checksFailed = safeNumber(checksRec?.failed);
+	const checksStopped = safeNumber(checksRec?.stopped);
+	if (checksPassed + checksFailed + checksStopped > 0) {
+		lines.push(`  Checks: ${checksPassed} passed, ${checksFailed} failed, ${checksStopped} stopped`);
+	}
+
+	const acceptance = asArray(rec.acceptance).map((entry) => safeString(entry)).filter((entry) => entry.length > 0);
+	if (acceptance.length > 0) {
+		lines.push("", "  Acceptance:");
+		for (const criterion of acceptance) lines.push(`  - ${criterion}`);
+	}
+
+	const nextAction = safeString(rec.nextAction, "");
+	if (nextAction) lines.push("", `Next: ${nextAction}`);
+	lines.push(`User action: ${progression.attention ? "yes — your decision or intervention is required" : "none at this time"}`);
+
+	return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Gates across Changes: the verification-focused view. One row per active gate.
+ */
+export function renderChecksConsole(data: unknown): string {
+	const record = asRecord(data);
+	if (!record) return "No checks data available.";
+
+	const items = asArray(record.items);
+	if (items.length === 0) {
+		return "No active Gates or Checks.\n";
+	}
+
+	const header = `${"CHANGE".padEnd(14)}${"STAGE".padEnd(16)}STATUS`;
+	const lines: string[] = [header, "-".repeat(header.length)];
+
+	for (const item of items) {
+		const rec = asRecord(item);
+		if (!rec) continue;
+		const changeId = safeString(rec.changeId, "unknown");
+		const displayId = changeId.length > 12 ? `${changeId.slice(0, 12)}…` : changeId;
+		const stage = safeString(rec.stage, "unknown");
+		const status = safeString(rec.status, "unknown");
+		const userRequired = safeBoolean(rec.userActionRequired);
+		lines.push(
+			displayId.padEnd(14) +
+			stage.padEnd(16) +
+			(status + (userRequired ? " — needs you" : "")),
+		);
+	}
+
+	return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Project header: readiness, counts, and what needs the user. Answers the five
+ * questions in three lines; detail lives in the per-verb views.
  */
 export function renderProjectStatusConsole(data: unknown): string {
 	const record = asRecord(data);
@@ -66,233 +245,67 @@ export function renderProjectStatusConsole(data: unknown): string {
 	const project = safeString(record.project, "Unknown Project");
 	const rawStatus = safeString(record.status, "unknown");
 	const statusLabel = formatStatusLabel(rawStatus);
-
 	const changesRec = asRecord(record.changes);
 	const totalChanges = safeNumber(changesRec?.total);
-	const statesRec = asRecord(changesRec?.states);
-	const committedChanges = safeNumber(statesRec?.committed);
-	const proposedChanges = safeNumber(statesRec?.proposed);
-	const deferredChanges = safeNumber(statesRec?.deferred);
-
 	const workRec = asRecord(record.work);
 	const totalWork = safeNumber(workRec?.total);
-	const readyWork = safeNumber(workRec?.ready);
-
 	const checksRec = asRecord(record.checks);
-	const passedChecks = safeNumber(checksRec?.passed);
 	const failedChecks = safeNumber(checksRec?.failed);
 	const stoppedChecks = safeNumber(checksRec?.stopped);
+	const nextActions = asArray(record.nextActions);
+	const attentionCount = nextActions.filter((item) => safeBoolean(asRecord(item)?.userActionRequired)).length;
 
-	const nextActions = asArray(record.nextActions).map((item) => {
-		const rec = asRecord(item);
-		return {
-			changeId: safeString(rec?.changeId, "unknown"),
-			action: safeString(rec?.action, "No next action specified."),
-			userActionRequired: safeBoolean(rec?.userActionRequired),
-		};
-	});
-
-	const attentionCount = nextActions.filter((a) => a.userActionRequired).length;
-
-	const lines: string[] = [
-		"================================================================================",
-		`CodeWiki Project:  ${project}`,
-		`Overall Status:    ${statusLabel}`,
-		`Active Changes:    ${totalChanges} total (${proposedChanges} proposed, ${committedChanges} committed, ${deferredChanges} deferred)`,
-		`Checks Status:     ${passedChecks} passed, ${failedChecks} failed, ${stoppedChecks} stopped`,
-		`Work Progress:     ${totalWork} total units (${readyWork} ready for execution)`,
-		`Attention Needed:  ${attentionCount > 0 ? `${attentionCount} item(s) require human attention` : "None"}`,
-		"================================================================================",
+	const lines = [
+		`${project} — ${statusLabel}`,
+		`Changes: ${totalChanges}   Work: ${totalWork}   Checks failing/stopped: ${failedChecks + stoppedChecks}`,
+		attentionCount > 0
+			? `Needs you: ${attentionCount} decision${attentionCount === 1 ? "" : "s"} — run: codewiki changes`
+			: "Needs you: nothing — all clear",
 	];
-
-	if (nextActions.length > 0) {
-		lines.push("", "Next Actions & Required Decisions:");
-		for (const item of nextActions) {
-			const badge = item.userActionRequired ? " [ACTION REQUIRED]" : " [IN PROGRESS]";
-			lines.push(`  - Change ${item.changeId}:${badge}`);
-			lines.push(`    ${item.action}`);
-		}
-	} else {
-		lines.push("", "Next Actions: No active changes requiring attention.");
-	}
-
 	return `${lines.join("\n")}\n`;
 }
 
-/**
- * Renders the Changes summary view in plain user language.
- */
-export function renderChangesConsole(data: unknown): string {
-	const record = asRecord(data);
-	if (!record) return "No changes data available.";
-
-	const items = asArray(record.items);
-	if (items.length === 0) {
-		return "No changes recorded in this project.\n";
-	}
-
-	const lines: string[] = [
-		"================================================================================",
-		`Changes (${items.length} total):`,
-		"================================================================================",
-	];
-
-	for (const item of items) {
-		const rec = asRecord(item);
-		if (!rec) continue;
-
-		const changeId = safeString(rec.changeId, "unknown");
-		const intent = safeString(rec.intent, "No intent stated.");
-		const status = safeString(rec.status, "unknown");
-		const realization = safeString(rec.realization, "unknown");
-		const nextAction = safeString(rec.nextAction, "None.");
-		const userRequired = safeBoolean(rec.userActionRequired);
-
-		const workRec = asRecord(rec.work);
-		const workTotal = safeNumber(workRec?.total);
-		const workIntegrated = safeNumber(workRec?.integrated);
-
-		const checksRec = asRecord(rec.checks);
-		const checksPassed = safeNumber(checksRec?.passed);
-		const checksFailed = safeNumber(checksRec?.failed);
-
-		lines.push(
-			`Change:       ${changeId}`,
-			`Status:       ${status.toUpperCase()}${userRequired ? " (ACTION REQUIRED)" : ""}`,
-			`Intent:       ${intent}`,
-			`Realization:  ${realization}`,
-			`Work Units:   ${workIntegrated}/${workTotal} integrated`,
-			`Checks:       ${checksPassed} passed, ${checksFailed} failed`,
-			`Next Action:  ${nextAction}`,
-			"--------------------------------------------------------------------------------",
-		);
-	}
-
-	return `${lines.join("\n")}\n`;
+function formatStatusLabel(rawStatus: string): string {
+	if (rawStatus === "ready") return "Ready";
+	if (rawStatus === "in_progress") return "In progress";
+	if (rawStatus === "attention_needed") return "Attention needed";
+	return rawStatus;
 }
-
 /**
- * Renders detailed view for a single Change in plain user language.
+ * Bounded audit view for one Change Trace. Technical identities stay in audit
+ * views only; plain views never show digests.
  */
-export function renderChangeDetailConsole(data: unknown): string {
+export function renderTraceConsole(data: unknown): string {
 	const rec = asRecord(data);
-	if (!rec) return "No change details available.";
+	if (!rec) return "No trace data available.";
 
 	const changeId = safeString(rec.changeId, "unknown");
-	const intent = safeString(rec.intent, "No intent stated.");
-	const rationale = safeString(rec.rationale, "No rationale provided.");
-	const status = safeString(rec.status, "unknown");
-	const realization = safeString(rec.realization, "unknown");
-	const nextAction = safeString(rec.nextAction, "None.");
-	const userRequired = safeBoolean(rec.userActionRequired);
-
-	const acceptance = asArray(rec.acceptance).map((a) => safeString(a)).filter((a) => a.length > 0);
-
-	const lines: string[] = [
-		"================================================================================",
-		`Change:       ${changeId}`,
-		`Status:       ${status.toUpperCase()}${userRequired ? " (HUMAN DECISION REQUIRED)" : ""}`,
-		"================================================================================",
-		`What Changed: ${intent}`,
-		`Why Matters:  ${rationale}`,
-		`Realization:  ${realization}`,
-		"",
-		"Acceptance Criteria:",
+	const state = safeString(rec.state, "unknown");
+	const lines = [
+		`Change Trace: ${changeId}`,
+		`Lifecycle:    ${state}`,
 	];
-
-	if (acceptance.length > 0) {
-		for (const crit of acceptance) {
-			lines.push(`  - ${crit}`);
-		}
-	} else {
-		lines.push("  (None recorded)");
-	}
-
-	const workRec = asRecord(rec.work);
-	const workTotal = safeNumber(workRec?.total);
-	const workIntegrated = safeNumber(workRec?.integrated);
-
-	const checksRec = asRecord(rec.checks);
-	const checksPassed = safeNumber(checksRec?.passed);
-	const checksFailed = safeNumber(checksRec?.failed);
-	const checksStopped = safeNumber(checksRec?.stopped);
-
-	lines.push(
-		"",
-		"Execution Progress:",
-		`  Work:   ${workIntegrated}/${workTotal} integrated`,
-		`  Checks: ${checksPassed} passed, ${checksFailed} failed, ${checksStopped} stopped`,
-		"",
-		`What Happens Next:`,
-		`  ${nextAction}`,
-		"",
-		`User Action: ${userRequired ? "YES - Human decision or intervention needed" : "No user action required at this time"}`,
-		"================================================================================",
-	);
-
+	const latestEventDigest = safeString(rec.latestEventDigest, "");
+	const traceDigest = safeString(rec.traceDigest, "");
+	if (latestEventDigest) lines.push(`Latest event: ${latestEventDigest}`);
+	if (traceDigest) lines.push(`Trace digest: ${traceDigest}`);
+	lines.push("Full append-only event history lives in the managed Git ref.");
 	return `${lines.join("\n")}\n`;
 }
 
 /**
- * Renders Checks status in plain user language.
- */
-export function renderChecksConsole(data: unknown): string {
-	const record = asRecord(data);
-	if (!record) return "No checks data available.";
-
-	const items = asArray(record.items);
-	if (items.length === 0) {
-		return "No checks recorded.\n";
-	}
-
-	const lines: string[] = [
-		"================================================================================",
-		`Checks (${items.length} items):`,
-		"================================================================================",
-	];
-
-	for (const item of items) {
-		const rec = asRecord(item);
-		if (!rec) continue;
-
-		const changeId = safeString(rec.changeId, "unknown");
-		const stage = safeString(rec.stage, "unknown");
-		const status = safeString(rec.status, "unknown");
-		const runs = safeNumber(rec.runs);
-		const results = safeNumber(rec.results);
-		const evidence = safeNumber(rec.evidence);
-		const nextAction = safeString(rec.nextAction, "None.");
-		const userRequired = safeBoolean(rec.userActionRequired);
-
-		lines.push(
-			`Change:       ${changeId}`,
-			`Stage:        ${stage} -> ${status.toUpperCase()}${userRequired ? " [ATTENTION NEEDED]" : ""}`,
-			`Audit Counts: ${runs} runs, ${results} results, ${evidence} evidence items`,
-			`Next Action:  ${nextAction}`,
-			"--------------------------------------------------------------------------------",
-		);
-	}
-
-	return `${lines.join("\n")}\n`;
-}
-
-/**
- * Universal console dispatcher rendering any supported public read response in terminal plain language.
+ * Universal console dispatcher over supported views.
  */
 export function renderConsole(
-	view: "status" | "changes" | "change" | "checks",
+	view: "status" | "changes" | "change" | "checks" | "trace",
 	data: unknown,
 ): string {
 	switch (view) {
-		case "status":
-			return renderProjectStatusConsole(data);
-		case "changes":
-			return renderChangesConsole(data);
-		case "change":
-			return renderChangeDetailConsole(data);
-		case "checks":
-			return renderChecksConsole(data);
-		default:
-			return "Unsupported console view.\n";
+		case "status": return renderProjectStatusConsole(data);
+		case "changes": return renderChangesConsole(data);
+		case "change": return renderChangeDetailConsole(data);
+		case "checks": return renderChecksConsole(data);
+		case "trace": return renderTraceConsole(data);
+		default: return "Unsupported console view.\n";
 	}
 }

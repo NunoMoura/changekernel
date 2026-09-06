@@ -367,6 +367,7 @@ function changeSummary(change: ReducedChange): CanonicalRecord {
 		type: change.change.changeType,
 		realization: change.change.realization,
 		status: change.state,
+		gates: Object.freeze(gates.map((gate) => Object.freeze({stage: gate.stage, status: gate.status}))),
 		work: Object.freeze({total: change.work.length, integrated: change.work.filter((entry) => entry.status === "integrated").length}),
 		checks: Object.freeze({
 			passed: gates.filter((entry) => entry.status === "passed").length,

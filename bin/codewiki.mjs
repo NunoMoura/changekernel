@@ -132,18 +132,13 @@ async function main(argv) {
 			process.stdout.write(`${JSON.stringify({changeId, state: reduced.state, latestEventDigest: reduced.latestEventDigest, traceDigest: reduced.traceDigest, tracePath: path}, null, 2)}\n`);
 			return 0;
 		}
-		const lines = [
-			"================================================================================",
-			`Change Trace:   ${changeId}`,
-			`Lifecycle:      ${reduced.state}`,
-			`Trace location: managed Git ref (bounded audit view)`,
-			"--------------------------------------------------------------------------------",
-		];
-		lines.push(`  Latest event: ${sanitizeTerminalText(reduced.latestEventDigest)}`);
-		lines.push(`  Trace digest: ${sanitizeTerminalText(reduced.traceDigest)}`);
-		lines.push("  Full append-only event history lives in the managed Git ref; use trace --json for digest fields.");
-		lines.push("================================================================================");
-		process.stdout.write(`${lines.join("\n")}\n`);
+		process.stdout.write(renderConsole("trace", {
+			changeId,
+			state: reduced.state,
+			latestEventDigest: reduced.latestEventDigest,
+			traceDigest: reduced.traceDigest,
+			tracePath: path,
+		}));
 		return 0;
 	}
 

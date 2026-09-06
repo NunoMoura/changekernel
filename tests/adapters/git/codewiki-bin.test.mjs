@@ -30,9 +30,9 @@ test("codewiki status answers the five questions in plain language", async () =>
 	try {
 		const out = await execFileAsync(process.execPath, [bin, "status", root]);
 		assert.equal(out.code, 0);
-		assert.match(out.stdout, /CodeWiki Project:\s+codewiki-bin-status-/u);
-		assert.match(out.stdout, /Overall Status:\s+Ready/u);
-		assert.match(out.stdout, /Attention Needed:\s+None/u);
+		assert.match(out.stdout, /codewiki-bin-status-\S+ — Ready/u);
+		assert.match(out.stdout, /Changes: 0\s+Work: 0/u);
+		assert.match(out.stdout, /Needs you: nothing — all clear/u);
 		assert.match(out.stdout, /read-only/u);
 	} finally {
 		await rm(root, {recursive: true, force: true});
