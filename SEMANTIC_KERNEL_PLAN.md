@@ -345,6 +345,7 @@ Success: first Agent-capable private Product release completes a real Product Nâ
 Accepted requirement: `cw:codewiki:requirement:jzsvjec4kalxya5t3qpyvl2hgygje5a24fvi5bxv7qpo7z64kc6q`.
 
 - [ ] Build the bounded read-only Omarchy reference client outside this repository using public API/SDK only.
+- [ ] Ship the terminal-first Console as a `codewiki` bin with the established lifecycle verbs (`status`, `changes`, `checks`, `trace`, `change`) over a public bounded local Project Server composition; deterministic plain-language output is the default, technical identities only via explicit audit reads, and the Project Server (never an agent daemon) remains the only service vocabulary.
 - [ ] Make the terminal-first Console default to plain user language: what changed, why it matters, what happens next, and whether the user must act. Technical identities remain absent unless the user explicitly requests audit or troubleshooting detail.
 - [ ] Test only against packed immutable qualified Product bytes with least-privilege credentials.
 - [ ] Prove no direct `.codewiki/**`, private-state, internal module, or managed-ref access.

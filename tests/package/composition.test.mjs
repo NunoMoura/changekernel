@@ -40,11 +40,13 @@ test("root package surface exposes curated Product, Client, and Project Server o
 	assert.deepEqual(Object.keys(publicApi).sort(), [
 		"CODEWIKI_PRODUCT",
 		"CODEWIKI_PRODUCT_POLICY_DIGEST",
+		"LOCAL_PROJECT_SERVER_PROTOCOL",
 		"PRODUCT_TRANSPORT_REQUEST_PROTOCOL",
 		"PRODUCT_TRANSPORT_RESPONSE_PROTOCOL",
 		"PROJECT_SERVER_PROTOCOL",
 		"bootstrapCodewikiProject",
 		"createCodewikiClient",
+		"createLocalProjectServer",
 		"createMemoryProjectServerFacts",
 		"createProductTransportRequest",
 		"createProductTransportResponse",

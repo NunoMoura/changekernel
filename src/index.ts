@@ -1,4 +1,6 @@
 export {bootstrapCodewikiProject} from "./adapters/git/bootstrap.ts";
+export {createLocalProjectServer, LOCAL_PROJECT_SERVER_PROTOCOL} from "./adapters/git/local-server.ts";
+export type {LocalProjectServer, LocalProjectServerIssue} from "./adapters/git/local-server.ts";
 export {createCodewikiClient} from "./api/client/index.ts";
 export {
 	renderChangeDetailConsole,
