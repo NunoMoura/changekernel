@@ -5,6 +5,10 @@
 
 Checks are project-owned, stage-specific judgments over one exact Git subject. Check Packs define available policy. A Gate freezes the exact stage subject, Check Pack identities, Change type, realization route, type-conditioned active Checks, declared inputs, resolver identity, and Gate digest. One Check Run executes one active Check; completed execution may produce one Result. Gate reduction yields `passed`, `failed`, or `stopped` and grants no lifecycle authority by itself.
 
+Checks are domain-neutral verification, not exclusively software tests. Declared criteria can cover calculations, source support, document consistency, structure, or domain-specific observations. They apply at every lifecycle stage through the same bounded Code/Model Check and Evidence contracts. A pass establishes only the stated judgment over exact inputs, not universal correctness or an unobserved real-world effect.
+
+Implementation Checks judge Work Unit obligations; Review Checks judge complete reconciled realization and cross-unit consistency. A Review finding does not imply differently scoped Implementation Checks ran incorrectly. Prior Results remain bound to their exact Gate; evidence reuse requires explicit identity and policy closure rather than copying a green status into another stage.
+
 ## Project files
 
 ```text
@@ -23,13 +27,15 @@ Stages are `decision`, `planning`, `implementation`, and `review`. A Pack direct
 
 Project Server validates and snapshots every Pack for the stage. A Check with no applicability selector is active. An optional selector contains only positive allowlists over `changeType`, `realization`, Work Unit subtype, and exact subject facts; declared fields combine by conjunction and values within one field by membership. Unknown fields/values, negative rules, arbitrary expressions, or incomplete facts stop Gate construction. Exact stage and frozen subject deterministically select the canonically sorted `Gate.activeChecks`. Agents, routes, models, Workers, and proposal bytes cannot choose or suppress that set. The Gate binds complete available policy, selector inputs, resolver identity, active set, omissions, and digest so selection can be replayed.
 
+Purpose classification and realization are separate: a Wiki-only route or small diff does not imply low risk. Improvements to Check policy, Skills, or evaluation mechanisms follow normal intake and current governing authorization; proposed policy cannot establish its own approval conditions or alter an already frozen Gate. Accepted policy changes are prospective and require fresh affected evaluation.
+
 Decision has no mandatory Product-authored semantic rubric. Projects may explicitly adopt alignment or other judgments, but a model judgment cannot prove classification correct or replace deterministic safety validation. Any safety-critical Check is either universal for its stage or selected only from deterministic exact-subject facts independent of producer-declared classification. Structural Git, Trace, Item, AuthZ, and state-machine validation is deterministic release code invoked before Gate creation; this Kernel Validation is not a Check and supplements rather than replaces stage Checks. Planning retains its own project Check Packs and Gate.
 
 ## One Check, one contract
 
 Each registered top-level Check declares one atomic requirement, pass/fail or finite quantitative condition, stable failure code, bounded inputs, execution limits, applicability, and remediation contract. Its implementation may compose internal helpers, but only the registered boundary receives one Check Run and at most one Result.
 
-Model Checks use `CHECK.md` and run through fresh isolated DSH Runs on separately authorized routes. Model Checks receive only declared Gate inputs, no tools, and no producer memory. They cannot mutate the subject, grant exceptions, choose transitions, or treat model judgment as deterministic truth. A Model Check may consume immutable Preview Evidence captured before its Run, but it cannot launch Preview or inherit producer memory.
+Model Checks use `CHECK.md` and run through fresh isolated DSH Runs on separately authorized routes. Model Checks receive only declared immutable Gate inputs and authorized View snapshots, no tools, and no producer memory. They cannot mutate the subject, grant exceptions, choose transitions, or treat model judgment as deterministic truth. A Model Check may consume immutable Preview Evidence captured before its Run, but it cannot launch Preview or inherit producer memory.
 
 Code Checks use self-contained `CHECK.mjs` inside admitted hermetic, credential-free, network-denied sandboxes. They receive only declared Gate inputs and return bounded output through the Check SDK. Project Server authorizes time, resource, filesystem, process, output, and cancellation limits and validates receipts; the Check Runner adapter and qualified execution host physically enforce those limits. No host fallback or canonical-write capability exists.
 

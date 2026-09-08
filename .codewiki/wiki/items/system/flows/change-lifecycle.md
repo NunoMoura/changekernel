@@ -3,7 +3,7 @@
 ---
 # Change Lifecycle
 
-CodeWiki uses an intent-first Git pipeline: semantic merge first, artifact merge second. A Change is one stable intention, one append-only Trace, and one managed Git ref. Every ref tip is a full Project snapshot; Project Server alone writes canonical and managed CodeWiki refs.
+CodeWiki's Git-compatible version-control interface exposes an intent-first lifecycle: semantic merge first, artifact merge second. A Change is one stable intention, one append-only Trace, and one managed Git ref. Every ref tip is a full Project snapshot; Project Server alone writes canonical and managed CodeWiki refs.
 
 ```text
 Draft Change
@@ -15,9 +15,15 @@ Draft Change
       -> withdraw
 ```
 
+The four stages are domain-neutral. Decision accepts intended meaning; Planning bounds work and verification; Implementation produces project artifacts; Review judges complete integrated realization. Checks apply throughout. Software tests and builds are domain-specific mechanisms, and Review is not necessarily a human meeting or deployment approval. Passing local obligations does not establish complete combined coverage or consistency.
+
+New governed improvements share intake regardless of destination, including CodeWiki itself. Explicit proposal capability may be held by human, service, or Agent-backed Actors; it grants no acceptance authority. Existing authorized Work and routine checkpoints do not each repeat the lifecycle.
+
 Draft conversation is non-authoritative. `proposeChanges` admits one authenticated, idempotent batch of independently decidable proposals atomically while preserving separate Change IDs and later outcomes. Each Proposed Change binds an expected project head and expected Change tip. Stale input returns exact reconciliation facts; CodeWiki never performs silent semantic merge or last-write-wins.
 
 Project Server validates the complete Project tree, append-only Trace, Wiki result, authority, Change type, realization route, and active-Change compatibility. It resolves exact Decision Check Packs and freezes the Gate's type-conditioned active Checks. Check Runs judge the exact Proposed Change tip. A passed Gate grants eligibility only; an authenticated `commitChange` command and final expected-head CAS create authority.
+
+`changeType` describes purpose; `realization` describes whether the accepted snapshot already achieves the complete outcome. A terminology clarification may be Wiki-only. Requiring a new project capability is project realization even when its initial proposal edits only Wiki. Small or Wiki-only policy changes can require stringent Decision Checks. There are no arbitrary producer-selected stage-skipping flags.
 
 The Change Commit has the current project head and exact Change tip as parents. It commits accepted Wiki intent and records `change.committed`. If the full snapshot is a true Wiki-only realization, the same commit records `change.completed`. Otherwise it creates an explicit, owned Alignment gap and the Committed Change continues.
 
@@ -39,4 +45,6 @@ Before Review, Project Server explicitly reconciles the integrated Change artifa
 
 Before commitment, rejection, withdrawal, or deferral changes only managed Change history. After commitment, intent cannot be rejected or withdrawn. Implementation failure leaves the Change active, blocked, or superseded; only reviewed realization or a Wiki-only Change Commit completes it. Accepted history is corrected only through a new Change.
 
-Every CodeWiki-controlled Agent uses a DSH Run with exact Project/Wiki/Trace inputs, role-specific read-only Wiki tools, bounded capabilities, and receipt evidence. Stage Check Packs define available policy; frozen Change type and exact subject determine Gate active Checks. Project Server validates all transitions and derives state from Git, Trace, Results, and Receipts.
+Native and supported Git-compatible commands preserve the same authorization and exact-subject rules. An ordinary Git commit is a development checkpoint, not `commitChange`, passing Checks, completion, or activation. Protected writes remain enforced independently of the compatibility executable; system Git and operator-authorized recovery remain available.
+
+In the qualified DSH execution profile, every controlled Agent uses a DSH Run with exact Project/Wiki/Trace inputs, role-specific read-only Wiki tools, bounded capabilities, and receipt evidence. Stage Check Packs define available policy; frozen Change type and exact subject determine Gate active Checks. Project Server validates all transitions and derives state from Git, Trace, Results, and Receipts.

@@ -5,6 +5,10 @@
 
 Clients are replaceable views and command senders over authenticated Kernel API/Client SDK. CLI, Console, App, IDE, browser, MCP, channel integrations, external Agents, and future Omarchy surfaces receive no direct Git/Wiki/private-state handle, Project Server import, hidden command, model credential, or lifecycle authority.
 
+The native CodeWiki CLI is the primary version-control interface. A scoped Git compatibility adapter preserves its declared familiar-command surface; both invoke the same Project Server-served Product UAPI. UI clients need not shell out to the CLI. Equivalent authenticated requests over the same exact subject preserve semantic results and receipts, apart from transport-only fields. Native semantic envelopes and declared Git byte formats remain distinct.
+
+Project-first tools may address multiple independent repositories through explicit selection and authorized discovery, without cross-project authority or unauthorized-project disclosure. Exact reads require no model provider or adoption of a managed Agent runtime; online operations still require current authentication and an available Project Server. OS/harness-neutral semantic contracts do not qualify arbitrary executors or hosts.
+
 A Client acquires identity proof through an approved channel or external IdP and sends bounded requests. Project Server maps proof to Actor/project AuthZ and validates each capability, source selector, idempotency key, expected project/Change head, expiry, and payload. Client type, UI selection, model route, local repository access, or Git authorship grants nothing.
 
 Clients render persisted Project Server facts and never infer readiness, activity, causality, acceptance, completion, impact, or effect success. Event streams are notifications; cursor gap or generation change requires commit-consistent refresh. Moving source names resolve once to explicit OIDs.
@@ -13,8 +17,12 @@ Read surfaces include Project discovery/capabilities/status; exact Wiki get/list
 
 Decision Agent is the only user-facing CodeWiki Agent role. It runs through DSH, queries exact Wiki/Dictionary Views, and prepares proposal bytes, but authenticated user submission and `commitChange` own authority/accountability. Planning, Worker, Review, and Model Check Agents are internal separately authorized roles.
 
+Semantic query meaning, exact-source interpretation, required context, and provenance belong to CodeWiki services. Harnesses select requests and handle model interaction, prompt packing, and temporary compaction. Safe Agent handoff derives accepted intent, Work, feedback, and unresolved-operation status from existing owners rather than private conversation memory.
+
 External Agent Clients use the same public operations and bounded capabilities. They may query exact state and, when authorized, submit `proposeChanges`; they cannot write `.codewiki/**`, choose active Checks, assert receipts, or bypass expected-head/tip CAS. MCP operation names are reserved and capability-discoverable rather than a generic filesystem or lifecycle tunnel.
 
-Rich CodeWiki App may organize Wiki exploration, Change workspaces, Agent interaction, Work, notifications, and Plugin management, but remains external and unprivileged. Initial Omarchy integration lives in a separate repository as a read-only Agent Skill/shell panel showing status, Decisions, Gates/Checks, Alignment, and handoff. It uses least-privilege API credentials and packed immutable qualified releases, not direct Wiki files or this mutable checkout.
+Rich CodeWiki App may organize Wiki exploration, Change workspaces, Agent interaction, Work, notifications, and Plugin management, but remains external and unprivileged. An Omarchy integration lives in a separate repository as a read-only Agent Skill/shell panel showing status, Decisions, Gates/Checks, Alignment, and handoff. It uses least-privilege API credentials and packed immutable qualified releases, not direct Wiki files or this mutable checkout.
 
 CodeWiki Console remains minimal, terminal-first, and read-only by default. High-authority commitment, completion, recovery, publication, or Delivery requires an explicit authenticated Client/CLI operation that displays exact subject, consequence, heads, conflicts, authority, and expected receipt.
+
+A compatibility executable routes supported requests but does not enforce custody by itself. Managed permissions protect canonical storage, Wiki/Trace, shared Git internals, and credentials against alternate binaries, libraries, or direct writes. Local checkpoints do not become accepted Changes. Unsupported inputs stop without raw-Git passthrough; unrestricted workspaces expose their custody limits. No Client replaces global Git or removes independently authorized native recovery.

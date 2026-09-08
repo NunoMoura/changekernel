@@ -70,6 +70,8 @@ A successful bootstrap creates:
 └── wiki/items/
 ```
 
+This is the current executable layout. The desired flat `.codewiki/wiki/**` Item tree is documented in Wiki; reader/writer changes and separately authorized existing-state conversion remain R1-5 work. Do not flatten an existing project manually or infer migration support from the design.
+
 The Wiki and Change directories are semantically empty. The lock explicitly contains `packages: {}`; no Check Pack files are copied. Bootstrap never executes package lifecycle code, Skills, Checks, Agents, or arbitrary commands. Existing managed state causes a typed conflict and remains untouched.
 
 Custom Checks require explicit project adoption with matching files and lock digests. Editing or removing policy must update both coherently; bootstrap is not a policy-repair operation. A fully resolved empty Gate reports `empty_check_policy` and explains that no semantic Check verdict was produced. Missing/malformed policy or unavailable required execution fails closed.

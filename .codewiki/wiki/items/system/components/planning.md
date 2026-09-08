@@ -5,6 +5,8 @@
 
 Planning is the second phase for a Committed Change whose accepted Wiki intent still requires project realization. It decomposes that exact target into singly owned Work Units without restating or amending accepted meaning. A true Wiki-only Change completes at Change Commit and never enters Planning.
 
+Planning applies to any supported project-artifact domain. Small work may need one bounded Work Unit rather than an elaborate document or meeting; ownership, capability, coverage, and verification obligations remain. A maintenance label cannot silently remove Planning or final Review from project realization.
+
 Planning receives the exact Change Commit, managed Change tip, committed Wiki delta or stable existing-Wiki targets, Change type, current canonical Project snapshot, active Change dependencies, prior Gate feedback, and bounded Wiki/Alignment tools. A Planning Agent runs through DSH and may query more exact context, but conversation or Agent memory carries no authority.
 
 A proposed plan defines Work Units with stable identity, one owning Change, judgeable outcome, target Item/facet references, scope, dependencies, generic capabilities, custody/privacy/budget constraints, and verification intent. It does not copy Wiki outcome prose, choose an Actor, Worker, provider/model, live machine, schedule, or protected effect. Shared independently decidable foundational work becomes another Change; internal technical steps remain Work Units.

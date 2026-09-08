@@ -11,7 +11,7 @@ Semantic Kernel is CodeWiki's small deterministic mechanism layer. It validates 
 
 ## Dependency boundary
 
-Kernel code imports only bounded deterministic Kernel modules. It does not import filesystem, Git process, network, DSH, provider, UI, Preview, package-manager, environment, credential, wall-clock, randomness, or adapter implementations. Time, identity, limits, Product-fixed role policy, Project policy, and external observations enter as explicit validated values. Product-fixed policy is immutable build-bound data, not executable prompts or effectful Checks inside the pure Kernel. Mutable globals, ambient configuration, dynamic Plugins, and moving source selectors are forbidden.
+Kernel code imports only bounded deterministic Kernel modules. It does not import filesystem, Git process, network, DSH, provider, UI, Preview, package-manager, environment, credential, wall-clock, randomness, or adapter implementations. Time, identity, limits, Product-fixed role policy, explicitly adopted Project Check policy, and external observations enter as explicit validated values. Product-fixed policy is immutable build-bound data, not executable prompts or effectful Checks inside the pure Kernel. Mutable globals, ambient configuration, dynamic Plugins, and moving source selectors are forbidden.
 
 Project Server owns AuthZ, orchestration, current expected heads, effect ordering, and recovery policy. It supplies canonical exact inputs to Kernel mechanisms, receives typed outcomes, revalidates current authority and freshness, then invokes narrow ports. Project Store, Check Runner, Agent Runtime, and Preview adapters implement effects without changing Kernel meaning. No adapter, Client, Check, DSH Run, Preview handle, or project file can call an internal Kernel path to grant itself authority.
 
@@ -26,6 +26,12 @@ Kernel transition mechanisms never write Git refs or external state. They descri
 Only curated version-neutral semantic operations and explicit versioned envelopes are public. The historically named Kernel API is the Product UAPI served by Project Server; it does not expose direct pure-Kernel invocation or storage/authority bypass. Internal TypeScript types, reducers, helpers, and module paths are private and may evolve without compatibility promises. Public and persisted contracts advertise exact support ranges; unsupported pre-stable internals remain in Git/release history, not active readers.
 
 A System Component's current machine-readable source ownership lives in `codewiki.component:ownership`. Legacy namespaced attributes are provenance available only through exact provenance inspection; normal term resolution, search ranking, semantic diff, ownership, applicability, authorization, Agent context, and generated Views exclude them. Architecture checks enforce the dependency graph, public export manifest, and absence of Kernel-to-adapter edges.
+
+## Improvement and continuity boundary
+
+Project knowledge and producer guidance improve through normal governed Changes; proposed refinements cannot rewrite immutable Product policy, change their own approval conditions, or hot-modify the active controller. Hash-anchored edit handles may help proposal tooling locate bytes, but stable Item IDs and full exact-subject identities remain authoritative. A short hash is neither identity nor permission. Editing strategies and retrieval indexes are replaceable mechanisms, not additional Kernel lifecycle objects.
+
+Replay and derived task-context Views provide durable project continuity without requiring a previous conversation. The Kernel still consumes explicit bounded inputs; it does not search files, invoke models, compact Sessions, or own an adaptive memory engine. Project Server-served queries and qualified execution mechanics retain their separate owners.
 
 ## Hardening obligations
 

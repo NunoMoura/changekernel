@@ -5,6 +5,10 @@
 
 Change Intake accepts bounded material from users, channels, provider issues, Discovery Findings, Worker Agents, regressions, security findings, Delivery observations, Wiki drift, Outcome Diagnostics, and external Git captures. Intake material is untrusted. It cannot assign stable Change identity, Actor authority, Change type, priority, Check outcome, Wiki mutation, or canonical Git state.
 
+This is the common entry for new governed improvements to Wiki, project artifacts, Check policy, retrieval, tools, or CodeWiki itself. A human, service, or Agent-backed Client may submit only with explicit Actor proposal capability; producing an idea does not grant acceptance, execution, qualification, or publication authority. Learning/refinement is another proposal producer, not another lifecycle or privileged semantic writer.
+
+Fixes within an existing authorized Change remain its Work. Checkpoints, searches, cache rebuilds, observations, and local drafts do not each open a Change; promoting new meaning, policy, scope, or an independently decidable outcome requires intake or an allowed revision. Evidence-backed lessons remain explicit and reviewable rather than hidden supplemental instructions.
+
 The Decision Agent and user may turn material into a mutable draft. Only an authenticated exact submission enters governed history. `proposeChanges` is the primary plural command; singular submission wraps one proposal. A request binds an actor-scoped idempotency key, exact expected project head, submitting Actor/authority, and unique request-local keys. Project Server assigns Change IDs and atomically creates every requested managed Change ref and Trace or none.
 
 Each independently decidable outcome becomes one Change. Related Changes may share request correlation metadata, but correlation has no lifecycle, Gate, authority, or coupled outcome. Different acceptable outcomes use separate Changes. A single Change may have several contributors and revisions only while its independently decidable intention remains recognizable.
@@ -15,6 +19,6 @@ Each revision is a full Project snapshot on the Change ref. During Decision, its
 
 Project Server performs deterministic structure, identity, authority, and type-closure validation before creating the Decision Gate. Stage Check Packs define available Checks; declared Change type and exact subject determine active Checks. No fixed semantic alignment Check is implied. Safety-critical adopted Checks must be universal or depend only on deterministic exact-subject facts independent of producer-declared classification.
 
-External code with no prior Committed Change normally enters intake and Decision before implementation. CodeWiki intentionally aligns intent before spending Agent execution and review resources. Bounded prototypes may enter as Evidence for feasibility, but they do not bypass semantic commitment or become accepted implementation.
+External artifacts without a matching Committed Change enter intake and Decision before governed realization or acceptance. CodeWiki intentionally aligns intent before spending Agent execution and review resources. Bounded prototypes may enter as Evidence for feasibility, but they do not bypass semantic commitment or become accepted implementation.
 
 Outcome Diagnostics and source observations may propose new intake only. They never repair current output, reinterpret Results, self-modify policy, or write Wiki. Durable meaning enters Wiki through a Change Commit; transient operational facts remain private or become Evidence.

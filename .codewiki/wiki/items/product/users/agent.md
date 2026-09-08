@@ -3,7 +3,7 @@
 ---
 # Agent
 
-DSH is the operational plane for every CodeWiki-controlled Agent. Agents run with exact stage subjects, bounded capabilities, mandatory relevant Wiki context, role-specific read-only Wiki tools, and receipt evidence. They produce proposals, plans, project artifacts, Review judgments, or Check outputs without gaining Actor, Git-ref, Gate, or lifecycle authority.
+Agents use native semantic operations or supported familiar Git commands without making their harness the project's semantic authority. Controlled execution requires an explicitly qualified adapter/host profile; DSH is the concrete profile specified here. Agents run with exact stage subjects, bounded capabilities, mandatory relevant Wiki context, role-specific read-only Wiki tools, and receipt evidence. They produce proposals, plans, project artifacts, Review judgments, or Check outputs without gaining Actor, Git-ref, Gate, or lifecycle authority.
 
 Decision Agent is the only user-facing CodeWiki Agent role. It helps the user develop intent, queries exact current/proposed Wiki and Dictionary Views, explains feedback, and prepares Proposed Change bytes. Planning, Worker, Review, and Model Check Agents are internal DSH roles under separately authorized routes.
 
@@ -13,8 +13,10 @@ Project Server deterministically supplies exact target Item/Definition inputs fr
 
 Stage outputs cite Change IDs, Work Unit IDs, Item/facet references, and Git OIDs rather than copying governed Wiki outcome prose. The ordinary DSH Run receipt binds exact visible Wiki inputs, bounded queries, outputs, and Gate context; no standalone Wiki Usage Receipt or tool-call checklist can prove understanding.
 
-Durable learning enters accepted Wiki meaning, project Check policy, or explicit Change feedback. Repeated mistakes never become hidden cross-Run Agent memory or an unreviewed private semantic store.
+Safe continuation retrieves exact accepted intent, Work, feedback, Results, and pending operation status without depending on prior conversation once necessary task facts have been captured. Uncaptured questions first become explicit drafts/feedback; pending effects require reconciliation. CodeWiki owns semantic queries and mandatory context; the harness owns prompt packing and in-Run compaction. Ordinary commits remain development checkpoints, not acceptance or completion.
+
+Durable learning enters accepted Wiki meaning, project Check policy, or explicit Change feedback through existing governed paths. Refinement is another authorized proposal producer, not a self-modifying Kernel or a private accepted-Wiki writer. Repeated mistakes never become hidden cross-Run Agent memory or an unreviewed private semantic store.
 
 Agents cannot select Change type, suppress Gate active Checks, commit or complete Changes, alter accepted history, assign Workers, perform protected effects, or write managed refs. When an Agent prepares a proposal, authenticated user submission and later `commitChange` bind accountable human authority while preserving producing DSH Run provenance. An undelegated service acts only as its own limited Actor.
 
-External Agent products may connect as authenticated Clients or execute as explicitly delegated DSH-compatible Runs. CodeWiki claims only custody it can prove. Product brand, model identity, repository access, or useful output never upgrades authority.
+External Agent products may connect as authenticated Clients and propose when their Actor has explicit proposal capability; a service acts as its own limited Actor unless valid delegation says otherwise. This does not transfer human identity, acceptance authority, or evaluator selection. Execution additionally requires explicit route and qualified receipt/custody closure, not Client or brand equivalence. CodeWiki claims only custody it can prove. Product brand, model identity, repository access, or useful output never upgrades authority.

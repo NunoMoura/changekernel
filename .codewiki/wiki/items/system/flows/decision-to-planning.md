@@ -3,7 +3,7 @@
 ---
 # Decision to Planning
 
-Project Server runs Decision Gate over one exact Proposed Change tip. Gate freezes full Project commit/tree, required `changeType` and `realization`, exact Decision Pack snapshots, deterministic active Checks, Wiki/Dictionary Views, declared inputs, resolver identity, and digest. Fixed type/realization and Wiki semantic-alignment Checks always apply.
+Project Server runs Decision Gate over one exact Proposed Change tip. Gate freezes full Project commit/tree, required `changeType` and `realization`, exact Decision Pack snapshots, deterministic active Checks, Wiki/Dictionary Views, declared inputs, resolver identity, and digest. Only explicitly adopted project Check policy supplies semantic rubrics; CodeWiki installs no fixed alignment model Checks. Deterministic structural and authority validation always applies. A completely resolved empty active set is explicit and warned, never confused with unavailable execution or missing inputs.
 
 A failed Gate returns bounded feedback for a revised Proposed Change. A stopped Gate preserves state. A passed Gate grants eligibility only. Authenticated `commitChange` revalidates Actor, authority, unchanged Change tip, current Gate/Results, active-Change compatibility, complete Git/Wiki/Trace closure, and expected canonical head.
 

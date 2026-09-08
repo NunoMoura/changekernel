@@ -5,7 +5,9 @@
 
 ## Purpose
 
-CodeWiki Semantic Kernel is headless. Core presentation is a small terminal-first Console and scriptable commands for truthful inspection, recovery, and narrow authenticated operations. Rich Wiki authoring, Agent chat, project planning, IDE, desktop, and product experiences belong to external applications over public APIs.
+CodeWiki is Git-compatible version control for humans and Agents: a native version-control interface connecting exact artifacts with accepted intent, accountable Changes, and checked realization. The deterministic Semantic Kernel is the mechanism layer; Project Server is the sole semantic control plane; stock Git stores content, history, ancestry, and refs. This is not a Git fork, replacement object format, Git-project endorsement, or universal drop-in compatibility claim.
+
+The primary interface is the native CodeWiki CLI, with a small terminal-first Console for exact inspection, recovery, and narrow authenticated operations. A scoped Git compatibility adapter supports an explicitly declared command subset for existing Agents and scripts. Rich Wiki authoring, Agent chat, project planning, IDE, desktop, and product experiences belong to external applications over the same public API.
 
 Console presents accountable work in concepts users understand. Change is the primary unit; status, Work, Checks, Decisions, outcome, next action, and required user action explain its progress. Kernel builds, Git refs and object IDs, digests, receipts, protocol versions, controller generations, DSH internals, and storage mechanics never become normal interaction vocabulary. They remain available only through explicit audit or troubleshooting operations.
 
@@ -15,7 +17,21 @@ Console never reads `.codewiki/**` as an independent authority, calls models dir
 
 CodeWiki repository owns Kernel API/Client SDK, operator commands, optional terminal monitor, conformance fixtures, backup/recovery operations, and safe degraded inspection. External CodeWiki App, IDE, mobile, web, chat, and desktop products own their UX, releases, threat model, and identity acquisition. Project Server still validates proof and project AuthZ for every operation.
 
-Initial external reference client is a separate read-only Omarchy Agent Skill and shell panel. It consumes authenticated API status, pending Decisions, Gates/Checks, Alignment, and handoff. It receives no direct project-file access or privileged mutation path.
+An external reference client is a separate read-only Omarchy Agent Skill and shell panel. It consumes authenticated API status, pending Decisions, Gates/Checks, Alignment, and handoff. It receives no direct project-file access or privileged mutation path.
+
+Tools are project-first and system-accessible: installation may serve several explicitly selected independent repositories, but discovery grants no authority or cross-project access. Semantic contracts are OS/harness-neutral; execution support is qualified per exact adapter and host profile. Choosing an interactive harness does not qualify it as a managed executor.
+
+## Intent, artifacts, and continuity
+
+Wiki is the semantic half of version control, not a manual attached to commit history. It makes accepted descriptive, historical, and normative meaning addressable. Git records exact artifacts; Change Trace preserves decisions, rationale, and Work facts; Evidence and Results support judgments. State and Change are a public mental model over these owners, not new storage or replacement lifecycle entities.
+
+Project continuity should survive a safe session handoff without prior conversation. Necessary task facts and unresolved questions must first be explicit in their appropriate owners; a recent-message count cannot guarantee that. Clients retrieve bounded exact context rather than maintaining another authoritative memory. The goal is fewer repeated explanations, regressions, and corrective interventions across Agents, not perfect model judgment.
+
+## Version-control commands
+
+Ordinary staging and commits create cheap development checkpoints, not semantic admission, passing Gates, completion, or release activation. Protected transitions require authenticated authority, exact subjects, current Gates, and expected-head/tip CAS. Publication remains a separately authorized effect. Native commands expose intent and realization alongside artifacts; Git machine-output modes preserve declared byte formats rather than mixing in native semantic envelopes.
+
+Unsupported commands, flags, versions, aliases, configuration, or helpers stop explicitly; no unrestricted Git passthrough exists. A wrapper is not a security boundary. Managed storage access, permissions, credentials, and effect controls prevent alternate Git binaries, libraries, shared-worktree internals, or direct writes from bypassing canonical authority. Unrestricted workspaces receive assistance with truthful custody limits. Installation never replaces system Git globally, interferes with unrelated repositories, or removes independently authorized native recovery.
 
 ## Default information
 

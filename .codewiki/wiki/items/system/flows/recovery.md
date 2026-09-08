@@ -11,6 +11,12 @@ On restart, Project Server reloads repository/config identity, canonical and man
 
 Generated Views and caches may be discarded. Missing/stale indexes trigger exact Git fallback or explicit unavailable coverage. Project Server does not read meaning from opaque DSH internal Sessions or raw logs.
 
+## Conversation-independent handoff
+
+At a safe boundary, a fresh authorized Agent reconstructs task context from exact Wiki, Git, Change Trace, Work, Results, receipts, and pending operation status. Necessary undecided requests and hypotheses must first be captured as explicit drafts or feedback. Zero prior conversation is possible only with that closure; a fixed recent-message count or arbitrary-midpoint reset is not sufficient. Derived context Views do not become another memory authority.
+
+A fresh Agent does not inherit permission from the previous conversation. Subject, authority, required context, predecessor terminal/quiescent state, and operation idempotency are revalidated. Already admitted work is not re-executed and unknown effects enter reconciliation. Harness compaction remains temporary execution machinery, not a source of accepted project meaning.
+
 ## DSH Runs and Checks
 
 DSH owns internal Session recovery. CodeWiki sees one immutable authorized DSH Run/idempotency identity and requires a bound result/receipt or explicit operational stop. Transport retry or reconciliation of unchanged authorization reuses that identity and cannot launch duplicate execution. DSH may recover internal Session mechanics only within the same Run and qualified closure. Changed semantic input, authority, role, route, tools, capability, Project/Change head, active Checks, feedback, or a new semantic attempt creates another Run only after the predecessor has a validated terminal receipt or independently proven process/effect quiescence and custody closure. Timeout, lease expiry, cancellation request, transport loss, or process exit grants no proposal, Work, Review, or Result authority.
