@@ -1,5 +1,29 @@
 # Semantic Kernel Refactoring Plan — Active Ledger
 
+## Workspace reconciliation and baseline audit — current entry point
+
+The maintainer authorized consolidation to one active source checkout before the deeper cleanup audit. The working baseline is `7fe04257d2a18d5d16130c45f5919e49bb84f92d`, observed on both GitHub and local `bootstrap/semantic-kernel`, now inspected through local branch `audit/clean-baseline`. Selecting it for audit is not acceptance of every inherited design, proof of its release claims, or controller activation.
+
+### Reconciled source inventory
+
+- GitHub `main` was observed at `c4331500bb977e4ffa17e520e41908c6da054929`; local `main` remains `5b6460dca1e69019498997cab9b7747ee147bde8`, 68 commits ahead. The selected bootstrap branch is another 15 commits ahead. Neither `main` nor remote refs were moved by consolidation.
+- The earlier documentation effort used the older local `main` and missed the newer bootstrap branch. Its three commits and latest mechanics-only Check proposal are preserved at `94fabb5c5da7ef77f1a432e6bc8c8e27abde6f30` on `proposal/continuity-dogfood` in this same repository. They are proposal/donor evidence, not a second active roadmap or an already admitted replacement for this tree. Reconcile meaning explicitly; do not cherry-pick whole files over newer ownership or source contracts.
+- Five working-tree snapshots, original Git metadata, refs, staged/unstaged patches, and ignored files were backed up outside project Git. Restore checks covered exact bytes, permission modes, symlinks, ref identities, and Git object connectivity. Active Pi dependency/cache directories were retained in place rather than deleted. Backup index: `~/.local/state/codewiki/workspace-reconciliation-GRyZ3sD2/inventory.json`; archive digests: its `SHA256SUMS`.
+- Three clean linked worktrees and the imported amendment clone were removed only after recovery verification. The old dirty overlay is retained in a private cold archive, not another active source checkout. Four pre-existing `outputs/` documents remain unchanged in place. Release, qualification, activation, and private runtime state were not deleted.
+- Historical amendment logs/artifacts moved to `~/.local/state/codewiki/evidence/historical-amendment-94fabb5c/`; the relocation mapping is in the backup's `reconciliation-actions.json`. Original paths inside historical evidence are provenance, not instructions to recreate source copies.
+
+### Audit queue before further feature work
+
+- [x] Compare live remote refs with local branches and working copies; preserve unique work, restore-test backups, and consolidate to one active source checkout and one GitHub remote.
+- [ ] Audit this exact newer implementation, its Wiki, tests, package/bootstrap/lock resources, scripts, and governance assumptions. Classify each active artifact as retained contract, proven implementation, historical evidence, obsolete material, or unresolved assumption. A passing test that enforces obsolete policy does not justify retaining that policy.
+- [ ] Verify the exact `b97a03fcdc54d3ebd966011f429679a14a5fe948` release evidence and the handoff claims recorded by `a37a22f63`; distinguish their scope from later `7fe04257` bytes. Reconcile the old-controller wording and checked handoff items below. No historical claim is silently erased, extended to changed bytes, or converted into current execution authority.
+- [ ] Resolve the explicit discrepancy between the target-tree disposition, which says every composition has an unavailable Check Runner, and the checked SK3G Code Check sandbox qualification item. Separate framework/test-adapter evidence from operational custom-Check execution required by the first failed-Check/repair dogfood proof.
+- [ ] Reconcile the maintainer-directed native pre-dogfood protocol, required guidance sunset/rewrite, mechanics-only Checks, flat Wiki target, continuity/query ownership, and bounded product direction from the proposal branch against this newer tree. Remove the applicability of obsolete internal rubrics through the explicit governing policy revision, not by asserting that installed packs govern the audit or that absent runtime execution has passed.
+- [ ] Produce one retained baseline and ordered cleanup/implementation queue here, with a requirement-to-implementation-to-test-to-external-evidence matrix for the bounded dogfood outcome. Include deterministic safety, real custom Check failure/repair, recovery, fresh-Agent continuation, supported environment, and measurable efficiency budgets. Do not restore removed optional breadth merely because historical checklists mention it.
+- [ ] After review and applicable authority, reconcile the selected baseline into canonical local/remote `main` without a blind reset, force-push, or loss of unique work. Until then, use the explicitly named audit branch and keep canonical refs unchanged.
+
+This section records workspace operations and audit work only. It creates no semantic admission, Check Result, qualification receipt, release activation, or controller promotion. Later historical/status sections remain evidence to reconcile, not a claim that this audit has already passed.
+
 ## Authority
 
 This file is the sole active CodeWiki refactoring roadmap, status ledger, qualification record, and archive checklist. `.codewiki/wiki/**` is desired-state design truth. `src/**` and `tests/**` are executable truth. Git is history and checkpoint evidence. `README.md` is orientation only. Historical plans remain unchanged.
