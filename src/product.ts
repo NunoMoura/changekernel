@@ -54,14 +54,8 @@ export interface CodewikiProductPolicy {
 		unavailable: readonly ["Agent Work", "Preview"];
 	}>;
 	readonly checks: Readonly<{
-		selectionAuthority: "product-and-project";
+		selectionAuthority: "project";
 		proposalSelection: "forbidden";
-		resources: readonly Readonly<{
-			stage: "decision" | "planning" | "implementation" | "review";
-			packId: "software-development-default";
-			path: string;
-			treeDigest: Sha256Digest;
-		}>[];
 	}>;
 }
 
@@ -104,34 +98,8 @@ const POLICY_INPUT = {
 		unavailable: ["Agent Work", "Preview"],
 	},
 	checks: {
-		selectionAuthority: "product-and-project",
+		selectionAuthority: "project",
 		proposalSelection: "forbidden",
-		resources: [
-			{
-				stage: "decision",
-				packId: "software-development-default",
-				path: "check-packs/decision/software-development-default",
-				treeDigest: "sha256:4ea217a3d10e7592cff2365934ed98c22c1f5c6f8d8a4ac35d05784e0d1f6975",
-			},
-			{
-				stage: "implementation",
-				packId: "software-development-default",
-				path: "check-packs/implementation/software-development-default",
-				treeDigest: "sha256:f5fa126e8158fd60f541e04c2d4faba5a01772ac090988f5cf2d7ecbf385030c",
-			},
-			{
-				stage: "planning",
-				packId: "software-development-default",
-				path: "check-packs/planning/software-development-default",
-				treeDigest: "sha256:bfcd7daa9aa21d0990cbfa89c40e344df7b878042c1645775cca23643db72bbb",
-			},
-			{
-				stage: "review",
-				packId: "software-development-default",
-				path: "check-packs/review/software-development-default",
-				treeDigest: "sha256:2c666772425459f70d84cf849e60bbe9e574653b13745c697848b43ce3471e95",
-			},
-		],
 	},
 } as const;
 

@@ -938,9 +938,11 @@ async function evaluateStage(
 	const moved = await appendAndMoveChange(environment, actor, loaded.value, [event.value], timestamp.value, `codewiki: record ${stage} Gate ${input.changeId}\n`);
 	if (!moved.ok) return moved;
 	const status = bundle.value.outcome.status;
+	const warnings = gatePolicyWarnings(payload);
+	const nextAction = `${warnings.length > 0 ? "No Checks selected; no semantic Check verdict was produced. " : ""}${gateNextAction(stage, status)}`;
 	const data = workId === null
-		? {changeId: input.changeId, stage, status, nextAction: gateNextAction(stage, status), userActionRequired: status === "failed"}
-		: {changeId: input.changeId, workId, stage, status, nextAction: gateNextAction(stage, status), userActionRequired: status === "failed"};
+		? {changeId: input.changeId, stage, status, warnings, nextAction, userActionRequired: status === "failed"}
+		: {changeId: input.changeId, workId, stage, status, warnings, nextAction, userActionRequired: status === "failed"};
 	return successResult(
 		data,
 		{changeCommit: moved.value.commit, gateDigest: bundle.value.gate.gateDigest, outcomeDigest: bundle.value.outcome.outcomeDigest, runDigests: bundle.value.runs.map((entry) => entry.runDigest), resultDigests: bundle.value.results.map((entry) => entry.resultDigest), cas: moved.value.cas.receiptDigest},
@@ -1213,8 +1215,10 @@ function replaySingle(
 	if (event.commandDigest !== commandDigest || !kinds.includes(event.kind)) {
 		return failure(productError("idempotency_conflict", "That command identity already names different lifecycle input.", "Submit unchanged input or use a new command identity.", true));
 	}
+	// Trace decoding validates the payload against its event kind.
+	const warnings = event.kind === "gate.recorded" ? gatePolicyWarnings(event.payload as GateRecordedPayload) : [];
 	return successResult(
-		{changeId: loaded.change.trace.header.changeId, status: loaded.change.reduced.state, nextAction: "Refresh this Change to continue from its recorded state.", userActionRequired: false},
+		{changeId: loaded.change.trace.header.changeId, status: loaded.change.reduced.state, warnings, nextAction: `${warnings.length > 0 ? "No Checks selected; no semantic Check verdict was produced. " : ""}Refresh this Change to continue from its recorded state.`, userActionRequired: false},
 		{replayed: true, eventDigest: event.eventDigest, changeTip: loaded.source.snapshot.commit, projectHead: loaded.project.snapshot.commit},
 	);
 }
@@ -1277,6 +1281,10 @@ function latestPassedGate(change: ReducedChange, stage: ReducedGateFact["stage"]
 		if (gate?.stage === stage && gate.workId === workId) return gate.status === "passed" ? gate : null;
 	}
 	return null;
+}
+
+function gatePolicyWarnings(payload: GateRecordedPayload): readonly string[] {
+	return payload.status === "passed" && payload.runDigests.length === 0 ? ["empty_check_policy"] : [];
 }
 
 function gateEventPayload(bundle: GateBundle, workId: string | null): GateRecordedPayload {

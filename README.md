@@ -16,14 +16,14 @@ The active source tree contains:
 - a versioned Project Store for exact snapshots, trees, blobs, commit creation, and expected-head updates, alongside narrow Check Runner, Agent Runtime, and Preview ports;
 - canonical Wiki files, complete relationship and retired-ID validation, atomic transaction post-state, and deterministic bounded list, get, dictionary, search, graph, history, attribution, provenance-inspection, and semantic-diff Views;
 - exact Git fallback whenever optional private Wiki indexes are absent, stale, invalid, or forged;
-- immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and passive Check Pack resources;
+- immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and project-owned Check selection;
 - an authenticated Project Server that composes Project Store, Check Runner, and Gate-facts ports, with memory-backed facts in the local composition; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
 - atomic Change proposal and revision, Decision, Planning, Work admission and integration, Review reconciliation, completion, supersession, and separately authorized protected-effect commands with exact expected-head binding and deterministic recovery;
 - a version-neutral Client SDK over digest-bound `codewiki.product-request@1.1.0` and `codewiki.product-response@1.1.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
 - host-neutral Agent Runtime and Preview ports with partial local adapters and replay/injected-runner tests, not operational qualification; and
-- an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and digest-verified passive Check Packs.
+- an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and an explicit empty Check Pack lock without seeded definitions.
 
-Wiki mutation and lifecycle transition mechanisms have ordinary test coverage. The shipped local composition has no available Check Runner or coding Worker; DSH tool-enabled execution, durable recovery, and safe Preview execution remain incomplete. Bundled/internal Check policy and the historical handoff helper still require coordinated R1 removal. Passing tests, historical release reports, and package version labels do not establish current operational readiness or controller authority.
+Wiki mutation and lifecycle transition mechanisms have ordinary test coverage. The shipped local composition has no available Check Runner or coding Worker; DSH tool-enabled execution, durable recovery, and safe Preview execution remain incomplete. Custom policy selection and empty-policy warnings have native tests; actual Check execution remains an injected test boundary. Bundled/internal Check definitions and the historical handoff helper are absent from normal shipping. Passing tests, historical release reports, and package version labels do not establish current operational readiness or controller authority.
 
 ## Install and import
 
@@ -66,12 +66,13 @@ A successful bootstrap creates:
 .codewiki/
 ├── config.json
 ├── check-packs.lock.json
-├── check-packs/
 ├── changes/
 └── wiki/items/
 ```
 
-The Wiki and Change directories are semantically empty. Check Pack files are copied as passive resources only; bootstrap never executes package lifecycle code, Skills, Checks, Agents, or arbitrary commands. Existing managed state causes a typed conflict and remains untouched.
+The Wiki and Change directories are semantically empty. The lock explicitly contains `packages: {}`; no Check Pack files are copied. Bootstrap never executes package lifecycle code, Skills, Checks, Agents, or arbitrary commands. Existing managed state causes a typed conflict and remains untouched.
+
+Custom Checks require explicit project adoption with matching files and lock digests. Editing or removing policy must update both coherently; bootstrap is not a policy-repair operation. A fully resolved empty Gate reports `empty_check_policy` and explains that no semantic Check verdict was produced. Missing/malformed policy or unavailable required execution fails closed.
 
 The bootstrap never creates `.codewiki/kb/`, `.codewiki/traces/`, `.codewiki/runtime/`, `.codewiki/views/`, generated indexes, project-local executable Plugin paths, or controller state.
 

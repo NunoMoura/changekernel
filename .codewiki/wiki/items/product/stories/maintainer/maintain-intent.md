@@ -8,7 +8,7 @@ As a maintainer, I want collaborators and Agents to commit shared meaning before
 ## Acceptance signals
 
 - Mutable conversation/drafts carry no authority. Authenticated `proposeChanges` creates one independently decidable Change with one append-only Trace, one managed ref, and full Project snapshots.
-- Every proposal declares exactly one governed Change type and one `wiki-only | project` realization route. A fixed Decision Check validates alignment so classification cannot suppress policy.
+- Every proposal declares exactly one governed Change type and one `wiki-only | project` realization route. Deterministic validation enforces the supported type and route. Explicitly adopted safety-critical Checks are universal or depend on exact-subject facts independent of producer-declared classification; no model rubric is mandatory by default.
 - Wiki Item is the only first-class semantic unit. Stable Item IDs—not paths, titles, aliases, terms, Git OIDs, or models—establish identity.
 - Definition and Claim Items are typed Wiki Items. Dictionary and proposed-tip overlays are derived Views; no separate Term/Dictionary/Claim store exists.
 - Decision Agent receives exact relevant Wiki context and bounded snapshot-fixed tools. It may prepare proposal bytes but cannot authenticate itself, choose active Checks, or write refs.

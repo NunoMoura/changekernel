@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import {lstat, readFile} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
 import test from "node:test";
 import * as publicApi from "../../src/index.ts";
@@ -15,7 +15,8 @@ const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 test("Product policy is immutable canonical build data", () => {
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT));
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.lifecycle));
-	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.checks.resources));
+	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.checks));
+	assert.deepEqual({...CODEWIKI_PRODUCT.checks}, {selectionAuthority: "project", proposalSelection: "forbidden"});
 	assert.ok(Object.isFrozen(CODEWIKI_PRODUCT.api));
 	assert.deepEqual(CODEWIKI_PRODUCT.lifecycle.stages, [
 		"decision",
@@ -86,4 +87,14 @@ test("package metadata has one narrow export, exact DSH closure, and no Pi runti
 	assert.equal(pkg.pi, undefined);
 	assert.equal(pkg.private, true);
 	assert.deepEqual(Object.keys(pkg.devDependencies).sort(), ["@deepseek-ai/dsh-llm-replay", "@types/node", "koffi", "typescript", "zod"]);
+});
+
+
+test("package and source tree contain no bundled Check policy or historical converter", async () => {
+	const pkg = JSON.parse(await readFile(`${repoRoot}/package.json`, "utf8"));
+	assert.equal(pkg.codewiki, undefined);
+	assert.equal(pkg.files.includes("check-packs"), false);
+	for (const path of ["check-packs", "src/adapters/git/handoff-converter.ts", "dist/adapters/git/handoff-converter.js"]) {
+		await assert.rejects(lstat(`${repoRoot}/${path}`), {code: "ENOENT"}, path);
+	}
 });

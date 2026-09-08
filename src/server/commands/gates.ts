@@ -1,8 +1,9 @@
 import {canonicalJson, decodeCanonicalValue, parseCanonicalJson, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {Change} from "../../kernel/changes/contracts.ts";
-import {decodeCheckDefinition, type CheckDefinition} from "../../kernel/gates/check-definition.ts";
+import {decodeCheckDefinition} from "../../kernel/gates/check-definition.ts";
 import {
+	CHECK_STAGES,
 	checkRunIdentity,
 	createCheckRegistration,
 	createCheckRun,
@@ -70,7 +71,7 @@ export async function evaluateGate(
 	environment: GateExecutionEnvironment,
 	input: GateEvaluationInput,
 ): Promise<Outcome<GateBundle, ProductError>> {
-	const policy = await loadCheckPolicy(environment, input.stage, input.subject.projectCommit, input.actor.authorizationId);
+	const policy = await loadCheckPolicy(environment, input.stage, input.subject.projectCommit);
 	if (!policy.ok) return policy;
 	const baseline = baselineMaterials(input);
 	if (!baseline.ok) return failure(invalidState("Gate baseline material is not canonical."));
@@ -242,9 +243,7 @@ async function loadCheckPolicy(
 	environment: GateExecutionEnvironment,
 	stage: CheckStage,
 	projectCommit: GateBundle["gate"]["subject"]["projectCommit"],
-	authorizationId: string,
 ): Promise<Outcome<LoadedCheckPolicy, ProductError>> {
-	void authorizationId;
 	const tree = await environment.store.readTree({
 		repositoryId: environment.configuration.repositoryId,
 		objectFormat: environment.configuration.objectFormat,
@@ -252,17 +251,20 @@ async function loadCheckPolicy(
 		pathPrefix: `.codewiki/check-packs/${stage}`,
 		maximumEntries: 4_096,
 	});
-	if (!tree.ok || projectCommit.hex !== tree.value.commit.hex) return failure(invalidState("The exact stage Check Packs are unavailable."));
+	if (!tree.ok || projectCommit.hex !== tree.value.commit.hex || projectCommit.algorithm !== tree.value.commit.algorithm) return failure(invalidState("The exact stage Check Packs are unavailable."));
 	const lock = await readText(environment, projectCommit, CHECK_PACK_LOCK_PATH, 1024 * 1024);
 	if (!lock.ok) return lock;
 	const locked = decodeLock(lock.value, stage);
 	if (!locked.ok) return locked;
-	const byPack = groupPackEntries(tree.value.entries, stage);
+	const grouped = groupPackEntries(tree.value.entries, stage);
+	if (!grouped.ok) return grouped;
+	const byPack = grouped.value;
 	if (!sameText([...byPack.keys()].sort(compareText), [...locked.value.keys()].sort(compareText))) return failure(invalidState("Check Pack lock and exact Project tree disagree."));
-	const registrations: CheckRegistration[] = [...fixedRegistrations(stage)];
-	const materials: GateMaterial[] = [];
+	const registrations: CheckRegistration[] = [];
+	const materials: GateMaterial[] = [{source: "repository", ref: "check-pack-lock", content: lock.value}];
 	for (const [packId, entries] of [...byPack.entries()].sort(([left], [right]) => compareText(left, right))) {
 		const digestEntries: Readonly<{path: string; digest: Sha256Digest}>[] = [];
+		const registrationCount = registrations.length;
 		for (const entry of entries) {
 			const text = await readText(environment, projectCommit, entry.path, 4 * 1024 * 1024);
 			if (!text.ok) return text;
@@ -286,6 +288,7 @@ async function loadCheckPolicy(
 			if (!registration.ok) return failure(invalidState("A stage Check registration is invalid."));
 			registrations.push(registration.value);
 		}
+		if (registrations.length === registrationCount) return failure(invalidState("A locked Check Pack contains no Check definition."));
 		const packDigest = canonicalValueDigest(digestEntries);
 		if (!packDigest.ok || packDigest.value !== locked.value.get(packId)) return failure(invalidState("A stage Check Pack differs from its exact lock identity."));
 	}
@@ -311,7 +314,9 @@ async function readText(
 		path,
 		maximumBytes,
 	});
-	if (!blob.ok) return failure(invalidState("Check policy material is unavailable."));
+	if (!blob.ok || blob.value.bytes.byteLength > maximumBytes) {
+		return failure(invalidState("Check policy material is unavailable or exceeds its byte bound."));
+	}
 	try {
 		return success(TEXT.decode(blob.value.bytes));
 	} catch {
@@ -327,73 +332,41 @@ function decodeLock(text: string, stage: CheckStage): Outcome<ReadonlyMap<string
 	const packages = parsed.value.packages;
 	if (!isRecord(packages)) return failure(invalidState("Check Pack lock packages are malformed."));
 	const output = new Map<string, Sha256Digest>();
+	const seen = new Set<string>();
 	for (const packageValue of Object.values(packages)) {
 		if (!isRecord(packageValue) || !Array.isArray(packageValue.resources)) return failure(invalidState("Check Pack lock resources are malformed."));
 		for (const resource of packageValue.resources) {
-			if (!isRecord(resource) || resource.stage !== stage) continue;
-			if (typeof resource.packId !== "string" || typeof resource.treeDigest !== "string" || !decodeSha256Digest(resource.treeDigest).ok || output.has(resource.packId)) {
-				return failure(invalidState("Check Pack lock contains an invalid stage identity."));
-			}
-			output.set(resource.packId, resource.treeDigest as Sha256Digest);
+			if (!isLockedResource(resource)) return failure(invalidState("Check Pack lock contains an invalid stage identity."));
+			const key = `${resource.stage}:${resource.packId}`;
+			if (seen.has(key) || seen.size >= 1_024) return failure(invalidState("Check Pack lock identities are duplicated or exceed bounds."));
+			seen.add(key);
+			if (resource.stage === stage) output.set(resource.packId, resource.treeDigest);
 		}
 	}
-	if (output.size === 0) return failure(invalidState("No exact Check Pack is locked for this stage."));
 	return success(output);
 }
 
-function groupPackEntries(entries: readonly ProjectStoreTreeEntry[], stage: CheckStage): ReadonlyMap<string, readonly ProjectStoreTreeEntry[]> {
+function groupPackEntries(entries: readonly ProjectStoreTreeEntry[], stage: CheckStage): Outcome<ReadonlyMap<string, readonly ProjectStoreTreeEntry[]>, ProductError> {
 	const prefix = `.codewiki/check-packs/${stage}/`;
 	const grouped = new Map<string, ProjectStoreTreeEntry[]>();
 	for (const entry of entries) {
 		const remainder = entry.path.slice(prefix.length);
 		const separator = remainder.indexOf("/");
-		if (!entry.path.startsWith(prefix) || separator < 1 || entry.kind !== "blob" || entry.mode !== "100644") continue;
+		if (!entry.path.startsWith(prefix) || separator < 1 || entry.kind !== "blob" || entry.mode !== "100644") {
+			return failure(invalidState("Stage Check Packs contain an unsupported path or file mode."));
+		}
 		const packId = remainder.slice(0, separator);
 		const values = grouped.get(packId) ?? [];
 		values.push(entry);
 		grouped.set(packId, values);
 	}
-	return grouped;
+	return success(grouped);
 }
 
-function fixedRegistrations(stage: CheckStage): readonly CheckRegistration[] {
-	if (stage !== "decision") return Object.freeze([]);
-	return Object.freeze([
-		fixedRegistration("change_type_alignment", "Confirm that the required Change type and realization route match the exact proposal."),
-		fixedRegistration("wiki_semantic_alignment", "Confirm that the exact proposal remains aligned with accepted Wiki meaning."),
-	]);
-}
-
-function fixedRegistration(id: string, requirement: string): CheckRegistration {
-	const definition = fixedDefinition(id, requirement);
-	const registration = createCheckRegistration({
-		source: "product",
-		packId: "codewiki-product-fixed",
-		stage: "decision",
-		enforcement: "required",
-		universalSafety: true,
-		applicability: {changeTypes: [], realizations: [], subjectKinds: [], workTypes: [], facts: {}},
-		definition,
-	});
-	if (!registration.ok) throw new Error("Invariant: Product-fixed Check registration must be valid.");
-	return registration.value;
-}
-
-function fixedDefinition(id: string, requirement: string): CheckDefinition {
-	const decoded = decodeCheckDefinition({
-		schemaVersion: "1.0.0",
-		id,
-		version: "1.0.0",
-		description: requirement,
-		requirement,
-		implementation: {kind: "model", route: id, profile: id, maximumTokens: 4_096},
-		inputs: [{source: "subject", refs: [], required: true, maximumBytes: 1024 * 1024}],
-		measurement: {kind: "binary"},
-		failure: {code: `${id}_failed`, message: requirement, remediation: ["Revise the proposal and run a fresh Decision Gate."]},
-		limits: {timeoutMs: 120_000, maximumAttempts: 1, maximumInputBytes: 4 * 1024 * 1024, maximumOutputBytes: 65_536},
-	});
-	if (!decoded.ok) throw new Error("Invariant: Product-fixed Check definition must be valid.");
-	return decoded.value;
+function isLockedResource(value: CanonicalValue): value is Readonly<{stage: CheckStage; packId: string; treeDigest: Sha256Digest}> {
+	return isRecord(value) && typeof value.stage === "string" && CHECK_STAGES.includes(value.stage as CheckStage) &&
+		typeof value.packId === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(value.packId) &&
+		typeof value.treeDigest === "string" && decodeSha256Digest(value.treeDigest).ok;
 }
 
 function baselineMaterials(input: GateEvaluationInput): Outcome<readonly GateMaterial[], ProductError> {

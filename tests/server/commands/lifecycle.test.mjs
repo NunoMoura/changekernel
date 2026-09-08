@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {cp, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -9,6 +9,9 @@ import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
 import {createGitProjectStore} from "../../../src/adapters/git/project-store.ts";
 import {PRODUCT_OPERATIONS, createProductTransportRequest, decodeProductTransportResponse} from "../../../src/api/transport/envelope.ts";
 import {failure, success} from "../../../src/kernel/data-contracts/outcome.ts";
+import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
+import {canonicalValueDigest} from "../../../src/kernel/identity/semantic-digest.ts";
+import {sha256Digest} from "../../../src/kernel/identity/sha256.ts";
 import {createEvidenceReference} from "../../../src/kernel/evidence/reference.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {createWork} from "../../../src/kernel/work/contracts.ts";
@@ -32,6 +35,7 @@ async function fixture(
 	protectedEffects = [],
 	decorateProjectStore = (store) => store,
 	decorateFacts = (facts) => facts,
+	configurePolicy = adoptFixtureChecks,
 ) {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-lifecycle-"));
 	git(root, ["init", "-q", "-b", "main"]);
@@ -41,6 +45,7 @@ async function fixture(
 	const bootstrapped = await bootstrapCodewikiProject({projectRoot: root, project: "lifecycle-fixture"});
 	assert.equal(bootstrapped.ok, true, bootstrapped.ok ? "" : bootstrapped.error.message);
 	await cp(join(sourceRoot, ".codewiki", "wiki", "items"), join(root, ".codewiki", "wiki", "items"), {recursive: true});
+	await configurePolicy(root);
 	git(root, ["add", ".codewiki"]);
 	git(root, ["commit", "-q", "-m", "bootstrap CodeWiki"]);
 	const store = createGitProjectStore({repositoryRoot: root, repositoryId});
@@ -699,3 +704,162 @@ function oid(hex) {
 function digest(character) {
 	return `sha256:${character.repeat(64)}`;
 }
+
+
+// Explicit test adoption, never a bootstrap resource or shipped semantic policy.
+async function adoptFixtureChecks(root, stages = ["decision", "implementation", "planning", "review"], definitionPatch = {}) {
+	const definition = {
+		schemaVersion: "1.0.0", id: "fixture_subject", version: "1.0.0",
+		description: "Injected-runner fixture", requirement: "Return the test-controlled subject measurement.",
+		implementation: {kind: "code", profile: "fixture"},
+		inputs: [{source: "subject", refs: [], required: true, maximumBytes: 1_048_576}],
+		measurement: {kind: "binary"},
+		failure: {code: "fixture_failed", message: "Fixture rejected the subject.", remediation: ["Repair the fixture subject."]},
+		limits: {timeoutMs: 1_000, maximumAttempts: 1, maximumInputBytes: 4_194_304, maximumOutputBytes: 65_536},
+		...definitionPatch,
+	};
+	const text = encode(definition);
+	const resources = [];
+	for (const stage of stages) {
+		const directory = join(root, ".codewiki/check-packs", stage, "fixture-policy", "fixture");
+		await mkdir(directory, {recursive: true});
+		await writeFile(join(directory, "check.json"), text);
+		const treeDigest = canonicalValueDigest([{path: "fixture/check.json", digest: sha256Digest(text)}]);
+		assert.equal(treeDigest.ok, true);
+		resources.push({stage, packId: "fixture-policy", treeDigest: treeDigest.value});
+	}
+	await writeFile(join(root, ".codewiki/check-packs.lock.json"), encode({
+		protocolId: "codewiki.check-pack-lock", protocolVersion: "1.0.0", packages: {"fixture-policy": {resources}},
+	}));
+}
+
+function encode(value) {
+	const encoded = canonicalJson(value);
+	assert.equal(encoded.ok, true);
+	return `${encoded.value}\n`;
+}
+
+async function proposePolicySubject(subject) {
+	const projectHead = oid(git(subject.root, ["rev-parse", "HEAD"]));
+	const path = ".codewiki/wiki/items/product/codewiki-console.md";
+	const content = await readFile(join(subject.root, path), "utf8");
+	const proposed = await subject.call("changes.propose", {
+		commandId: "cw:command:policy-proposal", expectedProjectHead: projectHead,
+		proposals: [{
+			proposalKey: "policy-subject", changeType: "correction", realization: "wiki-only",
+			intent: "Exercise explicit Check policy.", rationale: "Test selection without hidden defaults.",
+			acceptance: ["The configured policy is the only source of semantic Checks."],
+			targets: [{itemId: "cw:design:product", facets: ["body"]}], relationships: [],
+			contributorRefs: [actorId], producerRunRefs: [],
+			wiki: {upserts: [{path, content: `${content}\nPolicy selection remains explicit.\n`}], deletes: []},
+		}],
+	});
+	assert.equal(proposed.status, "ok", proposed.error?.message);
+	const changeId = proposed.data.changes[0].changeId;
+	return command("evaluate-policy", changeId, projectHead, refOid(subject.root, changeId));
+}
+
+for (const [name, configure] of [
+	["fresh empty policy", async () => {}],
+	["explicit custom policy removal", async root => {
+		const emptyLock = await readFile(join(root, ".codewiki/check-packs.lock.json"));
+		await adoptFixtureChecks(root);
+		await rm(join(root, ".codewiki/check-packs"), {recursive: true});
+		await writeFile(join(root, ".codewiki/check-packs.lock.json"), emptyLock);
+	}],
+]) {
+test(`${name} warns on evaluation and replay without executing hidden Checks`, async () => {
+	let calls = 0;
+	const subject = await fixture({protocol: CHECK_RUNNER_PORT_PROTOCOL, async run() { calls++; throw new Error("No Check was selected."); }}, [], undefined, undefined, configure);
+	try {
+		const input = await proposePolicySubject(subject);
+		const evaluated = await subject.call("decision.evaluate", input);
+		assert.equal(evaluated.status, "ok", evaluated.error?.message);
+		assert.equal(evaluated.data.status, "passed"); // Kernel invariants passed, not a semantic Check verdict.
+		assert.deepEqual(evaluated.data.warnings, ["empty_check_policy"]);
+		assert.match(evaluated.data.nextAction, /No Checks selected/u);
+		const replayed = await subject.call("decision.evaluate", input);
+		assert.deepEqual(replayed.data.warnings, ["empty_check_policy"]);
+		assert.equal(calls, 0);
+		const committed = await subject.call("decision.commit", command("commit-empty-policy", input.changeId, input.expectedProjectHead, refOid(subject.root, input.changeId)));
+		assert.equal(committed.status, "ok", committed.error?.message);
+	} finally { await rm(subject.root, {recursive: true, force: true}); }
+});
+
+}
+
+for (const [name, configure] of [
+	["missing lock", async root => rm(join(root, ".codewiki/check-packs.lock.json"))],
+	["malformed lock", async root => writeFile(join(root, ".codewiki/check-packs.lock.json"), "{}\n")],
+	["malformed resource outside current stage", async root => writeFile(join(root, ".codewiki/check-packs.lock.json"), encode({protocolId: "codewiki.check-pack-lock", protocolVersion: "1.0.0", packages: {fixture: {resources: [null]}}}))],
+	["unknown resource stage", async root => writeFile(join(root, ".codewiki/check-packs.lock.json"), encode({protocolId: "codewiki.check-pack-lock", protocolVersion: "1.0.0", packages: {fixture: {resources: [{stage: "unknown", packId: "fixture", treeDigest: digest("a")}]}}}))],
+	["unlocked definition", async root => { const lock = await readFile(join(root, ".codewiki/check-packs.lock.json")); await adoptFixtureChecks(root, ["decision"]); await writeFile(join(root, ".codewiki/check-packs.lock.json"), lock); }],
+	["malformed definition", async root => { await adoptFixtureChecks(root, ["decision"]); await writeFile(join(root, ".codewiki/check-packs/decision/fixture-policy/fixture/check.json"), "{}\n"); }],
+	["changed valid pack bytes", async root => {
+		await adoptFixtureChecks(root, ["decision"]);
+		const path = join(root, ".codewiki/check-packs/decision/fixture-policy/fixture/check.json");
+		const definition = JSON.parse(await readFile(path, "utf8"));
+		await writeFile(path, encode({...definition, description: "Changed without updating the lock."}));
+	}],
+	["pack without definitions", async root => {
+		await adoptFixtureChecks(root, ["decision"]);
+		const directory = join(root, ".codewiki/check-packs/decision/fixture-policy/fixture");
+		await rm(join(directory, "check.json"));
+		await writeFile(join(directory, "README.md"), "No definitions.\n");
+	}],
+	["empty locked pack", async root => { await adoptFixtureChecks(root, ["decision"]); await rm(join(root, ".codewiki/check-packs/decision/fixture-policy/fixture/check.json")); }],
+	["stray stage file", async root => { await mkdir(join(root, ".codewiki/check-packs/decision"), {recursive: true}); await writeFile(join(root, ".codewiki/check-packs/decision/stray"), "not a Check pack"); }],
+	["symbolic policy file", async root => { await mkdir(join(root, ".codewiki/check-packs/decision/fixture"), {recursive: true}); await symlink("../../../../README.md", join(root, ".codewiki/check-packs/decision/fixture/check.json")); }],
+]) {
+	test(`policy resolution rejects ${name} rather than producing an empty pass`, async () => {
+		let calls = 0;
+		const subject = await fixture({protocol: CHECK_RUNNER_PORT_PROTOCOL, async run() { calls++; throw new Error("Invalid policy must not execute."); }}, [], undefined, undefined, configure);
+		try {
+			const input = await proposePolicySubject(subject);
+			const evaluated = await subject.call("decision.evaluate", input);
+			assert.equal(evaluated.status, "error");
+			assert.equal(evaluated.error.code, "invalid_project_state");
+			assert.equal(refOid(subject.root, input.changeId).hex, input.expectedChangeTip.hex);
+			assert.equal(git(subject.root, ["rev-parse", "refs/heads/main"]), input.expectedProjectHead.hex);
+			assert.equal(calls, 0);
+		} finally { await rm(subject.root, {recursive: true, force: true}); }
+	});
+}
+
+test("only explicitly adopted Checks run, and a failed custom Check blocks acceptance", async () => {
+	const seen = [];
+	const passing = passingCheckRunner();
+	const subject = await fixture({protocol: CHECK_RUNNER_PORT_PROTOCOL, async run(request) {
+		seen.push([request.registration.source, request.registration.packId, request.registration.definition.id]);
+		const response = await passing.run(request);
+		return success({...response.value, measurement: {kind: "binary", value: false}, failure: request.registration.definition.failure});
+	}});
+	try {
+		const input = await proposePolicySubject(subject);
+		const evaluated = await subject.call("decision.evaluate", input);
+		assert.equal(evaluated.status, "ok", evaluated.error?.message);
+		assert.equal(evaluated.data.status, "failed");
+		assert.deepEqual(evaluated.data.warnings, []);
+		assert.deepEqual(seen, [["project", "fixture-policy", "fixture_subject"]]);
+		const blocked = await subject.call("decision.commit", command("reject-custom-failure", input.changeId, input.expectedProjectHead, refOid(subject.root, input.changeId)));
+		assert.equal(blocked.error.code, "gate_failed");
+		assert.equal(git(subject.root, ["rev-parse", "refs/heads/main"]), input.expectedProjectHead.hex);
+	} finally { await rm(subject.root, {recursive: true, force: true}); }
+});
+
+
+test("a passing runner cannot hide missing required custom Check input", async () => {
+	const subject = await fixture(passingCheckRunner(), [], undefined, undefined, root => adoptFixtureChecks(root, ["decision"], {
+		inputs: [{source: "evidence", refs: ["cw:evidence:missing"], required: true, maximumBytes: 4096}],
+	}));
+	try {
+		const input = await proposePolicySubject(subject);
+		const evaluated = await subject.call("decision.evaluate", input);
+		assert.equal(evaluated.status, "ok", evaluated.error?.message);
+		assert.equal(evaluated.data.status, "stopped");
+		assert.deepEqual(evaluated.data.warnings, []);
+		const blocked = await subject.call("decision.commit", command("reject-missing-input", input.changeId, input.expectedProjectHead, refOid(subject.root, input.changeId)));
+		assert.equal(blocked.error.code, "gate_failed");
+		assert.equal(git(subject.root, ["rev-parse", "refs/heads/main"]), input.expectedProjectHead.hex);
+	} finally { await rm(subject.root, {recursive: true, force: true}); }
+});

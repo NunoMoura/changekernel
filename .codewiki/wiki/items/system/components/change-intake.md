@@ -13,7 +13,7 @@ A revision names its Change and expected managed tip. Project Server verifies ap
 
 Each revision is a full Project snapshot on the Change ref. During Decision, its admitted delta is bounded to that Trace and proposed Wiki Item/link changes. It records intent, rationale, Change type classification, whether realization is Wiki-only or project work, relationships, submitter, authority, and producer DSH Run references. Git derives Item/path/facet writes; read/dependency facts come from exact View/query receipts. A model, Client, provider, or intake record cannot write Wiki, Trace, or refs directly.
 
-Project Server performs deterministic structure, identity, authority, and type-closure validation before creating the Decision Gate. Stage Check Packs define available Checks; declared Change type and exact subject determine active Checks. A fixed type-alignment Check prevents a submitter from misclassifying sensitive work to suppress applicable policy.
+Project Server performs deterministic structure, identity, authority, and type-closure validation before creating the Decision Gate. Stage Check Packs define available Checks; declared Change type and exact subject determine active Checks. No fixed semantic alignment Check is implied. Safety-critical adopted Checks must be universal or depend only on deterministic exact-subject facts independent of producer-declared classification.
 
 External code with no prior Committed Change normally enters intake and Decision before implementation. CodeWiki intentionally aligns intent before spending Agent execution and review resources. Bounded prototypes may enter as Evidence for feasibility, but they do not bypass semantic commitment or become accepted implementation.
 

@@ -30,7 +30,7 @@ A current passed Decision Gate makes an exact Proposed Change eligible. Authenti
 
 Project Server coordinates one Change lifecycle with Decision, Planning, Implementation, and Review phases. Stage Check Packs define available project policy. Exact stage, frozen Change type, Work Unit subtype/scope where relevant, and subject deterministically select `Gate.activeChecks`; proposal bytes, Agents, routes, and Workers cannot choose them. Gate binds subject commit/tree, policy and resolver identities, active Checks, declared input refs, and digest.
 
-Each Check execution is a Check Run. Completed Runs may yield Results; operational failure yields none. Project Server invokes the Kernel Gate reducer and applies no transition until its typed outcome, authority, subject, and expected heads remain current. Kernel Validation is deterministic release code rather than a Check. Product-fixed semantic Check definitions are immutable build-bound policy inputs; execution still uses Check Runner or Agent Runtime ports.
+Each Check execution is a Check Run. Completed Runs may yield Results; operational failure yields none. Project Server invokes the Kernel Gate reducer and applies no transition until its typed outcome, authority, subject, and expected heads remain current. Kernel Validation is deterministic release code rather than a Check. Semantic Checks come only from explicitly adopted project policy; execution uses the Check Runner and, where authorized, Agent Runtime ports. Completely resolved empty policy is warned explicitly and never implies a semantic Check verdict. Missing policy, required inputs, execution, or valid Results fails closed.
 
 ## Work and Git
 

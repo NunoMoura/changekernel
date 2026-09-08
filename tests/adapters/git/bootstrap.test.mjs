@@ -13,11 +13,8 @@ import {
 } from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join, relative} from "node:path";
-import {fileURLToPath} from "node:url";
 import test from "node:test";
 import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
-
-const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 
 async function withProject(run) {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-sk3b-bootstrap-"));
@@ -53,12 +50,14 @@ async function treeIdentity(root) {
 	return entries;
 }
 
-test("bootstrap creates only Domain-free semantic roots and verified passive Check Packs", async () => {
+test("bootstrap creates only semantic roots and explicit empty policy without seeded Checks", async () => {
 	await withProject(async (root) => {
 		const result = await bootstrapCodewikiProject({projectRoot: root, project: "example"});
 		assert.equal(result.ok, true);
 		assert.equal(result.value.protocol.id, "codewiki.project-bootstrap-receipt");
-		assert.equal(result.value.createdPaths.length, 20);
+		assert.deepEqual(result.value.createdPaths, [".codewiki/check-packs.lock.json", ".codewiki/config.json"]);
+		assert.deepEqual(result.value.checkPackResources, []);
+		assert.deepEqual((await filesUnder(root)).sort(), result.value.createdPaths);
 		assert.deepEqual(await readdir(join(root, ".codewiki", "wiki", "items")), []);
 		assert.deepEqual(await readdir(join(root, ".codewiki", "changes")), []);
 		for (const forbidden of ["kb", "traces", "runtime", "views"]) {
@@ -75,28 +74,10 @@ test("bootstrap creates only Domain-free semantic roots and verified passive Che
 		assert.equal("domain" in config, false);
 
 		const lock = JSON.parse(await readFile(join(root, ".codewiki", "check-packs.lock.json"), "utf8"));
-		const installed = lock.packages["@nunomoura/codewiki"];
-		assert.equal(lock.protocolId, "codewiki.check-pack-lock");
-		assert.equal(lock.protocolVersion, "1.0.0");
-		assert.deepEqual(installed.source, {
-			kind: "npm",
-			locator: "@nunomoura/codewiki",
-			resolvedRevision: "0.4.0-sk3g.1",
-		});
-		assert.equal(installed.planDigest, "sha256:56f6dde3dd5eb1eb9a3e59312277c279e8f3e5eb9c90501983a8b23076cc7951");
-		assert.equal(installed.localDivergence, false);
-		assert.equal(installed.resources.length, 4);
-
-		const copied = (await filesUnder(join(root, ".codewiki", "check-packs"))).sort();
-		const packaged = (await filesUnder(join(repoRoot, "check-packs"))).sort();
-		assert.deepEqual(copied, packaged);
-		for (const path of packaged) {
-			assert.deepEqual(
-				await readFile(join(root, ".codewiki", "check-packs", path)),
-				await readFile(join(repoRoot, "check-packs", path)),
-				path,
-			);
-		}
+		assert.deepEqual(lock, {packages: {}, protocolId: "codewiki.check-pack-lock", protocolVersion: "1.0.0"});
+		await assert.rejects(lstat(join(root, ".codewiki", "check-packs")), {code: "ENOENT"});
+		const lockBytes = await readFile(join(root, ".codewiki", "check-packs.lock.json"));
+		assert.equal(result.value.checkPackLockDigest, `sha256:${createHash("sha256").update(lockBytes).digest("hex")}`);
 	});
 });
 

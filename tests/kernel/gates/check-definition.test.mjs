@@ -1,21 +1,9 @@
 import assert from "node:assert/strict";
-import {readdir, readFile, stat} from "node:fs/promises";
-import {join} from "node:path";
 import test from "node:test";
 import {
 	checkDefinitionDigest,
 	decodeCheckDefinition,
 } from "../../../src/kernel/gates/check-definition.ts";
-
-async function walk(root) {
-	const output = [];
-	for (const name of (await readdir(root)).sort()) {
-		const path = join(root, name);
-		if ((await stat(path)).isDirectory()) output.push(...await walk(path));
-		else output.push(path);
-	}
-	return output;
-}
 
 export function checkDefinitionFixture(overrides = {}) {
 	return {
@@ -33,17 +21,13 @@ export function checkDefinitionFixture(overrides = {}) {
 	};
 }
 
-test("every shipped passive Check Definition decodes", async () => {
-	const paths = [
-		...(await walk("check-packs")),
-		...(await walk(".codewiki/check-packs")),
-	].filter((path) => path.endsWith("/check.json"));
-	assert.equal(paths.length, 22);
-	for (const path of paths) {
-		const decoded = decodeCheckDefinition(JSON.parse(await readFile(path, "utf8")));
-		assert.equal(decoded.ok, true, `${path}: ${decoded.ok ? "" : decoded.error.message}`);
-		assert.match(checkDefinitionDigest(decoded.value), /^sha256:[0-9a-f]{64}$/);
-	}
+test("custom Check Definition digest binds its declared requirement", () => {
+	const original = decodeCheckDefinition(checkDefinitionFixture());
+	const changed = decodeCheckDefinition(checkDefinitionFixture({requirement: "A different custom requirement."}));
+	assert.equal(original.ok, true);
+	assert.equal(changed.ok, true);
+	assert.match(checkDefinitionDigest(original.value), /^sha256:[0-9a-f]{64}$/u);
+	assert.notEqual(checkDefinitionDigest(original.value), checkDefinitionDigest(changed.value));
 });
 
 test("Check Definition preserves code/model and binary/quantitative contracts", () => {

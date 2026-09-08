@@ -28,7 +28,6 @@ const SOURCE_ALLOWLIST = [
 	"src/adapters/dsh/local-execution-host.ts",
 	"src/adapters/dsh/session-runner.ts",
 	"src/adapters/git/bootstrap.ts",
-	"src/adapters/git/handoff-converter.ts",
 	"src/adapters/git/local-server.ts",
 	"src/adapters/git/project-config.ts",
 	"src/adapters/git/project-store.ts",
@@ -92,7 +91,6 @@ const TEST_ALLOWLIST = [
 	"tests/adapters/dsh/session-runner.test.mjs",
 	"tests/adapters/git/bootstrap.test.mjs",
 	"tests/adapters/git/codewiki-bin.test.mjs",
-	"tests/adapters/git/handoff-converter.test.mjs",
 	"tests/adapters/git/local-server.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
 	"tests/adapters/git/project-store.test.mjs",
@@ -268,9 +266,12 @@ async function wikiOwnership() {
 
 async function productionOwnershipPaths() {
 	const paths = [...SOURCE_ALLOWLIST, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", ".codewiki/config.json", ".codewiki/check-packs.lock.json"];
-	for (const root of ["check-packs", ".codewiki/check-packs"]) {
-		paths.push(...await walk(join(repoRoot, root)));
-	}
+	// Project policy is optional; adopted files still require native ownership.
+	const checkPacks = await stat(join(repoRoot, ".codewiki/check-packs")).catch(error => {
+		if (error.code === "ENOENT") return null;
+		throw error;
+	});
+	if (checkPacks !== null) paths.push(...await walk(join(repoRoot, ".codewiki/check-packs")));
 	return [...new Set(paths)].sort();
 }
 
