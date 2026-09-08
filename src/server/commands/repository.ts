@@ -1,5 +1,5 @@
-import {canonicalJson} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {canonicalJson} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
 	appendChangeEvent,
 	encodeChangeTrace,

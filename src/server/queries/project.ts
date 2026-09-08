@@ -9,9 +9,9 @@ import type {
 	WorkReadInput,
 } from "../../api/contracts/read.ts";
 import {productError, type ProductError} from "../../api/transport/envelope.ts";
-import type {CanonicalRecord} from "../../kernel/canonical/contract.ts";
-import type {CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import type {CanonicalRecord} from "../../kernel/data-contracts/validation.ts";
+import type {CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {ChangeEvent} from "../../kernel/changes/events.ts";
 import type {ChangeLifecycleState, ReducedChange, ReducedGateFact} from "../../kernel/changes/reducer.ts";
 import {sha256Digest} from "../../kernel/identity/sha256.ts";

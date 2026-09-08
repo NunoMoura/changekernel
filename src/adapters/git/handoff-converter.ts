@@ -7,8 +7,8 @@ import {
 } from "node:fs/promises";
 import {join, resolve} from "node:path";
 
-import {canonicalJson} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {canonicalJson} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {canonicalValueDigest} from "../../kernel/identity/semantic-digest.ts";
 import {sha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {CODEWIKI_PRODUCT} from "../../product.ts";

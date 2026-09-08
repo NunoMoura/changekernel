@@ -32,9 +32,9 @@ import {
 	type ProductInput,
 	type ProductOperation,
 } from "../transport/envelope.ts";
-import {isNamespacedIdentifier} from "../../kernel/canonical/contract.ts";
-import type {CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {isNamespacedIdentifier} from "../../kernel/data-contracts/validation.ts";
+import type {CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 
 export interface ProductTransport {
 	send(request: unknown): Promise<unknown>;

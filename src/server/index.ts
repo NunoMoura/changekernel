@@ -20,9 +20,9 @@ import {
 	type ProductTransportRequest,
 	type ProductTransportResponse,
 } from "../api/transport/envelope.ts";
-import {isNamespacedIdentifier, protocolIdentity} from "../kernel/canonical/contract.ts";
-import {isCanonicalObject, type CanonicalValue} from "../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../kernel/canonical/outcome.ts";
+import {isNamespacedIdentifier, protocolIdentity} from "../kernel/data-contracts/validation.ts";
+import {isCanonicalObject, type CanonicalValue} from "../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../kernel/data-contracts/outcome.ts";
 import {decodeGitRef, type GitObjectFormat, type GitRef} from "../kernel/identity/git.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../kernel/identity/sha256.ts";
 import {CHANGE_TRACE_PROTOCOL, MAX_TRACE_BYTES} from "../kernel/changes/trace.ts";

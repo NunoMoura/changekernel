@@ -24,7 +24,7 @@ export {
 	type ContractIssue,
 	type ContractIssueCode,
 	type ProtocolIdentity,
-} from "./canonical/contract.ts";
+} from "./data-contracts/validation.ts";
 export {
 	DEFAULT_CANONICAL_LIMITS,
 	canonicalJson,
@@ -37,14 +37,14 @@ export {
 	type CanonicalLimits,
 	type CanonicalPrimitive,
 	type CanonicalValue,
-} from "./canonical/json.ts";
+} from "./data-contracts/canonical-json.ts";
 export {
 	failure,
 	flatMapOutcome,
 	mapOutcome,
 	success,
 	type Outcome,
-} from "./canonical/outcome.ts";
+} from "./data-contracts/outcome.ts";
 export * from "./changes/contracts.ts";
 export * from "./changes/events.ts";
 export * from "./changes/reducer.ts";

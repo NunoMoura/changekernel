@@ -10,9 +10,9 @@ import {
 	textField,
 	textValue,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import type {CanonicalValue} from "../canonical/json.ts";
-import type {Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
+import type {Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest} from "../identity/semantic-digest.ts";
 import type {Sha256Digest} from "../identity/sha256.ts";
 

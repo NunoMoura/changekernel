@@ -1,7 +1,7 @@
 import {readExactWikiHistory} from "../../adapters/git/wiki.ts";
 import type {WikiReadInput} from "../../api/contracts/read.ts";
-import {decodeCanonicalValue, isCanonicalObject, type CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {decodeCanonicalValue, isCanonicalObject, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {LEGACY_ATTRIBUTE_PREFIX} from "../../kernel/wiki/attributes.ts";
 import {decodeWikiInlineLinks} from "../../kernel/wiki/links.ts";
 import {validateWikiTransaction} from "../../kernel/wiki/transaction.ts";

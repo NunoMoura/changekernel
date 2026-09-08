@@ -1,5 +1,5 @@
-import {isCanonicalObject, parseCanonicalJson, type CanonicalIssue, type CanonicalValue} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {isCanonicalObject, parseCanonicalJson, type CanonicalIssue, type CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {decodeGitOid, type GitOid} from "../identity/git.ts";
 import {decodeWikiItem, type WikiItem, type WikiItemIssue} from "./item.ts";
 

@@ -1,14 +1,14 @@
 # CodeWiki
 
-CodeWiki is a governed development system built around a deterministic Semantic Kernel and one authoritative Project Server. This repository currently contains the clean Kernel foundation, semantic lifecycle reducers, exact Git-backed Wiki reading and mutation, bounded derived Views, Product policy, authenticated Project Server and Client SDK surfaces, four narrow host-neutral port contracts, a private Gate-facts boundary, and a bounded project bootstrap adapter.
+CodeWiki develops Git-compatible version control for humans and Agents: stock Git owns exact artifacts and history, Wiki owns desired meaning, a deterministic Semantic Kernel validates semantic contracts, and Project Server owns authorization and orchestration. This repository contains tested mechanisms for that design, not yet an operationally qualified dogfood release. Maintainer-approved R1 in [SEMANTIC_KERNEL_PLAN.md](SEMANTIC_KERNEL_PLAN.md) governs the current native cleanup.
 
-The package remains `@nunomoura/codewiki`. This foundation deliberately removes the previous Domain, KB/OKF, Backend compatibility, Runtime Build compatibility, migration, provider, and Pi-extension implementation rather than carrying those systems behind aliases. Git history and sealed release evidence preserve the obsolete implementation.
+The package remains `@nunomoura/codewiki`. This foundation deliberately removes the previous Domain, KB/OKF, Backend compatibility, Runtime Build compatibility, provider, and Pi-extension implementation rather than carrying those systems behind aliases. Git history and sealed release evidence preserve the obsolete implementation.
 
 ## Current foundation
 
 The active source tree contains:
 
-- deterministic canonical-value decoding and encoding with explicit limits and typed failures;
+- shared [data contracts](src/kernel/data-contracts/): bounded canonical JSON, field/protocol validation, and typed success/failure values;
 - pure SHA-256, lowercase Base32, semantic digest, and semantic identity primitives;
 - native `codewiki.component:ownership` interpretation;
 - explicit provenance isolation for every `codewiki.legacy:*` attribute;
@@ -17,13 +17,13 @@ The active source tree contains:
 - canonical Wiki files, complete relationship and retired-ID validation, atomic transaction post-state, and deterministic bounded list, get, dictionary, search, graph, history, attribution, provenance-inspection, and semantic-diff Views;
 - exact Git fallback whenever optional private Wiki indexes are absent, stale, invalid, or forged;
 - immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and passive Check Pack resources;
-- an authenticated Project Server that composes the qualified Project Store, Check Runner, and immutable Gate-facts boundary; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
+- an authenticated Project Server that composes Project Store, Check Runner, and Gate-facts ports, with memory-backed facts in the local composition; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
 - atomic Change proposal and revision, Decision, Planning, Work admission and integration, Review reconciliation, completion, supersession, and separately authorized protected-effect commands with exact expected-head binding and deterministic recovery;
 - a version-neutral Client SDK over digest-bound `codewiki.product-request@1.1.0` and `codewiki.product-response@1.1.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
-- host-neutral Agent Runtime and Preview ports with qualified local DSH and Preview adapters; and
+- host-neutral Agent Runtime and Preview ports with partial local adapters and replay/injected-runner tests, not operational qualification; and
 - an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and digest-verified passive Check Packs.
 
-Local Check execution, Wiki mutation, lifecycle transitions, Agent Runtime runs, and Preview execution are implemented behind Project Server authority. Release activation and controller promotion remain reserved until external qualification and human authorization.
+Wiki mutation and lifecycle transition mechanisms have ordinary test coverage. The shipped local composition has no available Check Runner or coding Worker; DSH tool-enabled execution, durable recovery, and safe Preview execution remain incomplete. Bundled/internal Check policy and the historical handoff helper still require coordinated R1 removal. Passing tests, historical release reports, and package version labels do not establish current operational readiness or controller authority.
 
 ## Install and import
 
@@ -77,7 +77,7 @@ The bootstrap never creates `.codewiki/kb/`, `.codewiki/traces/`, `.codewiki/run
 
 ## Architecture boundary
 
-The Kernel imports only bounded deterministic Kernel modules. It has no filesystem, Git, process, network, provider, UI, clock, randomness, adapter, or environment access. Expected validation failures return typed outcomes.
+The Kernel imports only bounded deterministic Kernel modules. `src/kernel/data-contracts/` owns data representation and validation, not canonical Git authority or lifecycle policy. It has no filesystem, Git, process, network, provider, UI, clock, randomness, adapter, or environment access. Expected validation failures return typed outcomes.
 
 The Project Server is the sole semantic control plane. It binds Project Store, Check Runner, and owner-private immutable Gate facts internally while reporting Agent Runtime and Preview as unavailable; no Client receives any port, fact-store, adapter, credential, ref, or raw writer handle. Ports report or perform bounded effects but never grant lifecycle authority:
 
@@ -88,7 +88,7 @@ The Project Server is the sole semantic control plane. It binds Project Store, C
 
 Gate facts remain a separate Project Server recovery boundary rather than a Client capability or authority source.
 
-Product policy and tracked Project configuration authorize capabilities. Gates report facts; they do not authorize transitions. Product N remains the external controller throughout the SK3 transition, so this candidate never governs, qualifies, admits, completes, activates, or promotes itself.
+Project Server enforces capability policy; Gates report facts rather than authorize transitions. R1 permits native development checkpoints without controller swaps or inherited rubric execution. Independent exact-subject qualification and explicitly authorized handoff remain required before dogfooding; this mutable checkout never governs or qualifies itself.
 
 ## Development
 
@@ -104,7 +104,7 @@ npm run audit:codewiki
 
 Architecture tests enforce the exact source, test, and package-export allowlists; zero dependency cycles; Kernel purity; forbidden legacy reachability; native ownership uniqueness; and unchanged canonical Wiki/Change state.
 
-See [`SEMANTIC_KERNEL_PLAN.md`](SEMANTIC_KERNEL_PLAN.md) for governed milestone order. Desired Product and System behavior lives under [`.codewiki/wiki/`](.codewiki/wiki/). Executable behavior lives under [`src/`](src/) and [`tests/`](tests/).
+See [`SEMANTIC_KERNEL_PLAN.md`](SEMANTIC_KERNEL_PLAN.md) for approved R1 scope, incomplete work, and the acceptance matrix. Desired Product and System behavior lives under [`.codewiki/wiki/`](.codewiki/wiki/). Executable behavior lives under [`src/`](src/) and [`tests/`](tests/). [Archived plans](docs/archive/README.md) are byte-preserved historical evidence, not current guidance.
 
 ## License
 

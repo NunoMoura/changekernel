@@ -1,6 +1,6 @@
-import {arrayField, decodeContract, exactRecord, protocolField, protocolIdentity, rejectContract, requiredField, textField, type ContractIssue} from "../../kernel/canonical/contract.ts";
-import type {CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {arrayField, decodeContract, exactRecord, protocolField, protocolIdentity, rejectContract, requiredField, textField, type ContractIssue} from "../../kernel/data-contracts/validation.ts";
+import type {CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
 	decodeCheckRunValue,
 	decodeGateValue,

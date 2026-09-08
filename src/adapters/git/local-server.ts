@@ -6,7 +6,7 @@ import {bootstrapCodewikiProject, type BootstrapFailure} from "./bootstrap.ts";
 import {decodeGitRef} from "../../kernel/identity/git.ts";
 import {createGitProjectStore} from "./project-store.ts";
 import {CODEWIKI_PRODUCT_POLICY_DIGEST} from "../../product.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {sha256Digest} from "../../kernel/identity/sha256.ts";
 import {AGENT_RUNTIME_PORT_PROTOCOL} from "../../ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL} from "../../ports/check-runner.ts";

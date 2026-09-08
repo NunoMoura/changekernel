@@ -14,9 +14,9 @@ import {
 	textField,
 	type CanonicalRecord,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import type {CanonicalValue} from "../canonical/json.ts";
-import {failure, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, type Outcome} from "../data-contracts/outcome.ts";
 import {CHECK_STAGES, type CheckStage} from "../gates/contracts.ts";
 import {decodeGitOidValue, gitOidText, type GitOid} from "../identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";

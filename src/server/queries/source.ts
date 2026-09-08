@@ -3,7 +3,7 @@ import type {ProjectSourceSelector} from "../../api/contracts/read.ts";
 import {CHANGE_EVENT_KINDS, type SemanticEventOwners} from "../../kernel/changes/events.ts";
 import {reduceChangeTrace, type ReducedChange} from "../../kernel/changes/reducer.ts";
 import {decodeChangeTrace, type ChangeTrace} from "../../kernel/changes/trace.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {decodeGitRef, sameGitOid, type GitObjectFormat, type GitOid, type GitRef} from "../../kernel/identity/git.ts";
 import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {

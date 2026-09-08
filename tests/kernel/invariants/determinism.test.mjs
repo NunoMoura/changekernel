@@ -5,7 +5,7 @@ import test from "node:test";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const script = `
-import {canonicalJson} from ${JSON.stringify(new URL("../../../src/kernel/canonical/json.ts", import.meta.url).href)};
+import {canonicalJson} from ${JSON.stringify(new URL("../../../src/kernel/data-contracts/canonical-json.ts", import.meta.url).href)};
 import {semanticDigest} from ${JSON.stringify(new URL("../../../src/kernel/identity/semantic-digest.ts", import.meta.url).href)};
 import {CODEWIKI_PRODUCT_POLICY_DIGEST} from ${JSON.stringify(new URL("../../../src/product.ts", import.meta.url).href)};
 const value={omega:[3,2,1],alpha:{z:false,a:"stable"}};

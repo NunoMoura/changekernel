@@ -6,7 +6,7 @@ import {
 import {
 	decodeCanonicalValue,
 	type CanonicalValue,
-} from "./kernel/canonical/json.ts";
+} from "./kernel/data-contracts/canonical-json.ts";
 import {semanticDigest} from "./kernel/identity/semantic-digest.ts";
 import type {Sha256Digest} from "./kernel/identity/sha256.ts";
 import {AGENT_RUNTIME_PORT_PROTOCOL} from "./ports/agent-runtime.ts";

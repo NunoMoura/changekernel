@@ -1,5 +1,5 @@
-import {isNamespacedIdentifier} from "../canonical/contract.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {isNamespacedIdentifier} from "../data-contracts/validation.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {decodeProjectSnapshot, type ProjectSnapshot} from "../changes/snapshot.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 import {decodeWikiFile, type WikiFile, type WikiFileInput, type WikiFileIssue} from "./file.ts";

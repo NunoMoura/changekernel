@@ -1,4 +1,4 @@
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {sameGitOid, type GitOid} from "../identity/git.ts";
 import {semanticDigest} from "../identity/semantic-digest.ts";
 import type {Sha256Digest} from "../identity/sha256.ts";

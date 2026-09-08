@@ -13,9 +13,9 @@ import {
 	sortedUniqueTextArray,
 	textField,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import type {CanonicalValue} from "../canonical/json.ts";
-import {failure, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, type Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 

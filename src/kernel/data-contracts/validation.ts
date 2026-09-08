@@ -4,7 +4,7 @@ import {
 	type CanonicalIssue,
 	type CanonicalLimits,
 	type CanonicalValue,
-} from "./json.ts";
+} from "./canonical-json.ts";
 import {failure, success, type Outcome} from "./outcome.ts";
 
 export interface ProtocolIdentity {

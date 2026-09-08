@@ -15,8 +15,8 @@ import type {
 	WorkCommandInput,
 } from "../../api/contracts/command.ts";
 import {isCanonicalRequestTimestamp, productError, type ProductError} from "../../api/transport/envelope.ts";
-import {canonicalJson, decodeCanonicalValue, type CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {canonicalJson, decodeCanonicalValue, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {createChange, type Change, type ChangeRelation, type ChangeTarget} from "../../kernel/changes/contracts.ts";
 import {
 	CHANGE_EVENT_KINDS,

@@ -1,5 +1,5 @@
-import type {CanonicalValue} from "../kernel/canonical/json.ts";
-import type {Outcome} from "../kernel/canonical/outcome.ts";
+import type {CanonicalValue} from "../kernel/data-contracts/canonical-json.ts";
+import type {Outcome} from "../kernel/data-contracts/outcome.ts";
 import type {EvidenceReference} from "../kernel/evidence/reference.ts";
 import type {
 	CheckExecutionIdentity,

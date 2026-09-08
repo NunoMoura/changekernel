@@ -8,9 +8,9 @@ import {
 	textField,
 	textValue,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import {isCanonicalObject, type CanonicalValue} from "../canonical/json.ts";
-import {failure, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import {isCanonicalObject, type CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, type Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import type {Sha256Digest} from "../identity/sha256.ts";
 import {LEGACY_ATTRIBUTE_PREFIX, partitionWikiAttributes} from "./attributes.ts";

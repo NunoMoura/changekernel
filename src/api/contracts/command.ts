@@ -12,9 +12,9 @@ import {
 	textField,
 	type CanonicalRecord,
 	type ContractIssue,
-} from "../../kernel/canonical/contract.ts";
-import type {CanonicalValue} from "../../kernel/canonical/json.ts";
-import type {Outcome} from "../../kernel/canonical/outcome.ts";
+} from "../../kernel/data-contracts/validation.ts";
+import type {CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import type {Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
 	CHANGE_REALIZATIONS,
 	CHANGE_RELATIONS,

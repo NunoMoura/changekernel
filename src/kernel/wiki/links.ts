@@ -1,5 +1,5 @@
-import {isNamespacedIdentifier} from "../canonical/contract.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {isNamespacedIdentifier} from "../data-contracts/validation.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 
 export const WIKI_INLINE_LINK_PREFIX = "codewiki://item/";
 export const WIKI_INLINE_LINK_PREDICATE = "codewiki.wiki:inline-link";

@@ -5,7 +5,7 @@ import {
 	decodeCanonicalValue,
 	encodeCanonicalValue,
 	parseCanonicalJson,
-} from "../../../src/kernel/canonical/json.ts";
+} from "../../../src/kernel/data-contracts/canonical-json.ts";
 
 test("canonical JSON recursively sorts keys and normalizes negative zero", () => {
 	const left = canonicalJson({z: -0, a: {two: 2, one: 1}, list: [3, 2, 1]});

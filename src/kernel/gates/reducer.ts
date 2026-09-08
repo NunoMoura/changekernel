@@ -1,6 +1,6 @@
-import {arrayField, decodeContract, exactRecord, literalField, rejectContract, textValue, type ContractIssue} from "../canonical/contract.ts";
-import type {CanonicalValue} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {arrayField, decodeContract, exactRecord, literalField, rejectContract, textValue, type ContractIssue} from "../data-contracts/validation.ts";
+import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {sameGitOid} from "../identity/git.ts";
 import {semanticDigest} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";

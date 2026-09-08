@@ -80,11 +80,11 @@ The apparent test-selection gap was checked and **not confirmed**: `test:smoke` 
 
 Historical evidence reconciliation is bounded: `a37a22f63` changes this plan only; it does not itself record a project-state conversion. The private qualification/handoff reports and consumed-authorization marker exist, and the archived package checksum matches, but they do not identify a complete independently replayable effect chain for this repository. The backup registry contains multiple projects. Neither those summaries nor finding the same Trace bytes proves a handoff on every project, or disproves an external handoff on a different scope. Current controller authority and this repository's Trace 13-to-14 transition remain unresolved release/handoff blockers, not reasons to execute inherited rubrics during the native audit.
 
-### R1 — proposed native cleanup and bounded dogfood scope
+### R1 — approved native cleanup and bounded dogfood scope
 
-**Status: reconciled proposal awaiting the maintainer's explicit scope decision.** This records the earlier maintainer direction in one reviewable revision against the newer tree. It is not an accepted Change, Gate, authorization receipt, controller activation, or migration. The existing historical SK3A–SK3H records remain intact. Until R1 is approved for native source work, continue audit/proposal work only; do not silently treat donor documents or old installed Check packs as governing the new scope.
+**Status: maintainer-approved for native source development.** The maintainer explicitly directed: “data contracts is a better name let's change that and proceed with or R1 cleanup proposal.” This approves R1 and the `data-contracts/` naming amendment against the audited newer tree. It does not constitute a governed Change admission, Gate, authorization receipt, controller activation, or live migration. Historical SK3A–SK3H records remain intact; inherited internal rubrics do not govern this native development revision.
 
-The decision requested is authorization for this bounded native development revision, not permission for a particular diagnostic command or every checkpoint. Its acceptance would establish the following development scope without fabricating governed lifecycle state:
+R1 now governs the bounded native development workflow and queue, replacing conflicting predecessor per-checkpoint/activation instructions for this work only. Protected effects and external exact-subject qualification retain their explicit safeguards. Approval covers ordinary implementation, diagnostics, tests, and checkpoints without repeated permission requests. The approved scope is:
 
 1. **Retain the product and invariant floor.** CodeWiki is Git-compatible version control for humans and Agents: stock Git owns exact artifacts/history, Wiki owns accepted desired meaning, append-only Change facts own semantic lifecycle, a pure Kernel validates/reduces, and Project Server owns authorization and orchestration over narrow effect ports. Keep native ownership, stable IDs, explicit `containing_commit`, full-snapshot Review/Completion subjects, expected-old-OID CAS, fail-closed missing evidence, and independently evidenced quiescence/recovery. Retention is by invariant, not by predecessor module names or test counts.
 2. **Ship Check mechanics, not internal judgments.** Remove packaged software defaults, project-internal rubrics/copies, Product/manifest/bootstrap/lock bindings, and both manufactured mandatory Decision Checks in a coordinated change. Preserve custom definition/adoption/selection/execution, code/model boundaries, exact inputs, immutable Results, negative validation, and ordinary automated tests. Complete empty policy may yield a warned empty Gate; unresolved policy, unavailable required execution, malformed output, or missing inputs stops. No semantic rubric becomes mandatory because it shipped historically or because a model can execute it.
@@ -101,7 +101,7 @@ Evidence labels: **local** means observed source or ordinary tests on the named 
 
 | Requirement / owner | Current implementation and ordinary tests | Required acceptance evidence |
 | --- | --- | --- |
-| Pure, bounded deterministic Kernel | `src/kernel/{canonical,identity,changes,gates,work,wiki,evidence}/`; matching kernel tests, including the 12 transitive suites. **Local.** | Preserve canonical/digest/replay properties and hostile-input limits; mutation/state-machine tests must reject altered authority branches. Extend architectural guards to all shipped entry points and intended layer directions. |
+| Pure, bounded deterministic Kernel | `src/kernel/{data-contracts,identity,changes,gates,work,wiki,evidence}/`; matching kernel tests, including the 12 transitive suites. **Local.** | Preserve canonical/digest/replay properties and hostile-input limits; mutation/state-machine tests must reject altered authority branches. Extend architectural guards to all shipped entry points and intended layer directions. |
 | Exact Git effects and whole-outcome Review/Completion | `src/adapters/git/project-store.ts`, `src/server/commands/{repository,lifecycle}.ts`; Git store, lifecycle, two-parent snapshot tests. **Local with doubles for execution.** | Independent stale canonical/Change head, concurrent CAS, cancellation, replay, and crash tests; zero partial ref transactions or unreviewed artifact changes. Preserve `containing_commit` semantics and exact reviewed artifact tree. |
 | Mechanics-only custom Checks | Kernel selection/reducer and Check Runner port exist; concrete/fixed policy and unavailable runtime remain. Tests cover definitions, selection, reduction, and injected Runner outcomes. **Gap.** | Empty versus unresolved policy tests; explicit custom adoption/edit/removal; package/bootstrap free of seeded rubrics. Real sandbox execution on exact declared inputs, pass/fail/malformed/unavailable/timeout/cancel cases, zero forged Results, and stopped operational failures. |
 | Scoped coding Worker and custody | DSH adapters, replay provider, authorization/receipt/containment validation tests. Tool-enabled execution and observed custody are missing. **Gap.** | External packed runtime executes only authorized tools/paths; attempts at protected refs, credentials, network, undeclared files, or surviving descendants fail. Receipt validation must not replace physical enforcement. |
@@ -115,15 +115,20 @@ Evidence labels: **local** means observed source or ordinary tests on the named 
 
 ### R1 ordered work queue
 
-These are incomplete work items, not fresh admissions or renamed historical completions. After the scope decision, ordinary implementation maps to this queue instead of reviving old per-checkpoint activation clauses.
+These are development work items, not fresh admissions or renamed historical completions. Ordinary implementation maps to this approved queue instead of reviving old per-checkpoint activation clauses.
 
-- [ ] **R1-0 — Scope decision and protocol reconciliation.** Record the maintainer decision on R1; distinguish native source-work authority from still-pending semantic admission and live handoff. Reconcile current AGENTS/plan wording without rewriting historical receipts.
+- [x] **R1-0 — Scope decision and protocol reconciliation.** The maintainer approved R1 for native development, including the naming amendment. This plan and AGENTS distinguish native source-work authority from pending semantic admission and live handoff. Historical receipts are not rewritten.
+- [x] **R1-0a — Data-contract naming amendment.** Rename `src/kernel/canonical/` to `src/kernel/data-contracts/`, `json.ts` to `canonical-json.ts`, and `contract.ts` to `validation.ts`; move the corresponding tests and update imports, ownership, active architecture guidance, and build/test discovery. Keep `outcome.ts`, exported symbols, protocol IDs, validation behavior, and digest semantics unchanged. No compatibility forwarding files. All 60 source files were verified byte-identical to the audited base after only the declared import-path substitutions. Typecheck/build and all 251 native tests passed; source LSP reported no errors. Initial validation caught unsorted renamed allowlist entries; the entries were reordered without weakening the assertion, then the full suite passed.
 - [ ] **R1-1 — Coherent policy/document cleanup.** Reconcile 23 donor Wiki bodies, preserve 11 newer envelopes unless a separately reviewed native metadata edit is required, archive three historical plans, remove concrete Check assets and coupled Product/manifest/bootstrap/registration/test assumptions, and make empty/custom policy behavior explicit. Treat working-branch project-policy changes as proposed target bytes, not mutation of live controller policy. Do not delete the old lock by itself or regenerate accepted state implicitly.
 - [ ] **R1-2 — Honest composition and query ownership.** Eliminate implicit initialization, fix CLI parsing/recovery/ownership, remove the redundant barrel and normal converter shipping, enforce layer directions, and bind real Build/fact-aware query identities. Keep useful mechanisms rather than wrapper compatibility shims.
 - [ ] **R1-3 — Actual bounded Check/Worker execution.** Implement and qualify the declared sandbox/Worker bindings, with explicit custom input/output/limits, hostile cases, truthful custody, failure and repair. Exclude unsupported Preview from the profile or repair it before claiming support. Credentials and model budgets still need applicable authorization.
 - [ ] **R1-4 — Durable recovery, continuation, and efficiency.** Persist/reload facts and custody at their rightful boundaries, test every effect cut point and idempotent retry, prove fresh-Agent continuation, and freeze/measure the numeric resource and efficiency budgets before qualification.
 - [ ] **R1-5 — Exact state/layout transition and candidate qualification.** Resolve historical authority/input scope, prepare exact mapping and independently recoverable conversion, freeze the single-layout policy-free package plus replacement guidance, and obtain new external exact-subject evidence. No current-state conversion or promotion is implied by implementing/testing a converter.
 - [ ] **R1-6 — Explicit handoff and canonical reconciliation.** Apply only separately authorized protected effects after quiescence and qualification; prove one real governed correction. Retain native recovery and all historical evidence. Do not automatically push, merge, or move `main` when a checklist turns green.
+
+### R1 first implementation checkpoint
+
+R1-0 and R1-0a are complete as native development work, not governed lifecycle completion. Evidence is outside Git at `~/.local/state/codewiki/evidence/r1-data-contracts-uUatzGap/`: exact source-equivalence record, initial/final test logs, and archive-preservation manifest. `r1-data-contracts-current-path` is a convenience pointer, not the evidence identity. R1-1 has begun: the three root plans now reside under `docs/archive/` with their original Git blob identities, and README qualification overclaims are corrected. Concrete Check assets, bootstrap/manifest bindings, fixed registrations, and their test expectations remain unchanged in this checkpoint; their coordinated removal is the next R1-1 source slice. The old project lock and five Trace files remain unchanged. No live migration, package freeze, controller activation, or canonical-ref movement occurred.
 
 ## Authority
 
@@ -133,15 +138,15 @@ Wiki does not directly authorize source work. Every implementation change must m
 
 No mutable checkout governs or qualifies itself. Native Pi, Git, deterministic checks, and human authority are bootstrap and recovery paths. After bootstrap, immutable externally installed Product N governs exact committed release candidate N+1. Candidate N+1 never enters Product N's module graph or qualification authority.
 
-The transitional bootstrap distinguishes engineering checkpoints from release candidates. SK3C–SK3F land as ordinary immutable commits with clean exact-commit checks and one bounded CI receipt; they receive no admission, completion, package activation, or controller claim. Product N remains the sole semantic controller. Only an intentionally frozen release candidate receives external Product N qualification and one exact human activation decision. Controller promotion occurs only at the explicit SK3G quiescent handoff below; source and target controllers never overlap.
+The current native bootstrap follows approved R1: reviewed Git checkpoints with scoped validation are not releases, admissions, completions, or activations. Historical SK3C–SK3F and SK3G controller claims below are retained records, not verified current runtime authority or new per-checkpoint permission requirements. Resolve the actual independent controller's authority before relying on it. Only an intentionally frozen release candidate receives external exact-subject qualification and an explicit activation decision; any controller handoff requires quiescence and no overlap. Replacement guidance belongs inside the exact qualified handoff subject, not a post-qualification rewrite.
 
 Creating a commit or moving an unprotected development ref is not a lifecycle effect and needs no prospective-OID authorization. Every packed identity is nevertheless immutable: one package name/version maps to exactly one archive digest, source commit/tree, Product Build, and Kernel Build. A correction receives a new commit and, after release-candidate freeze, a new package version.
 
 A checklist implementation item may be marked complete when its exact engineering checkpoint and CI receipt pass. Release, activation, handoff, and dogfood items additionally require their stated external qualification and human authority. Activation alone never implies controller promotion.
 
-## Activated baseline
+## Historical activated baseline — current authority unresolved
 
-CodeWiki remains private pre-production software. Released controller N is unpublished private package `@nunomoura/codewiki@0.3.0`, source commit `adc272d0d9b8f228fc8cedb150c8c6371c823997`, package SHA-256 `63e926d638e0f74f0e785cf8ab6222bb45ee04abfb6e848501b29de99726489d`. Transitional checkpoint and release-candidate packages must use unique prerelease versions; `0.3.0` may never identify different bytes.
+The following records describe the predecessor lineage; they do not establish current controller custody or override R1's native workflow. CodeWiki remains private pre-production software. The historical released controller N is unpublished private package `@nunomoura/codewiki@0.3.0`, source commit `adc272d0d9b8f228fc8cedb150c8c6371c823997`, package SHA-256 `63e926d638e0f74f0e785cf8ab6222bb45ee04abfb6e848501b29de99726489d`. Transitional checkpoint and release-candidate packages must use unique prerelease versions; `0.3.0` may never identify different bytes.
 
 ### Completed semantic releases
 
@@ -171,7 +176,7 @@ external private state   credentials, DSH/Preview internals, caches, worktrees, 
 
 `.codewiki/kb/**`, `.codewiki/traces/**`, `.codewiki/runtime/**`, `.codewiki/views/**`, generated Wiki indexes, project-local CodeWiki packages, and controller pins must remain absent.
 
-## Current gap and overlay disposition
+## Historical SK3B gap and overlay disposition
 
 A post-SK3A audit found broad executable drift, dead architecture, API sprawl, cycles, duplication, stale source ownership, and compatibility leakage. An uncommitted SK3B overlay explored those cuts. It is not an authorized candidate.
 
@@ -183,19 +188,19 @@ Before source cutover:
 - do not merge or transplant any dependency closure wholesale;
 - re-evaluate every behavior against current Wiki and the allowlist below.
 
-The documentation amendment that establishes this cutover must itself be frozen, externally qualified by immutable Product N, authorized, and activated before target source edits begin.
+The original SK3B procedure required the documentation cutover amendment to be frozen, externally qualified, authorized, and activated before its target source edits. That historical requirement does not impose new per-checkpoint activation on maintainer-approved R1; current native work follows the R1 queue and boundaries above.
 
 ## Cutover rules
 
 1. Keep this repository and package identity. Do not create a replacement Product repository.
 2. Preserve obsolete implementation in immutable Git history, release artifacts, and a verified Git bundle.
 3. Do not keep active `legacy/**`, `old/**`, archive-source, or dual architecture directories.
-4. Build in an isolated clean worktree/branch from the activated baseline.
+4. Develop in the single active source checkout on the explicitly selected unprotected branch. Preserve unique work; use disposable external projects for packed-candidate testing, not competing long-lived source clones.
 5. Create the target tree from an allowlist. Old files have no presumption of migration.
 6. For each subsystem, freeze old files, exports, references, tests, accepted invariants, and dependency closure before changing it.
 7. Classify each behavior as `transplant`, `rewrite`, `defer`, or `delete`. A dependency chain that imports old architecture is a rewrite signal.
 8. Retain no pre-stable compatibility reader without an identified external subject, exact predecessor bytes/schema, owner, expiry, and qualification evidence.
-9. Normal startup reads only current Wiki/Change roots and never migrates, repairs, or dual-writes semantic state. The sole exception is the explicit one-shot SK3G handoff converter; it is unavailable after handoff.
+9. Normal startup reads only current Wiki/Change roots and never migrates, repairs, or dual-writes semantic state. Explicit offline conversion requires an exact manifest, independent qualification, recoverability, and separate live-effect authority. The audited historical helper is not a qualified exception to this rule.
 10. Exclude `codewiki.legacy:*` provenance from normal term resolution, search, semantic diff, ownership, applicability, authorization, Agent context, and generated Views.
 11. Keep one Product, one semantic controller, and one release lineage. Do not create Forge, a Dev controller product, a Pi wrapper, or another lifecycle authority.
 
@@ -206,7 +211,10 @@ The target production allowlist is:
 ```text
 src/
   kernel/
-    canonical/
+    data-contracts/
+      canonical-json.ts
+      validation.ts
+      outcome.ts
     identity/
     wiki/
     changes/
@@ -264,7 +272,7 @@ kernel -X-> server, adapters, process, network, UI, providers, DSH, Preview
 
 Rules:
 
-- Kernel is deterministic mechanism, never Project Server or runtime. Product-fixed role/check policy enters as immutable validated data rather than executable Kernel behavior.
+- Kernel is deterministic mechanism, never Project Server or runtime. Role/capability policy and explicitly adopted project Check policy enter as validated data; R1 removes Product-fixed semantic judgments, not deterministic safety validation.
 - Project Server is sole semantic control plane and authorizes every managed-ref write through Project Store.
 - Project Store, Check Runner, Agent Runtime, and Preview are separate narrow host-neutral ports; adapters own effects.
 - DSH implements Agent Runtime and AI/model-provider mechanics. It does not own semantic authority or Git, Delivery, remote, or Preview effects.
@@ -274,7 +282,9 @@ Rules:
 - System Component Items declare target ownership only through `codewiki.component:ownership`. Semantic roles belong to lifecycle/check owners, singleton config and lock files have exact owners, and target readers never use `codewiki.legacy:*` metadata outside explicit provenance inspection.
 - Architecture checks enforce roots, imports, cycles, exports, ownership coverage, and forbidden edges from the first target commit.
 
-## Target-tree disposition and dogfood-driven backlog
+## Historical SK3H target-tree disposition
+
+The following snapshot is retained for audit provenance, not as the current R1 work queue. In particular, Check execution, durable recovery tests, and bounded efficiency evidence are R1 dogfood prerequisites, not post-stable deferrals. R1 controls current scope and evidence labels; historical claims of mechanism completeness are not fresh qualification.
 
 The SK3H desired-versus-executable alignment audit found that SK3C–SK3F implemented the mechanism-complete minimal Kernel while the target tree above and the Wiki `codewiki.component:ownership` attributes encode the full vision. The divergence was incremental and was not recorded per subsystem at the time. This section is the governing disposition: every deviation from the target tree is classified as `permanent re-home` (Wiki amended), `dogfood backlog` (desired state stays; a future governed Change builds it when demand exists), or `deferred` (explicitly not built). The Unix rule applies to every primitive: do one thing only and do it well; new surface arrives only as a dogfed Change with concrete demand.
 
@@ -327,7 +337,7 @@ No source/target controller overlap is allowed. Rollback is permitted only befor
 
 ### SK0 — universal contracts — complete
 
-Qualified historical semantic identity and migration foundations. See `SEMANTIC_KERNEL_SK0_CONTRACTS.md`.
+Qualified historical semantic identity and migration foundations. See [archived SK0 contracts](docs/archive/SEMANTIC_KERNEL_SK0_CONTRACTS.md).
 
 ### SK1 — Git-native semantic contracts — complete
 

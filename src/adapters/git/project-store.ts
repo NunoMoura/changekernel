@@ -1,6 +1,6 @@
 import {spawnSync, type SpawnSyncReturns} from "node:child_process";
 import {basename, isAbsolute, resolve} from "node:path";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {createProjectSnapshot, type ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {
 	decodeGitOid,

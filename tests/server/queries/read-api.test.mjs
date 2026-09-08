@@ -12,7 +12,7 @@ import {createCodewikiClient} from "../../../src/api/client/index.ts";
 import {createProductTransportRequest, decodeProductTransportResponse} from "../../../src/api/transport/envelope.ts";
 import {createChange} from "../../../src/kernel/changes/contracts.ts";
 import {CHANGE_EVENT_KINDS, createChangeEvent} from "../../../src/kernel/changes/events.ts";
-import {canonicalJson} from "../../../src/kernel/canonical/json.ts";
+import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
 import {appendChangeEvent} from "../../../src/kernel/changes/trace.ts";
 import {createChangeTraceHeader, createEmptyChangeTrace, encodeChangeTrace} from "../../../src/kernel/changes/trace.ts";
 import {decodeGitOid} from "../../../src/kernel/identity/git.ts";

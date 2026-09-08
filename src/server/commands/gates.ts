@@ -1,5 +1,5 @@
-import {canonicalJson, decodeCanonicalValue, parseCanonicalJson, type CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {canonicalJson, decodeCanonicalValue, parseCanonicalJson, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {Change} from "../../kernel/changes/contracts.ts";
 import {decodeCheckDefinition, type CheckDefinition} from "../../kernel/gates/check-definition.ts";
 import {

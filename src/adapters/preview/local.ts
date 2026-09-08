@@ -1,5 +1,5 @@
 import {createEvidenceReference, type EvidenceAuthority} from "../../kernel/evidence/reference.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
 import {sha256Digest} from "../../kernel/identity/sha256.ts";
 import type {GitOid} from "../../kernel/identity/git.ts";

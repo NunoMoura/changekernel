@@ -17,8 +17,8 @@ import {
 	type AgentRuntimeIssue,
 	type AgentRuntimePort,
 } from "../../ports/agent-runtime.ts";
-import {decodeCanonicalValue, type CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {decodeCanonicalValue, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 
 export const DSH_EXECUTION_HOST_PROTOCOL = Object.freeze({
 	id: "codewiki.dsh-execution-host",

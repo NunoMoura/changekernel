@@ -5,7 +5,7 @@ import {
 	flatMapOutcome,
 	mapOutcome,
 	success,
-} from "../../../src/kernel/canonical/outcome.ts";
+} from "../../../src/kernel/data-contracts/outcome.ts";
 
 test("typed outcomes map successful values without mutating either value", () => {
 	const initial = success(2);

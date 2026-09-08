@@ -8,7 +8,7 @@ import {
 	requiredField,
 	sortedUniqueTextArray,
 	textField,
-} from "../../../src/kernel/canonical/contract.ts";
+} from "../../../src/kernel/data-contracts/validation.ts";
 
 const PROTOCOL = protocolIdentity("codewiki.test-contract", "1.0.0");
 const decodeFixture = (input) => decodeContract("Fixture", input, (value) => {

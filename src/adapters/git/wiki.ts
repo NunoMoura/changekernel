@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 
-import {isNamespacedIdentifier} from "../../kernel/canonical/contract.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {isNamespacedIdentifier} from "../../kernel/data-contracts/validation.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {decodeGitOid, sameGitOid, type GitOid} from "../../kernel/identity/git.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {MAXIMUM_WIKI_FILE_BYTES, type WikiFile, type WikiFileInput} from "../../kernel/wiki/file.ts";

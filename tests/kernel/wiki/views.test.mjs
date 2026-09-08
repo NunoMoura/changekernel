@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {canonicalJson} from "../../../src/kernel/canonical/json.ts";
+import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
 import {validateWikiTransaction} from "../../../src/kernel/wiki/transaction.ts";
 import {
 	createDictionaryView,

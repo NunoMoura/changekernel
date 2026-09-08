@@ -1,6 +1,6 @@
-import {isNamespacedIdentifier, type ContractIssue} from "../canonical/contract.ts";
-import {canonicalJson, type CanonicalPrimitive} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {isNamespacedIdentifier, type ContractIssue} from "../data-contracts/validation.ts";
+import {canonicalJson, type CanonicalPrimitive} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import type {Sha256Digest} from "../identity/sha256.ts";
 import {CHANGE_REALIZATIONS, CHANGE_TYPES, type ChangeRealization, type ChangeType} from "../changes/contracts.ts";

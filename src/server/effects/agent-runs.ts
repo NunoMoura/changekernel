@@ -1,4 +1,4 @@
-import {failure, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {failure, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {GitOid} from "../../kernel/identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../../kernel/identity/semantic-digest.ts";
 import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
@@ -21,7 +21,7 @@ import {
 	type AgentRuntimeIssue,
 	type AgentRuntimePort,
 } from "../../ports/agent-runtime.ts";
-import {isNamespacedIdentifier, type ContractIssue} from "../../kernel/canonical/contract.ts";
+import {isNamespacedIdentifier, type ContractIssue} from "../../kernel/data-contracts/validation.ts";
 
 export const AGENT_ROLE_POLICY_PROTOCOL = Object.freeze({id: "codewiki.agent-role-policy", version: "1.0.0"} as const);
 

@@ -1,5 +1,5 @@
-import {isCanonicalObject, type CanonicalValue} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {isCanonicalObject, type CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {partitionWikiAttributes, type WikiAttributeIssue} from "./attributes.ts";
 
 export const COMPONENT_OWNERSHIP_ATTRIBUTE = "codewiki.component:ownership";

@@ -25,7 +25,7 @@ test("ownership reads only native codewiki.component:ownership", () => {
 	assert.equal(decoded.ok, true);
 	assert.deepEqual(decoded.value.sourcePatterns, ["src/kernel/**", "tsconfig*.json"]);
 	assert.deepEqual(decoded.value.traceEvents, ["change.proposed"]);
-	assert.equal(ownershipMatchesPath(decoded.value, "source", "src/kernel/canonical/json.ts").value, true);
+	assert.equal(ownershipMatchesPath(decoded.value, "source", "src/kernel/data-contracts/canonical-json.ts").value, true);
 	assert.equal(ownershipMatchesPath(decoded.value, "source", "tsconfig.build.json").value, true);
 	assert.equal(ownershipMatchesPath(decoded.value, "source", "src/legacy/domain.ts").value, false);
 });
@@ -44,12 +44,12 @@ test("owner resolution is deterministic and exposes overlap", () => {
 	const first = decodeComponentOwnership("cw:component:first", nativeAttributes).value;
 	const second = decodeComponentOwnership("cw:component:second", {
 		"codewiki.component:ownership": {
-			sourcePatterns: ["src/kernel/canonical/**"],
+			sourcePatterns: ["src/kernel/data-contracts/**"],
 			testPatterns: [],
 		},
 	}).value;
 	assert.deepEqual(
-		ownersForPath([second, first], "source", "src/kernel/canonical/json.ts"),
+		ownersForPath([second, first], "source", "src/kernel/data-contracts/canonical-json.ts"),
 		{ok: true, value: ["cw:component:first", "cw:component:second"]},
 	);
 });

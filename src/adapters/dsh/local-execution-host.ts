@@ -1,7 +1,7 @@
 import {isAbsolute, join} from "node:path";
 
-import {decodeCanonicalValue, type CanonicalValue} from "../../kernel/canonical/json.ts";
-import {failure, success, type Outcome} from "../../kernel/canonical/outcome.ts";
+import {decodeCanonicalValue, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {decodeSha256Digest} from "../../kernel/identity/sha256.ts";
 import {

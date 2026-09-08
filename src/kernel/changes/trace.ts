@@ -9,13 +9,13 @@ import {
 	rejectContract,
 	textField,
 	type ContractIssue,
-} from "../canonical/contract.ts";
+} from "../data-contracts/validation.ts";
 import {
 	canonicalJson,
 	parseCanonicalJson,
 	type CanonicalValue,
-} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest, semanticId, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 import {decodeGitOid, type GitObjectFormat} from "../identity/git.ts";

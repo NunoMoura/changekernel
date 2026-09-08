@@ -8,7 +8,7 @@ import test from "node:test";
 import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
 import {createGitProjectStore} from "../../../src/adapters/git/project-store.ts";
 import {PRODUCT_OPERATIONS, createProductTransportRequest, decodeProductTransportResponse} from "../../../src/api/transport/envelope.ts";
-import {failure, success} from "../../../src/kernel/canonical/outcome.ts";
+import {failure, success} from "../../../src/kernel/data-contracts/outcome.ts";
 import {createEvidenceReference} from "../../../src/kernel/evidence/reference.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {createWork} from "../../../src/kernel/work/contracts.ts";

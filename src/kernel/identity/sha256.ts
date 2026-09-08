@@ -1,4 +1,4 @@
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 
 export type Sha256Digest = `sha256:${string}`;
 

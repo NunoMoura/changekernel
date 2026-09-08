@@ -1,4 +1,4 @@
-import type {Outcome} from "../kernel/canonical/outcome.ts";
+import type {Outcome} from "../kernel/data-contracts/outcome.ts";
 import type {ProjectSnapshot} from "../kernel/changes/snapshot.ts";
 import type {GitObjectFormat, GitOid, GitRef} from "../kernel/identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../kernel/identity/semantic-digest.ts";

@@ -1,4 +1,4 @@
-import {isCanonicalObject, type CanonicalValue} from "../../kernel/canonical/json.ts";
+import {isCanonicalObject, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
 
 /**
  * Lifecycle console projections over public read responses.

@@ -7,9 +7,9 @@ import {
 	textField,
 	textValue,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import type {CanonicalValue} from "../canonical/json.ts";
-import type {Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
+import type {Outcome} from "../data-contracts/outcome.ts";
 
 export type GitObjectFormat = "sha1" | "sha256";
 

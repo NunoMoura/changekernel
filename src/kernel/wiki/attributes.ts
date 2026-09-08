@@ -3,8 +3,8 @@ import {
 	isCanonicalObject,
 	type CanonicalIssue,
 	type CanonicalValue,
-} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 
 export const LEGACY_ATTRIBUTE_PREFIX = "codewiki.legacy:";
 

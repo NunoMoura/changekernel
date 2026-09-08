@@ -1,4 +1,4 @@
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import type {ChangeLifecycleState, ReducedChange, ReducedWorkState} from "../changes/reducer.ts";
 import {decodeProjectSnapshot, type ProjectSnapshot} from "../changes/snapshot.ts";
 import {decodeEvidenceReference, type EvidenceReference} from "../evidence/reference.ts";

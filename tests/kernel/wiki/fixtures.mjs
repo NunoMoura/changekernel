@@ -1,4 +1,4 @@
-import {canonicalJson} from "../../../src/kernel/canonical/json.ts";
+import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
 import {createProjectSnapshot} from "../../../src/kernel/changes/snapshot.ts";
 import {validateWikiTree} from "../../../src/kernel/wiki/tree.ts";
 

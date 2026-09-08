@@ -16,9 +16,9 @@ import {
 	textValue,
 	type CanonicalRecord,
 	type ContractIssue,
-} from "../canonical/contract.ts";
-import {isCanonicalObject, type CanonicalPrimitive, type CanonicalValue} from "../canonical/json.ts";
-import {failure, type Outcome} from "../canonical/outcome.ts";
+} from "../data-contracts/validation.ts";
+import {isCanonicalObject, type CanonicalPrimitive, type CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {failure, type Outcome} from "../data-contracts/outcome.ts";
 import {decodeEvidenceReferenceValue, type EvidenceReference} from "../evidence/reference.ts";
 import {decodeGitOidValue, type GitOid} from "../identity/git.ts";
 import {semanticDigest, semanticId, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";

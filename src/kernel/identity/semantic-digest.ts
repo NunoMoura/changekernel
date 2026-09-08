@@ -1,5 +1,5 @@
-import {canonicalJson, type CanonicalIssue} from "../canonical/json.ts";
-import {failure, success, type Outcome} from "../canonical/outcome.ts";
+import {canonicalJson, type CanonicalIssue} from "../data-contracts/canonical-json.ts";
+import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {base32Lowercase} from "./base32.ts";
 import {sha256Digest, type Sha256Digest} from "./sha256.ts";
 
