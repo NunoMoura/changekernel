@@ -1,8 +1,8 @@
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
-import {resolve} from "node:path";
+import {lstat} from "node:fs/promises";
+import {join, resolve} from "node:path";
 
-import {bootstrapCodewikiProject, type BootstrapFailure} from "./bootstrap.ts";
 import {decodeGitRef} from "../../kernel/identity/git.ts";
 import {createGitProjectStore} from "./project-store.ts";
 import {CODEWIKI_PRODUCT_POLICY_DIGEST} from "../../product.ts";
@@ -31,7 +31,7 @@ export interface LocalProjectServer {
 }
 
 export interface LocalProjectServerIssue {
-	readonly code: "invalid_project_root" | "bootstrap_failed" | "store_failed" | "binding_failed" | "object_format_failed";
+	readonly code: "invalid_project_root" | "store_failed" | "binding_failed" | "object_format_failed";
 	readonly message: string;
 }
 
@@ -54,8 +54,11 @@ const READ_CAPABILITIES = [
  * Bounded local Project Server composition for read-first Console use.
  * Composes the real Git Project Store, an unavailable Check Runner (read views remain
  * factual), an unavailable Agent Runtime, and a least-privilege local read policy.
- * Mutations fail closed because the execution ports are unavailable; the composition
- * is for Console reads, never for lifecycle authority.
+ * Composition never bootstraps, copies, repairs, or rewrites semantic state; it only
+ * binds read interfaces over an existing Git root. Mutations fail closed because the
+ * read-only authorization grants deny every command operation; unavailable execution
+ * ports alone could not supply that guarantee. The composition is for Console reads,
+ * never for lifecycle authority.
  */
 export async function createLocalProjectServer(
 	options: Readonly<{projectRoot: string; projectName?: string}>,
@@ -68,10 +71,8 @@ export async function createLocalProjectServer(
 	const projectRoot = resolve(options.projectRoot);
 
 	const projectName = options.projectName ?? "Local Project";
-	const boot = await bootstrapCodewikiProject({projectRoot, project: projectName});
-	if (!boot.ok && boot.error.code !== "already_exists") {
-		return failure(issue("bootstrap_failed", bootstrapMessage(boot.error)));
-	}
+	const rootCheck = await inspectProjectRoot(projectRoot);
+	if (!rootCheck.ok) return rootCheck;
 
 	const repositoryId = await deriveRepositoryId(projectRoot);
 
@@ -155,6 +156,46 @@ async function deriveRepositoryId(projectRoot: string): Promise<string> {
 	return `cw:repository:local-${digest.slice("sha256:".length, "sha256:".length + 16)}`;
 }
 
+/**
+ * Read-only root preflight replacing the safety checks implicit bootstrap used to
+ * supply: composition requires an existing non-symbolic directory root with its own
+ * non-symbolic `.git` directory or file, checked with `lstat` before any Git store
+ * binding. A nested path without its own `.git` never falls through to ancestor
+ * discovery. These point-in-time checks never write and do not establish physical
+ * custody.
+ */
+async function inspectProjectRoot(projectRoot: string): Promise<Outcome<true, LocalProjectServerIssue>> {
+	try {
+		const root = await lstat(projectRoot);
+		if (root.isSymbolicLink() || !root.isDirectory()) {
+			return failure(issue("invalid_project_root", "The project root must be an existing non-symbolic directory."));
+		}
+	} catch (error) {
+		return failure(issue("invalid_project_root", isNotFound(error)
+			? "The project root does not exist."
+			: `The project root could not be inspected: ${errorDetail(error)}`));
+	}
+	try {
+		const gitState = await lstat(join(projectRoot, ".git"));
+		if (gitState.isSymbolicLink() || (!gitState.isDirectory() && !gitState.isFile())) {
+			return failure(issue("invalid_project_root", "The project root must contain its own non-symbolic `.git` directory or file."));
+		}
+	} catch (error) {
+		return failure(issue("invalid_project_root", isNotFound(error)
+			? "The project root is not a Git repository: it has no `.git` directory or file of its own."
+			: `The Git state of the project root could not be inspected: ${errorDetail(error)}`));
+	}
+	return success(true);
+}
+
+function isNotFound(error: unknown): boolean {
+	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
+}
+
+function errorDetail(error: unknown): string {
+	return error instanceof Error ? error.message : "Unknown filesystem failure.";
+}
+
 async function detectObjectFormat(
 	projectRoot: string,
 ): Promise<Outcome<"sha1" | "sha256", LocalProjectServerIssue>> {
@@ -167,13 +208,6 @@ async function detectObjectFormat(
 	} catch {
 		return success("sha1");
 	}
-}
-
-function bootstrapMessage(error: BootstrapFailure): string {
-	if (error.code === "invalid_root") {
-		return "The project root is not a Git repository. Initialize Git before starting the Console.";
-	}
-	return error.message;
 }
 
 function issue(code: LocalProjectServerIssue["code"], message: string): LocalProjectServerIssue {

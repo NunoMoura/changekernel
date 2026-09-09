@@ -78,6 +78,8 @@ Custom Checks require explicit project adoption with matching files and lock dig
 
 The bootstrap never creates `.codewiki/kb/`, `.codewiki/traces/`, `.codewiki/runtime/`, `.codewiki/views/`, generated indexes, project-local executable Plugin paths, or controller state.
 
+`createLocalProjectServer` and the read-only CLI do not initialize or repair projects. Composition requires an existing non-symbolic root with its own non-symbolic `.git` directory or file, and binds read interfaces without creating `.codewiki`. Initialize a new project explicitly through `bootstrapCodewikiProject` when intended. Binding availability—and current empty-state status projections—does not establish resolved Check policy or operational readiness. Reads retain exact-source validation; malformed state is never an instruction to re-bootstrap. Read-only authorization grants, not executor unavailability alone, prevent lifecycle mutations.
+
 ## Architecture boundary
 
 The Kernel imports only bounded deterministic Kernel modules. `src/kernel/data-contracts/` owns data representation and validation, not canonical Git authority or lifecycle policy. It has no filesystem, Git, process, network, provider, UI, clock, randomness, adapter, or environment access. Expected validation failures return typed outcomes.

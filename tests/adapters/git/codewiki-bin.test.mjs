@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import {execFile} from "node:child_process";
 import {cp, mkdtemp, rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {basename, join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {promisify} from "node:util";
 import test from "node:test";
+
+import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
 
 const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const bin = join(sourceRoot, "bin", "codewiki.mjs");
@@ -14,14 +17,37 @@ const execFileAsync = (file, args, opts) => new Promise((resolvePromise) => {
 	});
 });
 
+const runGit = promisify(execFile);
+
+/**
+ * Hardened fixture Git, mirroring the accepted local-read-purity harness
+ * contract: an explicit cwd, inherited GIT_* environment overrides scrubbed,
+ * global/system Git configuration ignored, hooks and commit signing disabled,
+ * and the sha1 object format and main branch pinned at init time.
+ */
+async function fixtureGit(root, args) {
+	/** @type {Record<string, string>} */
+	const env = {};
+	for (const [key, value] of Object.entries(process.env)) {
+		if (value !== undefined && !key.startsWith("GIT_")) env[key] = value;
+	}
+	env.GIT_CONFIG_GLOBAL = "/dev/null";
+	env.GIT_CONFIG_SYSTEM = "/dev/null";
+	return runGit("git", ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "-c", "gc.auto=0", ...args], {cwd: root, env});
+}
+
 async function makeGovernedProject(label) {
 	const root = await mkdtemp(join(tmpdir(), `codewiki-bin-${label}-`));
-	await execFileAsync("git", ["init", "-q", "-b", "main"], {cwd: root});
-	await execFileAsync("git", ["config", "user.email", "console@test"], {cwd: root});
-	await execFileAsync("git", ["config", "user.name", "Console Test"], {cwd: root});
+	await fixtureGit(root, ["init", "-q", "-b", "main", "--object-format=sha1"]);
+	await fixtureGit(root, ["config", "user.email", "console@test"]);
+	await fixtureGit(root, ["config", "user.name", "Console Test"]);
+	// Explicit initialization during fixture setup: the bin composition itself
+	// never bootstraps, so committed semantic state must exist before invocation.
+	const boot = await bootstrapCodewikiProject({projectRoot: root, project: basename(root)});
+	assert.equal(boot.ok, true, boot.ok ? "" : boot.error.message);
 	await cp(join(sourceRoot, ".codewiki", "wiki", "items"), join(root, ".codewiki", "wiki", "items"), {recursive: true});
-	await execFileAsync("git", ["add", ".codewiki"], {cwd: root});
-	await execFileAsync("git", ["commit", "-q", "-m", "bootstrap CodeWiki"], {cwd: root});
+	await fixtureGit(root, ["add", ".codewiki"]);
+	await fixtureGit(root, ["commit", "-q", "--no-verify", "--allow-empty", "-m", "bootstrap CodeWiki"]);
 	return root;
 }
 

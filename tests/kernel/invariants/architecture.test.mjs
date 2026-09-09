@@ -92,6 +92,7 @@ const TEST_ALLOWLIST = [
 	"tests/adapters/dsh/session-runner.test.mjs",
 	"tests/adapters/git/bootstrap.test.mjs",
 	"tests/adapters/git/codewiki-bin.test.mjs",
+	"tests/adapters/git/local-read-purity.test.mjs",
 	"tests/adapters/git/local-server.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
 	"tests/adapters/git/project-store.test.mjs",
