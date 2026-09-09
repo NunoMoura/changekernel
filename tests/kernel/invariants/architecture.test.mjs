@@ -84,6 +84,7 @@ const SOURCE_ALLOWLIST = [
 	"src/server/queries/wiki.ts",
 	"src/server/recovery/facts.ts",
 ];
+const BIN_ALLOWLIST = ["bin/codewiki.mjs"];
 const TEST_ALLOWLIST = [
 	"tests/adapters/dsh/agent-runtime.test.mjs",
 	"tests/adapters/dsh/fixtures/replay-session.jsonl",
@@ -96,6 +97,7 @@ const TEST_ALLOWLIST = [
 	"tests/adapters/git/project-store.test.mjs",
 	"tests/adapters/git/wiki.test.mjs",
 	"tests/adapters/preview/local.test.mjs",
+	"tests/api/client/cli-command.test.mjs",
 	"tests/api/client/console.test.mjs",
 	"tests/api/client/index.test.mjs",
 	"tests/api/contracts/read.test.mjs",
@@ -170,19 +172,24 @@ async function walk(root) {
 function parseImports(path, text) {
 	const source = ts.createSourceFile(path, text, ts.ScriptTarget.ESNext, true, ts.ScriptKind.TS);
 	const imports = [];
+	const dynamicImports = [];
 	const forbiddenCalls = [];
 	const visit = (node) => {
 		if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
 			imports.push(node.moduleSpecifier.text);
 		}
 		if (ts.isCallExpression(node)) {
-			if (node.expression.kind === ts.SyntaxKind.ImportKeyword) forbiddenCalls.push("dynamic import");
+			if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+				forbiddenCalls.push("dynamic import");
+				const specifier = node.arguments[0];
+				dynamicImports.push(node.arguments.length === 1 && specifier && ts.isStringLiteral(specifier) ? specifier.text : null);
+			}
 			if (ts.isIdentifier(node.expression) && ["require", "eval"].includes(node.expression.text)) forbiddenCalls.push(node.expression.text);
 		}
 		ts.forEachChild(node, visit);
 	};
 	visit(source);
-	return {imports, forbiddenCalls};
+	return {imports, dynamicImports, forbiddenCalls};
 }
 
 function relativeTarget(from, specifier) {
@@ -265,7 +272,7 @@ async function wikiOwnership() {
 }
 
 async function productionOwnershipPaths() {
-	const paths = [...SOURCE_ALLOWLIST, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", ".codewiki/config.json", ".codewiki/check-packs.lock.json"];
+	const paths = [...SOURCE_ALLOWLIST, ...BIN_ALLOWLIST, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", ".codewiki/config.json", ".codewiki/check-packs.lock.json"];
 	// Project policy is optional; adopted files still require native ownership.
 	const checkPacks = await stat(join(repoRoot, ".codewiki/check-packs")).catch(error => {
 		if (error.code === "ENOENT") return null;
@@ -278,8 +285,20 @@ async function productionOwnershipPaths() {
 test("active source and tests equal the frozen allowlist", async () => {
 	assert.deepEqual((await walk(join(repoRoot, "src"))).sort(), SOURCE_ALLOWLIST);
 	assert.deepEqual((await walk(join(repoRoot, "tests"))).sort(), TEST_ALLOWLIST);
+	assert.deepEqual((await walk(join(repoRoot, "bin"))).sort(), BIN_ALLOWLIST);
 	for (const root of DELETED_ROOTS) {
 		await assert.rejects(stat(join(repoRoot, root)), {code: "ENOENT"});
+	}
+});
+
+test("shipped executables bind only Node utilities and the curated runtime entrypoint", async () => {
+	const pkg = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
+	assert.deepEqual(Object.values(pkg.bin).map(path => path.replace(/^\.\//u, "")).sort(), BIN_ALLOWLIST);
+	for (const path of BIN_ALLOWLIST) {
+		const parsed = parseImports(path, await readFile(join(repoRoot, path), "utf8"));
+		assert.deepEqual(parsed.imports.sort(), ["node:path", "node:process"], path);
+		assert.deepEqual(parsed.dynamicImports, ["../dist/index.js"], path);
+		assert.deepEqual(parsed.forbiddenCalls, ["dynamic import"], path);
 	}
 });
 

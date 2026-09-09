@@ -3,6 +3,7 @@
 // Deterministic plain-language output by default; technical identities only via
 // explicit audit reads. Exit codes: 0 found/ok, 1 none/attention, 2 error.
 import process from "node:process";
+import {basename, resolve} from "node:path";
 
 const USAGE = `codewiki — Semantic Kernel lifecycle console
 
@@ -19,27 +20,70 @@ Exit codes: 0 ok, 1 none found, 2 error.
 
 const READ_ONLY_NOTICE = "Local console is read-only; lifecycle authority stays with the Project Server.";
 
+// Preflight errors use fixed category messages only — they never echo user
+// input, so stderr stays far below the 2,048-UTF-8-byte bound (message + USAGE)
+// without sanitizing, truncating, or executing any part of the invocation.
+function usageError(message) {
+	process.stderr.write(`codewiki: ${message}\n${USAGE}`);
+	return 2;
+}
+
+// Strict preflight: validate the whole invocation before any runtime import or
+// composition. Root selection is positional per verb, never inferred from
+// slashes; ID semantics stay with the API, which only sees preflight survivors.
+function preflight(argv) {
+	if (argv.length === 0) return {help: true};
+	const [verb, ...rest] = argv;
+	if (rest.length === 0 && (verb === "--help" || verb === "-h")) return {help: true};
+
+	const verbs = new Set(["status", "changes", "checks", "change", "trace"]);
+	if (!verbs.has(verb)) return {error: "unknown verb."};
+
+	const positional = [];
+	let json = false;
+	for (const arg of rest) {
+		if (arg === "--json") {
+			if (verb !== "trace") return {error: "--json is only supported for trace."};
+			if (json) return {error: "--json may be given at most once."};
+			if (positional.length > 0) return {error: "--json must precede the Change ID and project root."};
+			json = true;
+			continue;
+		}
+		if (arg.startsWith("-") && arg.length > 1) return {error: "unknown option."};
+		// An explicitly empty operand is invalid whether it would be a Change ID
+		// or a project root; omission (which means cwd) is handled separately.
+		if (arg === "") return {error: "arguments must not be empty."};
+		positional.push(arg);
+	}
+
+	if (verb === "status" || verb === "changes" || verb === "checks") {
+		if (positional.length > 1) return {error: `too many arguments for ${verb}.`};
+		return {verb, json: false, changeId: null, rootOperand: positional[0] ?? null};
+	}
+
+	if (positional.length === 0) return {error: `${verb} requires a Change ID.`};
+	if (positional.length > 2) return {error: `too many arguments for ${verb}.`};
+	return {verb, json, changeId: positional[0], rootOperand: positional[1] ?? null};
+}
+
 async function main(argv) {
-	const verb = argv[0];
-	if (!verb || verb === "--help" || verb === "-h") {
+	const plan = preflight(argv);
+	if (plan.help) {
 		process.stdout.write(USAGE);
 		return 0;
 	}
+	if (plan.error) return usageError(plan.error);
 
+	const root = plan.rootOperand === null ? process.cwd() : resolve(plan.rootOperand);
+	const inputName = basename(root);
+
+	// Runtime import happens only after preflight accepted the invocation; the
+	// exported sanitizer covers any runtime-controlled diagnostics text.
 	const {createCodewikiClient, createLocalProjectServer, renderConsole, sanitizeTerminalText} = await import(
 		"../dist/index.js"
 	);
 
-	let root = null;
-	let positional = [];
-	for (const arg of argv.slice(1)) {
-		if (arg === "--json") continue;
-		if (root === null && (arg.includes("/") || arg === ".")) root = arg;
-		else positional.push(arg);
-	}
-	root ??= process.cwd();
-
-	const composed = await createLocalProjectServer({projectRoot: root, projectName: root.split("/").pop()});
+	const composed = await createLocalProjectServer({projectRoot: root, projectName: inputName});
 	if (!composed.ok) {
 		process.stderr.write(`codewiki: ${sanitizeTerminalText(composed.error.message)}\n`);
 		return 2;
@@ -63,10 +107,10 @@ async function main(argv) {
 	const options = {requestId, expiresAt};
 	const source = {kind: "canonical"};
 
-		const fail = (label, outcome) => {
+	const fail = (label, outcome) => {
 		if (!outcome.ok && outcome.error.code === "invalid_project_state") {
-			process.stderr.write(`codewiki: ${label}: this project's semantic state predates the current kernel generation, so normal reads stop fail-closed.\n`);
-			process.stderr.write("Safe next steps: restore the verified backup, or re-bootstrap the project under the current kernel generation.\n");
+			process.stderr.write(`codewiki: ${label}: this project's semantic state could not be read and needs diagnosis.\n`);
+			process.stderr.write("Recovery or conversion of existing state requires a verified procedure; this console does not modify or rewrite it.\n");
 			return 2;
 		}
 		const hint = outcome.ok ? "" : sanitizeTerminalText(outcome.error.hint ?? outcome.error.message);
@@ -74,7 +118,7 @@ async function main(argv) {
 		return 2;
 	};
 
-	if (verb === "status") {
+	if (plan.verb === "status") {
 		const res = await client.status({...options, source});
 		if (!res.ok) return fail("status", res);
 		process.stdout.write(renderConsole("status", res.value));
@@ -82,7 +126,7 @@ async function main(argv) {
 		return res.value.status === "attention_needed" ? 1 : 0;
 	}
 
-	if (verb === "changes") {
+	if (plan.verb === "changes") {
 		const res = await client.changes({...options, source, view: "list", limit: 50, cursor: null});
 		if (!res.ok) return fail("changes", res);
 		if (!res.value.items || res.value.items.length === 0) {
@@ -94,19 +138,14 @@ async function main(argv) {
 		return 0;
 	}
 
-	if (verb === "change") {
-		const [changeId] = positional;
-		if (!changeId) {
-			process.stderr.write("codewiki: change requires a Change ID.\n");
-			return 2;
-		}
-		const res = await client.changes({...options, source, view: "get", changeId});
+	if (plan.verb === "change") {
+		const res = await client.changes({...options, source, view: "get", changeId: plan.changeId});
 		if (!res.ok) return fail("change", res);
 		process.stdout.write(renderConsole("change", res.value));
 		return res.value.userActionRequired ? 1 : 0;
 	}
 
-	if (verb === "checks") {
+	if (plan.verb === "checks") {
 		const res = await client.checks({...options, source, view: "gates", changeId: null, limit: 50, cursor: null});
 		if (!res.ok) return fail("checks", res);
 		if (!res.value.items || res.value.items.length === 0) {
@@ -118,32 +157,21 @@ async function main(argv) {
 		return res.value.items.some((item) => item.userActionRequired) ? 1 : 0;
 	}
 
-	if (verb === "trace") {
-		const json = argv.includes("--json");
-		const [changeId] = positional;
-		if (!changeId) {
-			process.stderr.write("codewiki: trace requires a Change ID.\n");
-			return 2;
-		}
-		const res = await client.audit({...options, source, view: "change", changeId});
-		if (!res.ok) return fail("trace", res);
-		const {reduced, path} = res.value;
-		if (json) {
-			process.stdout.write(`${JSON.stringify({changeId, state: reduced.state, latestEventDigest: reduced.latestEventDigest, traceDigest: reduced.traceDigest, tracePath: path}, null, 2)}\n`);
-			return 0;
-		}
-		process.stdout.write(renderConsole("trace", {
-			changeId,
-			state: reduced.state,
-			latestEventDigest: reduced.latestEventDigest,
-			traceDigest: reduced.traceDigest,
-			tracePath: path,
-		}));
+	const res = await client.audit({...options, source, view: "change", changeId: plan.changeId});
+	if (!res.ok) return fail("trace", res);
+	const {reduced, path} = res.value;
+	if (plan.json) {
+		process.stdout.write(`${JSON.stringify({changeId: plan.changeId, state: reduced.state, latestEventDigest: reduced.latestEventDigest, traceDigest: reduced.traceDigest, tracePath: path}, null, 2)}\n`);
 		return 0;
 	}
-
-	process.stderr.write(`codewiki: unknown verb '${verb}'.\n${USAGE}`);
-	return 2;
+	process.stdout.write(renderConsole("trace", {
+		changeId: plan.changeId,
+		state: reduced.state,
+		latestEventDigest: reduced.latestEventDigest,
+		traceDigest: reduced.traceDigest,
+		tracePath: path,
+	}));
+	return 0;
 }
 
 process.exitCode = await main(process.argv.slice(2));
