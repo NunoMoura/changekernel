@@ -1,6 +1,309 @@
 # Semantic Kernel Refactoring Plan — Active Ledger
 
-## Workspace reconciliation and baseline audit — current entry point
+## Semantic collaboration pivot — current entry point
+
+> **Implementation is paused.** The maintainer accepted the direction consolidated below and authorized: preserve the brainstorm, compact using native Pi facilities, then rewrite the existing Wiki coherently and rebaseline this plan. The current pass is documentation preservation only. Do not resume D4, launch its Worker, or follow an older “next” implementation instruction below. R1's source-development safeguards and all higher-priority repository boundaries remain in force. The successor implementation queue has not yet been defined or accepted.
+
+This section preserves the decisions, reasons, research, alternatives, and unresolved questions from the maintainer's long-form brainstorm. The approval to perform the preservation plan was: “Okay, great plan. Let's do it!” It is not a claim that the new architecture is implemented, operationally qualified, or activated. It does not convert this conversation into a governed Change, fabricate historical Traces, or transfer controller authority.
+
+This is a temporary consolidation and continuation record in the sole active ledger, not another specification repository or parallel roadmap. Stable desired behavior must next be reconciled into `.codewiki/wiki/**`; implementation gaps, sequencing, status, and qualification remain here. Existing Wiki pages have not yet been rewritten to this direction. Conflicting predecessor design choices are explicitly identified below rather than silently treated as current implementation requirements.
+
+### Pivot workspace and parked work
+
+Capture-start observations:
+
+- Active source checkout: `/home/canina7/Projects/codewiki`.
+- Branch: `audit/clean-baseline`; exact HEAD: `53b17a023beeb8edde48b7cf488dcdfe95639e7a`.
+- Selected audited source ancestry: `7fe04257d2a18d5d16130c45f5919e49bb84f92d`. This is provenance, not an instruction to reset HEAD or resurrect an older tree.
+- Sole configured remote: `origin`, `git@github.com:NunoMoura/codewiki.git`. This pass has not refreshed remote refs or claimed that remote `main` is an approved baseline.
+- Nothing was staged at capture. The worktree was already dirty; that work must not be absorbed into a blanket checkpoint or discarded as obsolete.
+
+| Existing path | Capture-start status and preservation requirement |
+| --- | --- |
+| `src/adapters/git/project-store.ts` | Unaccepted partial D4 implementation; preserve unchanged. |
+| `src/adapters/git/local-server.ts` | Unaccepted partial D4 implementation; preserve unchanged. |
+| `tests/adapters/git/project-store.test.mjs` | Unaccepted partial D4 tests; no final successful validation is recorded. Preserve unchanged. |
+| `.codewiki/wiki/items/system/components/project.md` | Existing coordinator-owned D4 repository-binding clarification; preserve pending reconciliation. |
+| `SEMANTIC_KERNEL_PLAN.md` | Existing uncommitted D4 planning/failure record, 94 added lines relative to capture HEAD. Preserve that record beneath this new entry. |
+| `.pi/settings.json` | Unrelated user configuration changes; do not edit or stage. |
+| `outputs/` | Four existing untracked output documents; do not edit, delete, or add to Git. |
+
+The fourth D4-owned file, `tests/adapters/git/local-server.test.mjs`, was not modified. The accepted read-purity test remains frozen according to the D4 packet. D4 stopped after an infrastructure failure and then an OpenRouter HTTP 402 recovery failure; its source patch is neither complete nor accepted. The preserved provider-cap investigation is not authorization for another paid call. The pivot does not permit a fallback executor or a retry of that lane. The detailed D4 packet and external failure evidence remain below for later retain/adapt/replace/defer review.
+
+Pre-edit preservation evidence is outside Project Git at `~/.local/state/codewiki/evidence/semantic-hub-preservation-v8ikrmjl/`: `state-before.json`, `plan-before.md`, `tracked-before.patch`, `staged-before.patch`, and `status-before.txt`. The manifest covers 189 tracked paths and 194 paths including `outputs/`, with file digests, modes, symlink targets where applicable, branch, HEAD, and refs. The plan's pre-edit SHA-256 is `245edeff7b1083d30684692eac19669674042138adff458a5b64b3d5df318608`. These are private preservation artifacts, not release evidence or source truth. Capture-start HEAD may be followed by a documentation-only checkpoint; inspect current Git history rather than confusing that checkpoint with a source implementation change.
+
+### Pivot decision 1 — product purpose and placement
+
+**Agreed direction:** CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents across teams, not only software development teams. Git supplies the exact-content and history substrate. CodeWiki adds the semantic layer needed to preserve and evolve understanding. GitHub is an incumbent product category and optional integration, not an architectural dependency or the only place where semantic acceptance can occur.
+
+The motivating failure is institutional amnesia: people and Agents forget why decisions were made, which alternatives failed, and which assumptions made an approach appropriate. Larger context windows cannot recover rationale that was never consolidated. Retaining more documents or conversations without their grounds does not solve continuation. The product should preserve a team's ability to reason and act through Agent resets, personnel changes, interruptions, and evolving intent.
+
+The intended layer split is:
+
+| Layer | Responsibility |
+| --- | --- |
+| Git | Exact files, snapshots, commit ancestry, branches, merges, and transport. Do not duplicate its version-control machinery. |
+| Semantic kernel | The meanings of knowledge, intent-bearing Changes, semantic effects and dependencies, validation obligations, judgments, and acceptance transitions. A small kernel must not become semantically empty plumbing. |
+| CodeWiki Hub | Human–Agent proposal, deliberation, delegation, review, scoped acceptance, and shared continuity. Participants need not understand Git staging, refs, or rebasing to use the product. |
+| Optional integrations | Editors, Agent harnesses, execution environments, existing Git hosts, and other team tools. They present or execute work without becoming the sole repository of its meaning. |
+
+A general core does not require a universal first release. Do not turn this direction into a combined GitHub/Notion/Jira/Slack replacement backlog, or require a full hosted Hub before proving the semantic loop. Software is a useful test domain, not the definition of the ontology. Operations and research work must be expressible without software-specific primitives.
+
+### Pivot decision 2 — Wiki and Change remain the two primitives
+
+The user proposes a **Change**, carrying intent and expected effects, rather than maintaining a separate desired-state object. The **Wiki** is consolidated project knowledge. A Wiki state is the Wiki at a particular revision, not another top-level entity to manage.
+
+| Primitive | Meaning |
+| --- | --- |
+| Wiki | What the project currently records as known or adopted, including scoped facts, decisions in force, constraints, procedures, rationale, support, and explicit uncertainty. Historical, hypothetical, and quoted material must retain their distinct roles. |
+| Change | Intentional evolution: desired effects, motivation, proposed transformations, alternatives and tradeoffs, assumptions, decisions, execution, observations, validation, and outcome. |
+
+The distinction is motivation versus consolidated consequence, not “facts are allowed but adopted commitments disappear.” A Change may seek safer recovery; the Wiki may retain the adopted rule that recovery requires verified targets, with provenance back to that Change. The motivating debate and pending journey do not need a second independently maintained intent representation in the Wiki. Future participants must nevertheless be able to discover which decisions remain in force without rereading all history.
+
+Intent may initially be fuzzy and may evolve through inquiry. Preserve the original proposal, explicit revisions, and reasons for revision. Do not silently move the acceptance target to fit an implementation. Material intent/scope changes return to Decision under explicit authority; the precise boundary between amending a Change and creating a successor Change remains an open design question, not permission to disregard the current lifecycle contract.
+
+All accepted mutations of the managed knowledge record must be attributable to recorded transitions. This does not mean the external world changes only through CodeWiki. Git captures representations and evidence about reality, not reality itself. Committing a procedure does not prove staff adopted it; merging code does not prove deployment; restoring files does not undo an external action.
+
+An empty Wiki is a possible greenfield initial state, not an assumption about every existing project. With implicit discovery, an existing repository already contains knowledge. Adoption must identify its baseline and uncertainty without inventing earlier intent, retroactive Changes, or semantic validation receipts.
+
+### Pivot decision 3 — preserve grounds for action and revision
+
+Knowledge quality is not document length, elaborate metadata, or a scalar quality score. Consequential knowledge should be clear enough to interpret, challenge, use, and responsibly revise. Useful questions include:
+
+- What is asserted or adopted, and in which scope, conditions, and time?
+- Which problem or purpose does it address?
+- Why was it accepted, by whom, and with what support?
+- Which assumptions and alternatives matter to that judgment?
+- What evidence or changed condition would justify reconsideration?
+- What other knowledge, commitments, or work depends on it?
+
+These questions are not six mandatory fields on every paragraph. Structure must earn its maintenance cost. Facts, obligations, preferences, procedures, hypotheses, and rationale may require different treatment, but an exhaustive item taxonomy has not been selected. One file can contain assertions with different roles and consequences. A graph of support, assumptions, opposition, and consequences provides different value from a graph of merely related topics.
+
+Preserve concise, attributable public rationale and evidence references rather than every conversational turn or speculative thought. Do not invent plausible historical reasons where records are missing. Losing one supporting assumption calls for reassessment; another independent support may preserve the conclusion. Accepted knowledge must be durable without becoming dogma, and scoped disagreement must not be erased into false organizational consensus.
+
+The three continuation/revision cases are retained as design probes:
+
+1. A Wiki state whose original reasons still hold: retain its supported consequences without redoing settled inquiry unnecessarily.
+2. A state whose assumptions later failed: reassess dependent suitability or feasibility, even if its physical realization still exists.
+3. A previously rejected state that became appropriate: recover the original rejection conditions and evaluate them against changed intent, conditions, costs, or evidence. Rejection is contextual, not an intrinsic permanent property of a state.
+
+Example: choosing SQLite for an offline, single-user project with low operational burden does not imply that every later collaboration requirement either mandates replacing SQLite or forbids reconsideration. Reassess concurrency/deployment assumptions while retaining still-valid reasons. Similarly, a rejected proposal or failed experiment may leave valuable evidence; promoting a reusable lesson into accepted Wiki knowledge is distinct from declaring the original intent realized.
+
+### Pivot decision 4 — semantic validation is multidimensional and contextual
+
+“Compatible” was rejected as an adequate single definition of validity. Some dimensions concern state descriptions; others concern transitions, their authority, or the quality of their support. The semantic diff must expose changed commitments and consequences, not only changed sentences or touched files.
+
+The validator must distinguish current accepted knowledge, observed realization, and proposed effects. Existing commitments may be deliberately revised under authority; treating every disagreement with the old Wiki as a violation would fossilize it. Conversely, a candidate cannot turn its own proposed waiver into the governing rule used to approve itself.
+
+| Dimension | Question raised by a proposed transition |
+| --- | --- |
+| Intent fit | Why pursue these effects rather than alternatives, and which tradeoffs serve the expressed intent? |
+| Consistency | Can proposed and retained commitments hold together under the same stated scope and conditions? |
+| Reachability | Is there a credible admissible path from observed reality to an acceptable realization, with the available means and constraints? |
+| Preservation | Which commitments must remain true throughout the transition, not merely at its destination? |
+| Justification | Which evidence and assumptions support the proposal, and what consequential uncertainty remains? |
+| Authority | Who may approve affected revisions and protected effects? A proposal is not an execution, publication, or policy-change grant. |
+
+These are consolidated semantic distinctions, not a fixed six-Check Pack or an already selected schema. Specific obligations should follow the Change's actual effects, relevant Wiki meaning, and stage. Classification may distinguish knowledge correction, commitment revision, investigation, and implementation effects; those are examples, not a mandatory mutually exclusive enum. An author's chosen label cannot bypass obligations present in the actual delta.
+
+Feedback must distinguish **supported**, **contradicted**, and **unresolved**, with scope, reasons, and evidence. Stale support must be visible. A missing proof is not a counterexample; an open Change accounts for a realization gap but does not make the target realized; a model judgment is not automatically a formal proof. A passing test supports only its tested conditions. An aggregate score must not average away a binding violation.
+
+Desired-state descriptions can still be understood as regions of acceptable realities: intersection expresses joint satisfaction, containment refinement, and union alternatives. Empty intersection indicates contradiction only within an adequate model and shared context. This theoretical lens does not reintroduce a separate State/Intent service or require users to write a formal logic. **Compatible, reachable, and realized remain different claims.**
+
+Transition validation has an inductive structure: establish a baseline and validate preservation of specified invariants at accepted transitions, including joins. It can guarantee faithfully enforced formal invariants, not universal truth of natural-language prose or the absence of unobserved external drift. Historical acceptance remains reconstructible without becoming present-day endorsement.
+
+### Pivot decision 5 — retain the four stage loops
+
+The early suggestion to make Planning optional was rejected. The problem was duplicated policy and prescribed machinery, not the existence of stage-specific reasoning. Keep one semantic foundation with different evaluation contexts and increasing evidence.
+
+| Loop | Purpose and evidence boundary |
+| --- | --- |
+| Decision | Accept sufficiently clear intent, scope, tradeoffs, and a supported transition hypothesis. Establish credible feasibility, not a completed implementation plan or universal reachability proof. |
+| Planning | Make a path concrete: intermediate outcomes, dependencies, shared contracts, obligations, work decomposition, and parallelization. Account for uncertainty that matters to execution. |
+| Implementation | Attempt authorized work, collect observations, use cheap feedback, and address discovered constraints or defects. Preserve exact partial subjects and do not overclaim integrated completion. |
+| Review | Assess the reconciled whole and its exact artifact/knowledge subject. Check that intent survived recomposition and account for remaining gaps before acceptance. |
+
+Feedback returns to its cause: an artifact defect to Implementation, a bad decomposition to Planning, and changed or incoherent intent to Decision. Investigation can be a valuable Change even before it modifies implementation artifacts. The rules for promoting intermediate knowledge and amending intent remain to be specified.
+
+Planning is semantic decomposition, not only task scheduling. Independent destinations do not prove independent execution: parallel work must not destroy another task's preconditions or shared commitments. For an authentication Change, UI, backend, and observability work can share a no-secret-logging obligation despite touching different files. Separately passing tasks do not establish correctness of their composition.
+
+Efficiency concerns the expected contribution of paths, including information gained, risk reduced, and options preserved. There is no universal semantic distance that every Change must monotonically decrease. Refactoring, investigation, or infrastructure may create useful detours. Distinguish achievement goals at a destination from maintenance/safety goals throughout the path. Efficient execution cannot excuse forbidden effects.
+
+Concentrate expensive assurance at commitment boundaries, retain cheap feedback during work, and enforce authorization before protected effects. Saving a checkpoint, accepting a decision, realizing intent, merging, publishing, and deploying are distinct acts.
+
+### Pivot decision 6 — remove competing project knowledge/policy systems
+
+Project Skills largely package procedural knowledge plus delivery mechanisms. The procedural knowledge belongs in the shared corpus; harness discovery, tool bindings, scripts, and presentation are adapters. Do not require separately maintained project Skills to duplicate Wiki meaning.
+
+Checks and Check Packs are not intended to remain a separately authored project-policy ontology. Verification techniques may still use ordinary tests, CI, source inspection, tools, models, and human judgments. A test is not automatically a CodeWiki Check resource. Preserve useful verification and effect-safety mechanisms without carrying forward custom-Pack authoring/adoption merely because R1 retained them.
+
+This is a real change from the old “empty/custom Check policy” destination. The successor roadmap must replace the old custom-Check failure/repair milestone with an evidenced semantic-feedback/repair loop. It must not simply rename Packs, hide a comparable registry inside an “expressive Wiki,” or treat an empty old Gate as sufficient semantic assurance.
+
+Semantic interpretation remains essential to the kernel contract. Models can propose interpretations, dependency links, counterexamples, and judgments; tools provide observations; the kernel gives these outputs stable meaning and governs their scope, provenance, authority, and transition consequences. Exact internal ownership, inference ports, and assessment persistence still need design. Greater Agent capability supports less prescribed method, not weaker authority or custody boundaries.
+
+### Pivot decision 7 — attention directs consequential inquiry
+
+The transformer analogy is useful for context-dependent activation, not as a literal design for a global truth/authority score. Relative importance is relational: important to which intent, proposed transition, decision, stage, and uncertainty?
+
+Keep separate:
+
+- Relevance: which knowledge matters to this Change?
+- Support/confidence: what grounds the claim and how uncertain or stale is it?
+- Governing force: which commitments are binding, tradeable, or advisory?
+- Revision priority: what should be retained or reconsidered when beliefs conflict?
+- Consequence and inquiry value: what further investigation could materially improve the decision, relative to its cost?
+
+A consequential weakly supported assumption may deserve more scrutiny, not less. Distant knowledge can become important through dependencies and effects rather than text similarity. More corpus content must not dilute an applicable binding obligation. Attention is not proof of coverage: unknown relationships or omitted context cannot silently become “irrelevant.” A candidate must not lower its own validation burden by relabeling knowledge or changing discovery rules.
+
+Expected value of information/computation is a research lens for allocating effort, not a calibrated numerical policy already selected for CodeWiki. Avoid a mandatory static `importance` score per item. Preserve reasons for inclusion, dependency uncertainty, and bounded-context omissions. The empirical goal is better decisions and continuity for less unnecessary ceremony, not a larger mandatory metadata system.
+
+### Pivot decision 8 — Git-native checkpoints and optional hosting
+
+Git is the exact-state foundation, not a competitor to reproduce. Git stores snapshots with parent relationships; Change intent alone is insufficient to reconstruct what happened. Preserve exact accepted bytes/deltas and outcomes. Never regenerate historical states by rerunning model reasoning, tests with changed inputs, or external effects. A new parser or model's reinterpretation is not retroactive historical truth.
+
+Research-backed recommendations, not yet hard protocol choices:
+
+- A branch represents an independent line of work, not a stage flag. A reasonable default is one Change branch, an optional associated draft PR, selected stage assessments on its checkpoints, and short-lived worker branches where independent execution needs them. Do not require one branch per stage, exactly four commits, or a new Change for every tool action.
+- Let ordinary WIP commits remain cheap. Meaningful checkpoint candidates include handoffs, intent revisions, completed slices, integration points, and immutable assessment subjects. **Checkpointed, assessed, accepted, and realized are not synonyms.**
+- The index and commit tree can bind related artifacts, Markdown, and Change records in one exact snapshot. Git's expected-old-OID updates help reject stale baseline advancement. Do not overstate multi-ref transaction guarantees: Git documents that a concurrent reader may observe a subset of updates.
+- Linked worktrees separate working directories/indexes while sharing repository mechanisms and many refs. They are not process, credential, network, or adversarial filesystem sandboxes. Do not create another source checkout here to test this product direction.
+- Initially prefer preservation of meaningful commit ancestry. Squash/rebase policy remains open. Squash does not retain intermediate commits as separate ancestors on the destination; GitHub rebase-and-merge creates new SHAs and can drop initially empty commits. Empty “stage approved” commits cannot be the only durable semantic record. Do not blindly transfer assessments across rewritten subjects.
+- Git notes can annotate objects without changing them, but use separate refs and require deliberate transport/rewrite handling. Durable bounded Change records, evidence references, subject identities, and authority linkage must survive outside a host's UI. Exact storage choice is unresolved; do not add a second event store merely to rediscover Git history.
+- Assess the actual integration candidate against its baseline. Independently acceptable branches can conflict semantically when joined. GitHub's merge queues provide a useful pattern but are optional and availability-limited, not kernel infrastructure.
+
+GitHub's documented mechanics were researched as integration patterns, not private server internals or the product's mandatory authority:
+
+- PRs expose mutable discussion/review surfaces and head/simulated-merge refs; the default `pull_request` Actions SHA can be a merge-ref SHA rather than the contributor head. Check Runs attach to a specific commit.
+- Merge queues assess the current base plus preceding queued Changes and the incoming PR. Required Actions workflows must handle `merge_group`. Old isolated-head results are not proof about a different combined candidate.
+- Branch protections can dismiss stale reviews and pin an expected GitHub App as check source, but bypass settings matter. GitHub may accept `neutral` or `skipped` required-check conclusions; unresolved semantic assurance must not be mapped to those as if positively validated.
+- A PR's `merged` flag is not by itself a CodeWiki acceptance receipt; indirect merges can mark a PR merged without its own protection requirements having been satisfied. Local Git hooks are not sufficient enforcement and some are explicitly bypassable.
+- Do not run untrusted PR code with privileged credentials via `pull_request_target` or equivalent privileged follow-up paths. Corpus discovery must not execute instructions in incoming documents.
+- GitHub Checks can present internal semantic-validator results without reintroducing user-authored CodeWiki Check Packs. GitHub must not be the sole surviving store of intent, judgments, or evidence. Generic Git and non-GitHub operation remain first-class product requirements.
+
+### Pivot decision 9 — implicit Wiki and format interoperability
+
+The agreed destination is that knowledge already present in project files participates without a special Wiki directory or per-document enrollment ceremony. Tracked Markdown should be first-class wherever it lives, including `README.md`, `docs/`, and `notes/`. No mandatory proprietary frontmatter or ID scheme was selected. Other formats can extend the same model without converting everything into duplicated Markdown.
+
+Distinguish corpus discovery, semantic role, and acceptance:
+
+- A committed tree provides an exact historical corpus; modified/new files provide proposed working-state knowledge. Discovering a file must not silently stage, accept, publish, upload, or execute it.
+- Follow Git's tracked-file semantics. `.gitignore` governs intentionally untracked files and does not exclude already tracked content. Respect declared repository/vault scope and do not implicitly follow links or symlinks into unrelated private material.
+- Equal participation does not mean that archived decisions, quoted examples, deliberately false test fixtures, and proposed Change text all become active governing commitments. In particular, a proposed waiver cannot become policy merely because its Change record is Markdown.
+- Path-level exceptions might reuse committed `.gitattributes`; this is a candidate design, not an adopted format. Local/global attributes and other machine configuration must not silently redefine accepted policy or historical interpretation.
+- Preserve source bytes, normal editor workflows, and provenance. Use read-only format extraction; do not load MDX imports, scripts, executable plugins, or arbitrary document instructions as a side effect of indexing. Derived indexes and cached Views remain rebuildable, not competing source truth.
+- Exact historical identity can use revision and path. Stable identity across renames, passage references, ambiguous link resolution, and optional explicit IDs need deliberate treatment; rename continuity cannot be assumed merely from similar names.
+
+Obsidian interoperability should be structural rather than dependent on installing a plugin: ordinary Markdown in a folder, external edits recognized by the editor, preserved source formatting, standard links and wikilinks, heading/block references, embeds, and optional YAML properties. Vault scope matters to link resolution. Obsidian block references are not standard Markdown. Its workspace layouts and metadata caches are not project knowledge. Supported-format research also identified JSON Canvas, Bases, attachments, PDFs, and media; that inventory is not a promise to implement them all in the first slice.
+
+**Current source-checkout boundary is unchanged.** `.codewiki/wiki/**` is still desired-state design truth, `.codewiki/changes/**` lifecycle truth, and this plan the sole active ledger. Implicit discovery is future product behavior, not permission to treat every Markdown file in this checkout as current governing policy. Keep `.codewiki/kb/**` and `.codewiki/traces/**` absent; no dual reader/writer, auto-migration, or fabricated history is authorized. Existing Wiki envelopes and storage remain until a supported, explicitly sequenced transition is ready.
+
+### Pivot alternatives and corrections to preserve
+
+| Earlier formulation | Consolidated correction and reason |
+| --- | --- |
+| Make Planning optional to minimize the kernel. | Rejected. Planning preserves meaning through decomposition and enables safe parallelization. Remove duplicated rubrics, not the four loops. |
+| Every Wiki statement is true or an open Change makes it acceptable. | Insufficient. Distinguish normative targets, observations, owned gaps, uncertainty, support, and realization. A pending Change is not proof of truth or progress. |
+| Wiki is a separately maintained space of intended future states. | Refined. State-space semantics help reasoning, but Change owns pending intent; Wiki records consolidated knowledge and adopted consequences. No extra State primitive. |
+| Compatibility is the single validity criterion. | Rejected. Consistency, reachability, intent fit, preservation, justification, and authority answer different questions. |
+| Each Change must immediately decrease distance to the target. | Rejected. Inquiry, enabling work, and risk reduction can justify detours; efficiency concerns paths and consequential learning. |
+| One permanent weight or attention score represents importance. | Rejected as a sufficient model. Relevance, uncertainty, governing force, revision priority, and consequence must not collapse. |
+| Keep custom Check Packs as the final project-policy model. | Superseded as desired product direction. Preserve internal verification techniques without requiring a separate authored policy ontology. Implementation has not yet been changed. |
+| Put all heavy validation only at deployment. | Refined. Concentrate assurance at commitments, retain cheap work feedback, and authorize every protected effect. Merge and deployment are distinct. |
+| GitHub is the architectural host of acceptance. | Superseded. It is an optional integration and incumbent product comparison; CodeWiki Hub must serve other teams and operate independently. |
+| Replay old intent to recreate knowledge state. | Rejected. Reconstruct exact retained snapshots/deltas and outcomes; do not rerun nondeterministic reasoning or effects. |
+| Every discovered Markdown passage has equal governing authority. | Rejected. Equal corpus eligibility does not erase semantic roles, proposal status, scope, provenance, or authority. |
+| Start over with a new documentation repository or another active plan. | Rejected. Preserve first, then rewrite the existing authoritative Wiki and rebaseline this ledger; retain historical evidence and unique work. |
+
+These corrections should be recoverable after compaction. They are not instructions to delete useful code merely because its original product rationale changed.
+
+### Pivot open decisions — do not silently settle in implementation
+
+| ID | Unresolved question |
+| --- | --- |
+| P-O1 | What is the smallest useful Change classification and knowledge-role representation? Which distinctions are intrinsic, inferred, explicitly asserted, or needed at passage rather than file level? Avoid a compulsory universal taxonomy. |
+| P-O2 | Which claims may an intermediate checkpoint establish or promote? How do provisional discoveries, Decision acceptance, partial realization, and final acceptance coexist without implying completion? |
+| P-O3 | When does intent revision amend the current Change versus create a successor? How are approved scope, original reasons, and changed target preserved without moving goalposts? |
+| P-O4 | Where do exact Change/checkpoint records and bounded judgment/evidence references live, how are they transported and retained, and how are they bound to immutable subjects without self-referential commit claims? |
+| P-O5 | Which branch/join policy is the minimal default, and what guarantees survive squash, rebase, cherry-pick, branch deletion, and native Git commits made outside CodeWiki? Integration strategy and identity/assurance reuse are not yet selected. |
+| P-O6 | How does an existing repository adopt its implicit corpus without manufacturing prior intent or retroactive validation? What is considered readable, classified, accepted, supported, or still unknown at baseline? |
+| P-O7 | What are the precise corpus scope, format/role overrides, malformed-input behavior, link resolution, rename identity, and privacy rules? Optional `.gitattributes`, frontmatter, and identifiers are candidates, not settled requirements. |
+| P-O8 | What is the semantic evaluator's contract, coverage model, evidence threshold, uncertainty handling, disagreement/adjudication path, and relationship to deterministic enforcement? Model/provider independence and assessment-version provenance require design. |
+| P-O9 | How is attention allocated and evaluated without losing binding obligations, amplifying unsupported claims, or adding costly metadata ceremony? No global score or quantitative formula has been approved. |
+| P-O10 | What collaboration and authority must the Hub own initially, and what stays in existing editors/harnesses/hosts? Preserve scoped team disagreement and portability; do not turn product breadth into a first-release feature mandate. |
+| P-O11 | Which current R1 mechanisms, including the parked D4 binding patch, are retained, adapted, replaced, or deferred? Reconcile against actual source/tests before scheduling work; old success or failure counts are not a disposition by themselves. |
+| P-O12 | What exact first execution profile, acceptance corpus, quantitative budgets, release subject, and external qualification/controller path can be supported? Historical authority and current-state compatibility gaps remain unresolved. |
+
+### Pivot research trail and evidence limits
+
+These public references preserve the research trail beyond temporary tool-result IDs. They support distinctions and documented mechanics, not a proven CodeWiki architecture or empirical product-performance claim. The hypotheses above remain ours. Some papers were available only as indexed abstracts or secondary descriptions; those limitations must not become claims of full primary-source verification.
+
+| Topic | Sources and bounded finding |
+| --- | --- |
+| Inquiry and evolving intent | [Stanford Encyclopedia: John Dewey](https://plato.stanford.edu/entries/dewey/). The inspected inquiry account includes problem formulation, hypotheses, reasoning, testing, and return to earlier phases. It motivates preserving uncertainty and evolving purpose; it is not a mandatory software workflow or proof of product effectiveness. |
+| Belief revision, entrenchment, possible worlds, belief bases | [Stanford Encyclopedia: Logic of Belief Revision](https://plato.stanford.edu/entries/logic-belief-revision/), especially §§2.2, 4, 5, and 9.1. Identical conclusions can have different bases and revision behavior; consistency is distinct from learning truth. Logical closure/omniscience are idealizations, not capabilities promised for natural-language Wiki validation. |
+| Truth maintenance | [Doyle, A Truth Maintenance System](https://www.sciencedirect.com/science/article/pii/0004370279900080) and the SEP history above. Recording reasons and dependencies supports explanation/revision. Direct primary-page retrieval failed; the initial pass used indexed abstract material and SEP context, not a fully inspected implementation. |
+| Questions, alternatives, arguments | [Kunz/Rittel source record](https://escholarship.org/uc/item/5cj786v8) and [readable IBIS overview with original references](https://en.wikipedia.org/wiki/Issue-based_information_system). The primary PDF/page was blocked; the readable secondary account establishes the issue/position/support-or-opposition structure. Retain why-not and rejection conditions rather than only conclusions. |
+| Extended cognition | [Clark and Chalmers, The Extended Mind](https://consc.net/papers/extended.html). External artifacts can be part of a reliably coupled reasoning process in the authors' philosophical account. This is a design lens, not a claim that a Wiki is conscious or that this architecture is empirically validated. |
+| Contextual attention | [Vaswani et al., Attention Is All You Need, §3.2](https://arxiv.org/html/1706.03762v7#S3.SS2). Query/key compatibility weights value combination; multiple heads attend across representation subspaces. This does not supply a project's truth, authority, or calibrated importance metric. |
+| Attention and explanations | [Jain and Wallace](https://aclanthology.org/N19-1357/) and [Wiegreffe and Pinter's response](https://aclanthology.org/D19-1002/). The inspected abstracts disagree about assumptions and conditions under which attention explains predictions. Do not generalize one study into “attention never explains” or use weights alone as decision rationale. |
+| Value of computation | [Russell and Wefald, Principles of Metareasoning](https://www.sciencedirect.com/science/article/pii/000437029190015C). Indexed abstract material relates computational utility to its effect on external action; full text was not retrieved. Use as a research lead for inquiry allocation, not an already implemented scheduler or numeric policy. |
+| Goal-oriented requirements | [van Lamsweerde, Goal-Oriented Requirements Engineering: A Guided Tour](https://ieeexplore.ieee.org/document/948567). Initial search/abstract review covered goal elaboration, refinement, and reasoning; the linked PDF could not be fetched because of certificate failure. Full primary reading remains optional follow-up, not an imported framework requirement. |
+| Planning states, actions, and goals | [Poole and Mackworth, §6.1](https://artint.info/3e/html/ArtInt3e.Ch6.S1.html). Preconditions/effects and achievement, maintenance, transient, and resource goals clarify state/path distinctions. The chapter's deterministic setting does not establish real-project reachability under uncertainty. |
+| Compositional transition reasoning | [Software Foundations: Hoare Logic](https://softwarefoundations.cis.upenn.edu/plf-current/Hoare.html). Preconditions/postconditions and invariants support composition; partial correctness does not establish termination. Do not mistake a model's postcondition argument for operational success. |
+| Exact history and replay | [Git's snapshot model](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F), [Git objects](https://git-scm.com/book/en/v2/Git-Internals-Git-Objects), and [Fowler: Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html). Preserve exact states and causal records. Fowler's draft also describes external-query/effect and code-version problems in replay; no custom event store is mandated. |
+| Git workspaces, refs, annotations, and hooks | [Worktrees](https://git-scm.com/docs/git-worktree), [update-ref](https://git-scm.com/docs/git-update-ref), [notes](https://git-scm.com/docs/git-notes), and [hooks](https://git-scm.com/docs/githooks). Shared/per-worktree state, expected-old-OID updates, separate note refs/rewrite policy, and bypassable hooks constrain implementation claims. |
+| Native corpus/configuration mechanics | [gitignore](https://git-scm.com/docs/gitignore), [ls-files](https://git-scm.com/docs/git-ls-files), [gitattributes](https://git-scm.com/docs/gitattributes), and [check-attr](https://git-scm.com/docs/git-check-attr). Tracked files are not excluded by ignore rules; attributes can be path-scoped and inspected against a tree, but configuration precedence must be controlled for reproducible interpretation. |
+| GitHub collaboration and exact subjects | [Pull requests](https://docs.github.com/en/pull-requests/reference/pull-requests), [Check Runs](https://docs.github.com/en/rest/checks/runs), and [workflow events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows). Publicly documented refs, commit-bound results, merge-group triggers, and privileged-trigger warnings were inspected. No private internals were claimed. |
+| GitHub integration acceptance and history | [Merge queues](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue), [protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches), and [merge strategies](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges). Combined candidates, plan/ownership availability, bypasses, stale reviews, expected check source, neutral/skipped outcomes, rewritten identities, dropped empty commits, and indirect merges all limit what a host status proves. |
+| Obsidian storage and syntax | Official source docs: [storage](https://raw.githubusercontent.com/obsidianmd/obsidian-help/master/en/Files%20and%20folders/How%20Obsidian%20stores%20data.md), [links](https://raw.githubusercontent.com/obsidianmd/obsidian-help/master/en/Linking%20notes%20and%20files/Internal%20links.md), [properties](https://raw.githubusercontent.com/obsidianmd/obsidian-help/master/en/Editing%20and%20formatting/Properties.md), and [formats](https://raw.githubusercontent.com/obsidianmd/obsidian-help/master/en/Files%20and%20folders/Accepted%20file%20formats.md). Hosted help extraction failed, so the readable official repository sources were used. Ordinary Markdown files, optional YAML, vault-local links, Obsidian-specific blocks, attachments, and non-source caches inform interoperability. |
+
+### Pivot documentation reconciliation and successor sequencing
+
+The maintainer chose **fresh conceptual prose in the existing authoritative locations**, not another Wiki, `PLAN_V2.md`, duplicate skill collection, or empty-history restart. Preserve this record before reorganizing. Do not attempt to compact the discussion merely into a slogan and then infer its missing decisions later.
+
+The approved documentation sequence is:
+
+1. **Preserve and verify this record.** Capture decisions, corrections, sources, open choices, paused-work identity, and continuation instructions. Verify that pre-existing work and historical ledger content are unchanged except the old entry-point heading. Record actual documentation validation; do not run or claim source tests for this pass.
+2. **Use native Pi compaction.** Compaction is not implemented by CodeWiki tools in this checkout. This pass does not claim that compaction has already occurred. The saved record must make the next step independent of conversation memory.
+3. **Rewrite the conceptual core of the existing Wiki coherently.** Begin with [product](.codewiki/wiki/items/product/codewiki-console.md), [kernel](.codewiki/wiki/items/system/components/semantic-kernel.md), [Wiki](.codewiki/wiki/items/system/components/wiki.md), [Change/Trace](.codewiki/wiki/items/system/components/change-trace.md), [Checks](.codewiki/wiki/items/system/components/checks.md), [alignment](.codewiki/wiki/items/system/components/alignment.md), the [lifecycle flow](.codewiki/wiki/items/system/flows/change-lifecycle.md), and [Decision](.codewiki/wiki/items/system/components/decision.md), [Planning](.codewiki/wiki/items/system/components/planning.md), [Implementation](.codewiki/wiki/items/system/components/implementation.md), and [Review](.codewiki/wiki/items/system/components/review.md). Inspect dependent stories, diagrams, ownership, and [Project](.codewiki/wiki/items/system/components/project.md)/[Project Server](.codewiki/wiki/items/system/components/project-server.md)/[client protocol](.codewiki/wiki/items/system/components/client-project-server-protocol.md) contracts. Remove contradictory desired-state narratives without erasing useful invariants, unique edits, or historical records. Retain current supported envelopes/storage until their transition is explicitly planned.
+4. **Rebaseline this single plan against actual source and tests.** Classify mechanisms as retain/adapt/replace/defer, identify every gap before source changes, and publish one ordered bounded implementation/acceptance queue. Explicitly supersede old custom-Check and special-directory goals where appropriate; do not mark unfinished work implemented or delete it solely because the architecture changed. Keep completed R1 and historical release evidence honest. Review README/AGENTS orientation for consistency while preserving all source-checkout and protected-effect restrictions.
+5. **Review documentation coherence and the proposed next slice.** Separate agreed behavior from unresolved design hypotheses. Keep current-work instructions short and unambiguous, with evidence/provenance references rather than competing active queues. The source implementation remains paused until its mapping and bounded successor scope are established; ordinary native development can then proceed within the approved scope without per-edit release bureaucracy.
+
+No historical plan or governed lifecycle record is rewritten by this preservation pass. No package version, release artifact, source API, file layout, reader, writer, policy, or runtime authority is changed here.
+
+### Pivot first dogfood milestone — outcome to specify, not qualification claimed
+
+The first slice should prove a small complete knowledge/Change loop, not every Hub feature or format. Its detailed executable profile and numeric budgets remain P-O12. Required scenario design should include:
+
+- An existing Markdown corpus discovered without a special import workflow, with an honest baseline and preserved source files.
+- A human/Agent intent-bearing Change whose actual semantic effects determine relevant validation obligations.
+- A meaningful contradiction or consequential unsupported assumption surfaced by the semantic validator, followed by evidence gathering or repair routed to the appropriate retained stage loop. This replaces the old requirement to author a custom Check Pack as the product's defining proof; it does not replace real operational evidence with mocked “semantic” success.
+- Planning that demonstrates dependency-aware decomposition and at least a bounded parallel-work/join case, with integrated rather than isolated-head assessment.
+- Exact intermediate subjects and a reconciled outcome whose accepted knowledge, realization claims, and remaining uncertainty are distinguishable.
+- A restart/fresh-Agent continuation using only durable authorized records: what is known, why, what was rejected, which assumptions are unresolved, which work is in flight, and what action is next permitted. Missing/redacted/truncated context must remain explicit.
+- The three reason-preservation/revision cases above, including a formerly rejected approach that becomes appropriate under changed conditions. Compare minimal explicit support/dependency structure against a well-written prose/Git baseline rather than assuming more metadata improves performance.
+- One non-software scenario, such as reducing customer onboarding time while preserving required controls. Its plan may involve procedures, training, tooling, and measurement; committing documents alone cannot stand in for evidence of real adoption or improvement.
+- Declared supported environments and frozen resource/latency/token/cost/retry budgets before qualification. Measure consequential omissions, false acceptance, unnecessary rejection, context loss, repeated effects, and human interventions. No numerical threshold or improvement claim was established by the brainstorm.
+
+Pack and test candidate bytes only in disposable external projects with isolated Pi settings. Resolve actual qualification/controller authority and any historical-state incompatibility; do not fabricate it from old receipts. Freeze an exact committed candidate with a unique package version and replacement guidance. Post-freeze corrections require a new subject and qualification. Activation alone does not transfer controller authority; any required handoff must be explicit. Candidate N+1 never governs itself, and this source checkout must never load its mutable CodeWiki code or call CodeWiki `wiki_*` tools or `/wiki-*` commands. No project-local package links, duplicate skills, executable Plugin paths, or controller pins are authorized. Higher-priority source-checkout restrictions do not sunset with bootstrap procedure.
+
+### Pivot continuation after compaction
+
+A fresh coordinator should:
+
+1. Read `AGENTS.md` and this entire pivot section first, then verify branch, exact HEAD, index, worktree, and configured remote. Distinguish the capture-start source baseline from any subsequent documentation-only commit. Do not reset or move canonical refs to match a remembered OID.
+2. Confirm that the three partial D4 files, existing Project Wiki edit, user settings, and original outputs remain preserved. Use the private preservation manifest and the D4 failure records if reconciliation is needed. Do not retry that lane, change providers, or treat its partial tests as passing.
+3. Continue the already approved documentation sequence at the coordinated core-Wiki rewrite and successor-plan rebaseline. Read exact existing bodies before replacing them; inspect the rest of this ledger only for applicable audit/evidence/retention details, not as an independent active queue.
+4. Keep settled decisions, research-based recommendations, and P-O1–P-O12 visibly distinct. Resolve implementation-critical ambiguity rather than silently selecting a schema or restoring predecessor assumptions. Preserve the research sources and why the rejected approaches were rejected.
+5. Stop before unscheduled source work, state migration, credential/paid-model use, package activation, controller handoff, push, or canonical-ref movement. These are not consequences of having completed a documentation checkpoint.
+
+**Cold-start acceptance test for this record:** a reader without the chat must explain why intent moved into Change, why the four loops remain, why implicit Markdown does not mean equal authority, why Git is the substrate but GitHub optional, how rationale survives changing assumptions, what is unresolved, and why D4 must not resume automatically.
+
+**Preservation validation:** the native Markdown dispatch and explicit primary Marksman LSP check reported clean; session-wide pi-lens diagnostics reported no issues in the one edited file. A native preservation review verified all 14 new local documentation links, the nine decision sections, P-O1–P-O12, and the frozen D2 test digest. Exact byte comparison confirmed the entire pre-pivot ledger body unchanged beneath its renamed entry-point heading. All 193 other tracked/output paths matched the capture manifest, including file bytes/modes and applicable symlink targets; branch, HEAD, refs, and the empty index were unchanged at this pre-checkpoint review. `git diff --check -- SEMANTIC_KERNEL_PLAN.md` passed. Review evidence is `preservation-review.json` in the private preservation directory above. No source tests, builds, semantic qualification, or native compaction have been run by this preservation pass.
+
+**Documentation checkpoint scope:** only `SEMANTIC_KERNEL_PLAN.md`, including its preserved pre-existing D4/coordinator record, belongs in the preservation checkpoint. The partial implementation, existing Project Wiki edit, user settings, and outputs remain unstaged and unaccepted. Any resulting documentation commit changes the audit branch HEAD only; it is not source integration, canonical-ref reconciliation, or release/controller evidence. Its exact identity and final preservation comparison belong in the external checkpoint record and Git history rather than a self-referential commit claim.
+
+## Workspace reconciliation and baseline audit — pre-pivot entry point
 
 The maintainer authorized consolidation to one active source checkout before the deeper cleanup audit. The working baseline is `7fe04257d2a18d5d16130c45f5919e49bb84f92d`, observed on both GitHub and local `bootstrap/semantic-kernel`, now inspected through local branch `audit/clean-baseline`. Selecting it for audit is not acceptance of every inherited design, proof of its release claims, or controller activation.
 
@@ -156,6 +459,12 @@ Evidence: `~/.local/state/codewiki/evidence/r1-wiki-reconciliation-oaopw1h1/` co
 
 R1-1 is complete as approved native cleanup, including the prior archive and Check-policy slices. R1-2 is next: first separate explicit initialization from reads and validate CLI arguments before effects; then resolve remaining ownership/layering/Build/fact-aware query gaps. Converter removal was already completed in R1-1. R1-3 through R1-6 remain open, with the same protected-effect and external qualification requirements.
 
+### Coordinator escalation for delegated slices
+
+Workers escalate any blocker they cannot resolve to the coordinator through the native supervisor channel (`contact_supervisor`, `reason: need_decision`). The coordinator owns resolving requirements, architecture, scope, validation, and integration problems; routine worker blockers do not require another maintainer decision. The escalation includes the exact failure, relevant paths/lines, attempted approaches, current diff/test state, and the smallest decision or intervention needed. Workers must not keep guessing, widen scope, weaken acceptance, or substitute another execution mode.
+
+Before the coordinator edits a worker-owned file, the worker must explicitly pause writes and hand over the current state; ownership returns explicitly before the worker resumes. Small coordinator fixes remain mapped to the active slice and receive normal review/validation. Infrastructure failures retain the stop/report/preserve-state rule and may recover only through an explicit same-protocol action; escalation is not permission for a silent provider/runner/foreground fallback. The coordinator brings back to the maintainer only decisions requiring maintainer authority, not ordinary implementation difficulty.
+
 ### R1-2 parallel delegation — CLI preflight slice D1
 
 The maintainer requested coordinator/worker development in two sessions. The coordinator owns Wiki, requirements, scope, architecture, integration, and reviewed checkpoints. Worker D1 owns only `bin/codewiki.mjs` and new `tests/api/client/cli-command.test.mjs`: strict command/flag/positional validation before runtime import or composition, positional relative-root handling, and removal of speculative re-bootstrap recovery advice. Existing supported successful output and exit semantics remain. This is AUDIT-15 work, not a new CLI command surface, initialization implementation, or Git compatibility adapter.
@@ -225,6 +534,94 @@ Accepted behavior: local read composition no longer imports or invokes bootstrap
 Evidence limits remain explicit: root/symlink rejection tests include typed failures and path-list checks, while the accepted D2 scenarios compare complete recorded filesystem snapshots. Neither proves absence of transient writes or physical custody. Empty/absent Wiki can still project as current empty state; binding/status is not evidence of resolved policy or operational qualification. Object-format guessing/fallback, genuine Kernel Build identity, fact-aware/durable read projections, and Server-to-adapter layering remain R1-2 or R1-4 gaps. D1, D2, and D3 are complete as bounded native slices; R1-2 as a whole remains open. The provider failure/recovery history above is retained rather than rewritten as an uninterrupted successful run.
 
 Source checkpoint scope excludes the user's Pi/subagent configuration, including the separately requested `max` worker effort. All Wiki bytes, five historical Traces, archives, project config/Check lock, dependency lock, and original outputs remain preserved. No push, canonical-ref movement, live conversion, CodeWiki Model Check, release freeze, or activation is implied by this native integration.
+
+### D4 — one verified Git storage binding
+
+**Status:** blocked after the bounded recovery failed with OpenRouter HTTP 402. Three owned files contain preserved, unaccepted partial work. The oversized model output ceiling has a documented configuration correction; effective request-cap verification, implementation completion, fresh review, and acceptance remain pending. No further worker launch has occurred. This is the next bounded R1-2 slice, not completion of repository identity policy or operational qualification. Baseline is `53b17a023beeb8edde48b7cf488dcdfe95639e7a` on `audit/clean-baseline` in `/home/canina7/Projects/codewiki`; the selected audit ancestry remains `7fe04257d2a18d5d16130c45f5919e49bb84f92d`. Baseline source passed the D2/D3 302-test native integration. Current planning observations use Node `24.14.0` and Git `2.55.0`; they do not retrospectively qualify another toolchain.
+
+#### D4 first launch — infrastructure failure, no implementation delta
+
+Workflow `a310e596-ef04-4ee9-b4b7-b596d4cb738f`, child `a1a609a1-0e68-4de2-b5c4-8e199caecef2` (`dev`, fresh context, `max`), failed with exactly `JSON error injected into SSE stream`; no more specific provider/root cause was reported. The child performed read-only exploration and baseline checks; its transcript contains no edits or test execution. Coordinator comparison against the saved launch manifest confirmed all four owned files, every other tracked file, original outputs, and Git refs unchanged, with nothing staged, at the same branch/HEAD and sole checkout. Review never launched. Evidence: `~/.local/state/codewiki/evidence/r1-d4-stream-failure-n_oh_jui/` (receipt/status, child transcript/partial output, tracked diff, refs, and failure record). The receipt advertises resumability, but the current parent `children.list` exposes no retained child; a later retry must validate an available continuation or be explicitly labelled fresh same-protocol recovery. No automatic retry, model/executor fallback, implementation acceptance, or new test success is claimed. The coordinator's subsequent ledger-status edit is separate from the unchanged worker subject.
+
+#### D4 bounded recovery and escalation
+
+Following the maintainer's instruction that unresolved worker issues return to the coordinator, the coordinator will run one fresh same-role/model/protocol recovery attempt, not a claimed resume of an unavailable retained child. The saved four-file baseline, desired contracts, D4-T1–T6 matrix, ownership restrictions, and final review remain unchanged. Workers use the coordinator-escalation rule above rather than independently resolving wider contracts. If the same infrastructure failure recurs, preserve partial state and investigate the subagent/provider path; do not enter an automatic retry loop or substitute an executor. Recovery launch and result evidence remain external until a result is recorded here.
+
+#### D4 recovery result — credit reservation failure and partial patch
+
+Recovery workflow `309a4d4d-f9f7-4d61-95c3-701cc5855c46`, child `becffc0e-6bb1-4b30-8315-90c624793c5f`, failed with OpenRouter HTTP **402**, reporting a requested maximum of approximately **845,665 tokens** beyond the account's available credit authorization. This is a requested ceiling, not actual token consumption; it does not establish the cause of the earlier generic SSE failure. Review did not launch. At the same sole checkout, branch, and HEAD, the coordinator preserved changed `src/adapters/git/project-store.ts`, `src/adapters/git/local-server.ts`, and `tests/adapters/git/project-store.test.mjs`; the fourth owned file is unchanged. All other tracked bytes, the original outputs, and refs matched the recovery input; nothing was staged. Evidence: `~/.local/state/codewiki/evidence/r1-d4-credit-failure-43v899hg/`, including exact partial bytes, diffs, receipt/status, child transcript, and failure record.
+
+The worker ran focused validation attempts, but its latest output still showed fixture setup failures (`spawn git ENOENT`) before a final edit adding missing fixture-root creation. No post-final-edit validation or completed handoff is recorded. Several commands piped tests through `tail`/`grep` without preserving the test process exit status; those wrapper exits are not success evidence. Repeated narrow probes and fixed-name `/tmp` scratch also need handoff review; scratch ownership/cleanup is not inferred or blindly repaired. No D4 acceptance result is claimed.
+
+Read-only configuration investigation found the GLM Latest catalog entry with context window **1,048,576** and `maxTokens: 943718`. The largest reported single-response output in this child transcript was **30,289** tokens. Following the documented Pi per-model override mechanism, the coordinator created external `~/.pi/agent/models.json` with only `openrouter` → `modelOverrides` → `~z-ai/glm-latest` → `maxTokens: 65536`. This is a global Pi override for that one alias, outside Project Git; it does not change credentials, provider routing, account spending limits, context-window metadata, or the requested `max` thinking level. Native subagent metadata still resolves `dev` to the same alias at `max`. JSON and documented field shape are verified; the effective provider request ceiling has not yet been observed after a model-runtime refresh. Verify that cap before further paid worker execution, then reconcile the saved partial patch rather than restarting from a fictitious clean implementation baseline. No automatic retry loop or alternate executor was used; current parent retention exposes no child to resume.
+
+#### D4 context and desired contracts
+
+Read `AGENTS.md`, this complete D4 section, and these Wiki Items by stable identity and current path:
+
+| Desired owner | Required reading | D4 obligation |
+| --- | --- | --- |
+| `cw:component:project` | [Project](.codewiki/wiki/items/system/components/project.md), especially **Git Project Store / Repository binding** | Actual root and storage format, one shared binding, passive opening, supported Git-file layouts, isolated bounded effects. |
+| `cw:component:semantic-kernel` | [Semantic Kernel](.codewiki/wiki/items/system/components/semantic-kernel.md), **Dependency boundary / Determinism and bounds** | Effects remain in the adapter; missing or ambiguous observation never becomes an inferred successful value. |
+| `cw:component:project-server` | [Project Server](.codewiki/wiki/items/system/components/project-server.md), **Work and Git / Recovery and queries** | Exact sources and current authorization remain authoritative; a storage observation is not custody or readiness. |
+| `cw:component:protocol` | [Client-Project Server Protocol](.codewiki/wiki/items/system/components/client-project-server-protocol.md), **Native CLI and Git compatibility** | Explicit project selection, noninteractive bounded behavior, no raw adapter exposure or compatibility shortcut. |
+
+The coordinator clarified the stable repository-binding behavior in Project's body without changing its envelope. Implementation status and this support/acceptance packet stay here, not in Wiki. These documents and the executable seams below are sufficient cold-start context; older donor branches, historical Check rubrics, previous conversations, and generated graphs are not additional requirements.
+
+Three baseline counterexamples were reproduced through native source in disposable external Git fixtures: (1) a SHA-256 repository plus inherited `GIT_CONFIG_COUNT`/`extensions.objectFormat=sha1` binds a local Server advertising SHA-1; (2) removing Git from ambient `PATH` also turns the composition probe's failure into false SHA-1 success even though the Store opens the real SHA-256 repository through its isolated path; (3) a nested directory containing an invalid empty `.git` directory opens its ancestor through both factories. Direct bare-store opening currently succeeds while local Console composition rejects it; preserve that distinction. Evidence: `~/.local/state/codewiki/evidence/r1-d4-planning-4AiO5BUZ/counterexamples.json`. The owned fixture holder was removed; no source state was initialized or changed by these observations.
+
+#### D4 edit boundary and implementation decisions
+
+One `dev` worker at `max` may edit exactly:
+
+- `src/adapters/git/project-store.ts` — factory observation, internal binding metadata, fixed process argument construction, and reuse of that binding by the existing adapter;
+- `src/adapters/git/local-server.ts` — consume the established format and remove independent guessing;
+- `tests/adapters/git/project-store.test.mjs` — binding/failure regressions and safe fixture Git setup;
+- `tests/adapters/git/local-server.test.mjs` — composition agreement and environment/root regressions.
+
+No new production module, generic process framework, compatibility factory, public export, port method, protocol version, or dependency is needed. Coordinator retains Wiki, plan, README, architecture registration, all other tests, full build/integration, and checkpoints. The accepted `tests/adapters/git/local-read-purity.test.mjs` is frozen at SHA-256 `0f2fa76f732c4d3cdf8aa9f3c2d92c8176201bace00eb25648ce82e4ce9d661b`.
+
+The implementation must meet these decisions; internal helper names and the smallest correct Git plumbing sequence remain the worker's choice:
+
+1. **Single owner of observation.** `createGitProjectStore` establishes the location and actual storage object format before constructing the adapter. Extend its private-module return type with a runtime-readonly `objectFormat` observation backed by the same value used for OID/request validation. Keep its existing successful Store-method shape, so existing internal callers need no wrapper or migration. Do not change `ProjectStorePort` or expose another Git handle through the Client API. Local composition opens the Store once and uses that observation for both the Server configuration and its returned `objectFormat`.
+2. **No guessed format.** Remove `detectObjectFormat`, the composition's `execFile`/`promisify` plumbing, and the now-unreachable `object_format_failed` variant. Git must report exactly one supported storage format, `sha1` or `sha256`, even before the first commit. Do not use config absence, failed commands, Git defaults, HEAD availability, caller assertions, or the length of an unrelated OID as a substitute.
+3. **Exact opening root.** Require a real existing non-symbolic directory and validate that Git resolves the requested working-tree root itself, not an ancestor, descendant, or administrative directory of a non-bare tree. Reject malformed own Git state that Git would otherwise ignore during discovery. Preserve the existing local preflight rejection of symbolic roots/`.git`, non-Git roots, missing roots, and unsupported filesystem kinds. Direct Store opening must also reject symbolic root or `.git` entries rather than bypass that protection.
+4. **Supported layouts.** Keep normal working trees, valid non-symbolic Git files from separate-Git-directory initialization and linked worktrees, and direct bare Store roots working. A linked worktree's own administrative directory and shared common directory have distinct Git meanings: do not reject all external Git-file targets as path escape or collapse per-worktree state into the primary tree. Local Console composition remains non-bare and retains its D3 preflight; do not widen that API. Spaces in valid paths must work. Point-in-time filesystem checks are not a symlink-race or descriptor-custody guarantee.
+5. **Reuse location, not discovery.** Capture the validated administrative-directory/worktree selection inside the private adapter and reuse it for subsequent operations. Do not allow a later command's ordinary `-C` ancestor search to choose a different store. Consolidate `#spawn` and factory argument construction through the existing narrow fixed-argument helper where useful. Preserve fixed Git plumbing, literal argument passing, complete-object checks, deterministic commit identities, request-bound authorization digests, no-lazy-fetch behavior, and expected-old-OID CAS.
+6. **Bounded effects and failures.** Reuse the Store's explicit executable selection and sterile environment, not ambient `PATH`, `GIT_*`, user/system config, prompts, hooks, credential helpers, or executable aliases. Explicit operator-selected `gitBinary` remains the existing internal option; arbitrary new executable injection is not a feature. Every opening subprocess uses `shell: false`, the validated existing timeout budget, and a fixed metadata-output cap no greater than 16 KiB. Validate process error, signal/nonzero exit, output size, and exact output shape before interpretation. Unknown format or malformed/ambiguous bytes fail. Use existing typed `ProjectStoreIssue` codes: filesystem preflight or observed root-location mismatch → `repository_mismatch`, timeout → `timeout`, excess output → `limit_exceeded`, other failed/unsupported observation (including Git rejecting malformed metadata) → `command_failed`, with existing `read_snapshot` operation. Do not infer an error class by scraping arbitrary stderr. Probe diagnostics must be bounded and must not echo uncontrolled probe output. Local preflight failures remain `invalid_project_root`; other Store-opening failures become existing `store_failed`. No usable partial Store/Server escapes a failure.
+7. **No semantic drift.** Opening and reads remain non-initializing and non-mutating. No config repair, index refresh, fetch, bootstrap, migration, or ref write is an identity probe. Keep the path-derived local repository label unchanged in this slice; it is not claimed to be the final configured Project identity. Keep read-only grants, unavailable executors, proof construction, protocol IDs, canonical-ref policy, and current valid CLI behavior unchanged.
+
+#### D4 acceptance matrix
+
+Tests must distinguish an actual target/format from a merely successful factory call. A loop over environments or a passing stub alone does not prove agreement.
+
+| ID | Required evidence |
+| --- | --- |
+| D4-T1 | Real SHA-1 and SHA-256 roots, both unborn and committed: immutable Store observation matches Git's independently obtained storage format; local composition advertises that same format; exact committed reads return the intended commit/content. Include a SHA-1 repository without an `extensions.objectFormat` setting. SHA-256 support is required on this recorded Linux/Git profile: remove the current broad catch-and-skip that can hide any fixture/adapter error as unsupported Git. |
+| D4-T2 | Misleading ambient `PATH`, foreign `GIT_DIR`/`GIT_WORK_TREE`/`GIT_COMMON_DIR`, object-directory overrides, and injected config/global configuration cannot change the selected repository, reported format, or actual read subject. Use distinct disposable repositories/commits as the oracle, not two indistinguishable fixtures. Include the two reproduced SHA-256 composition failures. Preserve/restore environment deterministically in serial cases or use subprocess isolation; do not leak it across tests. |
+| D4-T3 | Missing/non-Git roots, ordinary nested paths, nested paths with an invalid own `.git`, malformed Git config/Git files, and symbolic root/`.git` entries fail with the specified typed category. Invalid roots must not bind their valid parent. Existing D3 local preflight cases remain valid; failed probes neither create nor repair state. |
+| D4-T4 | Positive normal-root, separate-Git-directory, linked-worktree, and direct bare-store cases establish the intended binding and read the intended commit. Use only disposable external fixture repositories/worktrees, never this source repository. Local bare-root rejection remains unchanged. |
+| D4-T5 | Bounded fixture executables exercise failed launch, nonzero exit even with plausible stdout, unknown/malformed format output, timeout, and excessive output. No fallback and no thrown incidental process error. A timeout fixture must not spawn uncontrolled descendants. These are process-boundary tests, not proof that an arbitrary replacement Git binary is trustworthy. |
+| D4-T6 | Changing inherited environment after opening does not retarget a Store. Open a genuine nested independent repository, move its `.git` aside in the disposable fixture, and prove subsequent reads fail rather than reading the outer repository; both repositories' saved refs remain intact. Preserve exact reads and existing deterministic write/CAS tests against isolated fixtures; hooks/signing/auto-GC remain disabled in all fixture setup commands. The strengthened authorization-denial test and frozen D2 **7/7** purity suite stay green. |
+
+Fixture helpers must take an explicit disposable root, ignore inherited Git target/config overrides, disable hooks/signing/automatic maintenance, and initialize an explicit branch/object format. A test's adversarial environment must not contaminate setup or oracle Git commands. Use no blanket catch/skip, weakened schema/CAS assertion, hidden bootstrap, or root-specific production exemption to obtain green tests. Unsupported test prerequisites, required edits beyond the four files, or an unresolved contract choice are stop/ask conditions.
+
+#### D4 validation, review, and handoff
+
+Before editing, confirm the exact branch/HEAD and expected unrelated state: user `.pi/settings.json`, original `outputs/`, and coordinator-only Wiki/plan edits. Save/compare the four owned-file baselines. No staging, commits, resets, stashes, branch/ref changes in this checkout, installations, packages, additional agents, shared `dist` writes, builds, or full-suite runs are delegated. Git mutations are allowed only for these disposable external test fixtures. Never load this checkout as a CodeWiki controller or call `wiki_*`/`/wiki-*` surfaces. Keep the frozen D2 test and all other files untouched.
+
+Use primary LSP on the four owned files when directly available; unavailable tooling is reported, not replaced with a homemade compiler runner. Allowed focused commands after fixture safety is established:
+
+```bash
+npm run typecheck
+node --experimental-strip-types --test tests/adapters/git/project-store.test.mjs tests/adapters/git/local-server.test.mjs tests/adapters/git/local-read-purity.test.mjs
+```
+
+Do not run dist-backed tests against stale output. Coordinator runs architecture, additional Store consumers (`tests/adapters/git/wiki.test.mjs`, `tests/server/queries/read-api.test.mjs`, `tests/server/commands/lifecycle.test.mjs`), and fresh-build bin/full integration after the writer stops. LSP references plus AST call search identified these consumers; the stale/incomplete review graph was not treated as exhaustive impact evidence.
+
+Write the durable report through the runtime's external output path. Include the four-file diff, actual commands/counts/skips, a D4-T1–T6 evidence map, root/format observations, frozen D2 hash, branch/HEAD/staging and unrelated-file preservation, temporary-fixture cleanup, and remaining limitations. Save the reviewable patch as `~/.local/state/codewiki/evidence/r1-d4-planning-4AiO5BUZ/worker-diff.patch`; do not stage it. A fresh read-only reviewer compares the patch, baseline files in that directory, current bytes, this packet, and Wiki; it reports concrete blockers separately from speculative/out-of-scope concerns. Reviewer reports are evidence, not acceptance. Coordinator independently reproduces relevant negative cases, dispositions findings, integrates, and records the exact native checkpoint. An infrastructure failure stops the lane with preserved partial state; no implicit executor/model fallback is authorized.
+
+D4 can close the independent format probe, unsafe root discovery, and failure-to-default gaps only. Configured durable Project identity, real Kernel Build binding, fact-aware readiness/recovery, Server-to-adapter layering, hostile local-config closure beyond these plumbing operations, physical process/storage custody, and external release/controller qualification retain their existing R1 owners and sequencing. Do not claim them solved by this binding patch.
 
 ## Authority
 
