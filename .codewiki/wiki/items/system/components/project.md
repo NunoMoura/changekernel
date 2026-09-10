@@ -3,13 +3,19 @@
 ---
 # Project and Git Substrate
 
-A Project is the scoped Git-backed collaboration context, not the Project Server service operating over it. Git is mandatory infrastructure for exact artifacts, current Wiki, intent-bearing Change records and their history. Its internal storage adapter is not an optional external-data connector.
+A Project is the scoped Git-backed collaboration context, not the Project Server service operating over it. It can concern software, research, operations or other intentional work. Git is mandatory infrastructure for exact artifacts, current Wiki, intent-bearing Change records and their history. Its internal storage adapter is not an optional external-data connector.
 
-A repository already containing tracked Markdown has a corpus before adoption. Record observed baseline assurance honestly; do not fabricate previous Changes, reasons or validation. Discovery and binding do not authorize initialization, mutation, disclosure or execution.
+A repository already containing tracked Markdown has a source corpus before adoption. Record observed baseline assurance honestly; do not fabricate previous Changes, reasons or validation. Discovery and binding do not authorize initialization, mutation, disclosure or execution.
+
+## Source scope and managed knowledge
+
+The Project is the source and effect boundary; [Wiki](wiki.md) is consolidated accepted knowledge with a predictable managed home. Sources need not move into that home or acquire Wiki metadata merely to be considered. `.codewiki/wiki/` and `.codewiki/wiki/types/` are structural locations; other Wiki folders are optional Project-specific groupings introduced through Changes. Existing source files, authored drafts and proposed knowledge remain distinguishable from accepted outcomes.
+
+Changes govern synthesis, adoption, revision and retirement, including the evolution of document types. Runtime sessions and temporary working context are not another Project knowledge ledger. A file's location or an ordinary Git commit does not authenticate its acceptance, and a local actor with write access is not constrained by a naming convention alone.
 
 ## Native hot and cold paths
 
-Accepted Changes preserve exact outcomes in Git. They can revise or remove active knowledge while retaining prior text and disposition for on-demand native history queries. No archive database, special historical ingestion pipeline or duplicate source corpus is needed. A file move into an archive-named directory is not semantic retirement; [Change](change-trace.md) governs that distinction.
+Accepted Changes preserve exact outcomes in Git. They can revise or remove active knowledge while retaining prior text, disposition and links to the Changes that created, revised or retired it for on-demand native history queries. Both ongoing and completed Changes can have still-applicable accepted consequences. No archive database, special historical ingestion pipeline or duplicate source corpus is needed. A file move into an archive-named directory is not semantic retirement; [Change](change-trace.md) governs that distinction.
 
 Native history and optional external information can share bounded retrieval while preserving origin, version and authority context. Cold information is not re-adopted by being read. Current Wiki remains persistent accepted state, not merely a context cache.
 

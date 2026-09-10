@@ -3,11 +3,21 @@
 ---
 # Change
 
-Change is the primary mechanism of intentional evolution. It preserves intent, desired effects, motivation, scope, assumptions, alternatives, tradeoffs, deliberation, plans, attempts, evidence and outcomes. Wiki is the resulting current accepted knowledge, with adopted consequences linked to their grounds. No separate State, Archive or Sources authoring primitive is required.
+Change is the governed creation and evolution point for accepted Wiki knowledge. It preserves intent, desired effects, motivation, scope, relevant assumptions, alternatives, tradeoffs, deliberation, plans, attempts, evidence and outcomes. [Wiki](wiki.md) records the resulting current accepted meaning, with adopted consequences linked to their grounds. No separate State, Archive or Sources authoring primitive is required.
+
+## From intent to structured knowledge
+
+A Change turns intent and relevant source material into explicit Project-specific consequences in natural language before and during realization. It can consolidate several sources, revise existing Items, introduce useful new Items or document types, or conclude that no knowledge change is warranted. Preserve the original input and make the actual proposed transformation attributable; do not repeatedly summarize prior summaries while discarding their grounds or uncertainty.
+
+Direct human authoring and agent-generated drafts enter the same assessment and acceptance path. Already adequate content need not be rewritten merely to demonstrate synthesis. Missing intent, conflicting sources or unavailable assessment may leave a proposal unresolved. Assess the actual resulting candidate against the relevant baseline; an earlier draft's approval does not transfer automatically to changed bytes.
+
+The agent runtime owns sessions, transcripts, compaction and temporary working context. Change retains relevant attributable rationale and evidence, not a transcript mirror or a requirement to retain private model reasoning. The accepted Wiki outcome must remain understandable without replaying a conversation. Introducing a reusable type is itself governed knowledge work, not permission for that type to waive existing acceptance obligations.
 
 ## Adoption and retirement
 
 An introduced Change proposes a transition. Only an authorized, accepted scoped transition promotes information into Wiki knowledge, revises or retires knowledge, or adopts it again. This can concern a passage or commitment rather than an entire file. Preserve the exact prior/resulting subjects, reasons and disposition so native Git history can later explain what applied and why it changed.
+
+Knowledge-to-Change lineage is many-to-many: one Change can establish or revise several Items, and an Item or passage can have several creating/adopting, revising and superseding/retiring Changes. Cleanup must keep that relationship recoverable when old content leaves the active Wiki. Stale support prompts reassessment rather than silent retirement; preserve still-applicable obligations and the distinction between uncertainty, contradiction and supersession.
 
 Retrieval, indexing, context packing and authorized observation are not semantic promotion. A useful RAG answer remains an interpretation until adopted through a Change. Retired knowledge is available as information, not automatically current policy. An ordinary file move, deletion or commit cannot fabricate acceptance of a retirement.
 
