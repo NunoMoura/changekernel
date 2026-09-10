@@ -59,6 +59,7 @@ const SOURCE_ALLOWLIST = [
 	"src/kernel/identity/sha256.ts",
 	"src/kernel/index.ts",
 	"src/kernel/wiki/attributes.ts",
+	"src/kernel/wiki/corpus.ts",
 	"src/kernel/wiki/file.ts",
 	"src/kernel/wiki/item.ts",
 	"src/kernel/wiki/links.ts",
@@ -123,6 +124,7 @@ const TEST_ALLOWLIST = [
 	"tests/kernel/invariants/architecture.test.mjs",
 	"tests/kernel/invariants/determinism.test.mjs",
 	"tests/kernel/wiki/attributes.test.mjs",
+	"tests/kernel/wiki/corpus.test.mjs",
 	"tests/kernel/wiki/fixtures.mjs",
 	"tests/kernel/wiki/item.test.mjs",
 	"tests/kernel/wiki/ownership.test.mjs",
@@ -333,8 +335,25 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 			"@deepseek-ai/dsh-tools",
 			"node:path",
 		] : [];
+		if (path === "src/adapters/git/project-store.ts") allowed.push("node:fs");
 		assert.ok(allowed.length > 0 && specifiers.every((specifier) => allowed.includes(specifier)), `${path}: ${specifiers.join(", ")}`);
 	}
+});
+
+test("Store filesystem allowance is limited to the reviewed root-observation imports", async () => {
+	const path = "src/adapters/git/project-store.ts";
+	const source = ts.createSourceFile(path, await readFile(join(repoRoot, path), "utf8"), ts.ScriptTarget.Latest, true);
+	const declarations = source.statements.filter(statement =>
+		(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+		statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier) && statement.moduleSpecifier.text === "node:fs",
+	);
+	assert.equal(declarations.length, 1, "No extra fs imports or re-exports");
+	const declaration = declarations[0];
+	assert.ok(ts.isImportDeclaration(declaration));
+	const clause = declaration.importClause;
+	assert.ok(clause && !clause.name && !clause.isTypeOnly, "Only named runtime imports are admitted");
+	assert.ok(clause.namedBindings && ts.isNamedImports(clause.namedBindings), "No namespace import");
+	assert.deepEqual(clause.namedBindings.elements.map(element => (element.propertyName ?? element.name).text).sort(), ["lstatSync", "realpathSync"]);
 });
 
 test("Kernel imports only Kernel modules and has no ambient effects", async () => {
@@ -347,6 +366,21 @@ test("Kernel imports only Kernel modules and has no ambient effects", async () =
 		for (const token of ["process.", "Date.now", "Math.random", "fetch(", "WebSocket", "randomUUID", "node:"]) {
 			assert.equal(text.includes(token), false, `${path}: ${token}`);
 		}
+	}
+});
+
+test("corpus remains internal with a bounded data/identity import closure", async () => {
+	const {graph} = await sourceGraph();
+	const corpus = "src/kernel/wiki/corpus.ts";
+	assert.deepEqual(reachable(graph, corpus), [
+		"src/kernel/data-contracts/canonical-json.ts",
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/data-contracts/validation.ts",
+		"src/kernel/identity/git.ts",
+		corpus,
+	]);
+	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(corpus), false, entrypoint);
 	}
 });
 

@@ -1,5 +1,3 @@
-import {execFile} from "node:child_process";
-import {promisify} from "node:util";
 import {lstat} from "node:fs/promises";
 import {join, resolve} from "node:path";
 
@@ -31,11 +29,9 @@ export interface LocalProjectServer {
 }
 
 export interface LocalProjectServerIssue {
-	readonly code: "invalid_project_root" | "store_failed" | "binding_failed" | "object_format_failed";
+	readonly code: "invalid_project_root" | "store_failed" | "binding_failed";
 	readonly message: string;
 }
-
-const execFileAsync = promisify(execFile);
 
 const READ_CAPABILITIES = [
 	"alignment.read",
@@ -55,7 +51,10 @@ const READ_CAPABILITIES = [
  * Composes the real Git Project Store, an unavailable Check Runner (read views remain
  * factual), an unavailable Agent Runtime, and a least-privilege local read policy.
  * Composition never bootstraps, copies, repairs, or rewrites semantic state; it only
- * binds read interfaces over an existing Git root. Mutations fail closed because the
+ * binds read interfaces over an existing Git root. It opens the Store once and uses
+ * that Store's observed repository location and storage object format for both the
+ * Server configuration and the composition's own advertised format, instead of
+ * guessing the format independently. Mutations fail closed because the
  * read-only authorization grants deny every command operation; unavailable execution
  * ports alone could not supply that guarantee. The composition is for Console reads,
  * never for lifecycle authority.
@@ -76,13 +75,11 @@ export async function createLocalProjectServer(
 
 	const repositoryId = await deriveRepositoryId(projectRoot);
 
-	const objectFormat = await detectObjectFormat(projectRoot);
-	if (!objectFormat.ok) return objectFormat;
-
 	const store = createGitProjectStore({repositoryRoot: projectRoot, repositoryId});
 	if (!store.ok) {
 		return failure(issue("store_failed", "The local Git Project Store could not be opened."));
 	}
+	const objectFormat = store.value.objectFormat;
 
 	const facts = createMemoryProjectServerFacts();
 	if (!facts.ok) {
@@ -132,7 +129,7 @@ export async function createLocalProjectServer(
 		project: {
 			projectName,
 			repositoryId,
-			objectFormat: objectFormat.value,
+			objectFormat: objectFormat,
 			canonicalRef: canonicalRef,
 			kernelBuildDigest: CODEWIKI_PRODUCT_POLICY_DIGEST,
 			retiredWikiItemIds: [],
@@ -146,7 +143,7 @@ export async function createLocalProjectServer(
 		protocol: LOCAL_PROJECT_SERVER_PROTOCOL,
 		repositoryId,
 		projectName,
-		objectFormat: objectFormat.value,
+		objectFormat,
 		server: bound.value,
 	}));
 }
@@ -194,20 +191,6 @@ function isNotFound(error: unknown): boolean {
 
 function errorDetail(error: unknown): string {
 	return error instanceof Error ? error.message : "Unknown filesystem failure.";
-}
-
-async function detectObjectFormat(
-	projectRoot: string,
-): Promise<Outcome<"sha1" | "sha256", LocalProjectServerIssue>> {
-	try {
-		const {stdout} = await execFileAsync("git", ["config", "--get", "extensions.objectformat"], {cwd: projectRoot});
-		const value = stdout.trim();
-		if (value === "sha256") return success("sha256");
-		if (value === "" || value === "sha1") return success("sha1");
-		return failure(issue("object_format_failed", `Unsupported Git object format: ${value}`));
-	} catch {
-		return success("sha1");
-	}
 }
 
 function issue(code: LocalProjectServerIssue["code"], message: string): LocalProjectServerIssue {

@@ -1,5 +1,6 @@
 import {spawnSync, type SpawnSyncReturns} from "node:child_process";
-import {basename, isAbsolute, resolve} from "node:path";
+import {lstatSync, realpathSync} from "node:fs";
+import {basename, isAbsolute, join, resolve} from "node:path";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {createProjectSnapshot, type ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {
@@ -44,7 +45,20 @@ const DEFAULT_MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
 const MAX_COMMIT_MESSAGE_BYTES = 1024 * 1024;
 const MAX_OBJECT_BYTES = 4 * 1024 * 1024;
 const MAX_TREE_MUTATIONS = 65_536;
-const TEXT = new TextDecoder("utf-8", {fatal: true});
+const PROBE_OUTPUT_LIMIT_BYTES = 4_096;
+const TEXT = new TextDecoder("utf-8", {fatal: true, ignoreBOM: true});
+
+/** Fixed Git invocation profile shared by every process this module spawns. */
+const GIT_INVOCATION_OPTIONS: readonly string[] = [
+	"--no-pager",
+	"--no-replace-objects",
+	"-c", "core.hooksPath=/dev/null",
+	"-c", "core.fsmonitor=false",
+	"-c", "core.attributesFile=/dev/null",
+	"-c", "credential.helper=",
+	"-c", "commit.gpgSign=false",
+	"-c", "i18n.commitEncoding=UTF-8",
+];
 
 export interface GitProjectStoreOptions {
 	readonly repositoryRoot: string;
@@ -54,10 +68,9 @@ export interface GitProjectStoreOptions {
 	readonly maximumOutputBytes?: number;
 }
 
-interface GitCommandFailure {
-	readonly kind: "failed" | "limit" | "timeout";
-	readonly message: string;
-}
+type GitCommandFailure =
+	| Readonly<{kind: "exit"; exitCode: number; stdoutEmpty: boolean; message: string}>
+	| Readonly<{kind: "failed" | "limit" | "timeout"; message: string}>;
 
 interface MutableTreeNode {
 	readonly entries: Map<string, ProjectStoreTreeEntry>;
@@ -69,17 +82,27 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	readonly #repositoryRoot: string;
 	readonly #repositoryId: string;
 	readonly #gitBinary: string;
+	readonly #gitDir: string;
 	readonly #timeoutMs: number;
 	readonly #maximumOutputBytes: number;
 	readonly #objectFormat: GitObjectFormat;
 
-	constructor(options: Required<GitProjectStoreOptions>, objectFormat: GitObjectFormat) {
+	constructor(options: Required<GitProjectStoreOptions>, gitDir: string, objectFormat: GitObjectFormat) {
 		this.#repositoryRoot = options.repositoryRoot;
 		this.#repositoryId = options.repositoryId;
 		this.#gitBinary = options.gitBinary;
+		this.#gitDir = gitDir;
 		this.#timeoutMs = options.timeoutMs;
 		this.#maximumOutputBytes = options.maximumOutputBytes;
 		this.#objectFormat = objectFormat;
+	}
+
+	/**
+	 * Runtime-readonly storage-format observation captured when the repository
+	 * was opened; the same value backs OID and request validation below.
+	 */
+	get objectFormat(): GitObjectFormat {
+		return this.#objectFormat;
 	}
 
 	async readSnapshot(request: ProjectStoreReadRequest): Promise<Outcome<ProjectSnapshot, ProjectStoreIssue>> {
@@ -183,10 +206,11 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (preflight) return failure(preflight);
 		const written = this.#spawn(["hash-object", "-w", "--stdin"], Buffer.from(request.bytes), undefined, 4_096);
 		if (!written.ok) return failure(this.#commandIssue(written.error, "write_blob", "Blob object creation failed."));
-		const oid = this.#oid(TEXT.decode(written.value).trim(), "write_blob");
+		const oid = this.#observedOid(written.value, "write_blob");
 		if (!oid.ok) return oid;
 		const stored = this.#bytes(["cat-file", "blob", oid.value.hex], "write_blob", request.bytes.byteLength + 1);
-		if (!stored.ok || !stored.value.equals(Buffer.from(request.bytes))) {
+		if (!stored.ok) return failure(this.#commandIssue(stored.error, "write_blob", "Created blob could not be verified."));
+		if (!stored.value.equals(Buffer.from(request.bytes))) {
 			return failure(this.#issue("invalid_object", "write_blob", "Created blob differs from requested exact bytes."));
 		}
 		const body = Object.freeze({
@@ -238,8 +262,9 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (preflight) return failure(preflight);
 		const tree = decodeGitOid(request.tree);
 		if (!tree.ok) return failure(this.#issue("invalid_object", "create_commit", tree.error.message));
-		const treeType = this.#text(["cat-file", "-t", tree.value.hex], "create_commit");
-		if (!treeType.ok || treeType.value.trim() !== "tree") return failure(this.#issue("invalid_object", "create_commit", "Commit tree object is absent or has wrong type."));
+		const treeType = this.#objectType(tree.value, "create_commit");
+		if (!treeType.ok) return treeType;
+		if (treeType.value !== "tree") return failure(this.#issue("invalid_object", "create_commit", "Commit tree object is absent or has wrong type."));
 		for (const parent of request.parents) {
 			const complete = this.#assertCompleteCommit(parent, "create_commit");
 			if (!complete.ok) return complete;
@@ -255,14 +280,15 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			GIT_COMMITTER_EMAIL: request.committer.email,
 			GIT_COMMITTER_DATE: request.committer.timestamp,
 		};
-		const created = this.#text(args, "create_commit", request.message, environment);
+		const created = this.#spawn(args, Buffer.from(request.message, "utf8"), environment);
 		if (!created.ok) return failure(this.#commandIssue(created.error, "create_commit", "Commit object creation failed."));
-		const oid = this.#oid(created.value.trim(), "create_commit");
+		const oid = this.#observedOid(created.value, "create_commit");
 		if (!oid.ok) return oid;
 		const complete = await this.#readCommitSnapshot(oid.value);
 		if (!complete.ok) return failure(complete.error);
 		const rawCommit = this.#text(["cat-file", "commit", oid.value.hex], "create_commit");
-		if (!rawCommit.ok || rawCommit.value.slice(rawCommit.value.indexOf("\n\n") + 2) !== request.message) {
+		if (!rawCommit.ok) return failure(this.#commandIssue(rawCommit.error, "create_commit", "Created commit could not be verified."));
+		if (rawCommit.value.slice(rawCommit.value.indexOf("\n\n") + 2) !== request.message) {
 			return failure(this.#issue("invalid_object", "create_commit", "Created commit message differs from requested exact bytes."));
 		}
 		if (!sameGitOid(complete.value.tree, tree.value) || !sameOidList(complete.value.parents, request.parents)) {
@@ -296,8 +322,15 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			if (!updated.ok) {
 				const reconciled = this.#allRefsEqual(request.updates);
 				if (reconciled.ok && reconciled.value) alreadyApplied = true;
-				else if (reconciled.ok) return failure(this.#issue("stale_ref", "cas", "Ref set changed before atomic compare-and-swap."));
-				else return failure(this.#commandIssue(updated.error, "cas", "Atomic ref compare-and-swap failed."));
+				else {
+					if (reconciled.ok && updated.error.kind === "exit") {
+						const unchanged = this.#allRefsEqual(request.updates, "expectedOld");
+						if (unchanged.ok && !unchanged.value) {
+							return failure(this.#issue("stale_ref", "cas", "Observed refs differ from expected values after the failed update."));
+						}
+					}
+					return failure(this.#commandIssue(updated.error, "cas", "Atomic ref compare-and-swap failed; desired values could not be reconciled."));
+				}
 			}
 		}
 		const verified = this.#allRefsEqual(request.updates);
@@ -318,8 +351,9 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 
 	#readTreeObject(tree: GitOid, operation: ProjectStoreIssue["operation"]): Outcome<readonly ProjectStoreTreeEntry[], ProjectStoreIssue> {
 		if (tree.algorithm !== this.#objectFormat) return failure(this.#issue("invalid_object", operation, "Tree object format differs from repository."));
-		const type = this.#text(["cat-file", "-t", tree.hex], operation);
-		if (!type.ok || type.value.trim() !== "tree") return failure(this.#issue("invalid_object", operation, "Base tree object is absent or has wrong type."));
+		const type = this.#objectType(tree, operation);
+		if (!type.ok) return type;
+		if (type.value !== "tree") return failure(this.#issue("invalid_object", operation, "Base tree object is absent or has wrong type."));
 		const listed = this.#text(["ls-tree", "-r", "-z", "--full-tree", tree.hex], operation);
 		if (!listed.ok) return failure(this.#commandIssue(listed.error, operation, "Tree object could not be listed."));
 		const records = listed.value.split("\0");
@@ -372,16 +406,16 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			const payload = Buffer.concat(values.map((entry) => Buffer.from(`${entry.mode} ${entry.kind} ${entry.oid.hex}\t${entry.name}\0`, "utf8")));
 			const created = this.#spawn(["mktree", "-z"], payload, undefined, 4_096);
 			if (!created.ok) return failure(this.#commandIssue(created.error, "write_tree", "Tree object creation failed."));
-			return this.#oid(TEXT.decode(created.value).trim(), "write_tree");
+			return this.#observedOid(created.value, "write_tree");
 		};
 		return materialize(root);
 	}
 
-	#allRefsEqual(updates: readonly ProjectStoreRefUpdate[]): Outcome<boolean, ProjectStoreIssue> {
+	#allRefsEqual(updates: readonly ProjectStoreRefUpdate[], target: "newOid" | "expectedOld" = "newOid"): Outcome<boolean, ProjectStoreIssue> {
 		for (const update of updates) {
 			const current = this.#readOptionalRef(update.ref);
 			if (!current.ok) return current;
-			if (!optionalOidEqual(current.value, update.newOid)) return success(false);
+			if (!optionalOidEqual(current.value, update[target])) return success(false);
 		}
 		return success(true);
 	}
@@ -415,20 +449,36 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 
 	#assertCompleteCommit(oid: GitOid, operation: ProjectStoreIssue["operation"]): Outcome<null, ProjectStoreIssue> {
 		if (oid.algorithm !== this.#objectFormat) return failure(this.#issue("invalid_object", operation, "OID object format differs from repository."));
-		const type = this.#text(["cat-file", "-t", oid.hex], operation);
-		if (!type.ok || type.value.trim() !== "commit") return failure(this.#issue("invalid_object", operation, "Object is absent or not a commit."));
+		const type = this.#objectType(oid, operation);
+		if (!type.ok) return type;
+		if (type.value !== "commit") return failure(this.#issue("invalid_object", operation, "Object is absent or not a commit."));
 		const closure = this.#text(["rev-list", "--objects", "--missing=print", oid.hex, "--"], operation);
 		if (!closure.ok) return failure(this.#commandIssue(closure.error, operation, "Commit closure could not be traversed."));
 		if (closure.value.split("\n").some((line) => line.startsWith("?"))) return failure(this.#issue("incomplete_object", operation, "Commit closure contains missing objects."));
 		return success(null);
 	}
 
+	#objectType(oid: GitOid, operation: ProjectStoreIssue["operation"]): Outcome<"commit" | "tree" | "blob" | "tag" | null, ProjectStoreIssue> {
+		const result = this.#text(["cat-file", "--batch-check=%(objectname) %(objecttype)"], operation, `${oid.hex}\n`);
+		if (!result.ok) return failure(this.#commandIssue(result.error, operation, "Object type could not be observed."));
+		if (result.value === `${oid.hex} missing\n`) return success(null);
+		for (const type of ["commit", "tree", "blob", "tag"] as const) {
+			if (result.value === `${oid.hex} ${type}\n`) return success(type);
+		}
+		return failure(this.#issue("command_failed", operation, "Object type response did not match the exact requested OID and record format."));
+	}
+
 	#readOptionalRef(ref: GitRef, operation: ProjectStoreIssue["operation"] = "cas"): Outcome<GitOid | null, ProjectStoreIssue> {
-		const value = this.#text(["show-ref", "--verify", "--hash", ref], operation);
-		if (!value.ok) return value.error.kind === "failed" && value.error.message.includes("status 1")
+		// --exists distinguishes absence (2) from lookup failure (1 or another exit).
+		// The subsequent hash query resolves the OID once; a race between probes fails closed.
+		const exists = this.#text(["show-ref", "--exists", ref], operation);
+		if (!exists.ok) return exists.error.kind === "exit" && exists.error.exitCode === 2 && exists.error.stdoutEmpty
 			? success(null)
-			: failure(this.#commandIssue(value.error, operation, "Ref could not be read."));
-		return this.#oid(value.value.trim(), operation);
+			: failure(this.#commandIssue(exists.error, operation, "Ref existence could not be observed."));
+		if (exists.value !== "") return failure(this.#issue("command_failed", operation, "Ref existence response was malformed."));
+		const value = this.#spawn(["show-ref", "--verify", "--hash", ref]);
+		if (!value.ok) return failure(this.#commandIssue(value.error, operation, "Ref could not be resolved after observing its existence."));
+		return this.#observedOid(value.value, operation);
 	}
 
 	#validateRepositoryBinding(
@@ -470,8 +520,9 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 				continue;
 			}
 			if (!decodeGitOid(mutation.oid).ok || mutation.oid.algorithm !== this.#objectFormat || !validMutableEntry(mutation)) return this.#issue("invalid_object", "write_tree", "Tree mutation object or mode is invalid.");
-			const actualType = this.#text(["cat-file", "-t", mutation.oid.hex], "write_tree");
-			if (!actualType.ok || actualType.value.trim() !== mutation.kind) return this.#issue("invalid_object", "write_tree", "Tree mutation object is absent or has wrong type.");
+			const actualType = this.#objectType(mutation.oid, "write_tree");
+			if (!actualType.ok) return actualType.error;
+			if (actualType.value !== mutation.kind) return this.#issue("invalid_object", "write_tree", "Tree mutation object is absent or has wrong type.");
 		}
 		return null;
 	}
@@ -512,6 +563,18 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		return null;
 	}
 
+	#observedOid(bytes: Buffer, operation: ProjectStoreIssue["operation"]): Outcome<GitOid, ProjectStoreIssue> {
+		let text: string;
+		try {
+			text = TEXT.decode(bytes);
+		} catch {
+			return failure(this.#issue("command_failed", operation, "Git OID response was not valid UTF-8."));
+		}
+		const oid = decodeGitOid({algorithm: this.#objectFormat, hex: text.slice(0, -1)});
+		if (!text.endsWith("\n") || !oid.ok) return failure(this.#issue("command_failed", operation, "Git response was not one exact OID line."));
+		return success(oid.value);
+	}
+
 	#oid(hex: string, operation: ProjectStoreIssue["operation"]): Outcome<GitOid, ProjectStoreIssue> {
 		const decoded = decodeGitOid({algorithm: this.#objectFormat, hex});
 		return decoded.ok ? success(decoded.value) : failure(this.#issue("invalid_object", operation, decoded.error.message));
@@ -546,18 +609,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		extraEnvironment: Readonly<Record<string, string>> = {},
 		maximumBytes = this.#maximumOutputBytes,
 	): Outcome<Buffer, GitCommandFailure> {
-		const commandArgs = [
-			"--no-pager",
-			"--no-replace-objects",
-			"-c", "core.hooksPath=/dev/null",
-			"-c", "core.fsmonitor=false",
-			"-c", "core.attributesFile=/dev/null",
-			"-c", "credential.helper=",
-			"-c", "commit.gpgSign=false",
-			"-c", "i18n.commitEncoding=UTF-8",
-			"-C", this.#repositoryRoot,
-			...args,
-		];
+		const commandArgs = sanitizedGitArgs(this.#gitDir, args);
 		const result = spawnSync(this.#gitBinary, commandArgs, {
 			cwd: this.#repositoryRoot,
 			env: sanitizedEnvironment(extraEnvironment),
@@ -572,10 +624,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	}
 
 	#commandIssue(failureValue: GitCommandFailure, operation: ProjectStoreIssue["operation"], context: string): ProjectStoreIssue {
-		let code: ProjectStoreIssue["code"] = "command_failed";
-		if (failureValue.kind === "timeout") code = "timeout";
-		else if (failureValue.kind === "limit") code = "limit_exceeded";
-		return this.#issue(code, operation, `${context} ${failureValue.message}`);
+		return this.#issue(failureCodeFor(failureValue.kind), operation, `${context} ${failureValue.message}`);
 	}
 
 	#issue(code: ProjectStoreIssue["code"], operation: ProjectStoreIssue["operation"], message: string): ProjectStoreIssue {
@@ -583,7 +632,21 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 	}
 }
 
-export function createGitProjectStore(options: GitProjectStoreOptions): Outcome<ProjectStorePort, ProjectStoreIssue> {
+/**
+ * Git Project Store binding: the Project Store port plus the immutable
+ * storage-format observation established when the repository was opened.
+ * Existing callers that only need the port methods are unaffected.
+ */
+export interface GitProjectStore extends ProjectStorePort {
+	readonly objectFormat: GitObjectFormat;
+}
+
+interface GitRepositoryBinding {
+	readonly gitDir: string;
+	readonly objectFormat: GitObjectFormat;
+}
+
+export function createGitProjectStore(options: GitProjectStoreOptions): Outcome<GitProjectStore, ProjectStoreIssue> {
 	if (typeof options !== "object" || options === null || typeof options.repositoryRoot !== "string" || typeof options.repositoryId !== "string") {
 		return failure(Object.freeze({code: "repository_mismatch", operation: "read_snapshot", message: "Git Project Store options are invalid."}));
 	}
@@ -607,34 +670,139 @@ export function createGitProjectStore(options: GitProjectStoreOptions): Outcome<
 		timeoutMs,
 		maximumOutputBytes,
 	};
-	const probe = spawnSync(resolvedOptions.gitBinary, sanitizedGitArgs(repositoryRoot, ["rev-parse", "--show-object-format"]), {
-		cwd: repositoryRoot,
+	const binding = observeRepositoryBinding(resolvedOptions);
+	if (!binding.ok) return binding;
+	return success(new GitProjectStoreAdapter(resolvedOptions, binding.value.gitDir, binding.value.objectFormat));
+}
+
+/**
+ * Establishes the actual repository location and Git-reported storage object
+ * format before the adapter is constructed. Opening is a bounded, read-only
+ * observation under the fixed invocation profile: the requested root must be
+ * a real existing non-symbolic directory whose own `.git` entry, when
+ * present, is a non-symbolic directory or regular file, and Git must resolve
+ * the requested root itself — as a working-tree root or as the bare repository
+ * — never an ancestor, a descendant, or the administrative directory of a
+ * non-bare tree. Malformed own Git state that Git would otherwise ignore during
+ * discovery (for example an invalid `.git` entry) is rejected by the location
+ * check instead of falling through to an ancestor. The validated administrative
+ * directory is captured so later commands reuse this exact binding; ambient
+ * repository-selection variables, executable search paths, and configuration
+ * overlays are excluded by the sanitized environment. These point-in-time
+ * checks never write and do not establish physical custody.
+ */
+function observeRepositoryBinding(options: Required<GitProjectStoreOptions>): Outcome<GitRepositoryBinding, ProjectStoreIssue> {
+	let rootStat: ReturnType<typeof lstatSync>;
+	try {
+		rootStat = lstatSync(options.repositoryRoot);
+	} catch {
+		return failure(openRepositoryIssue("repository_mismatch", "The repository root does not exist or could not be inspected."));
+	}
+	if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
+		return failure(openRepositoryIssue("repository_mismatch", "The repository root must be an existing non-symbolic directory."));
+	}
+	let physicalRoot: string;
+	try {
+		physicalRoot = realpathSync(options.repositoryRoot);
+	} catch {
+		return failure(openRepositoryIssue("repository_mismatch", "The repository root could not be resolved to its physical path."));
+	}
+	try {
+		const gitEntry = lstatSync(join(options.repositoryRoot, ".git"));
+		if (gitEntry.isSymbolicLink() || (!gitEntry.isDirectory() && !gitEntry.isFile())) {
+			return failure(openRepositoryIssue("repository_mismatch", "The repository's own Git state must be a non-symbolic directory or regular file."));
+		}
+	} catch (error) {
+		if (!isMissingFileError(error)) {
+			return failure(openRepositoryIssue("repository_mismatch", "The repository's own Git state could not be inspected."));
+		}
+	}
+	const bare = observeRepositoryMetadata(options, ["rev-parse", "--is-bare-repository"]);
+	if (!bare.ok) return failure(probeIssue(bare.error, "The repository could not be observed."));
+	if (bare.value !== "true" && bare.value !== "false") {
+		return failure(openRepositoryIssue("command_failed", "Git reported an unsupported repository shape."));
+	}
+	const gitDir = observeRepositoryMetadata(options, ["rev-parse", "--absolute-git-dir"]);
+	if (!gitDir.ok) return failure(probeIssue(gitDir.error, "The repository location could not be observed."));
+	if (!isAbsolute(gitDir.value)) {
+		return failure(openRepositoryIssue("command_failed", "Git did not report an absolute repository location."));
+	}
+	if (bare.value === "true") {
+		if (gitDir.value !== physicalRoot) {
+			return failure(openRepositoryIssue("repository_mismatch", "Git does not resolve the requested root as the bare repository itself."));
+		}
+	} else {
+		if (gitDir.value === physicalRoot) {
+			return failure(openRepositoryIssue("repository_mismatch", "The requested root is the administrative directory of a non-bare repository."));
+		}
+		const topLevel = observeRepositoryMetadata(options, ["rev-parse", "--show-toplevel"]);
+		if (!topLevel.ok) return failure(probeIssue(topLevel.error, "The working-tree root could not be observed."));
+		if (topLevel.value !== physicalRoot) {
+			return failure(openRepositoryIssue("repository_mismatch", "Git does not resolve the requested root as the working-tree root itself."));
+		}
+	}
+	const objectFormat = observeRepositoryMetadata(options, ["rev-parse", "--show-object-format"]);
+	if (!objectFormat.ok) return failure(probeIssue(objectFormat.error, "The repository object format could not be observed."));
+	if (objectFormat.value !== "sha1" && objectFormat.value !== "sha256") {
+		return failure(openRepositoryIssue("command_failed", "Git reported an unsupported repository object format."));
+	}
+	return success(Object.freeze({gitDir: gitDir.value, objectFormat: objectFormat.value}));
+}
+
+/**
+ * Runs one bounded metadata observation under the fixed invocation profile and
+ * validates process error, exit status, output size, and exact single-line
+ * shape before the value is interpreted. Diagnostics stay bounded and never
+ * echo the observed output.
+ */
+function observeRepositoryMetadata(options: Required<GitProjectStoreOptions>, args: readonly string[]): Outcome<string, GitCommandFailure> {
+	const result = spawnSync(options.gitBinary, discoveryGitArgs(options.repositoryRoot, args), {
+		cwd: options.repositoryRoot,
 		env: sanitizedEnvironment(),
-		encoding: "utf8",
-		maxBuffer: 4_096,
-		timeout: timeoutMs,
+		encoding: "buffer",
+		maxBuffer: PROBE_OUTPUT_LIMIT_BYTES,
+		timeout: options.timeoutMs,
 		windowsHide: true,
 		shell: false,
 	});
-	if (probe.status !== 0 || (probe.stdout !== "sha1\n" && probe.stdout !== "sha256\n")) {
-		return failure(Object.freeze({code: "command_failed", operation: "read_snapshot", message: "Repository object format could not be established."}));
+	const output = interpretSpawn(result, PROBE_OUTPUT_LIMIT_BYTES);
+	if (!output.ok) return output;
+	let text: string;
+	try {
+		text = TEXT.decode(output.value);
+	} catch {
+		return failure({kind: "failed", message: "Repository observation returned invalid UTF-8."});
 	}
-	return success(new GitProjectStoreAdapter(resolvedOptions, probe.stdout.trim() as GitObjectFormat));
+	if (!text.endsWith("\n") || text.length < 2 || text.slice(0, -1).includes("\n") || text.includes("\0")) {
+		return failure({kind: "failed", message: "Repository observation output was not a single bounded line."});
+	}
+	return success(text.slice(0, -1));
 }
 
-function sanitizedGitArgs(repositoryRoot: string, args: readonly string[]): string[] {
-	return [
-		"--no-pager",
-		"--no-replace-objects",
-		"-c", "core.hooksPath=/dev/null",
-		"-c", "core.fsmonitor=false",
-		"-c", "core.attributesFile=/dev/null",
-		"-c", "credential.helper=",
-		"-c", "commit.gpgSign=false",
-		"-c", "i18n.commitEncoding=UTF-8",
-		"-C", repositoryRoot,
-		...args,
-	];
+function sanitizedGitArgs(gitDir: string, args: readonly string[]): string[] {
+	return [...GIT_INVOCATION_OPTIONS, "--git-dir", gitDir, ...args];
+}
+
+function discoveryGitArgs(repositoryRoot: string, args: readonly string[]): string[] {
+	return [...GIT_INVOCATION_OPTIONS, "-C", repositoryRoot, ...args];
+}
+
+function probeIssue(failureValue: GitCommandFailure, context: string): ProjectStoreIssue {
+	return Object.freeze({code: failureCodeFor(failureValue.kind), operation: "read_snapshot", message: `${context} ${failureValue.message}`});
+}
+
+function openRepositoryIssue(code: ProjectStoreIssue["code"], message: string): ProjectStoreIssue {
+	return Object.freeze({code, operation: "read_snapshot", message});
+}
+
+function failureCodeFor(kind: GitCommandFailure["kind"]): ProjectStoreIssue["code"] {
+	if (kind === "timeout") return "timeout";
+	if (kind === "limit") return "limit_exceeded";
+	return "command_failed";
+}
+
+function isMissingFileError(error: unknown): boolean {
+	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 
 function sanitizedEnvironment(extra: Readonly<Record<string, string>> = {}): NodeJS.ProcessEnv {
@@ -663,7 +831,11 @@ function interpretSpawn(result: SpawnSyncReturns<Buffer>, maximumBytes: number):
 	}
 	if (result.status !== 0) {
 		const stderr = boundedDiagnostic(result.stderr);
-		return failure({kind: "failed", message: `Git exited with status ${result.status ?? "signal"}${stderr.length > 0 ? `: ${stderr}` : "."}`});
+		const message = `Git exited with status ${result.status ?? "signal"}${stderr.length > 0 ? `: ${stderr}` : "."}`;
+		if (result.status !== null) {
+			return failure({kind: "exit", exitCode: result.status, stdoutEmpty: result.stdout.length === 0, message});
+		}
+		return failure({kind: "failed", message});
 	}
 	return success(result.stdout);
 }
