@@ -3,6 +3,8 @@
 ---
 # External User
 
-An External User inspects or acts through an approved Client surface. CodeWiki preserves the same visibility, authority, provenance, and privacy boundaries regardless of transport.
+An External User inspects or contributes through an authorized Client surface. CodeWiki preserves the same visibility, scope, provenance and privacy boundaries across interfaces and Git hosts. Users need not know Git to understand shared knowledge, proposed intent or outcomes.
 
-A Client exposes only authenticated capabilities admitted for that user and Project. Remote access, interface choice, or possession of repository bytes grants no additional authority.
+The Client exposes only capabilities applicable to that user and Project. Remote access, a provider identity, interface choice or possession of repository bytes grants no additional semantic or execution authority. Shared or redacted views report their limits without implying hidden obligations do not exist.
+
+External proposals and observations can inform a Change without automatically becoming accepted knowledge. Public presentation must not expose private evidence, credentials, runtime custody or unrelated corpus material. Publication and other protected effects require applicable authority.

@@ -3,8 +3,8 @@
 ---
 # Maintainer
 
-Maintainers define intended outcomes, submit or revise exact Proposed Changes, commit or decline intent under authenticated authority, approve protected boundaries, and inspect why each Gate passed, failed, or stopped. They remain accountable Actors even when a Decision Agent prepared proposal bytes.
+A Maintainer is a person accountable for a project's accepted knowledge, priorities, authority and outcomes. The project may concern operations, research, services or software. Maintainers work with other people and Agents without needing Git expertise.
 
-They need stable Wiki identity, full-snapshot Git provenance, bounded Agent context, visible Change/Work/DSH custody, independent type-conditioned Checks, explicit unknowns, safe recovery, and no hidden automation or data export. A Gate pass grants eligibility only; it never impersonates `commitChange`, Review completion, Delivery authorization, or human accountability.
+They propose and revise intent, inspect alternatives and uncertainty, approve decisions within their authority, plan shared work, and review integrated outcomes. They can challenge both knowledge and its grounds rather than accept a model score or host status as proof.
 
-Success means Committed Change meaning and reviewed Project realization remain reachable, attributable, and recoverable after Clients or Agents disconnect. External/delegated receipts expose custody limits rather than implying observation CodeWiki cannot prove.
+The Hub preserves accepted consequences, original reasons, rejected alternatives and remaining obligations across interruptions and personnel changes. A maintainer can adopt an existing corpus honestly without inventing prior Changes. Protected effects and live authority changes remain explicit.

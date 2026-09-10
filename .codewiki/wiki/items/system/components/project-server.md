@@ -3,55 +3,26 @@
 ---
 # Project Server
 
-Project Server is the sole authoritative semantic control plane for one governed Project. It validates identity proof, maps Actors, enforces project AuthZ, invokes Kernel reducers over Change Trace and Gate facts, resolves stage policy and active Checks, coordinates Work, admits reviewed commits, authorizes protected effects, and recovers exact state. All canonical and managed CodeWiki Git-ref writes execute through Project Store under expected-state compare-and-swap. DSH owns Agent execution; Project Server owns what a Run may do and whether its output advances anything.
+Project Server is the service-side authorization and orchestration boundary for CodeWiki Hub. It applies the semantic kernel to exact Git-backed subjects and authorized observations. A local composition, remote service, CLI, or other client can present this boundary without making one hosting provider the owner of acceptance.
 
-Project Server composes the deterministic Semantic Kernel with narrow Project Store, Check Runner, Agent Runtime, and Preview ports. It supplies canonical bounded inputs and acts only on typed Kernel outcomes or explicit failures; adapters perform effects only after current authority, subject, and expected heads close. Project Server authorizes execution and cancellation limits and validates returned receipts, while qualified adapters and hosts physically enforce effects. Kernel code never imports adapters, while adapters and Clients never gain semantic authority by calling internal modules.
+## Responsibilities
 
-A deployment may host several Project Servers behind one listener. Listener and Clients own transport/session mechanics, not semantic authority. App or external identity provider may acquire login proof; Project Server validates configured issuer/channel/signature/expiry/delegation rules and authorizes each exact operation. Client kind, repository access, model identity, UI state, and Git author metadata grant nothing.
+- Authenticate actors and enforce operation, project, data, and effect scope before disclosure or execution.
+- Resolve an input source once, bind baseline/candidate identity, validate request bounds and replay identity, and return attributable outcomes.
+- Orchestrate proposal, semantic assessment, the four stage loops, checkpointing, review, and separately authorized effects.
+- Preserve semantic reasons and outcomes in portable Wiki/Change history, while maintaining private live-operation custody and recovery state at their proper boundary.
+- Expose honest capabilities, missing context, operational stops, and next permitted actions rather than infer readiness from a configured interface.
 
-## Request and Change boundary
+The kernel owns semantic distinctions and transition consequences. Models, humans, and tools contribute interpretations or observations; neither a result nor a provider receipt grants authority. The server must not silently treat an absent verifier, empty test set, or successful host merge as semantic approval.
 
-```text
-Client proof
-  -> Actor mapping and project AuthZ
-  -> command/query
-  -> optional Decision Agent DSH Run
-  -> authenticated Proposed Change submission
-  -> Decision Gate with type-conditioned active Checks
-  -> commit/reject/defer/withdraw command
-  -> expected-head Git transaction
-```
+## Narrow effect boundaries
 
-New governed improvements share Change Intake whether they affect Wiki, project artifacts, Check policy, retrieval, or CodeWiki itself. Human, service, and Agent-backed Actors may propose with explicit capability; none thereby gains acceptance, execution, or publication authority. Existing Work remains inside its authorized Change. Refinement has no privileged writer. Controller improvements remain ordinary Changes with independent exact-candidate qualification and explicit activation; a candidate cannot govern or qualify itself.
+Git storage, observation/evaluation execution, Agent work, Preview, and external integrations use bounded effect interfaces according to the supported profile. Their concrete adapters, credentials, raw writers, refs and private custody handles are not normal client capabilities. Procedure knowledge stays in Wiki, not separately managed Skills or Check Packs.
 
-`proposeChanges` atomically creates independent Change IDs, append-only Traces, and managed refs. Each ref tip is a full Project snapshot. Project Server validates expected tips/heads, complete objects, changed paths, Wiki result, stable Item closure, Change type and realization route, active-Change compatibility, and authority. It never trusts proposal-authored observed state, Check selection, or lifecycle claims.
+Exact authenticated requests do not establish physical containment. If an executor cannot enforce required path/tool/network/resource scope or observe quiescence, that capability must be unavailable. Protect execution before it occurs; accepting an eventual output cannot retroactively authorize a forbidden effect.
 
-A current passed Decision Gate makes an exact Proposed Change eligible. Authenticated `commitChange` authority plus current expected heads permits Project Server to create the two-parent Change Commit through Project Store and append `change.committed`. The embedded operation binds exact inputs plus the fixed containing-commit marker; Git context identifies the resulting commit. A true Wiki-only Change also appends `change.completed` under the same rule. A project-realization Change proceeds through Planning, independently gated Work Units, explicit canonical reconciliation, Review, and a two-parent Change Completion Commit. Before commitment, reject/defer/withdraw update only managed Change history; after commitment, wrong intent requires a Superseding Change.
+## Continuity and recovery
 
-## Checks and stages
+Committed outcomes and judgments must survive a process or Agent restart; process-local maps alone are insufficient. Live leases, sockets, credentials, scratch and tracking remain private runtime state, not a second semantic truth store. Distinguish reusable observations from stale judgments and unknown effects. Reconcile before retry; request replay does not promise exactly-once behavior in an unobserved external system.
 
-Project Server coordinates one Change lifecycle with Decision, Planning, Implementation, and Review phases. Stage Check Packs define available project policy. Exact stage, frozen Change type, Work Unit subtype/scope where relevant, and subject deterministically select `Gate.activeChecks`; proposal bytes, Agents, routes, and Workers cannot choose them. Gate binds subject commit/tree, policy and resolver identities, active Checks, declared input refs, and digest.
-
-Each Check execution is a Check Run. Completed Runs may yield Results; operational failure yields none. Project Server invokes the Kernel Gate reducer and applies no transition until its typed outcome, authority, subject, and expected heads remain current. Kernel Validation is deterministic release code rather than a Check. Semantic Checks come only from explicitly adopted project policy; execution uses the Check Runner and, where authorized, Agent Runtime ports. Completely resolved empty policy is warned explicitly and never implies a semantic Check verdict. Missing policy, required inputs, execution, or valid Results fails closed.
-
-## Work and Git
-
-Planning appends Change-owned Work Units/dependencies to Trace after a passing Planning Gate. WorkState derives global Work View/readiness. Project Server creates Claims, Assignments, and isolated Git worktrees for ready units. Workers receive exact DSH Run authorization and cannot write Wiki, Trace, managed refs, or broader project scope.
-
-Native CodeWiki and supported Git-compatible commands use the same UAPI. Staging and ordinary commits create development checkpoints, not lifecycle transitions. Routing through a compatibility executable is not custody: managed permissions and credentials protect canonical storage, Wiki/Trace, shared Git internals, and effects against alternate binaries, libraries, and direct writes. Unrestricted workspaces retain external provenance; operator-authorized native recovery remains independent.
-
-Passing current Work Unit commits integrate onto the managed Change ref by expected-tip CAS. Git ancestry is integration lineage; Trace records semantic admission, exact input/result-object OIDs, and the containing-commit marker. When all units integrate, Project Server explicitly reconciles their artifact delta with current canonical history on the Change ref; conflict or changed bytes trigger repair and affected Checks. Review judges that exact prospective Completion project-artifact tree. A current passed Review Gate plus unchanged canonical head allows Project Server to join the reviewed canonical parent to the reconciled Change tip while preserving every reviewed project-artifact entry and appending only the bounded Completion Trace operation. No private integration lineage or separate global Work Graph is canonical authority.
-
-## DSH and context
-
-Project Server authorizes DSH Runs with exact Project/Change OIDs, stage subject, Actor/role route, mandatory Wiki context, bounded tools, capabilities, writable scope, budgets, feedback, receipt refs, and one Run/idempotency identity. DSH owns internal Sessions, model/tool mechanics, AI/model providers, and compaction. Execution Host owns containment. An eligible Worker may receive a scoped `preview.work` handle; Check Runner may receive independent `preview.verify`. Project Server requests cancellation and validates Run/Check/Preview receipts but does not parse opaque Session bytes for meaning.
-
-Every role receives exact relevant Wiki inputs and bounded query tools. Stable Item IDs and source OIDs are mandatory. Agents cannot silently switch to moving head, mutate Wiki outside Decision proposal, or use conversation memory as authority.
-
-## Recovery and queries
-
-Restart reloads canonical and managed refs, full Git ancestry, fixed-path Wiki/Trace blobs, stage policy, Results, receipts, durable Claims/Assignments, and protected-effect records, then rebuilds WorkState and Alignment. It never fabricates proposal, Gate, integration, completion, or external effect. Stale or contradictory evidence stops.
-
-Project Server owns semantic query meaning, authorization, exact sources, and required context; pure Kernel mechanisms remain deterministic and effect-free. Query services and ports obtain data, while Clients and harnesses choose requests and presentation. Safe handoff derives intent, Work, feedback, Results, and pending operation status from existing owners rather than conversation. Uncaptured requests require explicit drafts/feedback and pending effects require reconciliation before another execution. Task-context Views are derived, not authoritative memory.
-
-Every canonical Wiki/Change query selects one exact project commit or managed Change tip and returns identity, authorization/redaction, coverage, ordering, bounds, freshness, unknowns, and citations. Private indexes are accelerators only. The historically named Kernel API is the Product UAPI served by Project Server: bounded version-neutral commands, queries, events, and capability discovery whose transport envelopes carry protocol versions. It never exposes direct pure-Kernel invocation, storage, port, adapter, or lifecycle-authority bypass.
+Read-only binding and queries must not initialize, repair, convert, or execute a project. Missing/malformed state receives honest errors or explicitly bounded degraded reads, never guessed success. See [Project](project.md), [client protocol](client-project-server-protocol.md), and [recovery](../flows/recovery.md).

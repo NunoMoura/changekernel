@@ -3,12 +3,10 @@
 ---
 # Work Unit Execution
 
-Project Server selects one ready Work Unit from the Trace-derived Work View, creates an authorized Claim/Assignment and isolated Git worktree, freezes the exact committed Wiki target and dependency inputs, and starts one Worker DSH Run. The Worker may write only admitted project-artifact scope. It cannot write Wiki, Change Trace, managed refs, authority, Checks, or lifecycle state. If the Work Unit and Run explicitly grant `preview.work`, the Worker may use one scoped, revocable Preview handle against its current worktree generation or captured tree. Preview output is producer feedback, never independent Gate Evidence or Result.
+A work unit is a bounded part of a Change's plan, not another knowledge primitive. Bind its exact input context, dependency assumptions, shared obligations, allowed paths/tools/effects, resource limits and expected observations before launch.
 
-Every Work Unit result is one exact full Project commit/tree plus its DSH Run receipt. Project Server resolves exact Implementation Check Packs and uses Change type plus Work Unit subtype/scope to freeze the Gate's active Checks. The same policy universe applies across the stage, but irrelevant Checks do not run. A Worker, Agent, route, or result cannot choose or suppress the set.
+A worker can be human, service or Agent. The execution adapter enforces required isolation and observes custody; a worktree is only a working-directory mechanism. Missing enforcement or tools must be reported as unavailable rather than replaced by optimistic receipts.
 
-Each active Check receives one Check Run. Completed Runs produce immutable Results; operational failure or stop produces no Result. A failed Gate returns exact bounded feedback to another Run for the same Work Unit. A passed Gate qualifies only the exact result commit.
+Record truthful partial results, failures, discoveries and checkpoints. Do not silently revise intent or exceed scope. Reconcile unknown effects before retrying; process-local tracking alone does not establish restart safety or quiescence.
 
-Project Server verifies current Change tip, Work Unit and dependencies, Assignment/worktree custody, changed paths, Gate, and result bytes before integrating onto the Change ref by expected-tip CAS. Git records full snapshot ancestry; Trace records semantic admission and exact OIDs. Conflict, stale base, changed custody/bytes, or lost authority cannot claim integration.
-
-A single passing Work Unit does not advance the Change to Review. Review begins only after all current Work Units are passing and integrated, dependencies close, and the resulting Change tip is complete and current.
+Judge output in its exact context and assess the integrated candidate against the actual baseline. One unit's success does not approve a conflicting join. Feedback can return to Implementation, Planning, or Decision, preserving the reasons for that route.

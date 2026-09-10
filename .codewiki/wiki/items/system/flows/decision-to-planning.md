@@ -3,14 +3,8 @@
 ---
 # Decision to Planning
 
-Project Server runs Decision Gate over one exact Proposed Change tip. Gate freezes full Project commit/tree, required `changeType` and `realization`, exact Decision Pack snapshots, deterministic active Checks, Wiki/Dictionary Views, declared inputs, resolver identity, and digest. Only explicitly adopted project Check policy supplies semantic rubrics; CodeWiki installs no fixed alignment model Checks. Deterministic structural and authority validation always applies. A completely resolved empty active set is explicit and warned, never confused with unavailable execution or missing inputs.
+Carry the accepted transition hypothesis into Planning with its intent, scope, tradeoffs, baseline, authority, assumptions, rejected alternatives and consequential uncertainty. Preserve why pursuit is justified, not just a stage label or host approval.
 
-A failed Gate returns bounded feedback for a revised Proposed Change. A stopped Gate preserves state. A passed Gate grants eligibility only. Authenticated `commitChange` revalidates Actor, authority, unchanged Change tip, current Gate/Results, active-Change compatibility, complete Git/Wiki/Trace closure, and expected canonical head.
+Decision establishes credible feasibility; Planning develops paths and evidence needs rather than pretending a full reachability proof already exists. Current commitments proposed for revision remain distinguishable from retained obligations and from observations of reality.
 
-Change Commit has current canonical head as first parent and exact Proposed Change tip as second. It advances canonical and managed Change refs through expected-old-OID compare-and-swap and records `change.committed`. The embedded operation binds both parent OIDs and the fixed `containing_commit` result marker; native Git context supplies the resulting commit OID.
-
-For `realization: wiki-only`, the same full snapshot already realizes accepted outcome, so Change Commit also records `change.completed`; Planning does not run.
-
-For `realization: project`, Committed Change enters Planning. Planning receives exact committed Wiki Item/facet targets, Change type, current Project state, active relationships, and prior feedback. It proposes singly owned Work Units/dependencies without restating accepted meaning. Fixed structure plus a type-conditioned Planning Gate must pass before planning facts append to Trace.
-
-If intent, classification, authority, or accepted Wiki meaning is wrong after commitment, correction uses a Superseding Change rather than mutating the Committed Change.
+The handoff binds its exact subject and applicable acceptance. Missing required context blocks unsupported progression. A later proposal revision cannot inherit an old assessment by Change name alone. Materially changed intent returns to Decision; the original reasons remain recoverable. A checkpoint or acceptance to plan does not imply realization, publication or deployment.

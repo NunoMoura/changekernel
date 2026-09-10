@@ -3,13 +3,8 @@
 ---
 # Account for Drift
 
-As a maintainer, I want CodeWiki to account for differences among committed Wiki intent, exact Project artifacts, tests, Git, Delivery, Evidence, and outcomes so unexamined divergence cannot become false completion.
+A Maintainer can relate proposed intent, plans, attempts, adopted knowledge and observed outcomes to their contributors, reasons and exact subjects. They can distinguish work that is merely checkpointed from assessed, accepted, realized, published or deployed work.
 
-## Acceptance signals
+Shared obligations and dependency conflicts remain visible across parallel tasks. An owned realization gap is accountable but still a gap. The review target is the reconciled whole, not a collection of individually passing branches.
 
-- Every observed Git tree or Work result has proven controlled custody or explicit external provenance.
-- External state is captured without altering accepted refs and routes through matching Work Unit admission or ordinary Change Intake.
-- A commit, process, provider status, or similarity match never advances a lifecycle stage by itself.
-- Alignment distinguishes an owned Committed-Change realization gap from unowned drift, contradiction, stale support, and unknown state.
-- Queries expose exact source identity, provenance, authorization, coverage, ordering, truncation, freshness, and unknowns.
-- Required unknowns or divergence stop affected Gate admission and protected effects until explicit reconciliation.
+Git preserves exact history while Change preserves intent, alternatives and judgments. External work is observed honestly without fabricated acceptance or historical rationale. Missing evidence and unknown effects remain explicit, with next permitted action rather than optimistic status.

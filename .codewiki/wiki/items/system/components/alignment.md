@@ -3,20 +3,10 @@
 ---
 # Alignment
 
-Alignment is the derived comparison among accepted Wiki intent, exact Git Project state, external/source support, Evidence, Results, and Delivery. It reports what is realized, pending, stale, contradicted, missing, or unknown without rewriting any owner or granting authority.
+Alignment is a derived account of how accepted knowledge, Change intent, observed reality, evidence, and ongoing work relate at an exact context. It is not a third primitive or an independently authored desired-state document.
 
-A Change Commit may intentionally advance Wiki intent before project artifacts. For a project-realization Change, Alignment records that owned gap under the Committed Change until passing Work Unit integration and Review produce the Completion Commit. This is active work, not unowned drift. A true Wiki-only Change has no downstream realization gap and completes in its Change Commit.
+Distinguish adopted obligations from observed facts, supported realization from owned gaps, and historical acceptance from current support. An open Change accounts for work but does not make a target true. External reality can drift without a Git commit. A current observation can contradict an old assumption while leaving another independent reason intact.
 
-Alignment connects stable Wiki Item/facet targets through Change planning operations, Work Units, exact source/test paths, Git commits/trees, Check Results, Evidence, Review, completion, and later Delivery observations. Git/Trace already own lineage; Alignment is a disposable View, not a canonical edge store, requirement state machine, private integration graph, or proof of causality.
+Useful feedback exposes affected commitments, assumptions, support, alternatives, paths, uncertainty, and next permitted action. Findings are supported, contradicted, or unresolved with scope and grounds; operational unavailability and missing context remain visible. No global percentage or attention score can average away a binding violation.
 
-## Source ownership
-
-A System Component Item declares current machine-readable ownership only through its structured `codewiki.component:ownership` attribute. Source patterns, test patterns, generated Views, semantic roles, and test policy/rationale are bounded ownership facts over one exact Project snapshot; they grant no lifecycle or write authority. A role names the Product component that owns its semantics, not the DSH adapter that executes a Run. `codewiki.legacy:*` attributes are available only through exact provenance inspection and are never fallback ownership. Normal term resolution, search ranking, semantic diff, applicability, authorization, Agent context, and generated Views exclude them. Missing, overlapping, or unmatched native ownership remains an explicit Alignment finding.
-
-Every query selects one exact Project commit or managed Change tip and identifies projector/build, underlying sources, authorization/redaction, coverage, ordering, truncation, freshness, unknowns, and graph digest. Horizontal queries inspect one layer; vertical queries follow explicit relationships from committed intent to observed artifacts. Approximate or model-suggested relations remain labeled candidates.
-
-Alignment supplies bounded facts to Agents, Gate active Checks, Check SDK, and Clients. A Check may judge exact returned facts; Alignment itself never passes a Gate, creates feedback, commits a Change, or marks work complete. Changed source/Evidence may stale support and invalidate affected reuse without altering historical Wiki, Results, or completion records.
-
-Contribution Routing is an optional read-only projection over Change type/targets, responsibility rules, Actor Profiles, Authority Grants, Claims, availability, and Worker offers. It suggests fit with reasons and unknowns. Only explicit authority and Project Server admission permit action.
-
-Raw Data/source observations and external Plugins may add exact support or staleness inputs. They never mutate Wiki or canonical refs. If meaning should change, bounded facts enter Change Intake and the normal Decision path.
+Work readiness, remote observations, and evidence all cite their exact sources. Stale, redacted, truncated, unsupported, and missing inputs limit the conclusion. Generated views and caches cannot grant authority or repair their sources. Rebuild projections from retained records; do not recreate historical judgments by rerunning models.

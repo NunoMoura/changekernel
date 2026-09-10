@@ -4,213 +4,128 @@
 {
   "codewiki_id": "cw:diagram:synchronization",
   "id": "synchronization",
-  "purpose": "Show local Git authority while remote observation, external-work intake, publication, and remote/shareable Preview remain separately authorized Plugin mechanics.",
+  "purpose": "Show optional Git/host synchronization, portable knowledge and Change history, combined-candidate review, and external effects distinct from local semantic acceptance.",
   "components": [
     {
-      "id": "project-server",
+      "id": "service",
       "concept": "cw:component:project-server",
-      "label": "Project Server",
+      "label": "Authorized collaboration service",
       "zone": "core"
     },
     {
-      "id": "project",
+      "id": "git",
       "concept": "cw:component:project",
-      "label": "Local Git Project Store",
+      "label": "Exact local Git objects and refs",
       "zone": "repository"
     },
     {
-      "id": "plugins",
+      "id": "integration",
       "concept": "cw:component:provider-boundary",
-      "label": "Admitted Remote / Delivery / Preview Plugin",
+      "label": "Optional Git host / transport / delivery integration",
       "zone": "execution"
-    },
-    {
-      "id": "provider",
-      "concept": "cw:component:provider-boundary",
-      "label": "Git / Delivery / Preview Provider",
-      "zone": "provider"
     },
     {
       "id": "intake",
       "concept": "cw:component:change-intake",
-      "label": "Change Intake",
+      "label": "External work inquiry",
       "zone": "core"
     },
     {
-      "id": "change-trace",
+      "id": "history",
       "concept": "cw:component:change-trace",
-      "label": "Change Trace / effect receipts",
-      "zone": "repository"
-    },
-    {
-      "id": "knowledge",
-      "concept": "cw:component:knowledge",
-      "label": "Wiki Items",
+      "label": "Portable intent, grounds and outcome records",
       "zone": "repository"
     },
     {
       "id": "alignment",
       "concept": "cw:component:alignment",
-      "label": "Derived remote Alignment",
+      "label": "Observed local/remote alignment and uncertainty",
       "zone": "core"
     }
   ],
   "connections": [
     {
-      "id": "s-server-plugin-observe",
-      "from": "project-server",
-      "to": "plugins",
+      "id": "s-observe",
+      "from": "service",
+      "to": "integration",
       "type": "authorizes",
-      "label": "requests bounded remote observation",
+      "label": "Requests scoped exact remote observation",
       "boundary": {
         "type": "authority",
-        "failure": "Reject unadmitted Plugin, stale subject, or excess capability."
+        "failure": "Observation is not publication or acceptance authority."
       }
     },
     {
-      "id": "s-plugin-provider-observe",
-      "from": "plugins",
-      "to": "provider",
-      "type": "observes",
-      "label": "reads authenticated provider refs and object facts",
-      "boundary": {
-        "type": "network",
-        "failure": "Return operational stop and preserve local refs."
-      }
-    },
-    {
-      "id": "s-provider-plugin-observe",
-      "from": "provider",
-      "to": "plugins",
+      "id": "s-receive",
+      "from": "integration",
+      "to": "service",
       "type": "returns",
-      "label": "returns provider refs and authentication facts",
-      "boundary": {
-        "type": "network",
-        "failure": "Reject incomplete, stale, or contradictory observation."
-      }
-    },
-    {
-      "id": "s-plugin-server-observe",
-      "from": "plugins",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns immutable observation receipt",
+      "label": "Returns exact candidate/ref facts, not a semantic acceptance receipt",
       "boundary": {
         "type": "trust",
-        "failure": "Reject mismatched receipt; grant no lifecycle authority."
+        "failure": "Reject mismatched subjects or untrusted privileged execution."
       }
     },
     {
-      "id": "s-server-intake",
-      "from": "project-server",
+      "id": "s-intake",
+      "from": "service",
       "to": "intake",
       "type": "invokes",
-      "label": "routes unmatched external work to intake"
+      "label": "Routes unmatched work through intent and effect inquiry"
     },
     {
-      "id": "s-intake-server",
+      "id": "s-candidate",
       "from": "intake",
-      "to": "project-server",
+      "to": "service",
       "type": "returns",
-      "label": "returns controlled Work match or proposal input"
+      "label": "Supplies exact baseline and combined candidate for assessment"
     },
     {
-      "id": "s-server-project",
-      "from": "project-server",
-      "to": "project",
+      "id": "s-store",
+      "from": "service",
+      "to": "git",
       "type": "writes",
-      "label": "advances local refs or records receipt through validated CAS",
+      "label": "Preserves authorized exact accepted states",
       "boundary": {
         "type": "persistence",
-        "failure": "Preserve local refs on object, authority, Gate, or CAS failure."
+        "failure": "Do not transfer isolated-head judgments to changed joins."
       }
     },
     {
-      "id": "s-project-knowledge",
-      "from": "project",
-      "to": "knowledge",
+      "id": "s-history",
+      "from": "git",
+      "to": "history",
       "type": "produces",
-      "label": "supplies exact accepted Wiki tree"
+      "label": "Retains portable reasons and judgments beyond host UI"
     },
     {
-      "id": "s-knowledge-alignment",
-      "from": "knowledge",
-      "to": "alignment",
-      "type": "produces",
-      "label": "supplies stable accepted intent",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Report unknown when exact Wiki source cannot be resolved."
-      }
-    },
-    {
-      "id": "s-alignment-server",
-      "from": "alignment",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns local and remote state with unknowns"
-    },
-    {
-      "id": "s-server-plugin-publish",
-      "from": "project-server",
-      "to": "plugins",
+      "id": "s-publish",
+      "from": "service",
+      "to": "integration",
       "type": "authorizes",
-      "label": "authorizes exact publication or remote Preview effect",
+      "label": "Separately permits publication or delivery",
       "boundary": {
         "type": "authority",
-        "failure": "Preserve local completion and require effect reconciliation."
+        "failure": "Require applicable effect authority before execution."
       }
     },
     {
-      "id": "s-plugin-provider-publish",
-      "from": "plugins",
-      "to": "provider",
-      "type": "synchronizes",
-      "label": "applies bounded publication or remote Preview effect",
-      "boundary": {
-        "type": "network",
-        "failure": "Return stopped or unknown without claiming acceptance."
-      }
-    },
-    {
-      "id": "s-provider-plugin-publish",
-      "from": "provider",
-      "to": "plugins",
-      "type": "returns",
-      "label": "returns authenticated resulting provider state",
-      "boundary": {
-        "type": "network",
-        "failure": "Reject incomplete or mismatched effect result."
-      }
-    },
-    {
-      "id": "s-plugin-server-publish",
-      "from": "plugins",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns exact effect receipt",
-      "boundary": {
-        "type": "trust",
-        "failure": "Reject stale receipt and reconcile before retry."
-      }
-    },
-    {
-      "id": "s-trace-alignment",
-      "from": "change-trace",
+      "id": "s-effect",
+      "from": "integration",
       "to": "alignment",
-      "type": "produces",
-      "label": "supplies local completion and remote observations",
+      "type": "returns",
+      "label": "Reports observed success, failure or unknown effect",
       "boundary": {
-        "type": "persistence",
-        "failure": "Report unknown on invalid Trace or stale receipt."
+        "type": "network",
+        "failure": "Reconcile unknown effects before retry."
       }
     },
     {
-      "id": "s-project-trace",
-      "from": "project",
-      "to": "change-trace",
-      "type": "produces",
-      "label": "supplies exact protected-effect receipt reference"
+      "id": "s-status",
+      "from": "alignment",
+      "to": "service",
+      "type": "returns",
+      "label": "Distinguishes local acceptance, remote observation and realization"
     }
   ],
   "flows": [
@@ -219,23 +134,15 @@
       "paths": [
         {
           "connections": [
-            "s-server-plugin-observe",
-            "s-plugin-provider-observe",
-            "s-provider-plugin-observe",
-            "s-plugin-server-observe",
-            "s-server-intake"
+            "s-observe",
+            "s-receive"
           ]
         },
         {
           "connections": [
-            "s-server-plugin-publish",
-            "s-plugin-provider-publish",
-            "s-provider-plugin-publish",
-            "s-plugin-server-publish",
-            "s-server-project",
-            "s-project-trace",
-            "s-trace-alignment",
-            "s-alignment-server"
+            "s-publish",
+            "s-effect",
+            "s-status"
           ]
         }
       ]
@@ -245,25 +152,10 @@
       "paths": [
         {
           "connections": [
-            "s-provider-plugin-observe",
-            "s-plugin-server-observe",
-            "s-server-intake",
-            "s-intake-server",
-            "s-server-project",
-            "s-project-knowledge"
-          ]
-        }
-      ]
-    },
-    {
-      "concept": "cw:flow:change-lifecycle",
-      "paths": [
-        {
-          "connections": [
-            "s-server-project",
-            "s-project-knowledge",
-            "s-knowledge-alignment",
-            "s-alignment-server"
+            "s-intake",
+            "s-candidate",
+            "s-store",
+            "s-history"
           ]
         }
       ]

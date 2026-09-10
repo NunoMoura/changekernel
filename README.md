@@ -1,115 +1,62 @@
 # CodeWiki
 
-CodeWiki develops Git-compatible version control for humans and Agents: stock Git owns exact artifacts and history, Wiki owns desired meaning, a deterministic Semantic Kernel validates semantic contracts, and Project Server owns authorization and orchestration. This repository contains tested mechanisms for that design, not yet an operationally qualified dogfood release. Maintainer-approved R1 in [SEMANTIC_KERNEL_PLAN.md](SEMANTIC_KERNEL_PLAN.md) governs the current native cleanup.
+CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents across teams. It preserves enough justified, revisable knowledge that people do not restart inquiry from memory alone.
 
-The package remains `@nunomoura/codewiki`. This foundation deliberately removes the previous Domain, KB/OKF, Backend compatibility, Runtime Build compatibility, provider, and Pi-extension implementation rather than carrying those systems behind aliases. Git history and sealed release evidence preserve the obsolete implementation.
+Git supplies exact content, snapshots, ancestry, branches, merges, and transport. CodeWiki adds semantic interpretation, validation, authority, deliberation, and continuity above that substrate. GitHub is an optional integration and a competing collaboration product, not the definition of a Change or its acceptance. Software, operations, research, and other team work share the same core.
 
-## Current foundation
+**This repository is source development, not an operationally qualified dogfood release.** The desired behavior below is not a claim that the current package implements it. The current documentation/source gap, parked work, and sole active sequence are recorded in [SEMANTIC_KERNEL_PLAN.md](SEMANTIC_KERNEL_PLAN.md).
 
-The active source tree contains:
+## Two primitives
 
-- shared [data contracts](src/kernel/data-contracts/): bounded canonical JSON, field/protocol validation, and typed success/failure values;
-- pure SHA-256, lowercase Base32, semantic digest, and semantic identity primitives;
-- native `codewiki.component:ownership` interpretation;
-- explicit provenance isolation for every `codewiki.legacy:*` attribute;
-- append-only Change reduction, Work planning, active Check selection, Gate reduction, and disposable Work status;
-- a versioned Project Store for exact snapshots, trees, blobs, commit creation, and expected-head updates, alongside narrow Check Runner, Agent Runtime, and Preview ports;
-- canonical Wiki files, complete relationship and retired-ID validation, atomic transaction post-state, and deterministic bounded list, get, dictionary, search, graph, history, attribution, provenance-inspection, and semantic-diff Views;
-- exact Git fallback whenever optional private Wiki indexes are absent, stale, invalid, or forged;
-- immutable Product policy that binds semantic roots, lifecycle stages and roles, port identities, and project-owned Check selection;
-- an authenticated Project Server that composes Project Store, Check Runner, and Gate-facts ports, with memory-backed facts in the local composition; resolves one exact source; applies Actor authorization and redaction; retains bounded request replay; serves Project, Wiki, Change, Decision, Check, Result, Work, Review, Alignment, and explicit audit reads; and owns bounded local lifecycle mutation;
-- atomic Change proposal and revision, Decision, Planning, Work admission and integration, Review reconciliation, completion, supersession, and separately authorized protected-effect commands with exact expected-head binding and deterministic recovery;
-- a version-neutral Client SDK over digest-bound `codewiki.product-request@1.1.0` and `codewiki.product-response@1.1.0` envelopes, with normal results restricted to Changes, status, Work, Checks, Decisions, next actions, and required user actions;
-- host-neutral Agent Runtime and Preview ports with partial local adapters and replay/injected-runner tests, not operational qualification; and
-- an atomic bootstrap adapter that creates Domain-free project configuration, empty Wiki and Change state, and an explicit empty Check Pack lock without seeded definitions.
+- **Wiki** consolidates project knowledge: scoped assertions, adopted decisions, obligations, procedures, their grounds, and explicit uncertainty. A Wiki state is the Wiki at a revision, not another managed entity.
+- **Change** carries intent and its evolution: desired effects, motivation, assumptions, alternatives, deliberation, plans, attempts, evidence, and outcomes. Wiki retains adopted consequences with provenance back to their reasons.
 
-Wiki mutation and lifecycle transition mechanisms have ordinary test coverage. The shipped local composition has no available Check Runner or coding Worker; DSH tool-enabled execution, durable recovery, and safe Preview execution remain incomplete. Custom policy selection and empty-policy warnings have native tests; actual Check execution remains an injected test boundary. Bundled/internal Check definitions and the historical handoff helper are absent from normal shipping. Passing tests, historical release reports, and package version labels do not establish current operational readiness or controller authority.
+Decision, Planning, Implementation, and Review are four retained inquiry loops with one semantic foundation. Validation distinguishes intent fit, consistency, reachability, preservation, justification, and authority. Findings are supported, contradicted, or unresolved with reasons and evidence—not a universal score or a promise that model judgments are proofs.
 
-## Install and import
+The target corpus includes tracked Markdown wherever it lives, without mandatory proprietary frontmatter, document IDs, or a special import directory. Ordinary editors and Obsidian-compatible files remain first-class. Discovery does not give quotations, fixtures, proposed rules, and current commitments equal authority. Procedural knowledge belongs in Wiki; tests and other verification methods remain useful without separately authored project Skills or Check Packs.
 
-The package is private during this transition. Its single curated entrypoint exposes Product policy, bootstrap, Project Server composition, access-policy construction, and the semantic Client SDK; pure Kernel operations and adapter/store handles remain internal.
+See the [product contract](.codewiki/wiki/items/product/codewiki-console.md), [Wiki](.codewiki/wiki/items/system/components/wiki.md), [Change](.codewiki/wiki/items/system/components/change-trace.md), [kernel](.codewiki/wiki/items/system/components/semantic-kernel.md), and [validation](.codewiki/wiki/items/system/components/checks.md).
 
-```ts
-import {
-  CODEWIKI_PRODUCT,
-  CODEWIKI_PRODUCT_POLICY_DIGEST,
-  bootstrapCodewikiProject,
-  createCodewikiClient,
-  createProductTransportRequest,
-  createMemoryProjectServerFacts,
-  createProjectAccessPolicy,
-  createProjectServer,
-  decodeProductTransportResponse,
-} from "@nunomoura/codewiki";
-```
+## What exists in source
 
-Custom transport Clients can use `createProductTransportRequest` and `decodeProductTransportResponse` without importing Kernel internals. Normal Client reads are `discover`, `capabilities`, `status`, `wiki`, `changes`, `checks`, `work`, `review`, and `alignment`; lifecycle methods cover proposal through completion, supersession, and protected effects. `audit` is the explicit technical-evidence read. Every call supplies a repository identity, request identity, expiry, and authenticated proof; state reads additionally select an exact or once-resolved source and carry operation-specific bounds. No `./project-server`, `./runtime`, `./checks`, or Pi extension subpath is published.
+The private package remains `@nunomoura/codewiki`. Existing mechanisms include:
 
-## Bootstrap
+- bounded deterministic [data contracts](src/kernel/data-contracts/) and [identity primitives](src/kernel/identity/);
+- exact Wiki envelopes, ownership/provenance handling, transaction validation, bounded views and immutable Git fallback;
+- intent/rationale-bearing Change contracts, append-only lifecycle reduction, Work dependencies, Check selection and Gate reduction;
+- a [Git Project Store](src/adapters/git/project-store.ts), expected-head operations, authenticated [Project Server](src/server/index.ts), [Client SDK](src/api/client/index.ts), and read-only CLI;
+- partial host-neutral execution/evidence interfaces, DSH and Preview adapters, and process-local recovery facts; and
+- native tests for these mechanisms, including replay and injected-runner fixtures rather than operational qualification.
 
-Bootstrap targets an existing non-symbolic Git project directory whose `.git` state is present and whose `.codewiki` and `.codewiki.bootstrap` paths are both absent.
+These mechanisms are being assessed for retention, adaptation, replacement, or deferral. Current structural validation and field/body diff are not the target consequential semantic evaluator. The shipped local composition has unavailable Check/Agent execution; durable fresh-process recovery and the new semantic loop are not qualified. An empty legacy Gate is not semantic assurance.
 
-```ts
-const result = await bootstrapCodewikiProject({
-  projectRoot: "/absolute/path/to/project",
-  project: "example-project",
-});
+The existing reader still requires canonical envelopes under `.codewiki/wiki/items/`; explicit bootstrap creates that tree, `.codewiki/changes/`, versioned config, and an empty Check Pack lock. This is current executable behavior, **not** the new authoring destination. Do not flatten paths, strip envelopes, re-bootstrap existing state, delete policy files, or fabricate historical Changes. The target reader/writer/adoption transition must be implemented and validated before any separately authorized live conversion. Historical Trace compatibility and controller evidence remain unresolved in the plan.
 
-if (!result.ok) {
-  console.error(result.error.code, result.error.message);
-}
-```
+The curated package entrypoint and exact exported APIs are defined by [src/index.ts](src/index.ts), [package.json](package.json), and their tests. No source-checkout Pi extension or project-local CodeWiki installation is supported. Current API names and package labels do not establish semantic readiness or runtime authority.
 
-A successful bootstrap creates:
+## Development and trust boundaries
 
-```text
-.codewiki/
-├── config.json
-├── check-packs.lock.json
-├── changes/
-└── wiki/items/
-```
-
-This is the current executable layout. The desired flat `.codewiki/wiki/**` Item tree is documented in Wiki; reader/writer changes and separately authorized existing-state conversion remain R1-5 work. Do not flatten an existing project manually or infer migration support from the design.
-
-The Wiki and Change directories are semantically empty. The lock explicitly contains `packages: {}`; no Check Pack files are copied. Bootstrap never executes package lifecycle code, Skills, Checks, Agents, or arbitrary commands. Existing managed state causes a typed conflict and remains untouched.
-
-Custom Checks require explicit project adoption with matching files and lock digests. Editing or removing policy must update both coherently; bootstrap is not a policy-repair operation. A fully resolved empty Gate reports `empty_check_policy` and explains that no semantic Check verdict was produced. Missing/malformed policy or unavailable required execution fails closed.
-
-The bootstrap never creates `.codewiki/kb/`, `.codewiki/traces/`, `.codewiki/runtime/`, `.codewiki/views/`, generated indexes, project-local executable Plugin paths, or controller state.
-
-`createLocalProjectServer` and the read-only CLI do not initialize or repair projects. Composition requires an existing non-symbolic root with its own non-symbolic `.git` directory or file, and binds read interfaces without creating `.codewiki`. Initialize a new project explicitly through `bootstrapCodewikiProject` when intended. Binding availability—and current empty-state status projections—does not establish resolved Check policy or operational readiness. Reads retain exact-source validation; malformed state is never an instruction to re-bootstrap. Read-only authorization grants, not executor unavailability alone, prevent lifecycle mutations.
-
-## Architecture boundary
-
-The Kernel imports only bounded deterministic Kernel modules. `src/kernel/data-contracts/` owns data representation and validation, not canonical Git authority or lifecycle policy. It has no filesystem, Git, process, network, provider, UI, clock, randomness, adapter, or environment access. Expected validation failures return typed outcomes.
-
-The Project Server is the sole semantic control plane. It binds Project Store, Check Runner, and owner-private immutable Gate facts internally while reporting Agent Runtime and Preview as unavailable; no Client receives any port, fact-store, adapter, credential, ref, or raw writer handle. Ports report or perform bounded effects but never grant lifecycle authority:
-
-1. Project Store
-2. Check Runner
-3. Agent Runtime
-4. Preview
-
-Gate facts remain a separate Project Server recovery boundary rather than a Client capability or authority source.
-
-Project Server enforces capability policy; Gates report facts rather than authorize transitions. R1 permits native development checkpoints without controller swaps or inherited rubric execution. Independent exact-subject qualification and explicitly authorized handoff remain required before dogfooding; this mutable checkout never governs or qualifies itself.
-
-## Development
-
-Requires Node.js 22.19.0 or newer.
+Requires Node.js 22.19.0 or newer. Ordinary native development uses:
 
 ```bash
-npm ci
+npm ci --ignore-scripts
 npm test
 npm run build
-npm run test:pack
-npm run audit:codewiki
 ```
 
-Architecture tests enforce the exact source, test, and package-export allowlists; zero dependency cycles; Kernel purity; forbidden legacy reachability; native ownership uniqueness; and unchanged canonical Wiki/Change state.
+Use proactive diagnostics and inspect actual exit status. Passing native tests proves only their asserted conditions. The architecture suite includes additional Change, Gate, Work and Evidence suites through imports; its file/export/ownership guards must evolve deliberately with supported behavior, not be weakened to hide changes.
 
-See [`SEMANTIC_KERNEL_PLAN.md`](SEMANTIC_KERNEL_PLAN.md) for approved R1 scope, incomplete work, and the acceptance matrix. Desired Product and System behavior lives under [`.codewiki/wiki/`](.codewiki/wiki/). Executable behavior lives under [`src/`](src/) and [`tests/`](tests/). [Archived plans](docs/archive/README.md) are byte-preserved historical evidence, not current guidance.
+Pack and test release candidates only in disposable external projects with isolated Pi settings. No package freeze, activation or controller handoff follows from a build or documentation checkpoint. Candidate N+1 never governs itself. Do not load CodeWiki from this mutable checkout or its `.pi/`, call CodeWiki `wiki_*` tools or `/wiki-*` commands here, or add local package links, executable Plugin paths, duplicate skills or controller pins.
+
+Protected effects require applicable authority before execution. Worktrees are not sandboxes. Git checkpoints, semantic assessments, acceptance, realization, publication and deployment are distinct. Preserve exact historical states and judgments; do not reconstruct them by rerunning models or external effects.
+
+## Repository truth
+
+- [`.codewiki/wiki/`](.codewiki/wiki/) is desired-state design truth. Its retained envelopes and identities are not a proprietary-authoring requirement for future adopters.
+- [`.codewiki/changes/`](.codewiki/changes/) preserves governed lifecycle history; do not rewrite it as refactoring progress.
+- [`SEMANTIC_KERNEL_PLAN.md`](SEMANTIC_KERNEL_PLAN.md) is the sole active roadmap, status ledger, qualification record and archive checklist. Start at its current entry point, not an old R1/D4 packet.
+- [`src/`](src/) and [`tests/`](tests/) are executable truth; Git is history and checkpoint evidence.
+- [Archived plans](docs/archive/README.md) and retained earlier ledger sections are evidence, not competing active queues. Private runtime state, generated views, caches, credentials and package artifacts are not source truth.
 
 ## License
 

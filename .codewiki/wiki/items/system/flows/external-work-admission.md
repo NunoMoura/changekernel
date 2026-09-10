@@ -3,10 +3,10 @@
 ---
 # External Work Admission
 
-Project Server compares an observed Git commit/tree with canonical Project state, managed Change refs, active Work Units, and known execution custody. A proven controlled commit keeps its recorded lineage. Any unmatched bytes are external work: Project Server pauses affected guarded effects, fingerprints repository/base/head/tree/paths, and captures exact objects under a private ref or worktree without altering user or canonical refs.
+Incoming commits, patches, documents or host events are observations of work, not proof of a valid Change, accepted knowledge, producer identity or execution custody. Preserve exact received subjects and available provenance; do not invent missing reasons or retroactive authorization.
 
-If external work exactly matches one Committed Change, current Work Unit, expected base/dependencies, admitted scope, and Actor authority, Project Server treats its full-snapshot commit as an external-provenance Work result. It inherits no DSH receipt. The same type/unit-conditioned Implementation Gate judges exact bytes, and passing output still integrates onto the managed Change ref through fresh expected-tip compare-and-swap.
+Determine whether work fits an existing authorized scope or needs an independently considered proposal. Classification follows actual semantic effects. A matching branch name, commit message, PR link or claimed work ID cannot bypass inquiry or authority.
 
-Otherwise the capture becomes bounded Change Intake Material with explicit external provenance. Decision determines whether it supports a new Proposed Change, supersedes accepted intent, conflicts, or is discarded. Existing code never retroactively creates accepted Wiki meaning.
+Evaluate relevant intent, obligations, evidence and the actual combined candidate. A host merge flag is not an acceptance receipt, and a previous isolated-head assessment cannot approve changed integration bytes. Keep rejected or unresolved work and its reasons distinct from adopted lessons.
 
-Partial overlap, stale base, unknown authorship, missing objects, generated-only diffs, conflicting active work, or unverifiable custody blocks direct Work admission. Observation, local tests, provider review, or useful output cannot claim integration, completion, or Delivery by itself.
+Observation/import, local acceptance, publication and deployment need their own applicable authority. Discovery must not execute incoming document instructions or untrusted code, especially in a privileged hosting workflow.

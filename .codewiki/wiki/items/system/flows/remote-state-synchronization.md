@@ -3,10 +3,10 @@
 ---
 # Remote State Synchronization
 
-Local Git repository and configured canonical/managed refs are Project authority. Remote mechanics use admitted `remote.observe` and `remote.publish` Plugin Requests; Project Server never silently chooses remote bytes, force-pushes, or grants a provider direct canonical-ref authority.
+Git transports exact objects and refs; integrations expose remote observations and separately authorized effects. CodeWiki's semantic acceptance must remain meaningful outside any hosting UI. GitHub is optional, and its PR/review/Check data do not automatically travel in ordinary clones.
 
-`remote.observe` returns authenticated provider refs/object facts and an immutable receipt. Project Server imports objects through sanitized Git plumbing, verifies complete ancestry/object types and provider proof, then classifies divergence. Exact known controlled history may reconcile through current Change/Work rules. Unmatched external work enters External Work Admission or Change Intake. Observation alone never advances lifecycle.
+Bind observed remote state to exact source and scope. A cached ref, timestamp, branch name, merge flag or remote check conclusion does not establish current acceptance. Evaluate the actual integration candidate, including other queued work where applicable, rather than reuse a result from an isolated head.
 
-`remote.publish` is a separately authorized post-completion effect over one exact local commit and expected remote head. Plugin receipt plus follow-up observation proves provider outcome. Network failure, malformed/incomplete objects, stale head, contradictory history, unknown effect outcome, or unsupported object/protocol stops synchronization while preserving local state. Retry requires exact idempotency/reconciliation evidence.
+Preserve portable Change rationale, judgments and evidence references with deliberate retention and transport rules. Git notes require explicit ref handling; history rewriting cannot silently transfer judgments or discard their only durable subject.
 
-Alignment reports local completion and observed remote/Delivery state separately with freshness and unknowns. Remote publication does not redefine Wiki meaning or local Change completion.
+Publication and remote effects require authority before execution. Record resulting observations separately from local acceptance and realization. On failure or unknown outcome, preserve local knowledge and reconcile the effect before retry. Remote reads must not silently repair or mutate local semantic state.

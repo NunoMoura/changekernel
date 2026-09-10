@@ -3,10 +3,8 @@
 ---
 # Implementation to Review
 
-Implementation Gates run independently as Work Unit result commits become ready. Each Gate uses exact Implementation Check Packs with active Checks selected by Change type and Work Unit subtype/scope. Project Server integrates only current passing commits onto the managed Change ref. A passing unit advances that Work Unit, not the whole Change.
+Provide the exact reconciled candidate, baseline, work/attempt history, observations, changed assumptions and remaining obligations. Review must see the whole outcome and its relevant grounds, not only isolated worker successes or a passing branch-head test.
 
-When every current Work Unit is passing, integrated, and dependency-complete, Project Server reconciles the integrated artifact delta with current canonical history on the managed Change ref. Git ancestry supplies the complete snapshot and contributors; Trace supplies committed Wiki target, planning/work facts, Check Runs/Results, and semantic admissions. Conflict, interaction ambiguity, or changed artifact bytes stops for repair and fresh affected Checks. The resulting exact Change tip/tree, whose expected canonical parent remains unchanged, is the prospective Completion project-artifact tree and Review subject. No separate Implementation Aggregate or private lineage authority is required.
+Distinguish produced artifacts, adopted knowledge and observed real-world realization. Unknown effects, missing support, stale evidence, redaction and truncation remain explicit. An owned gap is not realized merely because an attempt ended.
 
-Review active Checks derive from exact Review Packs, frozen Change type, and the integrated subject. They compare the full Project snapshot with Committed Change meaning, cross-unit behavior, full-build/integration evidence, provenance, scope, and applicable type-specific policy. Provider Checks and human reviews may enter as Evidence but never replace CodeWiki Gate authority.
-
-Failed Results route to exact Work Unit, Planning, or a Superseding Change according to defect ownership. A stopped Gate preserves state. A passed current Gate permits Project Server to create the Change Completion Commit under current authority and expected-head CAS while preserving every reviewed project-artifact entry and appending only the bounded containing-commit Trace operation. Canonical-head drift invalidates that permission and restarts reconciliation plus affected Review. Delivery remains a later protected effect.
+Review uses current applicable authority and semantic obligations, then routes defects, path conflicts or intent changes to their proper loop. Acceptance of this subject cannot silently cover later edits, publication, deployment or another rewritten/merged candidate.

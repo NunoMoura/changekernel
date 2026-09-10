@@ -3,12 +3,8 @@
 ---
 # Planning to Implementation
 
-Planning begins only for a Committed Change whose Project realization remains open. The Planning Agent proposes exact Change-owned Work Units and dependencies. Project Server validates structure, resolves type-conditioned Planning active Checks from exact stage Check Packs, and creates a Gate over the proposed plan.
+Transfer a credible path with intermediate outcomes, dependencies, shared maintenance obligations, permitted effects, responsibility and evidence needs. Planning is retained even for small or knowledge-focused Changes; the plan's depth follows consequential uncertainty and effects.
 
-A passed Planning Gate grants eligibility only. Project Server revalidates the Change Commit, current managed tip, canonical Project head, committed Wiki target, active Change dependencies, authority, and Gate before appending the plan to Change Trace. Stale input returns reconciliation facts or another Planning Run; it never triggers silent graph replacement.
+Before parallel work begins, identify shared contracts and possible interference with other tasks' preconditions. Disjoint files or individually acceptable outcomes are not evidence of independence. Require review of the actual integrated candidate at the join.
 
-Accepted planning operations are the source of Work Unit identity and dependency edges. WorkState derives a global Work View and readiness from active Change Traces. No separately writable canonical Work Graph or planning horizon exists. A plan cannot mutate unrelated Changes or work.
-
-Project Server derives readiness when a Work Unit is current, dependency-complete, unclaimed, and compatible with current heads. It selects an authorized Worker route, creates one Claim/Assignment and isolated Git worktree, and dispatches a DSH Run. Planning does not select Worker, provider, machine, live capacity, or schedule.
-
-Independent ready Work Units may execute concurrently. Overlap, dependency, custody, and expected-head constraints serialize admission where required. Restart rebuilds Work View and WorkState from Git, Trace, Results, and durable operational records so duplicate work cannot gain authority.
+Execution must be authorized for its exact context and scope. Missing tools, limits, credentials, context or enforceable custody produce explicit unavailability or a stop, not a guessed successful assignment. Workers can repair within scope and retain cheap checkpoints; path conflicts return to Planning and material intent revision to Decision.

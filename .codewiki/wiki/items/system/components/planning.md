@@ -3,18 +3,12 @@
 ---
 # Planning
 
-Planning is the second phase for a Committed Change whose accepted Wiki intent still requires project realization. It decomposes that exact target into singly owned Work Units without restating or amending accepted meaning. A true Wiki-only Change completes at Change Commit and never enters Planning.
+Planning turns accepted intent into a credible path, with intermediate outcomes, dependencies, shared obligations, work boundaries, and evidence needs. It is a retained reasoning loop for knowledge work as well as implementation, not optional ceremony reserved for code changes.
 
-Planning applies to any supported project-artifact domain. Small work may need one bounded Work Unit rather than an elaborate document or meeting; ownership, capability, coverage, and verification obligations remain. A maintenance label cannot silently remove Planning or final Review from project realization.
+The plan preserves meaning through decomposition. It distinguishes prerequisites that must hold before a step, consequences expected afterward, and obligations maintained throughout. Independent files or individually acceptable destinations do not prove independent execution: one worker can invalidate another's assumptions or a shared control.
 
-Planning receives the exact Change Commit, managed Change tip, committed Wiki delta or stable existing-Wiki targets, Change type, current canonical Project snapshot, active Change dependencies, prior Gate feedback, and bounded Wiki/Alignment tools. A Planning Agent runs through DSH and may query more exact context, but conversation or Agent memory carries no authority.
+Parallel work identifies dependencies and shared contracts before launch, then requires validation of the actual integrated candidate. For example, UI, backend, and observability tasks share a no-secret-logging obligation even when they edit different files. A plan may be concise for small work, but its applicability and evidence boundary cannot be bypassed by labeling a Change “knowledge-only.”
 
-A proposed plan defines Work Units with stable identity, one owning Change, judgeable outcome, target Item/facet references, scope, dependencies, generic capabilities, custody/privacy/budget constraints, and verification intent. It does not copy Wiki outcome prose, choose an Actor, Worker, provider/model, live machine, schedule, or protected effect. Shared independently decidable foundational work becomes another Change; internal technical steps remain Work Units.
+Inquiry, enabling work, and risk reduction can justify detours. There is no universal distance-to-target metric every step must decrease. Consequential uncertainty can create an investigation step rather than a falsely certain schedule. An efficient plan cannot excuse a forbidden intermediate effect.
 
-Project Server performs fixed structural validation for complete Change ownership, valid target refs, acyclic dependencies, explicit overlap ordering, bounded resources, and safe identities. It then creates a Planning Gate over the exact proposed plan. Exact Planning Check Packs and the committed Change type determine active Checks for coverage, decomposition quality, feasibility, parallelism, risk, and Review strategy. Planning retains project-owned Checks; fixed validation does not replace them.
-
-Each Check Run judges the exact plan and frozen Gate. Failed Results return to another Planning DSH Run; a meaning/type defect returns to Decision through a new or Superseding Change. A passed Gate makes only that plan eligible. Project Server revalidates the Change tip, canonical head, Wiki target, active dependencies, Gate, and authority before appending `change.planned` to Trace.
-
-Planning operations in Trace are the durable source for Work Units and dependency edges. A global Work View is derived across active Change Traces; it is not a separately writable canonical Work Graph. WorkState derives readiness, Claims, Assignments, blockers, and current statuses. Planning amendments append new operations under expected-tip CAS and cannot silently rewrite claimed, integrated, completed, or unrelated work.
-
-Project Server schedules independently ready Work Units according to current policy and authority. DSH executes only exact admitted Work Unit Runs. Runtime mechanics, routes, Workers, and Plugins cannot alter the committed plan or claim Planning authority.
+Feedback revises the decomposition when paths conflict; unclear or materially changed intent returns to Decision. Assignment, execution and protected effects still need applicable authority. See [Planning to Implementation](../flows/planning-to-implementation.md) and [Work state](work-state.md).

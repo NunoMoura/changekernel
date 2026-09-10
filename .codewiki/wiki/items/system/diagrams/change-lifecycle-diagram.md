@@ -4,279 +4,142 @@
 {
   "codewiki_id": "cw:diagram:lifecycle",
   "id": "lifecycle",
-  "purpose": "Show one Change from proposal through semantic Change Commit, optional planned realization, reviewed Completion Commit, and separate Delivery.",
+  "purpose": "Show four retained inquiry loops sharing semantic validation, feedback to its cause, exact Git checkpoints, and acceptance distinct from realization or external effects.",
   "components": [
-    {
-      "id": "clients",
-      "concept": "cw:component:clients",
-      "label": "Authenticated Client / Actor",
-      "zone": "client"
-    },
-    {
-      "id": "project-server",
-      "concept": "cw:component:project-server",
-      "label": "Project Server",
-      "zone": "core"
-    },
     {
       "id": "intake",
       "concept": "cw:component:change-intake",
-      "label": "Change Intake",
+      "label": "Intent-bearing proposal",
       "zone": "core"
     },
     {
       "id": "decision",
       "concept": "cw:component:decision",
-      "label": "Decision",
+      "label": "Decision: justified transition hypothesis",
       "zone": "core"
     },
     {
       "id": "planning",
       "concept": "cw:component:planning",
-      "label": "Planning",
+      "label": "Planning: paths, shared obligations and dependencies",
       "zone": "core"
     },
     {
       "id": "implementation",
       "concept": "cw:component:implementation",
-      "label": "Implementation",
-      "zone": "core"
+      "label": "Implementation: authorized attempts and discoveries",
+      "zone": "execution"
     },
     {
       "id": "review",
       "concept": "cw:component:review",
-      "label": "Review",
+      "label": "Review: actual recomposition and remaining obligations",
       "zone": "core"
     },
     {
-      "id": "checks",
+      "id": "validation",
       "concept": "cw:component:checks",
-      "label": "Type-conditioned Gates",
+      "label": "Shared contextual semantic validation",
       "zone": "core"
     },
     {
-      "id": "runtime",
-      "concept": "cw:component:runtime",
-      "label": "Agent Runtime port / DSH adapter",
-      "zone": "execution"
+      "id": "service",
+      "concept": "cw:component:project-server",
+      "label": "Scoped authority and acceptance",
+      "zone": "core"
     },
     {
-      "id": "project",
+      "id": "git",
       "concept": "cw:component:project",
-      "label": "Full-snapshot Git Project Store",
+      "label": "Exact Git checkpoints, Wiki and Change records",
       "zone": "repository"
-    },
-    {
-      "id": "knowledge",
-      "concept": "cw:component:knowledge",
-      "label": "Wiki Items",
-      "zone": "repository"
-    },
-    {
-      "id": "change-trace",
-      "concept": "cw:component:change-trace",
-      "label": "Append-only Change Trace",
-      "zone": "repository"
-    },
-    {
-      "id": "work-state",
-      "concept": "cw:component:work-state",
-      "label": "Derived WorkState",
-      "zone": "core"
-    },
-    {
-      "id": "plugins",
-      "concept": "cw:component:provider-boundary",
-      "label": "Admitted Delivery Plugin",
-      "zone": "execution"
     }
   ],
   "connections": [
     {
-      "id": "l-client-server",
-      "from": "clients",
-      "to": "project-server",
-      "type": "invokes",
-      "label": "submits authenticated proposal or lifecycle command",
-      "boundary": {
-        "type": "trust",
-        "failure": "Reject invalid proof, authority, bounds, idempotency, or head."
-      }
-    },
-    {
-      "id": "l-server-intake",
-      "from": "project-server",
-      "to": "intake",
-      "type": "invokes",
-      "label": "validates proposal intake and assigns Change identity"
-    },
-    {
-      "id": "l-intake-decision",
+      "id": "l-propose",
       "from": "intake",
       "to": "decision",
       "type": "produces",
-      "label": "produces exact Proposed Change tip"
+      "label": "Preserves original intent and uncertainty"
     },
     {
-      "id": "l-decision-server",
+      "id": "l-plan",
       "from": "decision",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns exact Decision eligibility facts"
-    },
-    {
-      "id": "l-checks-server",
-      "from": "checks",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns exact current Gate outcome"
-    },
-    {
-      "id": "l-server-project",
-      "from": "project-server",
-      "to": "project",
-      "type": "writes",
-      "label": "creates proposal, Change, reconciliation, Work, or Completion commit",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Preserve refs unless object, Trace, Gate, authority, and CAS close."
-      }
-    },
-    {
-      "id": "l-project-knowledge",
-      "from": "project",
-      "to": "knowledge",
-      "type": "produces",
-      "label": "supplies accepted Wiki meaning"
-    },
-    {
-      "id": "l-project-trace",
-      "from": "project",
-      "to": "change-trace",
-      "type": "produces",
-      "label": "supplies exact OIDs and containing-commit Trace facts"
-    },
-    {
-      "id": "l-project-server",
-      "from": "project",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns exact committed or reconciled Project state",
-      "boundary": {
-        "type": "persistence",
-        "failure": "Stop on missing objects, invalid ancestry, or stale refs."
-      }
-    },
-    {
-      "id": "l-server-planning",
-      "from": "project-server",
       "to": "planning",
-      "type": "invokes",
-      "label": "starts Planning for project realization"
-    },
-    {
-      "id": "l-planning-server",
-      "from": "planning",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns proposed Work Unit and dependency facts"
-    },
-    {
-      "id": "l-server-implementation",
-      "from": "project-server",
-      "to": "implementation",
-      "type": "invokes",
-      "label": "claims and assigns ready Work Unit"
-    },
-    {
-      "id": "l-server-runtime",
-      "from": "project-server",
-      "to": "runtime",
-      "type": "authorizes",
-      "label": "authorizes exact role-bound DSH Run",
-      "boundary": {
-        "type": "authority",
-        "failure": "Reject stale Assignment, context, route, capability, or scope."
-      }
-    },
-    {
-      "id": "l-runtime-server",
-      "from": "runtime",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns untrusted Run output and closure for validation",
-      "boundary": {
-        "type": "authority",
-        "failure": "Reject incomplete custody or changed subject bytes."
-      }
-    },
-    {
-      "id": "l-implementation-server",
-      "from": "implementation",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns exact ready Work assignment facts"
-    },
-    {
-      "id": "l-server-review",
-      "from": "project-server",
-      "to": "review",
-      "type": "invokes",
-      "label": "starts Review over prospective project-artifact tree"
-    },
-    {
-      "id": "l-review-server",
-      "from": "review",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns Review eligibility for exact project-artifact tree"
-    },
-    {
-      "id": "l-server-plugins",
-      "from": "project-server",
-      "to": "plugins",
-      "type": "authorizes",
-      "label": "authorizes separate post-completion Delivery",
-      "boundary": {
-        "type": "authority",
-        "failure": "Preserve local completion on effect failure or unknown."
-      }
-    },
-    {
-      "id": "l-plugins-server",
-      "from": "plugins",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns bounded Delivery receipt",
-      "boundary": {
-        "type": "authority",
-        "failure": "Reject stale or incomplete receipt; do not replay speculatively."
-      }
-    },
-    {
-      "id": "l-trace-workstate",
-      "from": "change-trace",
-      "to": "work-state",
       "type": "produces",
-      "label": "supplies Work Unit and lifecycle projection facts",
+      "label": "Carries justified pursuit, scope and unresolved assumptions"
+    },
+    {
+      "id": "l-attempt",
+      "from": "planning",
+      "to": "implementation",
+      "type": "produces",
+      "label": "Binds dependencies, shared obligations and permitted effects",
+      "boundary": {
+        "type": "authority",
+        "failure": "Stop when required scope, context or custody is unavailable."
+      }
+    },
+    {
+      "id": "l-join",
+      "from": "implementation",
+      "to": "review",
+      "type": "produces",
+      "label": "Supplies actual combined candidate, observations and gaps"
+    },
+    {
+      "id": "l-defect",
+      "from": "review",
+      "to": "implementation",
+      "type": "returns",
+      "label": "Routes artifact defects to implementation"
+    },
+    {
+      "id": "l-conflict",
+      "from": "review",
+      "to": "planning",
+      "type": "returns",
+      "label": "Routes path or dependency conflicts to planning"
+    },
+    {
+      "id": "l-intent",
+      "from": "review",
+      "to": "decision",
+      "type": "returns",
+      "label": "Routes material intent revision to explicit reconsideration"
+    },
+    {
+      "id": "l-context",
+      "from": "service",
+      "to": "validation",
+      "type": "invokes",
+      "label": "Assesses each stage in exact current context"
+    },
+    {
+      "id": "l-finding",
+      "from": "validation",
+      "to": "service",
+      "type": "returns",
+      "label": "Returns scoped supported, contradicted or unresolved findings"
+    },
+    {
+      "id": "l-review",
+      "from": "review",
+      "to": "service",
+      "type": "returns",
+      "label": "Supplies whole-outcome assessment, not publication authority"
+    },
+    {
+      "id": "l-save",
+      "from": "service",
+      "to": "git",
+      "type": "writes",
+      "label": "Retains authorized checkpoints and outcomes; checkpointed is not accepted",
       "boundary": {
         "type": "persistence",
-        "failure": "Stop projection on invalid Trace prefix or source OID."
+        "failure": "Reject stale subjects and do not claim realization without evidence."
       }
-    },
-    {
-      "id": "l-workstate-server",
-      "from": "work-state",
-      "to": "project-server",
-      "type": "returns",
-      "label": "returns derived readiness and blockers"
-    },
-    {
-      "id": "l-server-checks",
-      "from": "project-server",
-      "to": "checks",
-      "type": "invokes",
-      "label": "freezes exact stage subject and dispatches active Checks"
     }
   ],
   "flows": [
@@ -285,52 +148,18 @@
       "paths": [
         {
           "connections": [
-            "l-client-server",
-            "l-server-intake",
-            "l-intake-decision",
-            "l-decision-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-project",
-            "l-project-knowledge"
+            "l-propose",
+            "l-plan",
+            "l-attempt",
+            "l-join",
+            "l-review",
+            "l-save"
           ]
         },
         {
           "connections": [
-            "l-project-server",
-            "l-server-planning",
-            "l-planning-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-implementation",
-            "l-implementation-server",
-            "l-server-runtime",
-            "l-runtime-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-project",
-            "l-project-server",
-            "l-server-review",
-            "l-review-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-project",
-            "l-project-trace"
-          ]
-        },
-        {
-          "connections": [
-            "l-server-plugins",
-            "l-plugins-server",
-            "l-server-project",
-            "l-project-trace"
-          ]
-        },
-        {
-          "connections": [
-            "l-project-trace",
-            "l-trace-workstate",
-            "l-workstate-server"
+            "l-context",
+            "l-finding"
           ]
         }
       ]
@@ -340,12 +169,7 @@
       "paths": [
         {
           "connections": [
-            "l-decision-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-project",
-            "l-project-server",
-            "l-server-planning"
+            "l-plan"
           ]
         }
       ]
@@ -355,10 +179,7 @@
       "paths": [
         {
           "connections": [
-            "l-planning-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-implementation"
+            "l-attempt"
           ]
         }
       ]
@@ -368,12 +189,22 @@
       "paths": [
         {
           "connections": [
-            "l-implementation-server",
-            "l-server-runtime",
-            "l-runtime-server",
-            "l-server-checks",
-            "l-checks-server",
-            "l-server-review"
+            "l-join"
+          ]
+        },
+        {
+          "connections": [
+            "l-defect"
+          ]
+        },
+        {
+          "connections": [
+            "l-conflict"
+          ]
+        },
+        {
+          "connections": [
+            "l-intent"
           ]
         }
       ]
