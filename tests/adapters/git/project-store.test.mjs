@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import {chmod, mkdir, mkdtemp, readFile, rename, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {dirname, join} from "node:path";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
 import test from "node:test";
 import {createGitProjectStore} from "../../../src/adapters/git/project-store.ts";
+import {loadMarkdownMaterialSource} from "../../../src/server/queries/material-source.ts";
 import {decodeGitRef, gitOid} from "../../../src/kernel/identity/git.ts";
 import {
 	projectStoreBlobWriteRequestDigest,
@@ -741,6 +742,156 @@ function expectIssue(outcome, code, operation) {
 	assert.equal(outcome.error.operation, operation);
 	assert.equal("value" in outcome, false);
 }
+
+function nativeEntries(listing, algorithm) {
+	assert.equal(listing.endsWith("\0"), true);
+	return listing.slice(0, -1).split("\0").map(record => {
+		const tab = record.indexOf("\t");
+		const [mode, kind, hex] = record.slice(0, tab).split(" ");
+		return {path: record.slice(tab + 1), mode, kind, oid: oid(algorithm, hex)};
+	});
+}
+
+function materialConfiguration(objectFormat) {
+	return {repositoryId: "cw:repository:test", objectFormat, canonicalRef: "refs/heads/main", changeRefPrefix: "refs/codewiki/changes"};
+}
+
+for (const algorithm of ["sha1", "sha256"]) {
+	test(`SC-2B-R ${algorithm} native paths, order and empty boundaries match exact Git`, async t => {
+		const repo = await repository(algorithm);
+		t.after(() => rm(repo.root, {recursive: true, force: true}));
+		const contents = new Map([
+			["README.md", "fixture\n"], ["000-empty.md", ""], ["zzz-empty.md", ""],
+			["Cafe\u0301.md", "\uFEFF---\r\ntype: SourceOnly\r\n---\r\nCafe\u0301\r\n"],
+			["guide[1].md", "literal brackets"], ["question?.md", "literal question"],
+			["star*.md", "literal star"], ["brace{one}.md", "literal braces"],
+			[":(literal)guide[1].md", "literal pathspec syntax"],
+			["tab\tname.md", "tab"], ["line\nname.md", "newline"],
+			["CON.md", "ordinary Store path"], ["colon:name.md", "colon"],
+			["\uE000.md", "BMP"], ["\u{10000}.md", "supplementary"], ["\u{10001}-empty.md", ""],
+			["nested.c.md", "sibling"], ["nested/inside.md", "nested"],
+			["folder[1]/a.md", "literal folder"], ["folder1/a.md", "other folder"],
+			["image.png", "excluded"],
+		]);
+		for (const [path, content] of contents) {
+			await mkdir(dirname(join(repo.root, path)), {recursive: true});
+			await writeFile(join(repo.root, path), content);
+		}
+		await fixtureGit(repo.root, ["add", "--all"]);
+		// Add a >4KiB path through the index, not the host's filesystem PATH_MAX.
+		const longPath = Array.from({length: 24}, (_, i) => `${i}-` + "a".repeat(180)).join("/") + "/note.md";
+		const originalBlob = await git(repo.root, ["rev-parse", "HEAD:README.md"]);
+		await fixtureGit(repo.root, ["update-index", "--add", "--cacheinfo", `100644,${originalBlob},${longPath}`]);
+		contents.set(longPath, "fixture\n");
+		await fixtureGit(repo.root, ["-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-m", "native source names"]);
+		const requests = await regressionRequests(repo);
+		const native = nativeEntries(await fixtureGit(repo.root, ["ls-tree", "-r", "-z", "--full-tree", requests.head.hex]), algorithm);
+		const before = {
+			index: await readFile(join(repo.root, ".git/index")),
+			refs: await fixtureGit(repo.root, ["show-ref"]),
+			reflog: await readFile(join(repo.root, ".git/logs/refs/heads/main")),
+			worktree: await readFile(join(repo.root, "README.md")),
+		};
+		const all = await repo.store.readTree({...requests.readTree, maximumEntries: 100});
+		assert.equal(all.ok, true, all.error?.message);
+		assert.deepEqual(all.value.entries, native, "Store order and descriptors must match native Git, without sorting the oracle");
+		const paths = native.map(item => item.path);
+		assert.ok(paths.indexOf("\uE000.md") < paths.indexOf("\u{10000}.md"));
+		assert.ok(paths.indexOf("nested.c.md") < paths.indexOf("nested/inside.md"));
+		for (const descriptor of native) {
+			const blob = await repo.store.readBlob({...requests.readBlob, path: descriptor.path, maximumBytes: 512});
+			assert.equal(blob.ok, true, `${JSON.stringify(descriptor.path)}: ${blob.error?.message}`);
+			assert.deepEqual(blob.value.oid, descriptor.oid);
+			assert.deepEqual(Buffer.from(blob.value.bytes), Buffer.from(contents.get(descriptor.path)));
+		}
+		for (const pathPrefix of ["folder[1]", "nested", "guide[1].md", ":(literal)guide[1].md", longPath]) {
+			const subset = await repo.store.readTree({...requests.readTree, pathPrefix, maximumEntries: 100});
+			assert.equal(subset.ok, true, `${JSON.stringify(pathPrefix)}: ${subset.error?.message}`);
+			assert.deepEqual(subset.value.entries, native.filter(item => item.path === pathPrefix || item.path.startsWith(pathPrefix + "/")));
+		}
+		const markdown = native.filter(item => item.path.endsWith(".md"));
+		const total = markdown.reduce((sum, item) => sum + Buffer.byteLength(contents.get(item.path)), 0);
+		const limits = {maximumEntries: native.length, maximumPathBytes: paths.reduce((sum, path) => sum + Buffer.byteLength(path), 0), maximumDocuments: markdown.length, maximumDocumentBytes: 512, maximumTotalBytes: total};
+		const calls = [];
+		const tracking = {
+			readSnapshot: request => repo.store.readSnapshot(request),
+			readTree: request => repo.store.readTree(request),
+			readBlob: request => { calls.push(request); return repo.store.readBlob(request); },
+		};
+		for (const source of [{kind: "canonical"}, {kind: "commit", commit: requests.head}]) {
+			calls.length = 0;
+			const material = await loadMarkdownMaterialSource(tracking, materialConfiguration(algorithm), source, limits);
+			assert.equal(material.ok, true, material.error?.message);
+			assert.equal(material.value.corpus.documents.reduce((sum, document) => sum + document.byteLength, 0), total);
+			assert.equal(calls.length, markdown.length);
+			assert.equal(calls.at(-1).path, "\u{10001}-empty.md");
+			assert.equal(calls.at(-1).maximumBytes, 1);
+			assert.equal(calls.some(call => call.path === "image.png"), false);
+			for (const document of material.value.corpus.documents) assert.equal(document.text, contents.get(document.path));
+			const tooSmall = await loadMarkdownMaterialSource(tracking, materialConfiguration(algorithm), source, {...limits, maximumTotalBytes: total - 1});
+			expectIssue(tooSmall, "limit_exceeded", "read_material");
+		}
+		const positiveAfterEmpty = await repo.store.readBlob({...requests.readBlob, path: "README.md", maximumBytes: 1});
+		expectIssue(positiveAfterEmpty, "limit_exceeded", "read_blob");
+		for (const path of ["000-empty.md", "zzz-empty.md"]) {
+			const empty = await repo.store.readBlob({...requests.readBlob, path, maximumBytes: 1});
+			assert.equal(empty.ok, true);
+			assert.equal(empty.value.bytes.byteLength, 0);
+		}
+		assert.deepEqual(await readFile(join(repo.root, ".git/index")), before.index);
+		assert.equal(await fixtureGit(repo.root, ["show-ref"]), before.refs);
+		assert.deepEqual(await readFile(join(repo.root, ".git/logs/refs/heads/main")), before.reflog);
+		assert.deepEqual(await readFile(join(repo.root, "README.md")), before.worktree);
+		// Read compatibility must not broaden the existing writer admission policy.
+		for (const path of ["Cafe\u0301.md", "guide[1].md", "line\nname.md", longPath]) {
+			const draft = {...requests.writeTree, mutations: [{path, mode: "100644", kind: "blob", oid: requests.blobOid}]};
+			const digest = projectStoreTreeWriteRequestDigest(draft);
+			const nonCanonical = path !== path.normalize("NFC");
+			assert.equal(digest.ok, !nonCanonical, digest.error?.message);
+			expectIssue(await repo.store.writeTree({...draft, requestDigest: digest.ok ? digest.value : requests.writeTree.requestDigest}),
+				nonCanonical ? "authorization_binding_invalid" : "invalid_object", "write_tree");
+		}
+		for (const path of ["CON.md", "tab\tname.md", "brace{one}.md"]) {
+			const draft = {...requests.writeTree, mutations: [{path, mode: "100644", kind: "blob", oid: requests.blobOid}]};
+			const result = await repo.store.writeTree({...draft, requestDigest: projectStoreTreeWriteRequestDigest(draft).value});
+			assert.equal(result.ok, true, "read repair must not narrow previously admitted writer paths");
+		}
+	});
+}
+
+test("SC-2B-R read-path rejection happens before any Git observation", async t => {
+	const repo = await repository();
+	t.after(() => rm(repo.root, {recursive: true, force: true}));
+	const requests = await regressionRequests(repo);
+	const injected = await faultStore(t, repo, "rev-parse", "exit 91");
+	for (const path of ["/README.md", "C:/README.md", "../README.md", "./README.md", "a//b", "a/../b", "a\\b", "nul\0.md", "lone\uD800.md", "tail.md\uD800", "\uDC00.md", undefined]) {
+		expectIssue(await injected.store.readBlob({...requests.readBlob, path}), "invalid_object", "read_blob");
+		expectIssue(await injected.store.readTree({...requests.readTree, pathPrefix: path}), "invalid_object", "read_tree");
+	}
+	expectIssue(await injected.store.readBlob({...requests.readBlob, path: ""}), "invalid_object", "read_blob");
+	assert.equal(await pathExists(injected.calls), false);
+});
+
+test("SC-2B-R malformed native listings fail rather than being sorted or normalized", async t => {
+	const repo = await repository();
+	t.after(() => rm(repo.root, {recursive: true, force: true}));
+	const requests = await regressionRequests(repo);
+	const record = path => Buffer.from(`100644 blob ${requests.blobOid.hex}\t${path}\0`);
+	const cases = [
+		{bytes: Buffer.concat([record("\u{10000}.md"), record("\uE000.md")])},
+		{bytes: Buffer.concat([record("same.md"), record("same.md")])},
+		{bytes: Buffer.concat([record("nested/child.md"), record("nested.c.md")])},
+		{bytes: record("../escape.md")}, {bytes: record("a//b.md")},
+		{bytes: record("unterminated.md").subarray(0, -1)},
+		{bytes: Buffer.concat([Buffer.from(`100644 blob ${requests.blobOid.hex}\t`), Buffer.from([0xff, 0])]), code: "command_failed"},
+		{bytes: Buffer.concat([record("a.md"), record("b.md")]), maximumEntries: 1, code: "limit_exceeded"},
+	];
+	for (const item of cases) {
+		const encoded = [...item.bytes].map(byte => "\\" + byte.toString(8).padStart(3, "0")).join("");
+		const injected = await faultStore(t, repo, "ls-tree", `printf '${encoded}'; exit 0`);
+		expectIssue(await injected.store.readTree({...requests.readTree, maximumEntries: item.maximumEntries ?? 10}), item.code ?? "invalid_object", "read_tree");
+	}
+});
 
 const PROCESS_FAULTS = [
 	["exit 1", "exit 1", "command_failed"],

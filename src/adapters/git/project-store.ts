@@ -135,7 +135,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		const preflight = this.#validateRepositoryBinding(request, "read_blob");
 		if (preflight) return failure(preflight);
 		const commit = decodeGitOid(request.commit);
-		if (!commit.ok || commit.value.algorithm !== this.#objectFormat || !validRepositoryPath(request.path)) {
+		if (!commit.ok || commit.value.algorithm !== this.#objectFormat || !validReadRepositoryPath(request.path)) {
 			return failure(this.#issue("invalid_object", "read_blob", "Blob commit or path is invalid."));
 		}
 		if (!Number.isSafeInteger(request.maximumBytes) || request.maximumBytes < 1 || request.maximumBytes > this.#maximumOutputBytes) {
@@ -160,7 +160,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (!commit.ok || commit.value.algorithm !== this.#objectFormat) {
 			return failure(this.#issue("invalid_object", "read_tree", "Tree commit OID is invalid."));
 		}
-		if (request.pathPrefix !== "" && !validTreePrefix(request.pathPrefix)) {
+		if (request.pathPrefix !== "" && !validReadRepositoryPath(request.pathPrefix)) {
 			return failure(this.#issue("invalid_object", "read_tree", "Tree path prefix is invalid."));
 		}
 		if (!Number.isSafeInteger(request.maximumEntries) || request.maximumEntries < 1 || request.maximumEntries > 65_536) {
@@ -184,7 +184,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 			const metadata = separator < 0 ? "" : record.slice(0, separator);
 			const path = separator < 0 ? "" : record.slice(separator + 1);
 			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
-			if (!match || path.length === 0 || (previousPath.length > 0 && previousPath >= path) ||
+			if (!match || !validReadRepositoryPath(path) || (previousPath.length > 0 && compareRepositoryOrder(previousPath, path) >= 0) ||
 				(request.pathPrefix !== "" && !(path === request.pathPrefix || path.startsWith(`${request.pathPrefix}/`)))) {
 				return failure(this.#issue("invalid_object", "read_tree", "Git returned a malformed or non-canonical tree listing."));
 			}
@@ -852,8 +852,38 @@ function validAuthority(value: string): boolean {
 	return typeof value === "string" && value.length <= 256 && /^[a-z][a-z0-9.-]*(?::[A-Za-z0-9][A-Za-z0-9._:@/-]*)+$/u.test(value);
 }
 
-function validTreePrefix(value: string): boolean {
-	return validRepositoryPath(value);
+/**
+ * Read-path admission, deliberately split from the writer portability policy
+ * below: native reads admit the exact lossless repository-relative UTF-8
+ * text Git stores, including non-NFC spellings, literal glob and
+ * pathspec-looking characters, control characters and writer-reserved names.
+ * Only the repository-relative path grammar and well-formed Unicode are
+ * enforced; no normalization, case folding or filename-shape policy applies.
+ */
+function validReadRepositoryPath(value: string): boolean {
+	return typeof value === "string" && value.length > 0 && !value.startsWith("/") && !value.includes("\0") &&
+		!value.includes("\\") && !/^[A-Za-z]:/u.test(value) && !/[\uD800-\uDFFF]/u.test(value) &&
+		value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+}
+
+/**
+ * Native UTF-8 byte order: Git sorts tree entries by the raw bytes of their
+ * paths, and for well-formed UTF-8 that equals scalar code point order. Used
+ * to reject duplicate or out-of-order listings without ever sorting them.
+ */
+function compareRepositoryOrder(left: string, right: string): number {
+	let leftIndex = 0;
+	let rightIndex = 0;
+	while (leftIndex < left.length && rightIndex < right.length) {
+		const leftPoint = left.codePointAt(leftIndex) ?? 0;
+		const rightPoint = right.codePointAt(rightIndex) ?? 0;
+		if (leftPoint !== rightPoint) return leftPoint < rightPoint ? -1 : 1;
+		leftIndex += leftPoint > 0xffff ? 2 : 1;
+		rightIndex += rightPoint > 0xffff ? 2 : 1;
+	}
+	const leftRemaining = left.length - leftIndex;
+	const rightRemaining = right.length - rightIndex;
+	return leftRemaining === rightRemaining ? 0 : leftRemaining < rightRemaining ? -1 : 1;
 }
 
 function validRepositoryPath(value: string): boolean {

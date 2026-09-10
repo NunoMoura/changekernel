@@ -80,6 +80,7 @@ const SOURCE_ALLOWLIST = [
 	"src/server/commands/repository.ts",
 	"src/server/effects/agent-runs.ts",
 	"src/server/index.ts",
+	"src/server/queries/material-source.ts",
 	"src/server/queries/project.ts",
 	"src/server/queries/source.ts",
 	"src/server/queries/wiki.ts",
@@ -145,6 +146,7 @@ const TEST_ALLOWLIST = [
 	"tests/server/effects/containment.test.mjs",
 	"tests/server/index.test.mjs",
 	"tests/server/queries/read-api.test.mjs",
+	"tests/server/queries/source-material.test.mjs",
 ];
 const DELETED_ROOTS = [
 	"benchmarks",
@@ -382,6 +384,25 @@ test("corpus remains internal with a bounded data/identity import closure", asyn
 	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(corpus), false, entrypoint);
 	}
+});
+
+test("material loading stays internal and only composes source, Store and passive corpus contracts", async () => {
+	const {graph, external} = await sourceGraph();
+	const material = "src/server/queries/material-source.ts";
+	assert.deepEqual(graph.get(material), [
+		"src/api/contracts/read.ts",
+		"src/kernel/changes/snapshot.ts",
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/identity/git.ts",
+		"src/kernel/wiki/corpus.ts",
+		"src/ports/project-store.ts",
+		"src/server/queries/source.ts",
+	]);
+	assert.equal(external.has(material), false, "No parser, filesystem, runtime or model dependency");
+	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(material), false, "No public material/adoption API in this repair");
+	}
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(material)).map(([path]) => path), []);
 });
 
 test("Client and transport APIs cannot import adapters, ports, Product policy, or Project Server internals", async () => {

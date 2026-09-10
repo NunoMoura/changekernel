@@ -65,6 +65,19 @@ export interface ProjectSourceIssue {
 	readonly message: string;
 }
 
+/**
+ * Detailed source-resolution failure shared by Wiki, Change and material
+ * reads: the legacy public code and message plus the retained structured
+ * Store cause. The legacy `resolveProjectSource` wrapper maps this outcome
+ * to `ProjectSourceIssue` without resolving the source twice.
+ */
+export interface DetailedProjectSourceIssue {
+	readonly code: ProjectSourceIssueCode;
+	readonly message: string;
+	readonly kind: "invalid_source" | "store_failure";
+	readonly store: ProjectStoreIssue | null;
+}
+
 export async function loadWikiSource(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
@@ -107,20 +120,30 @@ export async function loadProjectSource(
 	return success(Object.freeze({...wiki.value, changes: changes.value}));
 }
 
-export async function resolveProjectSource(
+export async function resolveProjectSourceDetailed(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
 	source: ProjectSourceSelector,
-): Promise<Outcome<ProjectSnapshot, ProjectSourceIssue>> {
+): Promise<Outcome<ProjectSnapshot, DetailedProjectSourceIssue>> {
 	const selector = storeSelector(configuration, source);
-	if (!selector.ok) return selector;
+	if (!selector.ok) return failure(detailedIssue("invalid_source", selector.error.message, null));
 	const snapshot = await store.readSnapshot({
 		repositoryId: configuration.repositoryId,
 		objectFormat: configuration.objectFormat,
 		selector: selector.value,
 	});
-	if (!snapshot.ok) return failure(storeIssue(snapshot.error, "resolve_source"));
+	if (!snapshot.ok) return failure(detailedIssue(storeIssueCode(snapshot.error), snapshot.error.message, snapshot.error));
 	return success(snapshot.value);
+}
+
+export async function resolveProjectSource(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	source: ProjectSourceSelector,
+): Promise<Outcome<ProjectSnapshot, ProjectSourceIssue>> {
+	const resolved = await resolveProjectSourceDetailed(store, configuration, source);
+	if (resolved.ok) return resolved;
+	return failure(issue(resolved.error.code, "resolve_source", resolved.error.message));
 }
 
 function storeSelector(
@@ -211,14 +234,26 @@ function wikiIssue(value: WikiReadIssue): ProjectSourceIssue {
 	return issue("invalid_project_state", "read_wiki", value.message);
 }
 
+export function storeIssueCode(value: ProjectStoreIssue): ProjectSourceIssueCode {
+	if (value.code === "not_found") return "source_not_found";
+	if (value.code === "stale_ref") return "source_stale";
+	if (value.code === "limit_exceeded") return "limit_exceeded";
+	return "invalid_project_state";
+}
+
+function detailedIssue(
+	code: ProjectSourceIssueCode,
+	message: string,
+	store: ProjectStoreIssue | null,
+): DetailedProjectSourceIssue {
+	return Object.freeze({code, message, kind: store === null ? "invalid_source" : "store_failure", store});
+}
+
 function storeIssue(
 	value: ProjectStoreIssue,
 	operation: ProjectSourceIssue["operation"],
 ): ProjectSourceIssue {
-	if (value.code === "not_found") return issue("source_not_found", operation, value.message);
-	if (value.code === "stale_ref") return issue("source_stale", operation, value.message);
-	if (value.code === "limit_exceeded") return issue("limit_exceeded", operation, value.message);
-	return issue("invalid_project_state", operation, value.message);
+	return issue(storeIssueCode(value), operation, value.message);
 }
 
 function issue(
