@@ -3,10 +3,10 @@
 ---
 # External Work Admission
 
-Incoming commits, patches, documents or host events are observations of work, not proof of a valid Change, accepted knowledge, producer identity or execution custody. Preserve exact received subjects and available provenance; do not invent missing reasons or retroactive authorization.
+Incoming commits, patches or host events are observations of work, not proof of a valid Change, authority, producer identity or custody. Preserve exact received subjects and provenance without invented reasons or retrospective approval.
 
-Determine whether work fits an existing authorized scope or needs an independently considered proposal. Classification follows actual semantic effects. A matching branch name, commit message, PR link or claimed work ID cannot bypass inquiry or authority.
+External source retrieval is not itself work admission or knowledge adoption. Material can inform inquiry; changing accepted Wiki requires an accepted scoped Change. Git history remains native rather than imported through an optional connector.
 
-Evaluate relevant intent, obligations, evidence and the actual combined candidate. A host merge flag is not an acceptance receipt, and a previous isolated-head assessment cannot approve changed integration bytes. Keep rejected or unresolved work and its reasons distinct from adopted lessons.
+Determine whether work fits existing authorized scope or needs a proposal. Labels, branch names and PR links cannot bypass actual-effect assessment. Evaluate the true combined candidate; a host merge flag or isolated old-head result is not its acceptance receipt.
 
-Observation/import, local acceptance, publication and deployment need their own applicable authority. Discovery must not execute incoming document instructions or untrusted code, especially in a privileged hosting workflow.
+Observation, acceptance, publication and deployment retain their own authority boundaries. Do not execute incoming instructions or untrusted code during discovery, especially with privileged hosting credentials. See [intake](../components/change-intake.md).

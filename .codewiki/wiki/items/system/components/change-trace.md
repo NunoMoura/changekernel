@@ -3,24 +3,24 @@
 ---
 # Change
 
-Change carries intentional evolution of project knowledge and its realization. It preserves motivation, desired effects, scope, assumptions, alternatives, tradeoffs, deliberation, plans, attempts, evidence, and outcome. Wiki consolidates adopted knowledge and links it to these grounds. Neither a separate State object nor a second independently maintained intent representation is required.
+Change is the primary mechanism of intentional evolution. It preserves intent, desired effects, motivation, scope, assumptions, alternatives, tradeoffs, deliberation, plans, attempts, evidence and outcomes. Wiki is the resulting current accepted knowledge, with adopted consequences linked to their grounds. No separate State, Archive or Sources authoring primitive is required.
+
+## Adoption and retirement
+
+An introduced Change proposes a transition. Only an authorized, accepted scoped transition promotes information into Wiki knowledge, revises or retires knowledge, or adopts it again. This can concern a passage or commitment rather than an entire file. Preserve the exact prior/resulting subjects, reasons and disposition so native Git history can later explain what applied and why it changed.
+
+Retrieval, indexing, context packing and authorized observation are not semantic promotion. A useful RAG answer remains an interpretation until adopted through a Change. Retired knowledge is available as information, not automatically current policy. An ordinary file move, deletion or commit cannot fabricate acceptance of a retirement.
 
 ## Evolving inquiry
 
-An initial proposal may be uncertain. Decision accepts a justified transition hypothesis, not a universal reachability proof. Planning, Implementation, and Review refine understanding while retaining the original intent and explicit revisions. Material changes to intent, scope, or authority revisit Decision. A repair within approved work need not become a new Change merely because it uses another tool or commit.
+The [four loops](../flows/change-lifecycle.md) preserve the original intent while developing credible paths and evidence. Material changes to intent, scope or authority explicitly revisit Decision. Repairs within accepted scope need not create a new Change for every command or checkpoint.
 
-Classification follows actual semantic effects and selects applicable obligations. A Change may correct knowledge, revise a commitment, investigate uncertainty, or realize an outcome; these effects can coexist. An author-selected label cannot bypass a consequence evident in the proposed delta.
+Classification follows actual semantic effects, which may combine knowledge correction, investigation, commitment revision and realization. Author-selected labels cannot remove applicable obligations. Shared and rejected alternatives remain attributable rather than being overwritten to fit produced work.
 
-## Lifecycle and checkpoints
+## Outcomes and exact history
 
-The four loops have [distinct evidence boundaries](../flows/change-lifecycle.md). A Change can span many commits and parallel work lines. Checkpointed, assessed, accepted, and realized are different claims. A useful intermediate discovery can be retained without declaring the original intent complete. Promotion of knowledge and disposition of remaining obligations require explicit scoped acceptance, not inference from a commit's existence.
+A Change can span many commits and parallel work lines. Checkpointed, assessed, accepted and realized are distinct. Intermediate knowledge adoption does not imply the whole intent is complete. A normative target can be adopted while its realization gap remains visible; an adopted lesson from rejected work does not realize its original goal.
 
-An accepted commitment can establish a target before reality conforms. Its gap and responsible work stay visible. A rejected proposal may leave reusable knowledge; adopting that lesson does not mark the rejected intent realized. Supersession preserves the predecessor's reasons, unresolved obligations, and relationship to its successor rather than rewriting history.
+Git natively preserves Change records and exact Wiki outcomes. A Change Trace is append-only lifecycle history, not a competing knowledge system. Records bind baseline, candidate, relevant evidence, authority and interpretation conditions. Host UI data or private sessions cannot be the only surviving grounds.
 
-## Durable history, not a third primitive
-
-A Change Trace is the append-only lifecycle record of a Change, not another independently authored project ontology. Git binds retained records to exact snapshots and ancestry. Assessment records identify their baseline, candidate subject, relevant knowledge and evidence, authority, interpretation conditions, and outcome sufficiently to distinguish stale or substituted claims.
-
-Use exact retained states and outcomes for reconstruction. An event cannot assert its own containing commit OID before that commit exists; bind such context through an explicit enclosing record or reference rather than a fabricated self-hash. Rewritten commits and merged candidates must not inherit assessments by label alone. Host discussions, PR statuses, or private sessions cannot be the only durable source of accepted reasons.
-
-The external world is not replayed by Git. Historical judgments retain their recorded meaning even when support later fails. Observations and protected-effect outcomes must distinguish success, failure, and unknown state; missing receipts are not permission to re-execute an effect.
+Reconstruct exact retained states and recorded judgments, never rerun models or external effects to recreate them. A record cannot assert its own enclosing commit OID before it exists. Rewritten or joined subjects must not inherit assessments by label alone; transport and retention must preserve references needed for recovery. Historical acceptance remains evidence about its recorded context, not present-day endorsement.

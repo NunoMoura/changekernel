@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:lifecycle",
   "id": "lifecycle",
-  "purpose": "Show four retained inquiry loops sharing semantic validation, feedback to its cause, exact Git checkpoints, and acceptance distinct from realization or external effects.",
+  "purpose": "Show four inquiry loops and accepted scoped adoption, revision, retirement and re-adoption; Git preserves exact outcomes and native cold history while reads do not change authority.",
   "components": [
     {
       "id": "intake",
@@ -51,7 +51,7 @@
     {
       "id": "git",
       "concept": "cw:component:project",
-      "label": "Exact Git checkpoints, Wiki and Change records",
+      "label": "Native Git: current Wiki, Change outcomes and cold history",
       "zone": "repository"
     }
   ],
@@ -135,7 +135,7 @@
       "from": "service",
       "to": "git",
       "type": "writes",
-      "label": "Retains authorized checkpoints and outcomes; checkpointed is not accepted",
+      "label": "Persists exact checkpoints and accepted scoped knowledge transitions; mere checkpointing is not acceptance",
       "boundary": {
         "type": "persistence",
         "failure": "Reject stale subjects and do not claim realization without evidence."

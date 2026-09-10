@@ -3,26 +3,22 @@
 ---
 # Recovery and Continuation
 
-Recovery reconciles exact retained state, judgments and live effects after interruption. Continuation gives a fresh person or Agent enough justified context to act without private conversational memory. Neither process recreates history by rerunning models, deployments or external effects.
+Recovery reconciles exact retained state, judgments and live effects. Continuation lets a fresh person or Agent act without private conversational memory. Both rely on native Git-backed records, not rerun models or effects.
 
-## Durable semantic record
+## Current state and cold history
 
-Wiki preserves accepted knowledge and grounds; Change preserves intent revisions, deliberation, plans, attempts, judgments and outcomes; Git preserves exact snapshots and ancestry. Retrieve the original states and recorded interpretations. A new model's explanation cannot substitute for a missing historical reason or receipt.
+Restore exact Wiki and Change outcomes with their original grounds. Keep active guidance concise while exposing prior knowledge, intent revisions, rejected alternatives and retirement reasons through bounded native history queries. No external connector or separate archive database is required. Historical retrieval does not re-adopt a rule; a new interpretation is not its original judgment.
 
-Reconstruct projections such as Work state and alignment from exact records. Caches, generated views, host UI statuses and private sessions are not additional semantic authority. A referenced artifact may be unavailable or redacted; report that limitation rather than invent its contents or assume support.
+Retain required reachable objects and references across transport and history rewriting. Missing, redacted, stale or inaccessible material is an explicit limit, not an instruction to regenerate it. Caches and RAG indexes are rebuildable views, not surviving substitutes for lost bytes.
 
 ## Effect reconciliation
 
-Distinguish authorization, launch, observed execution, retained result, attempted write and observed accepted state. Created Git objects do not prove a ref advanced; a lost response does not prove it did not. Inspect exact expected/observed identities before retrying a bounded write.
+Distinguish authorization, launch, observed execution, retained result, attempted write and observed state. Created Git objects do not prove ref advancement; a lost reply does not prove no write occurred. Verify exact identities before retrying.
 
-Private live custody includes processes, leases, credentials, sockets and tracking needed to stop or reconcile effects. Process-local memory alone cannot prove restart safety. Cancellation and quiescence require observation; unsupported, contradictory or missing custody stops unsafe replay. A worktree or validated receipt does not itself establish physical containment.
+Reconcile private processes, leases, credentials and live tracking separately from semantic history. Process-local memory or a worktree does not prove custody. Cancellation/quiescence require observation; missing or contradictory custody blocks unsafe replay. Do not repeat a possibly completed external action merely to discover its outcome.
 
-Do not replay a possibly completed external action to discover its result. Preserve success, failure and unknown outcomes honestly and request applicable human authority where safe automatic reconciliation cannot be established.
+## Fresh-context boundary
 
-## Fresh-context acceptance
+A fresh participant must identify current knowledge, concise reasons and conditions, relevant historical grounds, uncertainty, in-flight work and next permitted action. Context eviction does not retire an obligation, and retrieval cannot silently promote information. Report consequential omissions rather than treating them as irrelevance.
 
-A fresh participant must recover what is known or adopted, why and under which assumptions, which alternatives were rejected, what evidence supports the current conclusion, which work is in flight, and what action is next permitted. Redaction, truncation, absent context and uncertainty stay explicit; omitted obligations cannot be treated as irrelevant.
-
-Reassess when conditions change: retain conclusions whose reasons still hold, revisit dependent suitability when an assumption fails, and reconsider previously rejected options whose rejection conditions changed. Independent grounds may preserve a conclusion even when one support is lost. Historical acceptance is retained, not automatically endorsed today.
-
-Existing repository adoption and supported state conversion must preserve original history and honest baseline assurance. Exact backup/mapping, collision checks, interrupted-transition recovery and applicable authority precede any live conversion; no fabricated genesis or dual authoritative store is a recovery shortcut.
+Reassess failed assumptions and changed rejection conditions without discarding independent support or rewriting historical outcomes. [Change](../components/change-trace.md) governs explicit revisions. Existing-repository adoption needs honest baseline assurance; live conversion additionally needs exact mapping/backup, collision and interruption recovery, and applicable authority—not fictional genesis or dual stores.

@@ -3,34 +3,26 @@
 ---
 # Semantic Kernel
 
-The Semantic Kernel owns the meanings and consequences that make CodeWiki more than document storage or orchestration. Its two primitives are [Wiki](wiki.md) and [Change](change-trace.md). Assertions, commitments, support, uncertainty, dependencies, stage judgments, and authorized revisions are semantic distinctions within them, not a requirement to create a new top-level entity for each distinction.
+The Semantic Kernel gives [Change](change-trace.md) and [Wiki](wiki.md) stable meanings and transition consequences. Change is the primary mechanism of evolution; Wiki is current accepted knowledge. Support, uncertainty, authority and historical disposition are semantic distinctions, not extra authoring primitives. Git is the native foundation for exact accepted state and intent-bearing history.
 
-## Meaning, support, and authority
+## Interpretation and authority
 
-An assertion is interpreted within scope, conditions, and time. An adopted obligation is different from a preference, hypothetical example, or observation. A commitment can be revised under authority; contradiction with an existing commitment is not inherently forbidden if that revision is the explicit proposal. Conversely, a proposal cannot authorize its own waiver.
+Interpret assertions within their scope, conditions and time. Obligations differ from preferences, observations, hypotheses and quoted material. A commitment can be explicitly revised under authority; a candidate cannot authorize its own waiver. Promotion, revision, retirement and re-adoption follow accepted scoped Change transitions, not retrieval or an index's ranking.
 
-Support is contextual and revisable. The same conclusion reached for different reasons may require different revision when conditions change. Losing one assumption prompts reassessment, not automatic deletion of every dependent conclusion. Uncertainty and scoped disagreement must remain expressible; lack of support is not falsity.
+Models and humans propose interpretations, dependencies, counterexamples and judgments. Tools supply observations. Their outputs do not authenticate themselves or grant authority. The kernel defines how exact subjects, provenance, support, scope and uncertainty affect validation and progression; it cannot outsource all meaning to an opaque prompt plus a generic pass flag.
 
-The kernel defines how these distinctions affect semantic validation and progression. It must not reduce knowledge to arbitrary text payloads plus a generic pass flag while leaving all meaning to an unaccountable model prompt.
+The service applies authorization and performs effects. Deterministic kernel mechanisms enforce representational contracts, subject/authority binding and declared transition invariants using explicit inputs and typed outcomes. They have no ambient filesystem, Git, process, network, provider, clock or randomness access. Effectful inference stays outside this pure boundary without removing semantic ownership from the kernel.
 
-## Interpretation and enforcement
+## Knowledge and transition reasoning
 
-Models and humans can supply interpretations, proposed dependencies, counterexamples, and judgments. Tools supply observations. Their outputs are not self-authenticating truth or lifecycle authority. The kernel gives them stable meaning through exact subjects, provenance, declared assumptions, scope, evidence, and explicit limits. A later interpretation does not rewrite the meaning or outcome of a historical assessment.
+The [validation contract](checks.md) governs the six semantic dimensions, findings and contextual scrutiny across all four loops. Compatible, reachable and realized are different claims. Acceptable-state regions, refinement and alternatives can support reasoning without requiring users to author a formal logic or maintain another State entity.
 
-Deterministic mechanisms enforce representational contracts, subject/authority binding, state-transition rules, and declared invariants. They consume explicit inputs and return typed outcomes without ambient filesystem, Git, process, network, provider, clock, or randomness access. Effectful inference and execution remain behind bounded interfaces; keeping effects outside the kernel does not remove its ownership of the semantic contract.
+Support is revisable: identical conclusions with different grounds may respond differently to a failed assumption. Independent support can preserve a conclusion; missing support is not falsity. Preserve disagreement and reconsideration conditions rather than artificial consensus.
 
-The service applies authorization and performs effects. A judgment supplies reasons for a decision; it does not itself grant a capability, move a ref, launch a worker, or publish data.
+A valid baseline and invariant-preserving transitions, including joins, establish only faithfully enforced invariants within the model. They do not prove arbitrary natural-language truth or prevent unobserved external drift. Information can challenge a current belief without silently rewriting accepted state.
 
-## Transition reasoning
+Investigation, enabling work, risk reduction and preserved options can justify detours. No universal distance must decrease at every step. Maintenance obligations constrain the journey; a safe destination does not excuse forbidden effects.
 
-Validation distinguishes intent fit, consistency, reachability, preservation, justification, and authority. The [validation contract](checks.md) defines their use across Decision, Planning, Implementation, and Review. Desired outcomes can denote regions of acceptable realizations without introducing a separate State primitive. Joint satisfaction, refinement, and alternatives depend on explicit conditions; compatibility, reachability, and realization remain different claims.
+## Derived context
 
-An accepted baseline and invariant-preserving transitions, including semantic validation at joins, can establish enforced invariants within the model. They cannot establish eternal truth of arbitrary natural-language assertions or prevent external reality from changing unobserved. Historical acceptance and present support are separate.
-
-A path can be useful because it gains information, reduces risk, or preserves options. There is no universal semantic distance every Change must monotonically decrease. Achievement goals concern outcomes; maintenance obligations constrain intermediate steps. A safe endpoint does not excuse a forbidden journey.
-
-## Shared foundation, replaceable machinery
-
-The four stage loops use the same meanings with different questions and evidence thresholds. Project procedures and obligations live in Wiki rather than separately authored Skills or Check Packs. Tests, CI, models, human review, and specialized verification remain useful methods; their availability and success cannot substitute for applicability, coverage, or authority.
-
-Canonical encodings and digests make exact claims inspectable, not true by themselves. Indexes, Work views, alignment summaries, and attention rankings are derived interpretations. A candidate must not gain approval by changing its classification, discovery rules, or relevance ranking to exclude binding obligations.
+Current Wiki is the hot validation basis; model context is a bounded working selection. Native history and optional external information can be retrieved on demand. Neither context eviction nor loading cold material changes adoption status. Caches, rankings and generated views are not authority; canonical encodings and digests establish identity, not truth. See [evidence](evidence.md).

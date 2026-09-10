@@ -3,21 +3,27 @@
 ---
 # Project and Git Substrate
 
-A Project is the scoped collaboration context and Git-backed body of artifacts, Wiki knowledge, and Change history. It serves arbitrary team work. Git owns exact bytes, trees, commits, ancestry, branches, merges, and transport; CodeWiki owns semantic interpretation and authorized acceptance above those mechanisms.
+A Project is the scoped Git-backed collaboration context, not the Project Server service operating over it. Git is mandatory infrastructure for exact artifacts, current Wiki, intent-bearing Change records and their history. Its internal storage adapter is not an optional external-data connector.
 
-A repository already containing tracked Markdown has a knowledge corpus before CodeWiki adoption. Record the observed baseline and assurance limits without inventing prior Changes, reasons, or successful validation. An empty Wiki is a greenfield case, not a universal initialization assumption. Discovery and binding do not authorize initialization, mutation, disclosure, or execution.
+A repository already containing tracked Markdown has a corpus before adoption. Record observed baseline assurance honestly; do not fabricate previous Changes, reasons or validation. Discovery and binding do not authorize initialization, mutation, disclosure or execution.
 
-## Snapshots, checkpoints, and joins
+## Native hot and cold paths
 
-A commit can bind related knowledge, artifacts, and Change records to one exact snapshot. A Change can span many commits; a branch represents an independent work line rather than a stage flag. Checkpointed, accepted, realized, published, and deployed remain distinct. Worktrees support parallel directories and indexes but share repository state and are not security sandboxes.
+Accepted Changes preserve exact outcomes in Git. They can revise or remove active knowledge while retaining prior text and disposition for on-demand native history queries. No archive database, special historical ingestion pipeline or duplicate source corpus is needed. A file move into an archive-named directory is not semantic retirement; [Change](change-trace.md) governs that distinction.
 
-Validate the exact combined candidate against its actual baseline and applicable obligations. Expected-old-OID updates reject stale writes; missing objects, conflicting ancestry, invalid authority, or stale assessments stop advancement. Do not promise multi-ref observation semantics stronger than Git supplies. Recovery distinguishes created objects, attempted ref updates, and observed outcomes rather than assuming a failed client response means no write happened.
+Native history and optional external information can share bounded retrieval while preserving origin, version and authority context. Cold information is not re-adopted by being read. Current Wiki remains persistent accepted state, not merely a context cache.
 
-Preserve exact snapshots/deltas and recorded outcomes, not instructions to regenerate them. Squash, rebase, cherry-pick, or branch deletion must not silently discard the only surviving reasons or transfer acceptance to a rewritten subject. Empty stage-approval commits and host UI data cannot be the sole durable record. Git notes require explicit transport and rewrite handling if used.
+## Snapshots and joins
+
+A Change can span many commits and independent work lines; a branch is not a stage flag. Commits bind related knowledge, artifacts and records to exact snapshots. Checkpointed, accepted, realized, published and deployed are different acts. Worktrees share repository mechanisms and are not security sandboxes.
+
+Validate the actual combined candidate against its baseline and obligations. Expected-old-OID updates reject stale writes. Do not promise stronger multi-ref observation guarantees than Git supplies. Created objects and attempted ref updates are distinct from observed acceptance; reconcile unknown outcomes before retry.
+
+Retain reachable exact snapshots and required record references. Squash, rebase, cherry-pick or branch deletion must not discard the only surviving grounds or transfer judgments to rewritten subjects. Empty approval commits or host UI data cannot be the sole durable record; Git notes need explicit transport/rewrite handling. Retrieval cannot recover objects that were not retained, and model inference cannot replace them.
 
 ## Repository identity and purity
 
-Root validation, repository location, observed object format, selected refs, and exact source identity must agree. Do not infer the approved baseline from a directory name, a local branch convention, or a stale remote-tracking ref. The repository binding safeguard below applies independently of evaluator and execution availability.
+Root location, observed storage object format, configured Project identity, selected refs and exact source identity must agree. A path, local branch convention or cached remote ref does not identify an approved baseline. The binding safeguard below applies independently of evaluation or execution availability.
 
 ### Repository binding
 

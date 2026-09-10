@@ -3,43 +3,37 @@
 ---
 # Semantic Validation
 
-Semantic validation assesses the proposed evolution of knowledge and realization, not just prose syntax or compliance with a separately maintained rubric. The semantic kernel owns the meanings of findings and their consequences across the four stage loops. Tools, models, tests, CI, research, and human review supply evidence and interpretations without becoming independent acceptance authorities.
+Validation assesses a proposed transition against intent, current accepted knowledge, observed reality, evidence and authority at an exact stage and subject. The kernel owns its semantic meaning; tools, tests, models and humans supply support without becoming independent acceptance authorities.
 
-## Context and dimensions
-
-A validation context distinguishes the accepted baseline, observed reality, candidate effects, expressed intent, applicable authority, and current stage. It preserves exact sources, assumptions, evidence scope, and relevant omissions.
+## Dimensions and stage context
 
 | Dimension | Question |
 | --- | --- |
-| Intent fit | Do the effects and tradeoffs serve the expressed purpose compared with relevant alternatives? |
+| Intent fit | Do these effects and tradeoffs serve the purpose compared with relevant alternatives? |
 | Consistency | Can proposed and retained commitments hold together under the same conditions and scope? |
-| Reachability | Is there a credible admissible path from observed reality with the means and constraints available? |
+| Reachability | Is there a credible admissible path from observed reality with available means and constraints? |
 | Preservation | Which commitments must remain true during the journey, not only at the destination? |
 | Justification | What supports the claims and which consequential uncertainties remain? |
 | Authority | Who may approve affected revisions and protected effects? |
 
-These distinctions are not a required six-test Pack or a universal fixed scoring formula. Applicability follows actual semantic effects. Accepted policy may be explicitly revised under authority; a proposed waiver cannot supply the authority or evaluation rules for its own approval.
+These are distinctions, not a mandatory six-test Pack or fixed scoring formula. Applicability follows actual effects. An explicitly proposed commitment revision can be assessed, but its own waiver cannot supply governing authority.
 
-Decision requires sufficiently justified intent and credible feasibility. Planning tests paths, dependencies, shared obligations, and decomposition. Implementation supplies exact observations about attempts and partial outcomes. Review assesses the combined candidate and remaining obligations. An implementation defect returns to Implementation, a decomposition conflict to Planning, and changed intent to Decision.
+[Decision, Planning, Implementation and Review](../flows/change-lifecycle.md) share this foundation with different evidence boundaries. Feedback returns to the cause: artifact defects, path/dependency conflicts or materially changed intent.
 
-## Findings, not omniscience
+## Findings and grounds
 
-Findings distinguish **supported**, **contradicted**, and **unresolved**, with reasons, scope, evidence, assumptions, and attribution. Stale support and changed conditions must remain visible. Unsupported is not false; a missing proof is not a counterexample; a model's confident statement is not a formal proof. Tests support their tested conditions, not every interpretation of a natural-language requirement.
+Findings are **supported**, **contradicted** or **unresolved**, with reasons, scope, evidence, assumptions and attribution. Report stale support and changed conditions. Unsupported is not false; a missing proof is not a counterexample; model confidence is not formal proof. Tests support their tested conditions, not every interpretation of a requirement.
 
-Binding contradictions, missing authority, or unavailable required assurance cannot be averaged away or relabeled as success. An unresolved nonblocking question may remain open only with explicit scope, treatment, and responsible acceptance; recording an owner does not realize the target. Operational failure, such as a provider timeout, is not a negative semantic finding about the proposal.
+Missing authority, binding contradictions and unavailable required assurance cannot be averaged away or relabeled as success. Nonblocking uncertainty needs explicit scoped treatment and responsible acceptance; an owned gap remains unrealized. Operational failure is not a semantic refutation. Enforced invariants do not establish eternal truth of arbitrary prose.
 
-A valid baseline plus invariant-preserving transitions and join validation can establish faithfully enforced invariants. It does not guarantee arbitrary assertions remain true forever or that no external drift occurred.
+Cold information can reveal a counterexample or defeat an assumption before Wiki is revised. It can challenge or block proposed work, but does not silently replace current commitments. A historically accepted rule remains historical until an accepted Change adopts it again. Multiple summaries of one source do not constitute independent support.
 
 ## Contextual scrutiny
 
-Relevance, confidence, governing force, revision priority, consequence, and value of further inquiry are distinct. Ask whether knowledge could change acceptability, feasibility, value, or evidential sufficiency. A consequential weakly supported assumption may deserve more attention, not less. Dependency effects can matter despite low text similarity.
+Separate relevance, confidence, governing force, revision priority, consequence and value of inquiry. Ask whether material could change acceptability, feasibility, value or evidential sufficiency. Consequential weak support can deserve more scrutiny; low text similarity does not imply an irrelevant dependency.
 
-Attention rankings do not prove coverage. More documents must not dilute a binding obligation. Retain reasons for relevant context selection and report bounded-context omissions or uncertain relationships. A candidate cannot lower its burden by changing its label, corpus scope, or ranking. Further investigation should earn its cost without replacing hard obligations with an aggregate utility score.
+Hot Wiki is not an instruction to load every page into every prompt. Context selection and bounded RAG must preserve applicable obligations and expose omissions, redaction, uncertain relationships and unavailable sources. More content cannot dilute a binding rule. A candidate cannot reduce its burden by renaming files, relabeling knowledge, hiding scope or changing rankings. Retrieval is not coverage proof.
 
-## Supporting machinery
+## Verification machinery
 
-There is no separately authored project Check Pack policy system. Procedures and obligations belong in Wiki; verification implementations remain ordinary tools and evidence-producing work. Code-level checks, result envelopes, and host Check Runs can support the evaluator without requiring project enrollment in a parallel ontology. The word “check” does not itself imply a CodeWiki resource.
-
-Reuse exact-subject, input-provenance, executor-identity, stale-result and recovery protections. Missing or malformed material and unavailable required execution remain explicit. A warned empty legacy Gate is not evidence that consequential semantic questions were answered. Never rerun nondeterministic reasoning to reconstruct an accepted historical judgment.
-
-See [kernel](semantic-kernel.md), [evidence](evidence.md), and [Review](review.md).
+Procedures and obligations belong in Wiki, not a separately authored Skills/Check Pack policy system. Ordinary tests, CI, observations and host Check Runs remain useful. Preserve exact-subject/input binding, attribution, stale-result rejection and [recovery](../flows/recovery.md). Missing required execution or an empty set of checks supplies no semantic assurance. See [evidence](evidence.md).

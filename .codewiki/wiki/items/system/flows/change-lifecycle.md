@@ -3,21 +3,19 @@
 ---
 # Change Lifecycle
 
-One Change preserves intent and its evolution through four inquiry loops. The same semantic foundation applies to knowledge, operations, research and software; evidence and execution methods depend on actual effects rather than an author-selected bypass category.
+Change carries intentional evolution through four inquiry loops for knowledge, operations, research and software. Its actual effects determine obligations; an author-selected category cannot bypass them.
 
 | Loop | Question and boundary |
 | --- | --- |
-| Decision | Is the intent, scope, tradeoff and transition hypothesis justified, authorized and credibly feasible? This is not a completed reachability proof. |
+| Decision | Are intent, scope, tradeoffs and authority justified with credible feasibility, not a completed reachability proof? |
 | Planning | Which paths, intermediate outcomes, dependencies and shared obligations make execution credible and safe to parallelize? |
-| Implementation | What exact authorized attempts, partial outcomes and discoveries occurred? |
-| Review | Does the recomposed candidate preserve intent, support its realization claims and account for remaining obligations? |
+| Implementation | Which exact authorized attempts, partial outcomes and discoveries occurred? |
+| Review | Does the actual recomposed candidate preserve intent, support realization claims and account for remaining obligations? |
 
-The loops are not mandatory branches or exactly four commits. WIP checkpoints remain cheap; selected assessments bind their actual baseline and candidate. Checkpointed, assessed, accepted, realized, published and deployed are distinct. Explicit scoped knowledge adoption or intermediate progress must not imply the original intent is complete.
+Only accepted scoped transitions promote, revise, retire or re-adopt Wiki knowledge. Proposing a Change, retrieving information or saving a checkpoint does not perform acceptance. Partial knowledge adoption is distinct from completion of the whole intent. Branches and commits organize work, not stage flags or a mandatory four-commit protocol.
 
-Feedback returns to its cause: implementation defect, planning conflict, or unclear/materially revised intent. Preserve explicit intent revisions and the original grounds. An investigation can yield valuable knowledge even if an implementation is rejected; adopting a lesson does not retroactively realize a rejected goal.
+Feedback returns to Implementation for defects, Planning for path conflicts and Decision for material intent revision. Preserve original reasons and explicit target changes. An adopted lesson from rejected work does not realize the original goal.
 
-Semantic validation distinguishes intent fit, consistency, reachability, preservation, justification and authority. Supported, contradicted and unresolved findings preserve scope and evidence. Binding obligations cannot be excluded by relabeling a Change, proposing a waiver, or hiding relevant corpus material.
-
-Parallel work is evaluated again at its actual join. Historical checkpoints and judgments remain reconstructible from retained states and outcomes, not rerun models or effects. Protected actions need applicable authority before execution; acceptance does not grant publication or deployment.
+Apply [semantic validation](../components/checks.md) at the actual joined subject; isolated successes do not establish composition. Git retains exact outcomes and retired knowledge for native cold retrieval. Protected effects need prior authority and remain distinct from acceptance.
 
 See [Decision to Planning](decision-to-planning.md), [Planning to Implementation](planning-to-implementation.md), [Implementation to Review](implementation-to-review.md), and [recovery](recovery.md).

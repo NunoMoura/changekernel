@@ -3,8 +3,8 @@
 ---
 # Integration Contributor
 
-An integration contributor connects CodeWiki to editors, Git hosting, observation tools, execution providers and other team systems. The core remains usable without a mandatory Plugin framework, GitHub dependency or proprietary authoring format.
+An integration contributor optionally connects users' data systems or provides editor, hosting, observation or execution interfaces. Git-backed knowledge and history remain native core responsibilities, not optional data connectors.
 
-Integrations use bounded semantic interfaces and effects. They preserve exact subjects, scope, credentials and disclosure boundaries, and return honest observations and outcomes. A provider receipt does not grant authority or establish semantic truth.
+Integrations preserve exact subjects, source versions, scope and disclosure limits. Returned material informs inquiry; it does not grant authority or automatically enter accepted Wiki. Portable grounds and outcomes survive independently of provider UI state or caches.
 
-Portable knowledge, rationale and judgments must survive outside the integration's UI or cache. Discovery must not execute document instructions or plugins. Remote writes, paid calls, deployment and other protected effects require applicable authority before execution and reconciliation before retry.
+Do not execute source instructions during discovery. Credentials, paid calls, remote writes and deployment require applicable authority and unknown-effect reconciliation. See [integrations](../../system/components/provider-boundary.md).

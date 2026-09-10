@@ -3,8 +3,8 @@
 ---
 # Continue After Interruption
 
-A fresh Maintainer or Agent can recover accepted knowledge, original reasons, assumptions, rejected alternatives, in-flight work and next permitted action from durable authorized records. They do not require private conversation or a particular host UI to understand why work matters.
+A fresh participant recovers current accepted knowledge, concise grounds, uncertainty, in-flight work and next permitted action, then follows native Git history to relevant earlier reasons or retired knowledge. No private chat, archive database or external data connector is required.
 
-Git restores exact recorded states; Wiki and Change preserve consolidated grounds and outcomes. Recovery does not rerun model reasoning or external effects to recreate a missing judgment. Lost, stale, redacted and truncated context limits assurance explicitly.
+Restore exact outcomes and retained interpretations, not rerun models or external actions. Historical acceptance remains scoped to its context; reading an old rule does not adopt it again. Missing objects, stale support, redaction and truncation remain explicit limitations.
 
-Live effects and custody are reconciled before retry. A lost reply is not proof that nothing happened, and absent tracking is not proof of quiescence. Changed external conditions can require reassessment without rewriting historical acceptance or discarding independent support.
+Reconcile live custody and unknown effects before retry. A lost reply does not prove nothing happened, and absent tracking does not prove quiescence. [Recovery](../../../system/flows/recovery.md) preserves these boundaries.

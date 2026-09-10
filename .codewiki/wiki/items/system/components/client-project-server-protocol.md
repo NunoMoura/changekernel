@@ -3,20 +3,18 @@
 ---
 # Client–Project Server Protocol
 
-The protocol exposes CodeWiki's semantic collaboration service without exposing kernel internals or effect handles. Humans, Agents, and replaceable clients operate on Wiki knowledge and intent-bearing Changes, not a required Git hosting workflow. Work, judgments, evidence, alignment and status are supporting records or views, not extra independently maintained primitives.
+Clients operate on Wiki knowledge and intent-bearing Changes through the authorized service, without obtaining kernel internals or effect handles. Work, judgments, evidence, alignment and retrieval results are supporting records/views, not additional authoring primitives.
 
-## Exact requests and bounded disclosure
+## Exact requests and disclosure
 
-State-dependent requests identify a project and an exact or once-resolved source. Mutation and assessment bind the relevant baseline and candidate; mutable branch labels alone cannot identify reviewed bytes. Authentication, authorization, request identity, expiry and bounds are checked before data disclosure or effects. A client chooses permitted operations, not its own authority.
+State-dependent requests name a Project and exact or once-resolved source. Assessment and mutation bind baseline and candidate; branch labels alone do not identify reviewed bytes. Authenticate and enforce authorization, request identity, expiry and bounds before disclosure or effects. Replay requires the same actor, operation, content and source; lost replies need outcome reconciliation.
 
-Responses include sufficient exact provenance to distinguish supported, contradicted, unresolved, stale and operationally unavailable outcomes. Redaction, truncation, missing context, partial retrieval, and unsupported extraction remain explicit. No normal view includes raw credentials, refs/writers, private execution custody, or confidential reasoning records outside the actor's scope. Redaction must not imply an obligation is absent.
+Results distinguish current adopted knowledge, pending work and historical/external information. Native Git history is available without an external connector. Historical results identify exact source and former disposition; retrieval is not re-adoption. Report redaction, truncation, missing context, staleness, unsupported extraction and unavailable material. Hidden obligations do not become absent obligations.
 
-## Semantic operations and presentation
+## Operations and boundaries
 
-Clients can discover scoped knowledge, inspect rationale and history, propose/revise Changes, receive consequential semantic feedback, plan work, submit observations, request review, and inspect next permitted actions. Stage, checkpoint, acceptance and realization are not conflated in names or success messages. Applicable classifications follow actual effects rather than client-selected bypass labels.
+Clients discover knowledge, inspect grounds, retrieve information, propose/revise Changes, receive semantic feedback, plan work and request review. Promotion, revision, retirement and re-adoption use accepted scoped transitions. Reads and generated answers cannot silently perform them. Checkpoints, acceptance and realization remain distinct in operation names and success messages.
 
-A diagnostic/audit view can expose technical evidence under separate authorization. Internal versioning, digests and executor metadata belong there when unnecessary to ordinary collaboration. Opaque identifiers are references, not permission to resolve arbitrary paths or execute content.
+Malformed or incompatible requests and substituted subjects fail clearly. Opaque references do not grant arbitrary resolution or execution. Normal results exclude credentials, raw refs/writers and private custody; separately authorized audit views can expose necessary technical evidence.
 
-Versioned transports must reject mismatched subjects, malformed input and incompatible contracts clearly. Replay binds the same actor, operation, request content and source; changed requests are not the same operation. Lost replies require recovery of observed outcomes, not blind replay of effects.
-
-A provider Check Run or PR can display validation but cannot become its only durable record. Generic Git and non-GitHub clients remain supported by the product boundary. See [Clients](clients.md), [Project Server](project-server.md), and [evidence](evidence.md).
+Host PRs or Check Runs may display results but cannot be their only durable record. Git is foundational; external data/hosting integrations are optional. See [Project Server](project-server.md), [evidence](evidence.md), and [Clients](clients.md).

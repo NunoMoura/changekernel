@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:synchronization",
   "id": "synchronization",
-  "purpose": "Show optional Git/host synchronization, portable knowledge and Change history, combined-candidate review, and external effects distinct from local semantic acceptance.",
+  "purpose": "Show native Git state/history with optional remote hosting/delivery, not an optional Git data connector; combined-candidate acceptance and external effects remain distinct.",
   "components": [
     {
       "id": "service",
@@ -15,13 +15,13 @@
     {
       "id": "git",
       "concept": "cw:component:project",
-      "label": "Exact local Git objects and refs",
+      "label": "Required native Git objects, refs and retained history",
       "zone": "repository"
     },
     {
       "id": "integration",
       "concept": "cw:component:provider-boundary",
-      "label": "Optional Git host / transport / delivery integration",
+      "label": "Optional remote hosting / delivery integration",
       "zone": "execution"
     },
     {

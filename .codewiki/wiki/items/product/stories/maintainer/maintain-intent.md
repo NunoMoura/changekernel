@@ -3,8 +3,8 @@
 ---
 # Evolve Intent and Preserve Its Grounds
 
-A Maintainer expresses intent through a Change, including the problem, desired effects, alternatives, tradeoffs and uncertainty. Wiki consolidates adopted consequences with provenance back to those reasons, not a competing pending-intent document.
+A Maintainer expresses intent through Change and accepts scoped adoption, revision, retirement or re-adoption. Wiki retains current consequences with concise grounds; Git preserves exact previous knowledge and Change outcomes without another archive knowledge system.
 
-As inquiry progresses, original intent and explicit revisions remain recoverable. Material changes revisit Decision rather than moving the target silently to fit produced work. Rejected or superseded work can preserve valuable evidence without claiming its original intent was realized.
+Material intent revisions return to Decision rather than moving the target to fit produced work. Retiring guidance preserves its prior scope, reasons and disposition for later inquiry. A folder move or context eviction alone cannot retire it.
 
-Later participants can retain conclusions whose reasons still hold, reassess those affected by a failed assumption, and reconsider previously rejected alternatives under changed conditions. Independent grounds may preserve a conclusion. Missing historical rationale remains missing; acceptance is durable but not dogma.
+Reconsider rejected alternatives when conditions change, retaining independent support where one assumption fails. Native historical retrieval informs a new decision; it does not reinstate the old one. Missing rationale remains missing rather than invented.

@@ -3,10 +3,10 @@
 ---
 # Change Intake
 
-Intake turns a person's, Agent's, or service's proposed intent and observed candidate into an attributable Change proposal. It does not accept its consequences, authorize execution, or infer support from the submitter's label.
+Intake creates an attributable intent-bearing proposal from a person, Agent or service. It does not accept its consequences, grant execution authority or infer validity from a label.
 
-Capture enough motivation, desired effects, scope, known assumptions, alternatives, and acceptance questions for inquiry to begin. Uncertainty is allowed and visible. Do not require fabricated certainty, complete implementation plans, or invented historical rationale just to submit work. Changes to knowledge and artifacts must be related to their actual semantic effects rather than restricted to software categories.
+Capture purpose, effects, scope, assumptions, alternatives and acceptance questions without fabricated certainty or historical reasons. Proposed adoption, revision, retirement and re-adoption identify affected knowledge and available exact grounds. Material intent changes explicitly revisit Decision.
 
-Bind the original proposal, baseline, contributor, and available evidence. Detect whether incoming work belongs to an existing authorized attempt or needs independent inquiry without treating a matching branch, message, or producer claim as proof. Revisions preserve prior intent and reasons; material changes revisit Decision under applicable authority.
+Authorized observation, indexing and retrieval can supply information without a Change per read or data row. They cannot silently alter adopted Wiki knowledge. A generated answer, retired rule or external source remains information until an accepted scoped transition adopts it.
 
-Existing repositories are adopted with an honest observed baseline, not retroactively populated with fictional Changes. External commits or host events are observations until assessed and accepted within their actual scope. See [Change](change-trace.md) and [external work](../flows/external-work-admission.md).
+Bind contributor, original intent, baseline and evidence. A matching branch, message or claimed work ID does not establish an existing authorized scope. Existing repositories require honest baseline adoption, not retroactive fictional Changes. See [Change](change-trace.md) and [external work admission](../flows/external-work-admission.md).

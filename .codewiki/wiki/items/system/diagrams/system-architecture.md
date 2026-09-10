@@ -4,7 +4,7 @@
 {
   "codewiki_id": "cw:diagram:architecture",
   "id": "architecture",
-  "purpose": "Show Git as exact-state substrate, Wiki and Change as the two primitives, a semantic kernel, human–Agent Hub collaboration, and optional evidence/execution integrations.",
+  "purpose": "Show Change-controlled Wiki evolution on mandatory native Git, hot current knowledge and cold information access, with optional external data and execution integrations.",
   "components": [
     {
       "id": "people",
@@ -27,7 +27,7 @@
     {
       "id": "wiki",
       "concept": "cw:component:knowledge",
-      "label": "Wiki: consolidated knowledge and grounds",
+      "label": "Wiki: current accepted knowledge (hot, persistent)",
       "zone": "repository"
     },
     {
@@ -39,7 +39,7 @@
     {
       "id": "git",
       "concept": "cw:component:project",
-      "label": "Git: exact snapshots, ancestry and transport",
+      "label": "Native Git foundation: exact state, Change records and history",
       "zone": "repository"
     },
     {
@@ -51,8 +51,14 @@
     {
       "id": "tools",
       "concept": "cw:component:provider-boundary",
-      "label": "Optional tools, models and host integrations",
+      "label": "External data connectors / execution integrations",
       "zone": "execution"
+    },
+    {
+      "id": "information",
+      "concept": "cw:component:evidence",
+      "label": "On-demand information view, not another knowledge store",
+      "zone": "core"
     }
   ],
   "connections": [
@@ -93,7 +99,7 @@
       "from": "service",
       "to": "git",
       "type": "writes",
-      "label": "Preserves exact authorized outcomes with stale-baseline protection",
+      "label": "Persists exact scoped Change outcomes, including adoption and retirement",
       "boundary": {
         "type": "persistence",
         "failure": "Reconcile unknown writes; do not infer acceptance from objects alone."
@@ -118,7 +124,7 @@
       "from": "service",
       "to": "tools",
       "type": "authorizes",
-      "label": "Permits bounded observations or effects; GitHub is optional",
+      "label": "Authorizes optional external inputs or supported execution; not native Git access",
       "boundary": {
         "type": "authority",
         "failure": "No candidate self-authorization or execution of untrusted corpus instructions."
@@ -134,6 +140,27 @@
         "type": "trust",
         "failure": "Reject substitution and reconcile unknown effects before retry."
       }
+    },
+    {
+      "id": "a-native-history",
+      "from": "service",
+      "to": "git",
+      "type": "reads",
+      "label": "Reads retained history natively; no external connector required"
+    },
+    {
+      "id": "a-historical-information",
+      "from": "git",
+      "to": "information",
+      "type": "returns",
+      "label": "Returns exact prior material and historical disposition"
+    },
+    {
+      "id": "a-use-information",
+      "from": "information",
+      "to": "validation",
+      "type": "produces",
+      "label": "Supplies scoped evidence for inquiry; retrieval is not re-adoption"
     }
   ],
   "flows": [
@@ -165,6 +192,19 @@
           "connections": [
             "a-tools",
             "a-observe"
+          ]
+        }
+      ]
+    },
+    {
+      "concept": "cw:flow:recovery",
+      "paths": [
+        {
+          "connections": [
+            "a-native-history",
+            "a-historical-information",
+            "a-use-information",
+            "a-judgment"
           ]
         }
       ]

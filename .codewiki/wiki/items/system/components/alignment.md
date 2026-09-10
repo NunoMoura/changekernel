@@ -3,10 +3,10 @@
 ---
 # Alignment
 
-Alignment is a derived account of how accepted knowledge, Change intent, observed reality, evidence, and ongoing work relate at an exact context. It is not a third primitive or an independently authored desired-state document.
+Alignment is a derived account of current knowledge, Change intent, observed reality, support and ongoing work in an exact context. It is not another desired-state object or authority source.
 
-Distinguish adopted obligations from observed facts, supported realization from owned gaps, and historical acceptance from current support. An open Change accounts for work but does not make a target true. External reality can drift without a Git commit. A current observation can contradict an old assumption while leaving another independent reason intact.
+Distinguish adopted obligations, observed facts, owned realization gaps, pending revisions and retired knowledge. An open Change does not realize a target. Newly retrieved evidence can defeat an assumption or block proposed work before a Wiki revision; independent grounds may still support a conclusion.
 
-Useful feedback exposes affected commitments, assumptions, support, alternatives, paths, uncertainty, and next permitted action. Findings are supported, contradicted, or unresolved with scope and grounds; operational unavailability and missing context remain visible. No global percentage or attention score can average away a binding violation.
+Expose affected commitments, assumptions, paths, uncertainty and next permitted action using the [validation contract](checks.md). Native historical information retains its disposition; retrieval does not restore current authority. Missing, stale, private or truncated inputs limit assurance explicitly.
 
-Work readiness, remote observations, and evidence all cite their exact sources. Stale, redacted, truncated, unsupported, and missing inputs limit the conclusion. Generated views and caches cannot grant authority or repair their sources. Rebuild projections from retained records; do not recreate historical judgments by rerunning models.
+Rebuild views from retained records and scoped observations. A cache, global percentage or ranking cannot repair source truth, average away an obligation or recreate a historical judgment.

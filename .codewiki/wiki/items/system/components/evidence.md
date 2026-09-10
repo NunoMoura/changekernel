@@ -3,12 +3,22 @@
 ---
 # Evidence
 
-Evidence supports an assertion, judgment, realization claim, or effect outcome in Wiki and Change. It is not an independent policy system or another authoring primitive. Tests, measurements, observations, research, human decisions and model judgments have different evidential roles; recording them does not make them interchangeable.
+Evidence is information used to support or challenge a particular assertion, judgment, realization claim or effect outcome. The material and its evidential use differ: a test log is material; what it supports under tested conditions is a scoped relationship recorded in Wiki or Change. Not every source supports every claim, and derivative summaries do not supply independent corroboration.
 
-Retain enough provenance to identify exact subject, method or producer, observed conditions, assumptions, scope, and result. A model judgment is an interpretation, not automatically a proof; a passing test supports its tested conditions. A procedure's committed bytes do not prove its operational adoption. Missing support remains missing rather than receiving an invented explanation.
+## One information path
 
-Accepted grounds must survive outside private chat or a hosting UI. Portable bounded records and exact references preserve reasons without requiring every raw log or conversation in Git. Sensitive, large, or private material remains under appropriate access and retention controls. A dangling, unavailable, redacted, or stale reference limits current assurance; a digest proves identity, not availability or truth.
+On-demand information includes prior Wiki knowledge and Change outcomes in native Git history, local observations, and material from optional external data connectors. It can be previously analyzed or not yet understood. Archive and Sources are not separate knowledge systems, and the logical information pool does not require another authoritative database.
 
-Reassessment can add new observations without rewriting historical judgments. Support lost through a failed assumption triggers dependency-aware review, not automatic rejection where independent grounds remain. Preserve alternatives and conditions for reconsideration.
+Git remains foundational rather than a user-configured connector. Native historical reads reuse exact records already preserved there. External connectors optionally extend available inputs from users' databases, document systems or services; absence of connectors must not disable native history or the core Change loop. Shared retrieval does not erase these different architectural roles.
 
-Execution receipts describe effects and custody, not authority. Validate exact binding, reject substitution, and distinguish observed success, failure, cancellation and unknown outcome. Retain accepted results rather than rerun nondeterministic reasoning or effects to recreate them. See [validation](checks.md) and [recovery](../flows/recovery.md).
+## Provenance, retention and access
+
+Identify exact source/version/passage, origin, observed conditions, method or producer, scope and limitations. For retired knowledge, preserve former applicability and the Change/disposition explaining retirement. Historical acceptance and a new source's assertion carry different grounds; neither automatically establishes current truth or authority.
+
+Preserve source material rather than overwriting it with synthesis. Corrections or new observations are distinguishable versions. Retention, authorized redaction/deletion and access restrictions apply to current and historical material. Large or sensitive data need not be copied into Project Git. A hash proves identity, not availability or truth; missing, stale, redacted or inaccessible material limits assurance explicitly.
+
+## Retrieval and adoption
+
+Bounded retrieval/RAG selects material for inquiry, with citations and declared omissions. Indexes, embeddings and extraction caches remain rebuildable, not replacements for original bytes. Discovery must not execute source instructions, broaden permissions or silently ingest private data.
+
+A retrieved answer is an interpretation. [Change](change-trace.md) governs adoption, revision, retirement and re-adoption; [validation](checks.md) governs support and uncertainty. Accepted judgments are retained, not recreated by rerunning models. Execution receipts describe observed effects and custody, not authority; unknown outcomes require [reconciliation](../flows/recovery.md).

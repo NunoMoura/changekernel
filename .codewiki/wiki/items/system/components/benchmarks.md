@@ -3,12 +3,12 @@
 ---
 # Qualification and Benchmarks
 
-Qualification tests a declared CodeWiki execution profile on exact immutable candidate bytes. Native unit tests, structural checks, replay providers and injected runners supply bounded engineering evidence; they do not establish operational model quality, containment, durable continuation, controller authority, or universal semantic truth.
+Qualification evaluates a declared execution profile on exact immutable candidate bytes. Native tests, structural checks, replay and injected runners supply bounded engineering evidence, not proof of operational semantic quality, custody or continuation.
 
-A useful acceptance corpus includes software and non-software Changes, consequential semantic contradiction or uncertainty followed by appropriate repair/inquiry, dependency-aware Planning, conflicting parallel work at a join, and fresh-Agent continuation. Preserve the three revision cases: reasons still hold, an assumption fails, and a previously rejected alternative becomes appropriate. Real-world improvement needs observations beyond committed documents.
+Exercise software and non-software Changes, consequential contradiction/uncertainty followed by inquiry or repair, shared Planning obligations, conflicting parallel work and fresh-context recovery. Test original reasons still holding, one failed assumption with independent support, and a rejected alternative becoming appropriate.
 
-Compare richer structure and contextual attention against a well-written prose/Git baseline. Measure consequential omissions, false acceptance, unnecessary rejection, repeated investigation, context loss, resource use, repeated effects and human intervention. More metadata or a larger retrieved corpus is not automatically better knowledge or efficiency.
+The core loop and historical retrieval must work with zero external data connectors. Exercise promotion, retirement and re-adoption boundaries: reading an old rule, moving a file, generating a RAG answer or evicting context cannot silently change authority. Missing historical objects, private inputs and unavailable evidence must remain honest limitations.
 
-Freeze environment, corpus, supported formats/tools/providers, time/memory/output limits, token/cost/retry caps and quality thresholds before evaluation. Report scope and failed/unavailable cases honestly. Binding safety failures and missing required evidence cannot be averaged away; an unsupported claim is not automatically false.
+Compare quality and effort with a well-written prose/Git baseline. Measure consequential omissions, false acceptance, unnecessary rejection, repeated inquiry/effects, context loss, resource use and human intervention. More metadata, sources or retrieved text is not inherently better.
 
-Pack and test candidates only in isolated disposable external projects. Qualify exact committed, uniquely versioned subjects with reproducible package/evidence linkage and replacement guidance. Post-freeze corrections require a new subject and qualification. An activated release does not transfer controller authority by itself; required handoff remains explicit. A mutable source checkout never governs or qualifies itself.
+Freeze corpus, environment, supported capabilities, resource/time/output and token/cost/retry limits and quality thresholds before testing. Binding failures cannot be averaged away. Use the [immutable release boundary](package.md); real-world outcomes need observations beyond committed documents.

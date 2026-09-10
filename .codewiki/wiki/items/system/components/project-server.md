@@ -3,26 +3,18 @@
 ---
 # Project Server
 
-Project Server is the service-side authorization and orchestration boundary for CodeWiki Hub. It applies the semantic kernel to exact Git-backed subjects and authorized observations. A local composition, remote service, CLI, or other client can present this boundary without making one hosting provider the owner of acceptance.
+Project Server applies authorization and orchestrates CodeWiki's semantic service over a scoped Project. Git-backed Wiki, Change and history are native requirements; external data connectors and hosting integrations are optional inputs or effects, not alternative acceptance authorities.
 
-## Responsibilities
+The service authenticates actors, enforces project/data/effect scope, resolves sources once, binds baseline/candidate identities and validates bounded replay-safe requests. It orchestrates the four loops and accepted scoped knowledge transitions. The kernel supplies semantic meaning; judgments and provider receipts do not grant authority.
 
-- Authenticate actors and enforce operation, project, data, and effect scope before disclosure or execution.
-- Resolve an input source once, bind baseline/candidate identity, validate request bounds and replay identity, and return attributable outcomes.
-- Orchestrate proposal, semantic assessment, the four stage loops, checkpointing, review, and separately authorized effects.
-- Preserve semantic reasons and outcomes in portable Wiki/Change history, while maintaining private live-operation custody and recovery state at their proper boundary.
-- Expose honest capabilities, missing context, operational stops, and next permitted actions rather than infer readiness from a configured interface.
+## Information and effects
 
-The kernel owns semantic distinctions and transition consequences. Models, humans, and tools contribute interpretations or observations; neither a result nor a provider receipt grants authority. The server must not silently treat an absent verifier, empty test set, or successful host merge as semantic approval.
+Expose current knowledge separately from pending proposals and historical/external information. Native Git queries supply retained history even with no external connectors. Bounded retrieval does not adopt or retire knowledge, relax disclosure rules or execute source instructions. Useful interpretations enter accepted Wiki only through Change.
 
-## Narrow effect boundaries
+Git storage, inference/observation, Agent work, Preview and optional integrations use narrow effect boundaries. Credentials, raw writers/refs, concrete adapters and private custody are not normal client capabilities. Unsupported enforcement is unavailability, not successful execution. See [client protocol](client-project-server-protocol.md) and [integrations](provider-boundary.md).
 
-Git storage, observation/evaluation execution, Agent work, Preview, and external integrations use bounded effect interfaces according to the supported profile. Their concrete adapters, credentials, raw writers, refs and private custody handles are not normal client capabilities. Procedure knowledge stays in Wiki, not separately managed Skills or Check Packs.
+## Continuity
 
-Exact authenticated requests do not establish physical containment. If an executor cannot enforce required path/tool/network/resource scope or observe quiescence, that capability must be unavailable. Protect execution before it occurs; accepting an eventual output cannot retroactively authorize a forbidden effect.
+Preserve exact outcomes and accepted grounds in Git-linked records, not solely process-local maps or host UI state. Live leases, credentials, sockets and scratch remain private. [Recovery](../flows/recovery.md) reconciles custody, stopped work and unknown effects; request replay does not promise unobserved exactly-once external execution.
 
-## Continuity and recovery
-
-Committed outcomes and judgments must survive a process or Agent restart; process-local maps alone are insufficient. Live leases, sockets, credentials, scratch and tracking remain private runtime state, not a second semantic truth store. Distinguish reusable observations from stale judgments and unknown effects. Reconcile before retry; request replay does not promise exactly-once behavior in an unobserved external system.
-
-Read-only binding and queries must not initialize, repair, convert, or execute a project. Missing/malformed state receives honest errors or explicitly bounded degraded reads, never guessed success. See [Project](project.md), [client protocol](client-project-server-protocol.md), and [recovery](../flows/recovery.md).
+Read-only binding and queries never initialize, repair, convert or execute a project. Missing/malformed state produces honest errors or declared bounded limitations, not guessed success. [Project](project.md) defines repository binding; physical containment remains a separately enforced boundary.

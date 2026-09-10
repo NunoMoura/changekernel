@@ -3,8 +3,8 @@
 ---
 # Explore Project Knowledge
 
-An Agent joining existing work can discover tracked Markdown across the scoped repository without proprietary document enrollment. It can navigate supported links and retrieve accepted knowledge, pending intent, reasons, assumptions, alternatives, dependencies and uncertainty at exact sources.
+An Agent finds current accepted knowledge in scoped tracked Markdown, then retrieves native Git history or optional external information when the question needs it. Hot Wiki is not every page in the prompt; cold material may already have been analyzed or accepted in another context.
 
-Relevant context follows the Change and its consequences, not only text similarity or one permanent importance score. A consequential weakly supported assumption can warrant more scrutiny. Quotations, fixtures and pending rules must not become active policy through discovery.
+Sources carry exact provenance, scope and historical disposition. A retrieved obsolete rule or generated synthesis does not become current knowledge. Missing, private, stale and truncated context limits assurance; applicable obligations cannot disappear through ranking or eviction.
 
-The Agent sees redaction, truncation, stale support and unresolved references. It can identify in-flight work and next permitted action without private chat. Retrieval neither grants execution authority nor silently edits, stages, uploads or executes discovered files.
+Native knowledge/history work without external data connectors. Retrieval does not stage, adopt, retire, upload or execute material. [Change](../../../system/components/change-trace.md) controls semantic transitions, and [validation](../../../system/components/checks.md) controls their evidential scrutiny.

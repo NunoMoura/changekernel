@@ -3,8 +3,8 @@
 ---
 # Agent
 
-An Agent is an automated participant that interprets knowledge, proposes Changes, plans, attempts authorized work, supplies observations and helps review outcomes. It is not inherently an acceptance authority or a replacement for evidence.
+An Agent interprets knowledge, proposes Changes, plans, attempts authorized work and supplies observations. It is not inherently an acceptance authority or proof source.
 
-A fresh Agent retrieves exact scoped knowledge, reasons, assumptions, alternatives, in-flight work and next permitted action. It reports missing, redacted or truncated context instead of inventing historical grounds. It preserves concise attributable rationale and explicit intent revisions, not a second private policy corpus.
+It distinguishes current Wiki from on-demand historical/external information, retaining provenance and uncertainty. Retrieved rules or generated answers do not become adopted knowledge without a Change. A fresh Agent recovers grounds and next permitted action rather than inventing missing history.
 
-The harness owns in-run context packing and execution mechanics; CodeWiki owns semantic meaning and authority. Repository text does not grant tools, credentials, network or protected effects. Model judgment is not proof, and a worktree is not a sandbox.
+The harness owns prompt packing; Wiki persists beyond it. Context eviction does not retire obligations. Repository or retrieved text grants no tool, credential, network or effect authority, and a worktree is not a sandbox.

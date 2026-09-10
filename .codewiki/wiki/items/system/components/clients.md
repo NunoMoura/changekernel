@@ -3,12 +3,12 @@
 ---
 # Clients
 
-Clients present CodeWiki Hub to humans and Agents through editors, conversational tools, a CLI, or other interfaces. They help participants recover accepted knowledge and its reasons, propose intent, inspect semantic feedback, plan work, and review outcomes. The product does not require users to understand Git or use GitHub.
+Clients present knowledge and Change collaboration to humans and Agents through editors, conversation, a CLI or other interfaces. Users need not know Git; GitHub and external data connectors are optional. [Project Server](project-server.md) remains the authorized service boundary.
 
-Clients use the authorized [service protocol](client-project-server-protocol.md). They do not obtain raw storage writers, evaluator authority, provider credentials, or a bypass around protected effects. Identical semantic requests must retain their meaning across presentations; a generated summary or host status cannot become a new source of truth.
+Present current knowledge with concise grounds and uncertainty, pending intent, and on-demand native history or external information without conflating their roles. A retrieved obsolete rule is not current policy. Proposed promotion, revision or retirement must be explicit; a summary, folder move or cache eviction cannot perform it.
 
-Expose what is known, its scope and grounds, relevant uncertainty, in-flight work and next permitted action. Make changed intent, unresolved dependencies, redaction and truncated context visible. A confident UI label must not turn a checkpoint into acceptance, a committed document into realization, or a failed service call into a safe retry.
+Expose in-flight work, missing/redacted/truncated context and next permitted action. A checkpoint is not acceptance, a committed procedure is not real-world realization, and a lost response is not permission to retry an effect.
 
-Harnesses own prompt packing and in-run compaction; they do not own project knowledge or acceptance. Procedural knowledge belongs in Wiki, even when a harness presents it as a skill. Discovery must not execute document instructions, editor plugins, or repository-local CodeWiki code merely because a client opens a project.
+Harnesses own prompt packing and in-run compaction, not semantic adoption. Wiki persists beyond model context. Procedural knowledge stays in Wiki; [bounded retrieval](evidence.md) need not load it all at once. Clients never receive raw writers, credentials or a bypass around protected effects.
 
-Optional native/editor/host integrations must earn their scope without duplicating the corpus. Obsidian interoperability begins with preserved Markdown files and supported links, not a mandatory plugin or proprietary frontmatter.
+Preserve ordinary Markdown/Obsidian workflows without mandatory proprietary authoring or plugins. Discovery must not execute source instructions, editor plugins or mutable repository-local CodeWiki code.

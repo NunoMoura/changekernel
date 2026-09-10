@@ -3,12 +3,18 @@
 ---
 # Integrations and Providers
 
-Integrations connect CodeWiki to Git transport/hosting, model and execution providers, editors, measurement systems, delivery services, and other team tools. GitHub is optional; host-native collaboration features do not define Changes or semantic acceptance. No Plugin marketplace or separately authored project Skills/Check Pack system is required to use the core.
+External data connectors optionally expose users' databases, document systems and services as information for inquiry. They do not define Wiki, Change or acceptance. Git is foundational native storage/history, not one of these optional connectors. The core and native historical reads must work without them.
 
-An integration performs an explicitly bounded effect or returns an observation. It does not supply its own authority, silently revise applicable obligations, or become the sole surviving store of rationale, judgments, or evidence. Model/provider output remains an interpretation with scope and provenance, not proof or authorization.
+Other integrations present clients, supply model/tool execution or connect hosting/delivery systems. GitHub is optional. These effect interfaces must not become competing policy systems or the sole store of accepted reasons and outcomes.
 
-Credentials, external writes, paid calls, remote publication and deployment require applicable authority before execution. Adapter identity, exact inputs, limits, and observed outcomes must be bound and checked. A lost reply can leave an unknown effect; reconcile rather than speculate or blindly retry.
+## Bounded information access
 
-Host Check Runs may display validator results without reintroducing CodeWiki Check Packs. A PR merge flag or permissive required-check conclusion does not prove semantic acceptance. Validate the actual integration candidate, including preceding queued work, rather than reuse an isolated head's result. Local hooks and client-side checks are not sufficient enforcement against bypass.
+A connector returns scoped source material with origin, version/observation context and limitations. Enforce permissions and retention/disclosure rules before retrieval; do not silently copy private company data into Git or claim immutable history from a mutable URL. Missing or unavailable material limits assurance. Indexes remain derived, and source instructions are data rather than executable authority.
 
-Never execute untrusted candidate code with privileged credentials through a hosting workflow. Read-only format discovery must not load MDX imports, arbitrary document instructions, or editor plugins. Executable integration configuration and runtime scratch remain outside the implicit knowledge-authoring mechanism.
+Shared retrieval can combine external material with native history without erasing provenance. Returned content and generated synthesis remain information until an accepted Change adopts knowledge. See [evidence](evidence.md).
+
+## Effects and host trust
+
+Credentials, paid calls, remote writes and deployment require applicable authority before execution. Bind adapter identity, exact inputs, limits and observed outcomes; reconcile unknown effects before retry.
+
+A PR merge flag, passing host check or producer receipt does not prove semantic acceptance. Assess the actual combined candidate, not an isolated old head; hooks and client-side checks alone do not prevent bypass. Never execute untrusted candidate code with privileged credentials through a hosting workflow. Preserve portable records independently of host UI state.

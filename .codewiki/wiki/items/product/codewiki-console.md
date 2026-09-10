@@ -3,39 +3,26 @@
 ---
 # CodeWiki Hub
 
-CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents across teams. It helps people preserve enough justified, revisable knowledge that they do not restart inquiry from memory alone. Software, operations, research, and other team work use the same core; their evidence and execution methods differ.
+CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents across teams. It preserves justified, revisable understanding so people do not restart inquiry from memory alone. Software, operations, research and other team work share this core; their methods and evidence differ.
 
-Git supplies exact content, snapshots, ancestry, branches, merges, and transport. CodeWiki supplies semantic interpretation, validation, authority, deliberation, and continuity above that substrate. GitHub is a competing collaboration product and an optional integration, not the definition of a Change or its acceptance. Participants need not understand Git staging or refs to use the Hub.
+## Change and Wiki
 
-## Two primitives
+**Change is the primary mechanism of evolution.** It carries intent, motivation, assumptions, alternatives, deliberation, plans, attempts and outcomes. **Wiki is current accepted project knowledge**, expressed in tracked Markdown wherever it lives, not a special authoring folder or an independently maintained intent object.
 
-- **Wiki** is consolidated project knowledge: scoped assertions, adopted decisions, obligations, procedures, their grounds, and explicit uncertainty. A Wiki state is the Wiki at a revision, not another managed entity.
-- **Change** carries intent and its evolution: desired effects, motivation, assumptions, alternatives, deliberation, planning, attempts, evidence, and outcome. It links adopted consequences back to their reasons.
+Only an authorized, accepted scoped transition carried by a Change promotes information into knowledge, revises it, retires it or adopts it again. A proposal, retrieved answer or ordinary checkpoint does not accomplish that by itself. Wiki retains current commitments, concise grounds and uncertainty; Change preserves the reasons for their evolution.
 
-A pending intention does not need an independently maintained desired-state document. An adopted consequence must still be discoverable in Wiki. Knowledge, intent, and observed realization are related but distinct: committing a procedure does not prove adoption, and merging an implementation does not prove deployment.
+## Native history and optional information
 
-## Collaboration through inquiry
+Git is foundational: it preserves intent-bearing Change records, exact Wiki outcomes, snapshots, ancestry and transport. Retired knowledge remains accessible on demand through native history, alongside information supplied by optional external data connectors. No separate Archive or Sources knowledge system, archive database or optional Git connector is required. GitHub is an optional hosting integration and competing collaboration product, not acceptance authority.
 
-A person or Agent proposes a Change. Decision tests its purpose, tradeoffs, authority, and credible feasibility. Planning develops paths, dependencies, shared obligations, and safe parallel work. Implementation attempts authorized transitions and records discoveries. Review evaluates the reconciled whole against intent and remaining obligations. Feedback returns to its cause; material intent revision must be explicit rather than moving the target to fit an outcome.
+Hot knowledge is the current validation basis, not everything stuffed into every prompt. Cold information may be unexamined material or previously accepted knowledge; retrieval does not make it current again. The information pool is an access concept, not another authoring primitive. Users need not understand Git to work with it.
 
-The semantic kernel gives these activities one foundation. Validation considers intent fit, consistency, reachability, preservation, justification, and authority in context. It distinguishes supported, contradicted, and unresolved findings with reasons and evidence. Neither an empty test set nor an unqualified model judgment establishes semantic success.
+## Inquiry and continuity
 
-## Knowledge without an authoring silo
+Decision evaluates justified intent and credible feasibility. Planning develops paths, dependencies and shared obligations. Implementation attempts authorized work and records discoveries. Review evaluates the actual recomposed outcome. Feedback returns to its cause; material intent revision revisits Decision.
 
-Tracked Markdown participates wherever it lives. Ordinary editors and Obsidian-compatible files do not require proprietary frontmatter, stable IDs on every document, or a special import directory. Format extensions extract knowledge without executing document instructions or plugins. Discovery is not acceptance: quotations, fixtures, historical decisions, and proposed rules do not acquire equal governing force merely by being found.
+The [semantic kernel](../system/components/semantic-kernel.md) and [validation contract](../system/components/checks.md) distinguish support, contradiction and uncertainty without mistaking model confidence or tests for universal proof. Procedural knowledge belongs in Wiki, not competing Skills or Check Pack policies.
 
-Procedural knowledge belongs in this shared corpus. Tests, observations, research, and verification tools support it. Separate project-authored Skills and Check Packs must not duplicate meaning or become a parallel policy system.
+A fresh participant can recover current knowledge, why it applies, relevant historical grounds, unresolved assumptions, in-flight work and next permitted action. Preserving exact outcomes is not rerunning reasoning or effects. Committing a procedure does not prove adoption; acceptance does not grant publication or deployment.
 
-## Durable, revisable continuity
-
-A fresh participant can recover what is accepted, why, under which assumptions, which alternatives were rejected, what remains uncertain, and which action is next permitted. Preserve concise attributable rationale rather than every conversation. Missing historical reasons remain missing; historical acceptance is not present-day endorsement.
-
-Contextual attention directs scrutiny toward consequential dependencies and uncertainty, not a universal importance score. Binding obligations cannot be averaged away or weakened by the candidate seeking approval. Progress may include investigation, risk reduction, or preserving options, not only immediate implementation.
-
-## Boundaries
-
-Checkpoints, judgments, acceptance, realization, publication, and deployment are different events. Git records exact outcomes; replay must not rerun model reasoning or external effects to recreate history. Integrations and generated views do not become authority through presentation. Worktrees separate work but are not security sandboxes. Protected effects require applicable authority before execution.
-
-The Hub can grow through replaceable clients and execution integrations without requiring a full hosting platform, marketplace, or domain-specific framework to express its core loop.
-
-See [Wiki](../system/components/wiki.md), [Change](../system/components/change-trace.md), [semantic kernel](../system/components/semantic-kernel.md), and [lifecycle](../system/flows/change-lifecycle.md).
+See [Wiki](../system/components/wiki.md), [Change](../system/components/change-trace.md), [information and evidence](../system/components/evidence.md), and [lifecycle](../system/flows/change-lifecycle.md).

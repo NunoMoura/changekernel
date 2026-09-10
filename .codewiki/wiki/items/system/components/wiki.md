@@ -3,36 +3,34 @@
 ---
 # Wiki
 
-Wiki is consolidated project knowledge at an exact revision. It includes scoped assertions, adopted decisions, obligations, procedures, rationale, support, and uncertainty. Change owns pending intent and the deliberation that produces revisions; Wiki preserves adopted consequences and enough provenance to reconsider them responsibly. A Wiki state is a revision of this knowledge, not a separate State entity.
+Wiki is current accepted project knowledge at an exact revision: scoped assertions, adopted decisions, obligations, procedures, their grounds and uncertainty. [Change](change-trace.md) governs its evolution. Wiki is neither a folder nor a disposable model-generated cache; its accepted outcomes are preserved in Git, not reconstructed by repeating inference.
 
-## Implicit corpus, explicit distinctions
+## Hot knowledge and cold information
 
-Tracked Markdown is eligible wherever it lives: README files, documentation, notes, and other project paths. No special directory, mandatory document ID, or proprietary frontmatter is required for authorship. A committed tree defines an exact historical corpus. Working edits and new files can contribute proposed knowledge without silently entering the index, becoming accepted, or being uploaded.
+Hot means current knowledge available for applicable validation, not every page loaded into a model context. Retired knowledge, prior decisions and other sources remain on a cold, on-demand information path. Cold does not mean unprocessed, false or never accepted. [Evidence](evidence.md) defines how retrieved material supports particular claims.
 
-Corpus membership does not establish truth or governing force. Current commitments, pending Change records, quotations, fixtures, historical decisions, hypotheses, and observations retain different roles. One file may contain passages with different scope and authority. Ambiguous role or relevant missing context remains an explicit uncertainty rather than silently becoming active policy or being ignored.
+Promotion, revision, retirement and re-adoption require an authorized, accepted scoped Change transition. Reading history, generating an answer, rebuilding an index or evicting context does not perform one. A rarely consulted obligation remains binding until explicitly revised or retired; an old rule does not regain authority when retrieved.
 
-Git ignore rules concern intentionally untracked files; they do not remove tracked files from a historical corpus. Repository/vault scope and disclosure permissions remain explicit. Discovery must not follow links, symlinks, submodules, editor configuration, or attachments into unrelated private material without declared scope and authority. Machine-local configuration cannot silently redefine accepted historical policy.
+Keep current conclusions with concise reasons, applicable conditions, important uncertainty and links to deeper grounds. Move obsolete detail out of active guidance without losing exact prior text or its disposition. Git already preserves that history; no second archive store is required. Moving Markdown into an `archive/` directory inside the current corpus does not itself retire its commitments.
 
-## Knowledge worth preserving
+## Corpus and applicability
 
-Consequential knowledge should make clear what is asserted or adopted, where it applies, why it was accepted, its support and assumptions, alternatives considered, and conditions for reconsideration. These are useful questions, not mandatory metadata fields on every paragraph. Preserve concise attributable rationale, not a transcript or invented historical explanation.
+Tracked Markdown participates across the scoped Project: README files, documentation, notes and other paths. No proprietary frontmatter, document ID or special enrollment directory is required. Working edits and new files remain proposals until accepted; discovery never silently stages, adopts or uploads them.
 
-Support/dependency relationships have different meaning from topical links. If an assumption fails, reassess affected conclusions while preserving independent support. A rejected alternative can become appropriate under changed conditions. Historical acceptance remains recoverable without implying present-day endorsement. An unresolved disagreement must not be flattened into artificial consensus.
+A file can contain adopted assertions, quotations, hypotheses, fixtures, pending proposals and historical accounts with different roles. File membership or extension alone does not establish truth or governing force. Ambiguous role, scope or missing context stays explicit; neither a proposal's waiver nor an external source becomes current policy by appearing in Markdown.
 
-Accepted normative commitments are not observations of reality. An owned realization gap is accountable but not realized. The world can change without a repository commit, and a newly recorded observation can challenge previously supported knowledge.
+Ignore rules do not remove tracked files. Repository/vault scope and disclosure permissions apply to current and historical reads. Do not follow links, symlinks, submodules or attachments into unrelated private material, or let machine-local settings redefine accepted historical meaning. Existing repositories need honest baseline assurance, not fabricated earlier Changes or validation.
 
-## Interoperability and identity
+## Revisable grounds
 
-Preserve ordinary Markdown source and formatting. Read-only extraction supports standard links and wikilinks, heading/block references, embeds, and optional YAML properties within a declared syntax and vault scope. Obsidian-specific block syntax is not standard Markdown; ambiguous, unsupported, or unresolved references must be visible. An index must not execute MDX imports, scripts, document instructions, or editor plugins.
+Preserve what matters to action and reconsideration: purpose, support, assumptions, alternatives and attribution. These are questions, not mandatory fields on every paragraph. Do not invent missing historical reasons or erase scoped disagreement.
 
-Additional formats use bounded extractors over original bytes, not a second normalized authoring corpus. Editor workspace layouts and caches are not project knowledge. Discovery does not imply that every available file format or remote attachment can be interpreted safely.
+Support dependencies differ from topical links. Losing one assumption calls for reassessment; independent support may preserve a conclusion. A rejected alternative can become appropriate when its conditions change. Normative targets, owned gaps and observed reality remain distinct, and reality can change without a commit.
 
-Revision plus path identifies exact source. Optional identifiers and interpreted rename continuity can improve linking, but resemblance or a filename change alone does not establish identity. Retain exact source spans, resolution context, and uncertainty when references cannot be resolved reliably.
+## Format and retrieval
 
-## Queries and history
+Preserve original Markdown bytes and normal editor workflows. Support declared standard links, wikilinks, heading/block references, embeds and optional YAML within explicit vault scope; report ambiguous or unsupported syntax. Optional format extraction is read-only and must not execute MDX imports, scripts, document instructions or editor plugins.
 
-List, search, graph, dictionary, attribution, history, alignment, and semantic-diff views are bounded projections, not additional primitives. They identify exact sources and report redaction, truncation, unsupported extraction, stale support, and unresolved dependencies. Caches are disposable and must not overrule retained bytes or authoritative records.
+Revision, path and passage context identify exact material. Optional identifiers or rename interpretation cannot replace reliable provenance. Native history and optional external sources can feed bounded retrieval/RAG without becoming equivalent storage authorities. The core works without external data connectors.
 
-A semantic diff exposes changed commitments, assumptions, affected paths and dependencies, alternatives, and realization obligations—not merely changed prose. Reconstruct historical files and recorded judgments from retained snapshots and outcomes, never by rerunning a model. Adoption of an existing repository records honest baseline assurance without fabricating historical Changes or accepted reasons.
-
-See [validation](checks.md), [alignment](alignment.md), and [recovery](../flows/recovery.md).
+Search, graph, dictionary, attribution, alignment and diff are derived views. Report source version, current/historical role, disposition, omissions, redaction, staleness and unavailable material. Indexes are rebuildable; missing source data cannot be recreated from embeddings. A semantic diff exposes changed commitments, assumptions, affected paths and realization obligations, not merely changed prose. See [validation](checks.md) and [Project](project.md).
