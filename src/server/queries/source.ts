@@ -14,6 +14,7 @@ import {
 import type {WikiMaterialization} from "../../kernel/wiki/tree.ts";
 import type {ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import type {ProjectStoreIssue, ProjectStorePort, ProjectStoreReadRequest} from "../../ports/project-store.ts";
+import type {WIKI_PROFILE_ID} from "../../kernel/wiki/profile.ts";
 
 export interface ProjectReadLimits {
 	readonly maximumWikiItems: number;
@@ -32,6 +33,7 @@ export interface ProjectReadConfiguration {
 	readonly canonicalRef: GitRef;
 	readonly kernelBuildDigest: Sha256Digest;
 	readonly retiredWikiItemIds: readonly string[];
+	readonly wikiProfile?: typeof WIKI_PROFILE_ID;
 	readonly limits: ProjectReadLimits;
 }
 
@@ -82,7 +84,8 @@ export async function loadWikiSource(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
 	source: ProjectSourceSelector,
-): Promise<Outcome<LoadedWikiSource, ProjectSourceIssue>> {
+ ): Promise<Outcome<LoadedWikiSource, ProjectSourceIssue>> {
+	if (configuration.wikiProfile !== undefined) return failure(issue("invalid_project_state", "read_wiki", "Legacy Wiki reader is unavailable under explicit profile configuration."));
 	const snapshot = await resolveProjectSource(store, configuration, source);
 	if (!snapshot.ok) return snapshot;
 	const exactWiki = await readExactWiki(store, {

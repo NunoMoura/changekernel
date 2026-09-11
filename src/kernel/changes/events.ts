@@ -22,7 +22,8 @@ import {decodeGitOidValue, gitOidText, type GitOid} from "../identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 import {decodeWorkValue, validateWorkPlan, workPlanDigest, type Work} from "../work/contracts.ts";
-import {decodeChangeValue, type Change} from "./contracts.ts";
+import {decodeChangeValue, decodeProfileChangeValue, type Change, type ProfileChange} from "./contracts.ts";
+import {WIKI_PROFILE_ID} from "../wiki/profile.ts";
 
 export const CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "1.1.0");
 export const CONTAINING_COMMIT = "containing_commit" as const;
@@ -470,4 +471,151 @@ function assertStrictOrder(values: readonly string[], path: string): void {
 
 function protocolLabel(): string {
 	return `${CHANGE_EVENT_PROTOCOL.id}@${CHANGE_EVENT_PROTOCOL.version}`;
+}
+
+export const PROFILE_CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "2.0.0");
+export const PROFILE_CHANGE_EVENT_KINDS = Object.freeze(["change.proposed"] as const);
+export type ProfileChangeEventKind = (typeof PROFILE_CHANGE_EVENT_KINDS)[number];
+
+export interface ProfileChangeOwnerBinding {
+	readonly kind: "kernel";
+	readonly profile: typeof WIKI_PROFILE_ID;
+	readonly kernelBuildDigest: Sha256Digest;
+	readonly transactionDigest: Sha256Digest;
+}
+
+export interface ProfileChangeProposedPayload {
+	readonly change: ProfileChange;
+}
+
+export interface ProfileChangeEventBody {
+	readonly protocol: typeof PROFILE_CHANGE_EVENT_PROTOCOL;
+	readonly kind: ProfileChangeEventKind;
+	readonly ownerBinding: ProfileChangeOwnerBinding;
+	readonly actorId: string;
+	readonly authorityId: string;
+	readonly commandId: string;
+	readonly commandDigest: Sha256Digest;
+	readonly occurredAt: string;
+	readonly expectedProjectHead: GitOid;
+	readonly expectedChangeTip: GitOid | null;
+	readonly containingCommit: typeof CONTAINING_COMMIT;
+	readonly predecessorEventDigest: Sha256Digest | null;
+	readonly payload: ProfileChangeProposedPayload;
+}
+
+export interface ProfileChangeEvent extends ProfileChangeEventBody {
+	readonly eventDigest: Sha256Digest;
+}
+
+export function createProfileChangeEvent(
+	body: Omit<ProfileChangeEventBody, "protocol" | "containingCommit">,
+): Outcome<ProfileChangeEvent, ContractIssue | SemanticIdentityIssue> {
+	const value = {...body, protocol: PROFILE_CHANGE_EVENT_PROTOCOL, containingCommit: CONTAINING_COMMIT};
+	const digest = semanticDigest(profileEventProtocolLabel(), value);
+	if (!digest.ok) return failure(digest.error);
+	return decodeProfileChangeEvent({...value, eventDigest: digest.value});
+}
+
+export function decodeProfileChangeEvent(input: unknown): Outcome<ProfileChangeEvent, ContractIssue> {
+	return decodeContract("Profile Change event", input, (value) => decodeProfileChangeEventValue(value));
+}
+
+export function decodeProfileChangeEventValue(value: CanonicalValue, path = "$"): ProfileChangeEvent {
+	const record = exactRecord("Profile Change event", value, path, [
+		"actorId",
+		"authorityId",
+		"commandDigest",
+		"commandId",
+		"containingCommit",
+		"eventDigest",
+		"expectedChangeTip",
+		"expectedProjectHead",
+		"kind",
+		"occurredAt",
+		"ownerBinding",
+		"payload",
+		"predecessorEventDigest",
+		"protocol",
+	]);
+	protocolField("Profile Change event", record, path, PROFILE_CHANGE_EVENT_PROTOCOL);
+	const kind = literalField("Profile Change event", record, "kind", PROFILE_CHANGE_EVENT_KINDS, path);
+	const ownerBinding = decodeOwnerBinding(requiredField("Profile Change event", record, "ownerBinding", path), `${path}.ownerBinding`);
+	const expectedProjectHead = decodeGitOidValue(requiredField("Profile Change event", record, "expectedProjectHead", path), `${path}.expectedProjectHead`);
+	const expectedChangeTip = nullableValue(requiredField("Profile Change event", record, "expectedChangeTip", path), (entry) => decodeGitOidValue(entry, `${path}.expectedChangeTip`));
+	if (expectedChangeTip !== null) rejectContract("invalid_field", "Profile Change event", `${path}.expectedChangeTip`, "Profile proposal event cannot attach an existing Change tip.");
+	const predecessorEventDigest = nullableProfileDigest(record, "predecessorEventDigest", path);
+	if (predecessorEventDigest !== null) rejectContract("invalid_field", "Profile Change event", `${path}.predecessorEventDigest`, "Profile proposal event must begin a new Trace.");
+	const payload = decodeProfileProposed(requiredField("Profile Change event", record, "payload", path), `${path}.payload`);
+	const reference = payload.change.reference;
+	if (ownerBinding.profile !== reference.profile || ownerBinding.kernelBuildDigest !== reference.kernelBuildDigest || ownerBinding.transactionDigest !== reference.transactionDigest) {
+		rejectContract("invalid_field", "Profile Change event", `${path}.ownerBinding`, "Owner binding does not match profile reference grounds.");
+	}
+	if (reference.before.commit.algorithm !== expectedProjectHead.algorithm || reference.before.commit.hex !== expectedProjectHead.hex) {
+		rejectContract("invalid_field", "Profile Change event", `${path}.payload.change.reference.before`, "Profile reference before snapshot differs from expected Project head.");
+	}
+	const marker = textField("Profile Change event", record, "containingCommit", path, {maximumBytes: 32});
+	if (marker !== CONTAINING_COMMIT) rejectContract("invalid_field", "Profile Change event", `${path}.containingCommit`, `Expected ${CONTAINING_COMMIT}.`);
+	const eventDigest = profileDigestField(record, "eventDigest", path);
+	const result = Object.freeze({
+		protocol: PROFILE_CHANGE_EVENT_PROTOCOL,
+		kind,
+		ownerBinding,
+		actorId: profileNamespacedField(record, "actorId", path),
+		authorityId: profileNamespacedField(record, "authorityId", path),
+		commandId: profileNamespacedField(record, "commandId", path),
+		commandDigest: profileDigestField(record, "commandDigest", path),
+		occurredAt: textField("Profile Change event", record, "occurredAt", path, {
+			maximumBytes: 35,
+			pattern: /^\d{4}-\d{2}-\d{2}(?:T)\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u,
+		}),
+		expectedProjectHead,
+		expectedChangeTip: null,
+		containingCommit: CONTAINING_COMMIT,
+		predecessorEventDigest: null,
+		payload,
+		eventDigest,
+	});
+	const {eventDigest: _eventDigest, ...body} = result;
+	const expected = semanticDigest(profileEventProtocolLabel(), body);
+	if (!expected.ok) rejectContract("invalid_field", "Profile Change event", `${path}.eventDigest`, expected.error.message);
+	assertDigestMatch("Profile Change event", `${path}.eventDigest`, eventDigest, expected.value);
+	return result;
+}
+
+function decodeOwnerBinding(value: CanonicalValue, path: string): ProfileChangeOwnerBinding {
+	const record = exactRecord("Profile Change event", value, path, ["kernelBuildDigest", "kind", "profile", "transactionDigest"]);
+	return Object.freeze({
+		kind: literalField("Profile Change event", record, "kind", ["kernel"] as const, path),
+		profile: literalField("Profile Change event", record, "profile", [WIKI_PROFILE_ID] as const, path),
+		kernelBuildDigest: profileDigestField(record, "kernelBuildDigest", path),
+		transactionDigest: profileDigestField(record, "transactionDigest", path),
+	});
+}
+
+function decodeProfileProposed(value: CanonicalValue, path: string): ProfileChangeProposedPayload {
+	const record = exactRecord("Profile Change event", value, path, ["change"]);
+	return Object.freeze({change: decodeProfileChangeValue(requiredField("Profile Change event", record, "change", path), `${path}.change`)});
+}
+
+function profileNamespacedField(record: CanonicalRecord, field: string, path: string): string {
+	const value = textField("Profile Change event", record, field, path, {maximumBytes: 256});
+	if (!isNamespacedIdentifier(value)) rejectContract("invalid_field", "Profile Change event", `${path}.${field}`, "Identity must be canonical namespaced text.");
+	return value;
+}
+
+function profileDigestField(record: CanonicalRecord, field: string, path: string): Sha256Digest {
+	const decoded = decodeSha256Digest(record[field]);
+	if (!decoded.ok) rejectContract("invalid_field", "Profile Change event", `${path}.${field}`, decoded.error.message);
+	return decoded.value;
+}
+
+function nullableProfileDigest(record: CanonicalRecord, field: string, path: string): Sha256Digest | null {
+	const value = requiredField("Profile Change event", record, field, path);
+	if (value === null) return null;
+	return profileDigestField(record, field, path);
+}
+
+function profileEventProtocolLabel(): string {
+	return `${PROFILE_CHANGE_EVENT_PROTOCOL.id}@${PROFILE_CHANGE_EVENT_PROTOCOL.version}`;
 }

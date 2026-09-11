@@ -2,9 +2,13 @@ import {canonicalJson} from "../../kernel/data-contracts/canonical-json.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
 	appendChangeEvent,
+	appendProfileChangeEvent,
 	encodeChangeTrace,
+	encodeProfileChangeTrace,
 	type ChangeTrace,
+	type ProfileChangeTrace,
 } from "../../kernel/changes/trace.ts";
+import type {ProfileChangeEvent} from "../../kernel/changes/events.ts";
 import type {ChangeEvent, SemanticEventOwners} from "../../kernel/changes/events.ts";
 import type {ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {gitOidText, sameGitOid, type GitOid, type GitRef} from "../../kernel/identity/git.ts";
@@ -44,12 +48,14 @@ export interface LoadedLifecycleChange {
 	readonly change: LoadedChange;
 }
 
-export interface TraceCommitResult {
+export interface TraceCommitResult<T extends ChangeTrace | ProfileChangeTrace = ChangeTrace> {
 	readonly commit: GitOid;
 	readonly tree: GitOid;
-	readonly trace: ChangeTrace;
+	readonly trace: T;
 	readonly traceBlob: GitOid;
 }
+
+export type ProfileTraceCommitResult = TraceCommitResult<ProfileChangeTrace>;
 
 export interface TreeDeltaEntry {
 	readonly path: string;
@@ -108,40 +114,53 @@ export function commandAlreadyRecorded(trace: ChangeTrace, commandId: string): C
 	return trace.events.find((event) => event.commandId === commandId) ?? null;
 }
 
+type LegacyTraceCommitInput = Readonly<{
+	base: ProjectSnapshot;
+	parents: readonly GitOid[];
+	trace: ChangeTrace;
+	events: readonly ChangeEvent[];
+	owners: SemanticEventOwners;
+	mutations?: readonly ProjectStoreTreeMutation[];
+	actor: AuthorizedProjectActor;
+	timestamp: string;
+	message: string;
+}>;
+
+type ProfileTraceCommitInput = Readonly<{
+	base: ProjectSnapshot;
+	parents: readonly GitOid[];
+	trace: ProfileChangeTrace;
+	events: readonly ProfileChangeEvent[];
+	mutations?: readonly ProjectStoreTreeMutation[];
+	actor: AuthorizedProjectActor;
+	timestamp: string;
+	message: string;
+}>;
+
+export function appendTraceCommit(
+	environment: LifecycleRepositoryEnvironment,
+	input: LegacyTraceCommitInput,
+): Promise<Outcome<TraceCommitResult, ProductError>>;
+export function appendTraceCommit(
+	environment: LifecycleRepositoryEnvironment,
+	input: ProfileTraceCommitInput,
+): Promise<Outcome<ProfileTraceCommitResult, ProductError>>;
 export async function appendTraceCommit(
 	environment: LifecycleRepositoryEnvironment,
-	input: Readonly<{
-		base: ProjectSnapshot;
-		parents: readonly GitOid[];
-		trace: ChangeTrace;
-		events: readonly ChangeEvent[];
-		owners: SemanticEventOwners;
-		mutations?: readonly ProjectStoreTreeMutation[];
-		actor: AuthorizedProjectActor;
-		timestamp: string;
-		message: string;
-	}>,
-): Promise<Outcome<TraceCommitResult, ProductError>> {
-	let trace = input.trace;
-	for (const event of input.events) {
-		const appended = appendChangeEvent(trace, event, input.owners);
-		if (!appended.ok) return failure(invalidState("Change Trace rejected the requested lifecycle transition."));
-		trace = appended.value;
-	}
-	const encoded = encodeChangeTrace(trace, input.owners);
-	if (!encoded.ok) return failure(invalidState("Change Trace could not be encoded safely."));
-	const traceBytes = new TextEncoder().encode(encoded.value);
-	const traceObject = await writeBlob(environment, traceBytes, input.actor.authorizationId);
+	input: LegacyTraceCommitInput | ProfileTraceCommitInput,
+): Promise<Outcome<TraceCommitResult<ChangeTrace | ProfileChangeTrace>, ProductError>> {
+	const prepared = "owners" in input
+		? prepareTrace(input.trace, input.events, (trace, event) => appendChangeEvent(trace, event, input.owners), (trace) => encodeChangeTrace(trace, input.owners))
+		: prepareTrace(input.trace, input.events, appendProfileChangeEvent, encodeProfileChangeTrace);
+	if (!prepared.ok) return prepared;
+	const {trace, text} = prepared.value;
+	const traceLocation = tracePath(trace.header.changeId);
+	const paths = [...(input.mutations ?? []).map((entry) => entry.path), traceLocation];
+	if (new Set(paths).size !== paths.length) return failure(invalidState("Lifecycle transaction attempted duplicate Project paths."));
+	const traceObject = await writeBlob(environment, new TextEncoder().encode(text), input.actor.authorizationId);
 	if (!traceObject.ok) return traceObject;
-	const mutations = [...(input.mutations ?? []), Object.freeze({
-		path: tracePath(trace.header.changeId),
-		mode: "100644",
-		kind: "blob",
-		oid: traceObject.value,
-	}) as ProjectStoreTreeMutation].sort((left, right) => compareText(left.path, right.path));
-	if (new Set(mutations.map((entry) => entry.path)).size !== mutations.length) {
-		return failure(invalidState("Lifecycle transaction attempted duplicate Project paths."));
-	}
+	const traceMutation: ProjectStoreTreeMutation = Object.freeze({path: traceLocation, mode: "100644", kind: "blob", oid: traceObject.value});
+	const mutations = [...(input.mutations ?? []), traceMutation].sort((left, right) => compareText(left.path, right.path));
 	const tree = await writeTree(environment, input.base.tree, mutations, input.actor.authorizationId);
 	if (!tree.ok) return tree;
 	const commit = await createCommit(environment, {
@@ -154,6 +173,22 @@ export async function appendTraceCommit(
 	});
 	if (!commit.ok) return commit;
 	return success(Object.freeze({commit: commit.value, tree: tree.value, trace, traceBlob: traceObject.value}));
+}
+
+function prepareTrace<T, E>(
+	initial: T,
+	events: readonly E[],
+	append: (trace: T, event: E) => Outcome<T, Readonly<{message: string}>>,
+	encode: (trace: T) => Outcome<string, Readonly<{message: string}>>,
+): Outcome<Readonly<{trace: T; text: string}>, ProductError> {
+	let trace = initial;
+	for (const event of events) {
+		const appended = append(trace, event);
+		if (!appended.ok) return failure(invalidState("Change Trace rejected the requested lifecycle transition."));
+		trace = appended.value;
+	}
+	const encoded = encode(trace);
+	return encoded.ok ? success(Object.freeze({trace, text: encoded.value})) : failure(invalidState("Change Trace could not be encoded safely."));
 }
 
 export async function writeBlob(

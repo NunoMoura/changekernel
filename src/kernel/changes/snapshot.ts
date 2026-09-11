@@ -19,7 +19,14 @@ import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {decodeGitOidValue, sameGitOid, type GitObjectFormat, type GitOid} from "../identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
-import type {ChangeEvent} from "./events.ts";
+
+/** Projection of an already-admitted event; not payload admission or authorization. */
+export interface SnapshotEventGrounds {
+	readonly kind: string;
+	readonly expectedProjectHead: GitOid;
+	readonly expectedChangeTip: GitOid | null;
+	readonly eventDigest: Sha256Digest;
+}
 
 export const PROJECT_SNAPSHOT_PROTOCOL = protocolIdentity("codewiki.project-snapshot", "1.0.0");
 
@@ -130,7 +137,7 @@ export function validateChangeCommitSnapshot(input: Readonly<{
 	projectBefore: ProjectSnapshot;
 	changeBefore: ProjectSnapshot;
 	result: ProjectSnapshot;
-	event: ChangeEvent;
+	event: SnapshotEventGrounds;
 	changes: readonly TreeChange[];
 	traceDelta: TraceDelta;
 	authorizedPaths: readonly string[];
@@ -149,7 +156,7 @@ export function validateCompletionCommitSnapshot(input: Readonly<{
 	projectBefore: ProjectSnapshot;
 	changeBefore: ProjectSnapshot;
 	result: ProjectSnapshot;
-	event: ChangeEvent;
+	event: SnapshotEventGrounds;
 	changes: readonly TreeChange[];
 	traceDelta: TraceDelta;
 	authorizedPaths: readonly string[];
@@ -184,7 +191,7 @@ function validateTwoParentCommit(
 		projectBefore: ProjectSnapshot;
 		changeBefore: ProjectSnapshot;
 		result: ProjectSnapshot;
-		event: ChangeEvent;
+		event: SnapshotEventGrounds;
 		changes: readonly TreeChange[];
 		traceDelta: TraceDelta;
 		authorizedPaths: readonly string[];

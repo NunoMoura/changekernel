@@ -13,6 +13,8 @@ Models and humans propose interpretations, dependencies, counterexamples and jud
 
 The service applies authorization and performs effects. Deterministic kernel mechanisms enforce representational contracts, subject/authority binding and declared transition invariants using explicit inputs and typed outcomes. They have no ambient filesystem, Git, process, network, provider, clock or randomness access. Effectful inference stays outside this pure boundary without removing semantic ownership from the kernel.
 
+Change Trace events have common Kernel-defined meanings across Projects; they are not project-specific Change types. Broad Change classifications and the actual intent, context and commitments can condition Work and scrutiny without redefining event kinds or waiving obligations. Profile-native events bind their versioned protocol to the exact Kernel Build, selected Wiki profile and source grounds, rather than requiring a project-declared Wiki owner for each event kind. This is semantic provenance, not Actor authorization or proof that an effect was permitted. Historical event schemas and their recorded grounds remain attributable without rewriting their identities.
+
 ## Knowledge and transition reasoning
 
 The [validation contract](checks.md) governs the six semantic dimensions, findings and contextual scrutiny across all four loops. Compatible, reachable and realized are different claims. Acceptable-state regions, refinement and alternatives can support reasoning without requiring users to author a formal logic or maintain another State entity.

@@ -28,6 +28,7 @@ import {decodeSha256Digest, type Sha256Digest} from "../kernel/identity/sha256.t
 import {CHANGE_TRACE_PROTOCOL, MAX_TRACE_BYTES} from "../kernel/changes/trace.ts";
 import {MAXIMUM_WIKI_FILE_BYTES} from "../kernel/wiki/file.ts";
 import {WIKI_ITEM_PROTOCOL} from "../kernel/wiki/item.ts";
+import {WIKI_PROFILE_ID} from "../kernel/wiki/profile.ts";
 import {MAXIMUM_WIKI_ITEMS, MAXIMUM_WIKI_TOTAL_BYTES} from "../kernel/wiki/tree.ts";
 import {AGENT_RUNTIME_PORT_PROTOCOL, type AgentRuntimePort} from "../ports/agent-runtime.ts";
 import {CHECK_RUNNER_PORT_PROTOCOL, type CheckRunnerPort} from "../ports/check-runner.ts";
@@ -35,6 +36,7 @@ import {PREVIEW_PORT_PROTOCOL, type PreviewPort} from "../ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL, type ProjectStorePort} from "../ports/project-store.ts";
 import {
 	PROJECT_ACCESS_POLICY_PROTOCOL,
+	profileScopeGuard,
 	type AuthorizedProjectActor,
 	type ProjectAccessPolicy,
 } from "./authorization/policy.ts";
@@ -50,6 +52,7 @@ import {
 	readWork,
 } from "./queries/project.ts";
 import {executeLifecycleCommand, type ProtectedEffectConfiguration} from "./commands/lifecycle.ts";
+import {readProfileChange} from "./queries/profile-change.ts";
 import {PROJECT_SERVER_FACTS_PROTOCOL, type ProjectServerFactsPort} from "./recovery/facts.ts";
 import {executeWikiRead} from "./queries/wiki.ts";
 import {
@@ -88,6 +91,7 @@ export interface ProjectServerProject {
 	readonly canonicalRef: GitRef;
 	readonly kernelBuildDigest: Sha256Digest;
 	readonly retiredWikiItemIds: readonly string[];
+	readonly wikiProfile?: typeof WIKI_PROFILE_ID;
 }
 
 export interface ProjectServerInput {
@@ -250,6 +254,10 @@ export function createProjectServer(
 					"Choose the configured Project and retry.",
 					false,
 				)));
+				const profileAvailability = profileOperationAvailability(configuration.value, request.value.operation, request.value.input);
+				if (profileAvailability !== null) return responseFor(request.value, failure(profileAvailability));
+				const profileScope = configuration.value.wikiProfile === WIKI_PROFILE_ID ? profileScopeGuard(actor.value, request.value.operation, request.value.input) : null;
+				if (profileScope !== null) return responseFor(request.value, failure(profileScope));
 				const replayed = replayResponse(replay, actor.value, request.value);
 				if (replayed !== null) return replayed;
 				let response: unknown;
@@ -303,6 +311,20 @@ export function createProjectServer(
 	return success(server);
 }
 
+function profileOperationAvailability(
+	configuration: ProjectReadConfiguration,
+	operation: string,
+	input: CanonicalValue,
+): ProductError | null {
+	const profileMode = configuration.wikiProfile === WIKI_PROFILE_ID;
+	if (operation === "changes.propose-profile") {
+		return profileMode ? null : productError("unavailable", "Profile-native Change proposal is unavailable for this Project.", "Select an explicitly profile-enabled Project.", false);
+	}
+	if (!profileMode) return null;
+	if (operation === "changes.read" && isCanonicalObject(input) && input.view === "get") return null;
+	return productError("unavailable", "This operation is unavailable while the Project uses its explicit Wiki profile.", "Use profile-native Change proposal or Changes get in this lifecycle slice.", false);
+}
+
 async function executeRead(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
@@ -319,8 +341,11 @@ async function executeRead(
 			return readProjectStatus(store, configuration, actor, (input as Readonly<{source: ProjectSourceSelector}>).source);
 		case "wiki.read":
 			return executeWikiRead(store, configuration, actor, input as WikiReadInput);
-		case "changes.read":
-			return readChanges(store, configuration, actor, input as ChangesReadInput);
+		case "changes.read": {
+			const changesInput = input as ChangesReadInput;
+			if (configuration.wikiProfile === WIKI_PROFILE_ID && changesInput.view === "get") return readProfileChange(store, configuration, actor, changesInput);
+			return readChanges(store, configuration, actor, changesInput);
+		}
 		case "checks.read":
 			return readChecks(store, configuration, actor, input as ChecksReadInput);
 		case "work.read":
@@ -487,7 +512,7 @@ function projectConfiguration(
 	inputLimits: Partial<ProjectReadLimits> | undefined,
 ): Outcome<ProjectReadConfiguration, ProjectServerBindingFailure> {
 	if (typeof project !== "object" || project === null || !hasOnlyKeys(project, [
-		"projectName", "repositoryId", "objectFormat", "canonicalRef", "kernelBuildDigest", "retiredWikiItemIds",
+		"projectName", "repositoryId", "objectFormat", "canonicalRef", "kernelBuildDigest", "retiredWikiItemIds", "wikiProfile",
 	]) || typeof project.projectName !== "string" ||
 		project.projectName.length === 0 || new TextEncoder().encode(project.projectName).byteLength > 256 ||
 		project.projectName.normalize("NFC") !== project.projectName ||
@@ -495,7 +520,8 @@ function projectConfiguration(
 		!isNamespacedIdentifier(project.repositoryId)) {
 		return failure(bindingFailure("invalid_configuration", "project", "Project identity is invalid."));
 	}
-	if (!(project.objectFormat === "sha1" || project.objectFormat === "sha256") || !decodeSha256Digest(project.kernelBuildDigest).ok) {
+	if (!(project.objectFormat === "sha1" || project.objectFormat === "sha256") || !decodeSha256Digest(project.kernelBuildDigest).ok ||
+		(project.wikiProfile !== undefined && project.wikiProfile !== WIKI_PROFILE_ID)) {
 		return failure(bindingFailure("invalid_configuration", "project", "Project object or build identity is invalid."));
 	}
 	const canonicalRef = decodeGitRef(project.canonicalRef);
@@ -504,6 +530,9 @@ function projectConfiguration(
 	}
 	if (!validRetiredIds(project.retiredWikiItemIds)) {
 		return failure(bindingFailure("invalid_configuration", "retiredWikiItemIds", "Retired Wiki Item IDs must be sorted and unique."));
+	}
+	if (project.wikiProfile === WIKI_PROFILE_ID && project.retiredWikiItemIds.length > 0) {
+		return failure(bindingFailure("invalid_configuration", "wikiProfile", "Profile mode cannot combine with legacy Wiki retirement reservations."));
 	}
 	const limits = readLimits(inputLimits);
 	if (!limits.ok) return limits;
@@ -514,6 +543,7 @@ function projectConfiguration(
 		canonicalRef: canonicalRef.value,
 		kernelBuildDigest: project.kernelBuildDigest,
 		retiredWikiItemIds: Object.freeze([...project.retiredWikiItemIds]),
+		...(project.wikiProfile === undefined ? {} : {wikiProfile: project.wikiProfile}),
 		limits: limits.value,
 	}));
 }
@@ -613,7 +643,7 @@ function isTransportResponse(value: unknown): value is ProductTransportResponse 
 }
 
 function replayKey(actor: AuthorizedProjectActor, request: ProductTransportRequest): string {
-	return `${actor.actorId}\0${request.requestId}`;
+	return `${actor.authorizationId}\0${actor.actorId}\0${request.requestId}`;
 }
 
 function validRetiredIds(input: readonly string[]): boolean {

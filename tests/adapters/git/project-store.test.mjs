@@ -1061,3 +1061,48 @@ test("SC-2R an applied but unreadable CAS remains unresolved rather than falsely
 	assert.equal(await git(repo.root, ["--git-dir", aside, "rev-parse", requests.cas.updates[0].ref]), requests.head.hex, "The fixture oracle observes an effect despite the failed response");
 	assert.equal(await readFile(calls, "utf8"), "called\n");
 });
+
+for (const algorithm of ["sha1", "sha256"]) test(`tree mutation preserves exact inherited native paths without granting nonportable writes (${algorithm})`, async t => {
+	const repo = await repository(algorithm); t.after(() => rm(repo.root, {recursive: true, force: true}));
+	for (const path of ["Cafe\u0301.md", "🌱/tip.md", "a.c", "a/child.md", "a0.md", "tab\tname.txt"]) {
+		await mkdir(dirname(join(repo.root, path)), {recursive: true});
+		await writeFile(join(repo.root, path), `Exact ${path}\n`);
+	}
+	await git(repo.root, ["add", "--all"]); await git(repo.root, ["commit", "-q", "-m", "native names"]);
+	const baseTree = oid(algorithm, await git(repo.root, ["rev-parse", "HEAD^{tree}"]));
+	const blob = oid(algorithm, await git(repo.root, ["rev-parse", "HEAD:README.md"]));
+	const baseline = {refs: await git(repo.root, ["show-ref"]), config: await readFile(join(repo.root, ".git/config")), index: await readFile(join(repo.root, ".git/index"))};
+	const body = {repositoryId: "cw:repository:test", objectFormat: algorithm, baseTree, mutations: [{path: "addition.txt", mode: "100644", kind: "blob", oid: blob}], authorizationId: "cw:authorization:test"};
+	const signed = projectStoreTreeWriteRequestDigest(body); assert.equal(signed.ok, true);
+	const result = await repo.store.writeTree({...body, requestDigest: signed.value});
+	assert.equal(result.ok, true, result.ok ? "" : result.error.message);
+	assert.equal(await git(repo.root, ["diff-tree", "--no-commit-id", "--name-only", "-r", baseTree.hex, result.value.tree.hex]), "addition.txt");
+	const remove = {...body, baseTree: result.value.tree, mutations: [{path: "addition.txt", mode: null, kind: null, oid: null}]};
+	const restored = await repo.store.writeTree({...remove, requestDigest: projectStoreTreeWriteRequestDigest(remove).value});
+	assert.equal(restored.ok, true); assert.deepEqual(restored.value.tree, baseTree, "Every retained native tree byte is reproduced");
+	const objects = await git(repo.root, ["count-objects", "-v"]);
+	for (const path of ["Cafe\u0301.md", "newline\nname.txt", ".git/config", "../outside"]) {
+		const denied = {...body, mutations: [{path, mode: "100644", kind: "blob", oid: blob}]};
+		const digest = projectStoreTreeWriteRequestDigest(denied);
+		assert.equal((await repo.store.writeTree({...denied, requestDigest: digest.ok ? digest.value : "sha256:" + "0".repeat(64)})).ok, false);
+	}
+	assert.equal(await git(repo.root, ["count-objects", "-v"]), objects);
+	assert.equal(await git(repo.root, ["show-ref"]), baseline.refs);
+	assert.deepEqual(await readFile(join(repo.root, ".git/config")), baseline.config);
+	assert.deepEqual(await readFile(join(repo.root, ".git/index")), baseline.index);
+});
+
+test("leaf tree writer rejects an empty inherited subtree instead of dropping its identity", async t => {
+	const repo = await repository(); t.after(() => rm(repo.root, {recursive: true, force: true}));
+	const scratch = join(repo.root, ".git", "fixture-tree-bytes");
+	await writeFile(scratch, "");
+	const empty = await git(repo.root, ["hash-object", "-t", "tree", "-w", scratch]);
+	await writeFile(scratch, Buffer.concat([Buffer.from("40000 empty\0"), Buffer.from(empty, "hex")]));
+	const baseTree = oid("sha1", await git(repo.root, ["hash-object", "-t", "tree", "-w", scratch]));
+	const blob = oid("sha1", await git(repo.root, ["rev-parse", "HEAD:README.md"]));
+	const body = {repositoryId: "cw:repository:test", objectFormat: "sha1", baseTree, mutations: [{path: "addition.txt", mode: "100644", kind: "blob", oid: blob}], authorizationId: "cw:authorization:test"};
+	const refs = await git(repo.root, ["show-ref"]);
+	const result = await repo.store.writeTree({...body, requestDigest: projectStoreTreeWriteRequestDigest(body).value});
+	assert.equal(result.ok, false); assert.match(result.error.message, /empty subtrees/u);
+	assert.equal(await git(repo.root, ["show-ref"]), refs);
+});

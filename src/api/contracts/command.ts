@@ -24,10 +24,15 @@ import {
 	type ChangeType,
 } from "../../kernel/changes/contracts.ts";
 import {decodeGitOidValue, type GitOid} from "../../kernel/identity/git.ts";
+import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
+import {decodeProfiledPathUtf8Hex} from "../../kernel/wiki/profile-reference.ts";
+import {PROFILED_WIKI_MAPPING_KINDS, type ProfiledWikiMappingKind} from "../../kernel/wiki/profile-transaction.ts";
+import {WIKI_PROFILE_ID} from "../../kernel/wiki/profile.ts";
 
 export const PRODUCT_COMMAND_OPERATIONS = Object.freeze([
 	"changes.complete",
 	"changes.propose",
+	"changes.propose-profile",
 	"changes.revise",
 	"changes.supersede",
 	"decision.commit",
@@ -90,6 +95,39 @@ export interface ProposeChangesInput {
 	readonly proposals: readonly ProposalInput[];
 }
 
+export interface ProfileProposalEndpointInput {
+	readonly pathUtf8Hex: string;
+	readonly blob: GitOid;
+}
+
+export interface ProfileProposalMappingInput {
+	readonly kind: ProfiledWikiMappingKind;
+	readonly before: readonly ProfileProposalEndpointInput[];
+	readonly after: readonly ProfileProposalEndpointInput[];
+}
+
+export interface ProfileProposalInput {
+	readonly changeType: ChangeType;
+	readonly realization: ChangeRealization;
+	readonly intent: string;
+	readonly rationale: string;
+	readonly acceptance: readonly string[];
+	readonly relationships: readonly Readonly<{kind: ChangeRelationKind; changeId: string}>[];
+	readonly contributorRefs: readonly string[];
+	readonly producerRunRefs: readonly string[];
+}
+
+export interface ProposeProfileChangeInput {
+	readonly commandId: string;
+	readonly changeId: string;
+	readonly expectedProjectHead: GitOid;
+	readonly profile: typeof WIKI_PROFILE_ID;
+	readonly kernelBuildDigest: Sha256Digest;
+	readonly afterCommit: GitOid;
+	readonly proposal: ProfileProposalInput;
+	readonly mappings: readonly ProfileProposalMappingInput[];
+}
+
 export interface ReviseChangeInput extends CommandBindingInput {
 	readonly changeId: string;
 	readonly proposal: Omit<ProposalInput, "proposalKey">;
@@ -137,6 +175,7 @@ export interface ProtectedEffectInput extends ChangeCommandInput {
 
 export type ProductCommandInput =
 	| ProposeChangesInput
+	| ProposeProfileChangeInput
 	| ReviseChangeInput
 	| ChangeCommandInput
 	| ReasonedChangeCommandInput
@@ -159,6 +198,8 @@ export function decodeProductCommandInput(
 		switch (operation) {
 			case "changes.propose":
 				return decodePropose(value);
+			case "changes.propose-profile":
+				return decodeProposeProfile(value);
 			case "changes.revise":
 				return decodeRevise(value);
 			case "decision.defer":
@@ -201,6 +242,88 @@ function decodePropose(value: CanonicalValue): ProposeChangesInput {
 		expectedProjectHead: oidField(record, "expectedProjectHead"),
 		proposals: Object.freeze(proposals),
 	});
+}
+
+function decodeProposeProfile(value: CanonicalValue): ProposeProfileChangeInput {
+	const record = exactRecord(CONTRACT, value, "$", ["afterCommit", "changeId", "commandId", "expectedProjectHead", "kernelBuildDigest", "mappings", "profile", "proposal"]);
+	const expectedProjectHead = oidField(record, "expectedProjectHead");
+	const afterCommit = oidField(record, "afterCommit");
+	if (expectedProjectHead.algorithm !== afterCommit.algorithm) rejectContract("invalid_field", CONTRACT, "$.afterCommit", "Profile source commits must use expected Project object format.");
+	return Object.freeze({
+		commandId: commandIdField(record),
+		changeId: changeIdField(record, "changeId"),
+		expectedProjectHead,
+		profile: literalField(CONTRACT, record, "profile", [WIKI_PROFILE_ID] as const, "$"),
+		kernelBuildDigest: sha256Field(record, "kernelBuildDigest"),
+		afterCommit,
+		proposal: decodeProfileProposal(requiredField(CONTRACT, record, "proposal"), "$.proposal"),
+		mappings: decodeProfileMappings(requiredField(CONTRACT, record, "mappings"), "$.mappings"),
+	});
+}
+
+function decodeProfileProposal(value: CanonicalValue, path: string): ProfileProposalInput {
+	const record = exactRecord(CONTRACT, value, path, ["acceptance", "changeType", "contributorRefs", "intent", "producerRunRefs", "rationale", "realization", "relationships"]);
+	const relationships = arrayField(CONTRACT, record, "relationships", path, 1_024).map((entry, index) => {
+		const relationshipPath = `${path}.relationships[${index}]`;
+		const relationship = exactRecord(CONTRACT, entry, relationshipPath, ["changeId", "kind"]);
+		return Object.freeze({
+			kind: literalField(CONTRACT, relationship, "kind", CHANGE_RELATIONS, relationshipPath),
+			changeId: changeIdField(relationship, "changeId", relationshipPath),
+		});
+	});
+	assertOrderedUnique(relationships.map((entry) => `${entry.kind}\0${entry.changeId}`), `${path}.relationships`);
+	return Object.freeze({
+		changeType: literalField(CONTRACT, record, "changeType", CHANGE_TYPES, path),
+		realization: literalField(CONTRACT, record, "realization", CHANGE_REALIZATIONS, path),
+		intent: textField(CONTRACT, record, "intent", path, {minimumBytes: 1, maximumBytes: 16_384}),
+		rationale: textField(CONTRACT, record, "rationale", path, {minimumBytes: 1, maximumBytes: 16_384}),
+		acceptance: boundedTextSet(record, "acceptance", path, 256, 4_096),
+		relationships: Object.freeze(relationships),
+		contributorRefs: namespacedSet(record, "contributorRefs", path, 1_024),
+		producerRunRefs: namespacedSet(record, "producerRunRefs", path, 1_024),
+	});
+}
+
+function decodeProfileMappings(value: CanonicalValue, path: string): readonly ProfileProposalMappingInput[] {
+	const input = arrayField(CONTRACT, {mappings: value}, "mappings", "$", 1_024);
+	const mappings: ProfileProposalMappingInput[] = [];
+	let beforeBudget = 512;
+	let afterBudget = 512;
+	for (let index = 0; index < input.length; index += 1) {
+		const entry = input[index] as CanonicalValue;
+		const mappingPath = `${path}[${index}]`;
+		const record = exactRecord(CONTRACT, entry, mappingPath, ["after", "before", "kind"]);
+		const before = decodeProfileEndpoints(requiredField(CONTRACT, record, "before", mappingPath), `${mappingPath}.before`, beforeBudget);
+		const after = decodeProfileEndpoints(requiredField(CONTRACT, record, "after", mappingPath), `${mappingPath}.after`, afterBudget);
+		beforeBudget -= before.length;
+		afterBudget -= after.length;
+		mappings.push(Object.freeze({
+			kind: literalField(CONTRACT, record, "kind", PROFILED_WIKI_MAPPING_KINDS, mappingPath),
+			before,
+			after,
+		}));
+	}
+	assertOrderedUnique(mappings.map((entry) => `${entry.kind}\0${entry.before.map((endpoint) => `${endpoint.pathUtf8Hex}:${endpoint.blob.algorithm}:${endpoint.blob.hex}`).join("\0")}\0${entry.after.map((endpoint) => `${endpoint.pathUtf8Hex}:${endpoint.blob.algorithm}:${endpoint.blob.hex}`).join("\0")}`), path);
+	return Object.freeze(mappings);
+}
+
+function decodeProfileEndpoints(value: CanonicalValue, path: string, maximum: number): readonly ProfileProposalEndpointInput[] {
+	const endpoints = arrayField(CONTRACT, {endpoints: value}, "endpoints", "$", Math.min(512, maximum)).map((entry, index) => {
+		const endpointPath = `${path}[${index}]`;
+		const record = exactRecord(CONTRACT, entry, endpointPath, ["blob", "pathUtf8Hex"]);
+		const pathUtf8Hex = textField(CONTRACT, record, "pathUtf8Hex", endpointPath, {maximumBytes: 8_192});
+		const decoded = decodeProfiledPathUtf8Hex(pathUtf8Hex);
+		if (!decoded.ok) rejectContract("invalid_field", CONTRACT, `${endpointPath}.pathUtf8Hex`, decoded.error.message);
+		return Object.freeze({pathUtf8Hex, blob: oidField(record, "blob")});
+	});
+	assertOrderedUnique(endpoints.map((entry) => `${entry.pathUtf8Hex}\0${entry.blob.algorithm}:${entry.blob.hex}`), path);
+	return Object.freeze(endpoints);
+}
+
+function sha256Field(record: CanonicalRecord, field: string): Sha256Digest {
+	const decoded = decodeSha256Digest(requiredField(CONTRACT, record, field));
+	if (!decoded.ok) rejectContract("invalid_field", CONTRACT, `$.${field}`, decoded.error.message);
+	return decoded.value;
 }
 
 function decodeRevise(value: CanonicalValue): ReviseChangeInput {

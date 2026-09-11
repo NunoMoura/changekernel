@@ -65,6 +65,7 @@ const SOURCE_ALLOWLIST = [
 	"src/kernel/wiki/item.ts",
 	"src/kernel/wiki/links.ts",
 	"src/kernel/wiki/ownership.ts",
+	"src/kernel/wiki/profile-reference.ts",
 	"src/kernel/wiki/profile-transaction.ts",
 	"src/kernel/wiki/profile.ts",
 	"src/kernel/wiki/transaction.ts",
@@ -84,6 +85,7 @@ const SOURCE_ALLOWLIST = [
 	"src/server/effects/agent-runs.ts",
 	"src/server/index.ts",
 	"src/server/queries/material-source.ts",
+	"src/server/queries/profile-change.ts",
 	"src/server/queries/profile-source.ts",
 	"src/server/queries/project.ts",
 	"src/server/queries/source.ts",
@@ -108,6 +110,7 @@ const TEST_ALLOWLIST = [
 	"tests/api/client/cli-command.test.mjs",
 	"tests/api/client/console.test.mjs",
 	"tests/api/client/index.test.mjs",
+	"tests/api/contracts/profile-lifecycle.test.mjs",
 	"tests/api/contracts/read.test.mjs",
 	"tests/api/transport/envelope.test.mjs",
 	"tests/kernel/changes/contracts.test.mjs",
@@ -134,6 +137,8 @@ const TEST_ALLOWLIST = [
 	"tests/kernel/wiki/fixtures.mjs",
 	"tests/kernel/wiki/item.test.mjs",
 	"tests/kernel/wiki/ownership.test.mjs",
+	"tests/kernel/wiki/profile-fixtures.mjs",
+	"tests/kernel/wiki/profile-reference.test.mjs",
 	"tests/kernel/wiki/profile-transaction.test.mjs",
 	"tests/kernel/wiki/profile.test.mjs",
 	"tests/kernel/wiki/properties.test.mjs",
@@ -149,6 +154,7 @@ const TEST_ALLOWLIST = [
 	"tests/ports/project-store.test.mjs",
 	"tests/server/authorization/policy.test.mjs",
 	"tests/server/commands/lifecycle.test.mjs",
+	"tests/server/commands/profile-lifecycle.test.mjs",
 	"tests/server/effects/agent-runs.test.mjs",
 	"tests/server/effects/containment.test.mjs",
 	"tests/server/index.test.mjs",
@@ -392,9 +398,8 @@ test("corpus remains internal with a bounded data/identity import closure", asyn
 		"src/kernel/identity/git.ts",
 		corpus,
 	]);
-	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
-		assert.equal(reachable(graph, entrypoint).includes(corpus), false, entrypoint);
-	}
+	assert.equal(reachable(graph, "src/index.ts").includes(corpus), true);
+	assert.equal(reachable(graph, "src/kernel/index.ts").includes(corpus), false);
 });
 
 test("material loading stays internal and only composes source, Store and passive corpus contracts", async () => {
@@ -410,13 +415,12 @@ test("material loading stays internal and only composes source, Store and passiv
 		"src/server/queries/source.ts",
 	]);
 	assert.equal(external.has(material), false, "No parser, filesystem, runtime or model dependency");
-	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
-		assert.equal(reachable(graph, entrypoint).includes(material), false, "No public material/adoption API in this repair");
-	}
+	assert.equal(reachable(graph, "src/index.ts").includes(material), true, "Composed through profile lifecycle, not a new package export");
+	assert.equal(reachable(graph, "src/kernel/index.ts").includes(material), false);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(material)).map(([path]) => path), ["src/server/queries/profile-source.ts"]);
 });
 
-test("profiled material loading stays private and keeps parser ownership at the adapter boundary", async () => {
+test("profiled material loading composes only through lifecycle and retains adapter parser ownership", async () => {
 	const {graph, external} = await sourceGraph();
 	const profiled = "src/server/queries/profile-source.ts";
 	assert.deepEqual(graph.get(profiled), [
@@ -431,10 +435,9 @@ test("profiled material loading stays private and keeps parser ownership at the 
 		"src/server/queries/source.ts",
 	]);
 	assert.equal(external.has(profiled), false);
-	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
-		assert.equal(reachable(graph, entrypoint).includes(profiled), false, entrypoint);
-	}
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(profiled)).map(([path]) => path), []);
+	assert.equal(reachable(graph, "src/index.ts").includes(profiled), true);
+	assert.equal(reachable(graph, "src/kernel/index.ts").includes(profiled), false);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(profiled)).map(([path]) => path), ["src/server/commands/lifecycle.ts", "src/server/queries/profile-change.ts"]);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes("src/adapters/git/wiki-profile.ts")).map(([path]) => path), [
 		"src/server/queries/profile-source.ts",
 	]);
@@ -478,7 +481,7 @@ test("public reachability contains only target foundation paths", async () => {
 	assert.equal(pkg.pi, undefined);
 });
 
-test("profile reader is private and keeps parsing at the adapter boundary", async () => {
+test("profile interpretation is composed without moving parsing into the Kernel", async () => {
 	const {graph, external} = await sourceGraph();
 	const kernelProfile = "src/kernel/wiki/profile.ts";
 	const adapterProfile = "src/adapters/git/wiki-profile.ts";
@@ -494,12 +497,17 @@ test("profile reader is private and keeps parsing at the adapter boundary", asyn
 	]);
 	assert.deepEqual(external.get(kernelProfile), undefined);
 	assert.deepEqual(external.get(adapterProfile), ["mdast-util-from-markdown", "yaml"]);
-	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), false);
-	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), false);
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile, "src/kernel/wiki/profile-transaction.ts", "src/server/queries/profile-source.ts"]);
+	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), true);
+	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), true);
+	assert.equal(reachable(graph, "src/kernel/index.ts").includes(adapterProfile), false);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [
+		adapterProfile, "src/api/contracts/command.ts", "src/kernel/changes/events.ts", "src/kernel/wiki/profile-reference.ts",
+		"src/kernel/wiki/profile-transaction.ts", "src/server/commands/lifecycle.ts", "src/server/index.ts",
+		"src/server/queries/profile-change.ts", "src/server/queries/profile-source.ts", "src/server/queries/source.ts",
+	]);
 });
 
-test("profile transaction admission stays private and has no parser or lifecycle dependency", async () => {
+test("profile transaction admission remains pure under exact authorized lifecycle import edges", async () => {
 	const {graph, external} = await sourceGraph();
 	const transaction = "src/kernel/wiki/profile-transaction.ts";
 	assert.deepEqual(graph.get(transaction), [
@@ -511,10 +519,13 @@ test("profile transaction admission stays private and has no parser or lifecycle
 		"src/kernel/wiki/profile.ts",
 	]);
 	assert.deepEqual(external.get(transaction), undefined);
-	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
-		assert.equal(reachable(graph, entrypoint).includes(transaction), false, entrypoint);
+	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) assert.equal(reachable(graph, entrypoint).includes(transaction), true, entrypoint);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(transaction)).map(([path]) => path), [
+		"src/api/contracts/command.ts", "src/kernel/wiki/profile-reference.ts", "src/server/commands/lifecycle.ts", "src/server/queries/profile-change.ts",
+	]);
+	for (const [path, forbidden] of [["src/kernel/changes/reducer.ts", "reduceProfileChangeTrace"], ["src/server/commands/repository.ts", "appendProfileTraceCommit"]]) {
+		assert.equal((await readFile(join(repoRoot, path), "utf8")).includes(forbidden), false, "No parallel lifecycle implementation");
 	}
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(transaction)).map(([path]) => path), []);
 });
 
 test("native Wiki ownership assigns every production and test path exactly once", async () => {

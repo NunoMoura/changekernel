@@ -1,4 +1,5 @@
 import {spawnSync, type SpawnSyncReturns} from "node:child_process";
+import {createHash} from "node:crypto";
 import {lstatSync, realpathSync} from "node:fs";
 import {basename, isAbsolute, join, resolve} from "node:path";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
@@ -168,37 +169,22 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		}
 		const complete = this.#assertCompleteCommit(commit.value, "read_tree");
 		if (!complete.ok) return complete;
-		const args = ["ls-tree", "-r", "-z", "--full-tree", commit.value.hex];
+		const args = ["ls-tree", "-r", "-t", "-z", "--full-tree", commit.value.hex];
 		if (request.pathPrefix !== "") args.push("--", `:(literal)${request.pathPrefix}`);
 		const listed = this.#text(args, "read_tree");
 		if (!listed.ok) return failure(this.#commandIssue(listed.error, "read_tree", "Tree could not be listed."));
-		const records = listed.value.split("\0");
-		if (records.pop() !== "") return failure(this.#issue("invalid_object", "read_tree", "Git tree listing was not NUL-terminated."));
-		if (records.length > request.maximumEntries) {
-			return failure(this.#issue("limit_exceeded", "read_tree", `Tree exceeds ${request.maximumEntries} entries.`));
+		const entries = this.#parseFlatTreeListing(listed.value, "read_tree", request.maximumEntries, request.pathPrefix);
+		if (!entries.ok) return entries;
+		if (request.pathPrefix === "") {
+			// A complete leaf inventory must reproduce the native tree exactly; Git's
+			// presentation can hide empty subtrees or normalize noncanonical modes.
+			const original = this.#text(["show", "-s", "--format=%T", commit.value.hex], "read_tree");
+			if (!original.ok) return failure(this.#commandIssue(original.error, "read_tree", "Root tree identity could not be read."));
+			const reproduced = this.#materializeFlatTree(entries.value, "read_tree", false);
+			if (!reproduced.ok) return reproduced;
+			if (reproduced.value.hex !== original.value.trim()) return failure(this.#issue("invalid_object", "read_tree", "Native tree cannot be represented exactly by the leaf inventory."));
 		}
-		const entries: ProjectStoreTreeEntry[] = [];
-		let previousPath = "";
-		for (const record of records) {
-			const separator = record.indexOf("\t");
-			const metadata = separator < 0 ? "" : record.slice(0, separator);
-			const path = separator < 0 ? "" : record.slice(separator + 1);
-			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
-			if (!match || !validReadRepositoryPath(path) || (previousPath.length > 0 && compareRepositoryOrder(previousPath, path) >= 0) ||
-				(request.pathPrefix !== "" && !(path === request.pathPrefix || path.startsWith(`${request.pathPrefix}/`)))) {
-				return failure(this.#issue("invalid_object", "read_tree", "Git returned a malformed or non-canonical tree listing."));
-			}
-			const object = this.#oid(match[3] as string, "read_tree");
-			if (!object.ok) return object;
-			entries.push(Object.freeze({
-				path,
-				mode: match[1] as string,
-				kind: match[2] as "blob" | "commit",
-				oid: object.value,
-			}));
-			previousPath = path;
-		}
-		return success(Object.freeze({commit: commit.value, entries: Object.freeze(entries)}));
+		return success(Object.freeze({commit: commit.value, entries: entries.value}));
 	}
 
 	async writeBlob(request: ProjectStoreBlobWriteRequest): Promise<Outcome<ProjectStoreBlobWriteReceipt, ProjectStoreIssue>> {
@@ -234,13 +220,18 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		if (request.baseTree !== null) {
 			const base = this.#readTreeObject(request.baseTree, "write_tree");
 			if (!base.ok) return base;
+			// Git presentation can normalize malformed native modes/order. Refuse any
+			// base our leaf writer cannot reproduce byte-for-byte before applying edits.
+			const preserved = this.#materializeFlatTree(base.value, "write_tree", false);
+			if (!preserved.ok) return preserved;
+			if (!sameGitOid(preserved.value, request.baseTree)) return failure(this.#issue("invalid_object", "write_tree", "Base tree cannot be reproduced without changing retained material."));
 			for (const entry of base.value) entries.set(entry.path, entry);
 		}
 		for (const mutation of request.mutations) {
 			if (mutation.oid === null) entries.delete(mutation.path);
 			else entries.set(mutation.path, Object.freeze({path: mutation.path, mode: mutation.mode, kind: mutation.kind, oid: mutation.oid}));
 		}
-		const written = this.#writeFlatTree([...entries.values()]);
+		const written = this.#materializeFlatTree([...entries.values()], "write_tree", true);
 		if (!written.ok) return written;
 		const body = Object.freeze({
 			repositoryId: this.#repositoryId,
@@ -354,35 +345,57 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		const type = this.#objectType(tree, operation);
 		if (!type.ok) return type;
 		if (type.value !== "tree") return failure(this.#issue("invalid_object", operation, "Base tree object is absent or has wrong type."));
-		const listed = this.#text(["ls-tree", "-r", "-z", "--full-tree", tree.hex], operation);
+		const listed = this.#text(["ls-tree", "-r", "-t", "-z", "--full-tree", tree.hex], operation);
 		if (!listed.ok) return failure(this.#commandIssue(listed.error, operation, "Tree object could not be listed."));
-		const records = listed.value.split("\0");
-		if (records.pop() !== "" || records.length > MAX_TREE_MUTATIONS) return failure(this.#issue("limit_exceeded", operation, "Tree object exceeds the supported entry bound."));
+		return this.#parseFlatTreeListing(listed.value, operation, MAX_TREE_MUTATIONS, "");
+	}
+
+	#parseFlatTreeListing(text: string, operation: ProjectStoreIssue["operation"], maximumEntries: number, pathPrefix: string): Outcome<readonly ProjectStoreTreeEntry[], ProjectStoreIssue> {
+		const records = text.split("\0");
+		if (records.pop() !== "") return failure(this.#issue("invalid_object", operation, "Git tree listing was not NUL-terminated."));
+		if (records.length > MAX_TREE_MUTATIONS * 2) return failure(this.#issue("limit_exceeded", operation, "Tree object exceeds the supported entry bound."));
 		const entries: ProjectStoreTreeEntry[] = [];
-		let previousPath = "";
+		const seen = new Set<string>();
+		const directories: string[] = [];
+		const populated = new Set<string>();
+		let previousOrder = "";
 		for (const record of records) {
 			const separator = record.indexOf("\t");
 			const metadata = separator < 0 ? "" : record.slice(0, separator);
 			const path = separator < 0 ? "" : record.slice(separator + 1);
-			const match = /^([0-7]{6}) (blob|commit) ([0-9a-f]+)$/u.exec(metadata);
+			const match = /^([0-7]{6}) (blob|commit|tree) ([0-9a-f]+)$/u.exec(metadata);
 			const oid = match ? this.#oid(match[3] as string, operation) : null;
-			if (!match || !oid?.ok || !validRepositoryPath(path) || (previousPath !== "" && previousPath >= path)) {
-				return failure(this.#issue("invalid_object", operation, "Git returned a malformed tree object."));
+			// Existing names are exact Git material, not newly authorized mutation paths.
+			if (!match || !oid?.ok || !validReadRepositoryPath(path) || seen.has(path) ||
+				(pathPrefix !== "" && path !== pathPrefix && !path.startsWith(`${pathPrefix}/`) && !(match[2] === "tree" && pathPrefix.startsWith(`${path}/`)))) return failure(this.#issue("invalid_object", operation, "Git returned a malformed tree object."));
+			seen.add(path);
+			const mode = match[1];
+			const kind = match[2];
+			const order = path + (kind === "tree" ? "/" : "");
+			if (previousOrder !== "" && compareRepositoryOrder(previousOrder, order) >= 0) return failure(this.#issue("invalid_object", operation, "Git returned a noncanonical tree order."));
+			previousOrder = order;
+			if (kind === "tree" && mode === "040000") {
+				if (pathPrefix === "" || path === pathPrefix || path.startsWith(`${pathPrefix}/`)) directories.push(path);
+				continue;
 			}
-			entries.push(Object.freeze({path, mode: match[1] as string, kind: match[2] as "blob" | "commit", oid: oid.value}));
-			previousPath = path;
+			if (!((kind === "blob" && (mode === "100644" || mode === "100755" || mode === "120000")) || (kind === "commit" && mode === "160000"))) return failure(this.#issue("invalid_object", operation, "Base tree contains an unsupported native mode."));
+			entries.push(Object.freeze({path, mode, kind, oid: oid.value}));
+			for (let separator = path.indexOf("/"); separator !== -1; separator = path.indexOf("/", separator + 1)) populated.add(path.slice(0, separator));
 		}
+		if (entries.length > maximumEntries) return failure(this.#issue("limit_exceeded", operation, "Tree object exceeds the supported entry bound."));
+		if (directories.some((path) => !populated.has(path))) return failure(this.#issue("invalid_object", operation, "Base tree contains empty subtrees that cannot be preserved by a leaf mutation."));
+		entries.sort((left, right) => compareRepositoryOrder(left.path, right.path));
 		return success(Object.freeze(entries));
 	}
 
-	#writeFlatTree(entries: readonly ProjectStoreTreeEntry[]): Outcome<GitOid, ProjectStoreIssue> {
+	#materializeFlatTree(entries: readonly ProjectStoreTreeEntry[], operation: ProjectStoreIssue["operation"], persist: boolean): Outcome<GitOid, ProjectStoreIssue> {
 		const node = (): MutableTreeNode => ({entries: new Map(), directories: new Map()});
 		const root = node();
 		for (const entry of entries) {
 			const segments = entry.path.split("/");
 			let cursor = root;
 			for (const segment of segments.slice(0, -1)) {
-				if (cursor.entries.has(segment)) return failure(this.#issue("invalid_object", "write_tree", "Tree path collides with a file entry."));
+				if (cursor.entries.has(segment)) return failure(this.#issue("invalid_object", operation, "Tree path collides with a file entry."));
 				let directory = cursor.directories.get(segment);
 				if (!directory) {
 					directory = node();
@@ -391,24 +404,45 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 				cursor = directory;
 			}
 			const name = segments.at(-1) as string;
-			if (cursor.directories.has(name) || cursor.entries.has(name)) return failure(this.#issue("invalid_object", "write_tree", "Tree path identity is duplicated or colliding."));
+			if (cursor.directories.has(name) || cursor.entries.has(name)) return failure(this.#issue("invalid_object", operation, "Tree path identity is duplicated or colliding."));
 			cursor.entries.set(name, entry);
 		}
-		const materialize = (current: MutableTreeNode): Outcome<GitOid, ProjectStoreIssue> => {
+		const pending = [{current: root, expanded: false}];
+		const identities = new Map<MutableTreeNode, GitOid>();
+		while (pending.length > 0) {
+			const item = pending.pop();
+			if (!item) break;
+			const {current, expanded} = item;
+			if (!expanded) {
+				pending.push({current, expanded: true});
+				for (const child of current.directories.values()) pending.push({current: child, expanded: false});
+				continue;
+			}
 			const values: Readonly<{name: string; mode: string; kind: "blob" | "commit" | "tree"; oid: GitOid}>[] = [];
 			for (const [name, entry] of current.entries) values.push({name, mode: entry.mode, kind: entry.kind, oid: entry.oid});
 			for (const [name, directory] of current.directories) {
-				const child = materialize(directory);
-				if (!child.ok) return child;
-				values.push({name, mode: "040000", kind: "tree", oid: child.value});
+				const child = identities.get(directory);
+				if (!child) return failure(this.#issue("invalid_object", operation, "Tree reconstruction is incomplete."));
+				values.push({name, mode: "040000", kind: "tree", oid: child});
 			}
 			values.sort((left, right) => Buffer.compare(Buffer.from(`${left.name}${left.kind === "tree" ? "/" : ""}`, "utf8"), Buffer.from(`${right.name}${right.kind === "tree" ? "/" : ""}`, "utf8")));
+			if (!persist) {
+				const bytes = Buffer.concat(values.flatMap((entry) => [Buffer.from(`${entry.mode.replace(/^0/u, "")} ${entry.name}\0`, "utf8"), Buffer.from(entry.oid.hex, "hex")]));
+				const hex = createHash(this.#objectFormat).update(`tree ${bytes.length}\0`).update(bytes).digest("hex");
+				const identity = this.#oid(hex, operation);
+				if (!identity.ok) return identity;
+				identities.set(current, identity.value);
+				continue;
+			}
 			const payload = Buffer.concat(values.map((entry) => Buffer.from(`${entry.mode} ${entry.kind} ${entry.oid.hex}\t${entry.name}\0`, "utf8")));
 			const created = this.#spawn(["mktree", "-z"], payload, undefined, 4_096);
-			if (!created.ok) return failure(this.#commandIssue(created.error, "write_tree", "Tree object creation failed."));
-			return this.#observedOid(created.value, "write_tree");
-		};
-		return materialize(root);
+			if (!created.ok) return failure(this.#commandIssue(created.error, operation, "Tree object creation failed."));
+			const identity = this.#observedOid(created.value, operation);
+			if (!identity.ok) return identity;
+			identities.set(current, identity.value);
+		}
+		const identity = identities.get(root);
+		return identity ? success(identity) : failure(this.#issue("invalid_object", operation, "Root tree reconstruction failed."));
 	}
 
 	#allRefsEqual(updates: readonly ProjectStoreRefUpdate[], target: "newOid" | "expectedOld" = "newOid"): Outcome<boolean, ProjectStoreIssue> {

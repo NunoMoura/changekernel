@@ -3,7 +3,11 @@ import test from "node:test";
 import {
 	createChange,
 	decodeChange,
+	createProfileChange,
+	decodeProfileChange,
 } from "../../../src/kernel/changes/contracts.ts";
+
+import {profileRecord, admitted} from "../wiki/profile-fixtures.mjs";
 
 export const CHANGE_ID = "CHG-test-semantic-kernel";
 
@@ -46,6 +50,21 @@ test("Change revision and digest are exact", () => {
 	assert.equal(decodeChange({...change, revision: 2}).ok, false);
 	assert.equal(decodeChange({...change, changeDigest: `sha256:${"f".repeat(64)}`}).ok, false);
 	assert.equal(createChange({...withoutProtocolAndDigest(change), changeType: "feature"}).ok, false);
+});
+
+test("versioned profile Change binds its reference and exact targets without broadening the old grammar", () => {
+	const {change, reference} = profileRecord();
+	assert.equal(decodeChange(change).ok, false);
+	assert.equal(decodeProfileChange(changeFixture()).ok, false);
+	assert.deepEqual(admitted(decodeProfileChange(JSON.parse(JSON.stringify(change)))), change);
+	assert.equal(change.reference.transactionDigest, reference.transactionDigest);
+	const body = withoutProtocolAndDigest(change);
+	for (const patch of [
+		{targets: []}, {changeType: "feature"}, {changeId: "CHG-other"},
+		{targets: change.targets.slice(1)}, {targets: [...change.targets, change.targets[0]]},
+		{targets: change.targets.map((target) => ({...target, transactionDigest: `sha256:${"c".repeat(64)}`}))},
+	]) assert.equal(createProfileChange({...body, ...patch}).ok, false);
+	assert.equal(decodeProfileChange({...change, reference: {...reference, kernelBuildDigest: `sha256:${"c".repeat(64)}`}}).ok, false);
 });
 
 function withoutProtocolAndDigest(change) {

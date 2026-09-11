@@ -57,6 +57,24 @@ export interface ProjectAccessPolicyInput {
 const CONTRACT = "codewiki.project-access-grants@1.0.0";
 const CHANGE_ID = /^CHG-[A-Za-z0-9][A-Za-z0-9._-]{0,195}$/u;
 
+export function profileScopeGuard(
+	actor: AuthorizedProjectActor,
+	operation: ProductOperation,
+	input: CanonicalValue,
+): ProductError | null {
+	if (!actor.capabilities.includes(operation) || actor.wikiItemIds !== null) {
+		return productError("authorization_denied", "This Actor lacks the operation or unrestricted profile Wiki scope.", "Ask for the applicable operation and scope grant.", true);
+	}
+	if (operation === "changes.propose-profile" && actor.changeIds !== null) {
+		return productError("authorization_denied", "Profile-native proposal requires unrestricted Change and Wiki scope.", "Use an unrestricted Actor or ask a maintainer for access.", true);
+	}
+	const record = typeof input === "object" && input !== null && !Array.isArray(input) ? input as Readonly<{[key: string]: CanonicalValue}> : null;
+	if (operation === "changes.read" && record?.view === "get" && actor.changeIds !== null && typeof record.changeId === "string" && !actor.changeIds.includes(record.changeId)) {
+		return productError("authorization_denied", "This Actor cannot read that profile Change.", "Choose an allowed Change or ask for access.", true);
+	}
+	return null;
+}
+
 export function projectAccessProofDigest(proof: string): Outcome<Sha256Digest, Readonly<{message: string}>> {
 	const byteLength = typeof proof === "string" ? new TextEncoder().encode(proof).byteLength : 0;
 	if (typeof proof !== "string" || byteLength < 16 || byteLength > 4_096 || proof.normalize("NFC") !== proof || proof.includes("\0")) {

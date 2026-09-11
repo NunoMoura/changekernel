@@ -3,7 +3,7 @@ import {sameGitOid, type GitOid} from "../identity/git.ts";
 import {semanticDigest} from "../identity/semantic-digest.ts";
 import type {Sha256Digest} from "../identity/sha256.ts";
 import {workScopesConflict, type Work} from "../work/contracts.ts";
-import type {Change} from "./contracts.ts";
+import type {Change, ProfileChange} from "./contracts.ts";
 import type {
 	ChangeEvent,
 	CommittedPayload,
@@ -20,7 +20,7 @@ import type {
 	WorkClaimedPayload,
 	WorkIntegratedPayload,
 } from "./events.ts";
-import type {ChangeTrace} from "./trace.ts";
+import {validateProfileChangeTrace, type ChangeTrace, type ProfileChangeTrace} from "./trace.ts";
 
 export type ChangeLifecycleState = "committed" | "completed" | "deferred" | "proposed" | "rejected" | "superseded" | "withdrawn";
 
@@ -46,9 +46,11 @@ export interface ReducedReview {
 	readonly gate: ReducedGateFact | null;
 }
 
-export interface ReducedChange {
+type RecordedChange = Change | ProfileChange;
+
+export interface ReducedChange<C extends RecordedChange = Change> {
 	readonly traceId: string;
-	readonly change: Change;
+	readonly change: C;
 	readonly state: ChangeLifecycleState;
 	readonly committedWikiTree: GitOid | null;
 	readonly work: readonly ReducedWorkState[];
@@ -76,8 +78,8 @@ interface MutableWorkState {
 	integration: WorkIntegratedPayload | null;
 }
 
-interface ReductionState {
-	change: Change | null;
+interface ReductionState<C extends RecordedChange = Change> {
+	change: C | null;
 	state: ChangeLifecycleState | null;
 	committedWikiTree: GitOid | null;
 	work: Map<string, MutableWorkState>;
@@ -88,39 +90,54 @@ interface ReductionState {
 	effects: EffectRecordedPayload[];
 }
 
-export function reduceChangeTrace(trace: ChangeTrace): Outcome<ReducedChange, ChangeReductionIssue> {
+export type ReducedProfileChange = ReducedChange<ProfileChange>;
+
+export function reduceChangeTrace(trace: ChangeTrace): Outcome<ReducedChange, ChangeReductionIssue>;
+export function reduceChangeTrace(trace: ProfileChangeTrace): Outcome<ReducedProfileChange, ChangeReductionIssue>;
+export function reduceChangeTrace(trace: ChangeTrace | ProfileChangeTrace): Outcome<ReducedChange<RecordedChange>, ChangeReductionIssue> {
+	const profile = isProfileTrace(trace);
+	if (trace.header.protocol.id !== "codewiki.change-trace" || (!profile && trace.header.protocol.version !== "14.0.0")) return failure(issue(0, "Unsupported Trace protocol."));
+	if (isProfileTrace(trace)) {
+		const admitted = validateProfileChangeTrace(trace);
+		if (!admitted.ok) return failure(issue(0, admitted.error.message));
+		trace = admitted.value;
+	}
 	if (trace.events.length === 0) return failure(issue(0, "Change Trace has no proposal event."));
-	const state: ReductionState = {
-		change: null,
-		state: null,
-		committedWikiTree: null,
-		work: new Map(),
-		gates: [],
-		review: null,
-		completionTree: null,
-		supersedingChangeId: null,
-		effects: [],
+	const state: ReductionState<RecordedChange> = {
+		change: null, state: null, committedWikiTree: null, work: new Map(), gates: [],
+		review: null, completionTree: null, supersedingChangeId: null, effects: [],
 	};
 	const commandIds = new Set<string>();
 	for (let index = 0; index < trace.events.length; index += 1) {
 		const event = trace.events[index];
 		if (!event) return failure(issue(index, "Trace event is absent."));
-		if (index === 0 ? event.expectedChangeTip !== null : event.expectedChangeTip === null) {
-			return failure(issue(index, "Only first proposal event may have a null expected Change tip."));
-		}
+		if (event.protocol.id !== "codewiki.change-event" || event.protocol.version !== (profile ? "2.0.0" : "1.1.0")) return failure(issue(index, "Event protocol differs from Trace mode."));
+		if (index === 0 ? event.expectedChangeTip !== null : event.expectedChangeTip === null) return failure(issue(index, "Only first proposal event may have a null expected Change tip."));
 		if (commandIds.has(event.commandId)) return failure(issue(index, "Change Event command identity is duplicated.", "duplicate_identity"));
 		commandIds.add(event.commandId);
-		const reduced = applyEvent(state, event, index);
+		let reduced: Outcome<null, ChangeReductionIssue>;
+		if (event.kind === "change.proposed" && "change" in event.payload) {
+			reduced = propose(state, {change: event.payload.change}, index);
+		} else if (legacyState(state) && "ownerItemId" in event) {
+			reduced = applyEvent(state, event, index);
+		} else {
+			return failure(issue(index, "Transition is unavailable for this representation."));
+		}
 		if (!reduced.ok) return reduced;
 	}
 	if (!state.change || !state.state) return failure(issue(trace.events.length, "Change Trace did not establish Change state."));
 	return materialize(trace, state.change, state.state, state);
 }
 
+function isProfileTrace(trace: ChangeTrace | ProfileChangeTrace): trace is ProfileChangeTrace {
+	return trace.header.protocol.version === "15.0.0";
+}
+function legacyState(state: ReductionState<RecordedChange>): state is ReductionState {
+	return state.change !== null && !("reference" in state.change);
+}
+
 function applyEvent(state: ReductionState, event: ChangeEvent, index: number): Outcome<null, ChangeReductionIssue> {
 	switch (event.kind) {
-		case "change.proposed":
-			return propose(state, event.payload as ProposedPayload, index);
 		case "change.revised":
 			return revise(state, event.payload as ProposedPayload, index);
 		case "gate.recorded":
@@ -158,7 +175,7 @@ function applyEvent(state: ReductionState, event: ChangeEvent, index: number): O
 	}
 }
 
-function propose(state: ReductionState, payload: ProposedPayload, index: number): Outcome<null, ChangeReductionIssue> {
+function propose<C extends RecordedChange>(state: ReductionState<C>, payload: Readonly<{change: C}>, index: number): Outcome<null, ChangeReductionIssue> {
 	if (state.state !== null) return failure(issue(index, "change.proposed must be first."));
 	state.change = payload.change;
 	state.state = "proposed";
@@ -410,12 +427,12 @@ function isTerminalProposalState(state: ChangeLifecycleState): boolean {
 	return state === "rejected" || state === "withdrawn";
 }
 
-function materialize(
-	trace: ChangeTrace,
-	change: Change,
+function materialize<C extends RecordedChange>(
+	trace: ChangeTrace | ProfileChangeTrace,
+	change: C,
 	stateValue: ChangeLifecycleState,
-	state: ReductionState,
-): Outcome<ReducedChange, ChangeReductionIssue> {
+	state: Omit<ReductionState, "change">,
+): Outcome<ReducedChange<C>, ChangeReductionIssue> {
 	const work = [...state.work.values()]
 		.sort((left, right) => left.work.ordinal - right.work.ordinal)
 		.map((entry): ReducedWorkState => Object.freeze({
@@ -442,7 +459,7 @@ function materialize(
 		latestEventDigest,
 		traceDigest: trace.traceDigest,
 	});
-	const digest = semanticDigest("codewiki.reduced-change@1.0.0", body);
+	const digest = semanticDigest(isProfileTrace(trace) ? "codewiki.reduced-change@2.0.0" : "codewiki.reduced-change@1.0.0", body);
 	if (!digest.ok) return failure(issue(trace.events.length, digest.error.message, "reduction_failed"));
 	return success(Object.freeze({...body, stateDigest: digest.value}));
 }
