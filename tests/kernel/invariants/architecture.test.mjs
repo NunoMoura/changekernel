@@ -83,6 +83,7 @@ const SOURCE_ALLOWLIST = [
 	"src/server/effects/agent-runs.ts",
 	"src/server/index.ts",
 	"src/server/queries/material-source.ts",
+	"src/server/queries/profile-source.ts",
 	"src/server/queries/project.ts",
 	"src/server/queries/source.ts",
 	"src/server/queries/wiki.ts",
@@ -149,6 +150,7 @@ const TEST_ALLOWLIST = [
 	"tests/server/effects/agent-runs.test.mjs",
 	"tests/server/effects/containment.test.mjs",
 	"tests/server/index.test.mjs",
+	"tests/server/queries/profile-source.test.mjs",
 	"tests/server/queries/read-api.test.mjs",
 	"tests/server/queries/source-material.test.mjs",
 ];
@@ -409,7 +411,31 @@ test("material loading stays internal and only composes source, Store and passiv
 	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(material), false, "No public material/adoption API in this repair");
 	}
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(material)).map(([path]) => path), []);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(material)).map(([path]) => path), ["src/server/queries/profile-source.ts"]);
+});
+
+test("profiled material loading stays private and keeps parser ownership at the adapter boundary", async () => {
+	const {graph, external} = await sourceGraph();
+	const profiled = "src/server/queries/profile-source.ts";
+	assert.deepEqual(graph.get(profiled), [
+		"src/adapters/git/wiki-profile.ts",
+		"src/api/contracts/read.ts",
+		"src/kernel/changes/snapshot.ts",
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/wiki/corpus.ts",
+		"src/kernel/wiki/profile.ts",
+		"src/ports/project-store.ts",
+		"src/server/queries/material-source.ts",
+		"src/server/queries/source.ts",
+	]);
+	assert.equal(external.has(profiled), false);
+	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(profiled), false, entrypoint);
+	}
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(profiled)).map(([path]) => path), []);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes("src/adapters/git/wiki-profile.ts")).map(([path]) => path), [
+		"src/server/queries/profile-source.ts",
+	]);
 });
 
 test("Client and transport APIs cannot import adapters, ports, Product policy, or Project Server internals", async () => {
@@ -468,7 +494,7 @@ test("profile reader is private and keeps parsing at the adapter boundary", asyn
 	assert.deepEqual(external.get(adapterProfile), ["mdast-util-from-markdown", "yaml"]);
 	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), false);
 	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), false);
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile]);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile, "src/server/queries/profile-source.ts"]);
 });
 
 test("native Wiki ownership assigns every production and test path exactly once", async () => {
