@@ -428,13 +428,11 @@ function snapshotFiles(files: readonly ProfiledWikiFile[]): readonly unknown[] {
 	return result;
 }
 
-/**
- * Checks supplied parser results, not raw YAML/Markdown or Git object contents.
- * Callers must decode exact files through the selected adapter first; this pure
- * Kernel boundary rechecks metadata and subjects, not byte-to-metadata provenance.
- * Supplied snapshot/blob subjects are not membership or adoption proof.
- */
-export function bindWikiTypes(snapshot: unknown, files: readonly ProfiledWikiFile[]): Outcome<WikiTypeContext, WikiIssue> {
+/** Copies bounded parser-result data; does not parse bytes or prove source membership. */
+export function admitProfiledWikiFiles(
+	snapshot: unknown,
+	files: readonly ProfiledWikiFile[],
+): Outcome<Readonly<{snapshot: GitOid; files: readonly ProfiledWikiFile[]}>, WikiIssue> {
 	const decodedSnapshot = decodeGitOid(snapshot);
 	if (!decodedSnapshot.ok) return failure(wikiIssue("invalid_type", "$", "Expected a valid snapshot."));
 	let inputs: readonly unknown[];
@@ -447,7 +445,7 @@ export function bindWikiTypes(snapshot: unknown, files: readonly ProfiledWikiFil
 	let bytes = 0;
 	for (const input of inputs) {
 		const file = admittedFile(input);
-		if (!file.ok) return file;
+		if (!file.ok) return failure(file.error);
 		if (file.value.blob.algorithm !== decodedSnapshot.value.algorithm || bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength) {
 			return failure(wikiIssue(bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength ? "limit_exceeded" : "invalid_type", file.value.path,
 				bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength ? "Type context byte limit exceeded." : "File blob algorithm differs from the snapshot."));
@@ -464,6 +462,19 @@ export function bindWikiTypes(snapshot: unknown, files: readonly ProfiledWikiFil
 		}
 		paths.add(file.path);
 	}
+	return success(Object.freeze({snapshot: decodedSnapshot.value, files: Object.freeze(admitted)}));
+}
+
+/**
+ * Checks supplied parser results, not raw YAML/Markdown or Git object contents.
+ * Callers must decode exact files through the selected adapter first; this pure
+ * Kernel boundary rechecks metadata and subjects, not byte-to-metadata provenance.
+ * Supplied snapshot/blob subjects are not membership or adoption proof.
+ */
+export function bindWikiTypes(snapshot: unknown, files: readonly ProfiledWikiFile[]): Outcome<WikiTypeContext, WikiIssue> {
+	const admittedResult = admitProfiledWikiFiles(snapshot, files);
+	if (!admittedResult.ok) return admittedResult;
+	const {snapshot: decodedSnapshot, files: admitted} = admittedResult.value;
 
 	const definitions = new Map<string, ProfiledWikiFile>();
 	for (const file of admitted) {
@@ -493,5 +504,5 @@ export function bindWikiTypes(snapshot: unknown, files: readonly ProfiledWikiFil
 			base,
 		}));
 	}
-	return success(Object.freeze({profile: WIKI_PROFILE_ID, snapshot: decodedSnapshot.value, bindings: Object.freeze(bindings)}));
+	return success(Object.freeze({profile: WIKI_PROFILE_ID, snapshot: decodedSnapshot, bindings: Object.freeze(bindings)}));
 }

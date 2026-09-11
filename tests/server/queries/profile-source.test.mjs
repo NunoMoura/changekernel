@@ -11,6 +11,7 @@ import {decodeGitOid, decodeGitRef} from "../../../src/kernel/identity/git.ts";
 import {createProjectSnapshot} from "../../../src/kernel/changes/snapshot.ts";
 import {failure, success} from "../../../src/kernel/data-contracts/outcome.ts";
 import {WIKI_CORE_TYPES, WIKI_PROFILE_ID, WIKI_PROFILE_LIMITS} from "../../../src/kernel/wiki/profile.ts";
+import {validateProfiledWikiTransaction} from "../../../src/kernel/wiki/profile-transaction.ts";
 import {loadProfiledWikiSource} from "../../../src/server/queries/profile-source.ts";
 
 const execFileAsync = promisify(execFile);
@@ -525,6 +526,38 @@ test("native SHA-1 and SHA-256 stores resolve canonical, managed Change and hist
 			assert.notDeepEqual(currentBinding.definition.blob, oldBinding.definition.blob);
 			assert.deepEqual(currentBinding.item.blob, oldBinding.item.blob);
 			assert.deepEqual(current.value.typeContext.snapshot, repository.newCommit);
+			const oldDefinition = oldResult.value.managedFiles.find((file) => file.path.endsWith("/Definition.md"));
+			const newDefinition = current.value.managedFiles.find((file) => file.path.endsWith("/Definition.md"));
+			const oldCustomDefinition = oldResult.value.managedFiles.find((file) => file.path.endsWith("/FieldObservation.md"));
+			const newCustomDefinition = current.value.managedFiles.find((file) => file.path.endsWith("/FieldObservation.md"));
+			const transaction = validateProfiledWikiTransaction({
+				profile: WIKI_PROFILE_ID,
+				kernelBuildDigest: BUILD_DIGEST,
+				responsibleChangePath: `.codewiki/changes/${CHANGE}`,
+				before: oldResult.value,
+				after: current.value,
+				mappings: [
+					{kind: "revise", before: [{path: oldDefinition.path, blob: oldDefinition.blob}], after: [{path: newDefinition.path, blob: newDefinition.blob}]},
+					{kind: "revise", before: [{path: oldCustomDefinition.path, blob: oldCustomDefinition.blob}], after: [{path: newCustomDefinition.path, blob: newCustomDefinition.blob}]},
+				],
+			});
+			assert.equal(transaction.ok, true, transaction.ok ? "" : transaction.error.message);
+			assert.equal(transaction.value.potentialTypeImpacts.some((impact) => impact.item.path.endsWith("/cafe.md")), true);
+			const serializationRoot = await mkdtemp(join(tmpdir(), `codewiki-profile-transaction-${algorithm}-`));
+			t.after(() => rm(serializationRoot, {recursive: true, force: true}));
+			const serializedPath = join(serializationRoot, "transaction.json");
+			await writeFile(serializedPath, JSON.stringify(transaction.value), "utf8");
+			const serialized = JSON.parse(await readFile(serializedPath, "utf8"));
+			const recovered = validateProfiledWikiTransaction({
+				profile: serialized.profile,
+				kernelBuildDigest: serialized.kernelBuildDigest,
+				responsibleChangePath: serialized.responsibleChangePath,
+				before: serialized.before,
+				after: serialized.after,
+				mappings: serialized.mappings,
+			});
+			assert.equal(recovered.ok, true, recovered.ok ? "" : recovered.error.message);
+			assert.equal(recovered.value.transactionDigest, transaction.value.transactionDigest);
 			assert.deepEqual(current.value.corpus.documents.find((file) => file.path === "docs/raw.md").text, "This is deliberately not a managed profile.\n");
 			const currentCafe = current.value.managedFiles.find((file) => file.path.endsWith("/cafe.md"));
 			assert.equal(currentCafe.metadata.origins[0].reference, "../../changes/CHG-profile");
@@ -537,6 +570,20 @@ test("native SHA-1 and SHA-256 stores resolve canonical, managed Change and hist
 			const repeat = await runProfile(reopenedAgain.value, {kind: "commit", commit: repository.oldCommit}, algorithm);
 			assert.equal(repeat.ok, true, repeat.ok ? "" : repeat.error.message);
 			assert.deepEqual(repeat.value.typeContext, oldResult.value.typeContext);
+			const reopenedNew = await runProfile(reopenedAgain.value, {kind: "commit", commit: repository.newCommit}, algorithm);
+			assert.equal(reopenedNew.ok, true, reopenedNew.ok ? "" : reopenedNew.error.message);
+			const historical = validateProfiledWikiTransaction({
+				profile: WIKI_PROFILE_ID,
+				kernelBuildDigest: BUILD_DIGEST,
+				responsibleChangePath: `.codewiki/changes/${CHANGE}`,
+				before: repeat.value,
+				after: reopenedNew.value,
+				mappings: transaction.value.mappings,
+			});
+			assert.equal(historical.ok, true, historical.ok ? "" : historical.error.message);
+			assert.equal(historical.value.transactionDigest, transaction.value.transactionDigest);
+			assert.deepEqual(historical.value, recovered.value);
+			assert.equal(JSON.stringify(historical.value), JSON.stringify(serialized));
 			assert.equal(await fixtureGit(repository.root, ["show-ref"]), refsBefore);
 			assert.equal(await readFile(join(repository.root, ".git", "config"), "utf8"), configBefore);
 			const indexAfter = await readFile(join(repository.root, ".git", "index"));

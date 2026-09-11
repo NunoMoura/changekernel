@@ -65,6 +65,7 @@ const SOURCE_ALLOWLIST = [
 	"src/kernel/wiki/item.ts",
 	"src/kernel/wiki/links.ts",
 	"src/kernel/wiki/ownership.ts",
+	"src/kernel/wiki/profile-transaction.ts",
 	"src/kernel/wiki/profile.ts",
 	"src/kernel/wiki/transaction.ts",
 	"src/kernel/wiki/tree.ts",
@@ -133,6 +134,7 @@ const TEST_ALLOWLIST = [
 	"tests/kernel/wiki/fixtures.mjs",
 	"tests/kernel/wiki/item.test.mjs",
 	"tests/kernel/wiki/ownership.test.mjs",
+	"tests/kernel/wiki/profile-transaction.test.mjs",
 	"tests/kernel/wiki/profile.test.mjs",
 	"tests/kernel/wiki/properties.test.mjs",
 	"tests/kernel/wiki/transaction.test.mjs",
@@ -494,7 +496,25 @@ test("profile reader is private and keeps parsing at the adapter boundary", asyn
 	assert.deepEqual(external.get(adapterProfile), ["mdast-util-from-markdown", "yaml"]);
 	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), false);
 	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), false);
-	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile, "src/server/queries/profile-source.ts"]);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile, "src/kernel/wiki/profile-transaction.ts", "src/server/queries/profile-source.ts"]);
+});
+
+test("profile transaction admission stays private and has no parser or lifecycle dependency", async () => {
+	const {graph, external} = await sourceGraph();
+	const transaction = "src/kernel/wiki/profile-transaction.ts";
+	assert.deepEqual(graph.get(transaction), [
+		"src/kernel/changes/snapshot.ts",
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/identity/git.ts",
+		"src/kernel/identity/semantic-digest.ts",
+		"src/kernel/identity/sha256.ts",
+		"src/kernel/wiki/profile.ts",
+	]);
+	assert.deepEqual(external.get(transaction), undefined);
+	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(transaction), false, entrypoint);
+	}
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(transaction)).map(([path]) => path), []);
 });
 
 test("native Wiki ownership assigns every production and test path exactly once", async () => {
