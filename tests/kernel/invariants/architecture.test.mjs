@@ -31,6 +31,7 @@ const SOURCE_ALLOWLIST = [
 	"src/adapters/git/local-server.ts",
 	"src/adapters/git/project-config.ts",
 	"src/adapters/git/project-store.ts",
+	"src/adapters/git/wiki-profile.ts",
 	"src/adapters/git/wiki.ts",
 	"src/adapters/preview/local.ts",
 	"src/api/client/console.ts",
@@ -64,6 +65,7 @@ const SOURCE_ALLOWLIST = [
 	"src/kernel/wiki/item.ts",
 	"src/kernel/wiki/links.ts",
 	"src/kernel/wiki/ownership.ts",
+	"src/kernel/wiki/profile.ts",
 	"src/kernel/wiki/transaction.ts",
 	"src/kernel/wiki/tree.ts",
 	"src/kernel/wiki/views.ts",
@@ -98,6 +100,7 @@ const TEST_ALLOWLIST = [
 	"tests/adapters/git/local-server.test.mjs",
 	"tests/adapters/git/project-config.test.mjs",
 	"tests/adapters/git/project-store.test.mjs",
+	"tests/adapters/git/wiki-profile.test.mjs",
 	"tests/adapters/git/wiki.test.mjs",
 	"tests/adapters/preview/local.test.mjs",
 	"tests/api/client/cli-command.test.mjs",
@@ -129,6 +132,7 @@ const TEST_ALLOWLIST = [
 	"tests/kernel/wiki/fixtures.mjs",
 	"tests/kernel/wiki/item.test.mjs",
 	"tests/kernel/wiki/ownership.test.mjs",
+	"tests/kernel/wiki/profile.test.mjs",
 	"tests/kernel/wiki/properties.test.mjs",
 	"tests/kernel/wiki/transaction.test.mjs",
 	"tests/kernel/wiki/tree.test.mjs",
@@ -315,7 +319,10 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 	assert.deepEqual(cycles(graph), []);
 	assert.deepEqual([...calls], []);
 	for (const [path, specifiers] of external) {
-		const allowed = path.startsWith("src/adapters/git/") ? [
+		const allowed = path === "src/adapters/git/wiki-profile.ts" ? [
+			"mdast-util-from-markdown",
+			"yaml",
+		] : path.startsWith("src/adapters/git/") ? [
 			"node:child_process",
 			"node:crypto",
 			"node:fs/promises",
@@ -436,9 +443,32 @@ test("public reachability contains only target foundation paths", async () => {
 		"@deepseek-ai/dsh-session-persistence-jsonl": "0.1.1-rc.2",
 		"@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2",
 		"@deepseek-ai/dsh-tools": "0.1.1-rc.2",
+		"mdast-util-from-markdown": "2.0.3",
+		"yaml": "2.9.0",
 	});
 	assert.equal(pkg.peerDependencies, undefined);
 	assert.equal(pkg.pi, undefined);
+});
+
+test("profile reader is private and keeps parsing at the adapter boundary", async () => {
+	const {graph, external} = await sourceGraph();
+	const kernelProfile = "src/kernel/wiki/profile.ts";
+	const adapterProfile = "src/adapters/git/wiki-profile.ts";
+	assert.deepEqual(graph.get(kernelProfile), [
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/identity/git.ts",
+	]);
+	assert.deepEqual(graph.get(adapterProfile), [
+		"src/kernel/data-contracts/outcome.ts",
+		"src/kernel/identity/git.ts",
+		"src/kernel/wiki/file.ts",
+		kernelProfile,
+	]);
+	assert.deepEqual(external.get(kernelProfile), undefined);
+	assert.deepEqual(external.get(adapterProfile), ["mdast-util-from-markdown", "yaml"]);
+	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), false);
+	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), false);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [adapterProfile]);
 });
 
 test("native Wiki ownership assigns every production and test path exactly once", async () => {

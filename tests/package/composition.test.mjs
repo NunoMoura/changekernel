@@ -82,6 +82,8 @@ test("package metadata has one narrow export, exact DSH closure, and no Pi runti
 		"@deepseek-ai/dsh-session-persistence-jsonl": "0.1.1-rc.2",
 		"@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2",
 		"@deepseek-ai/dsh-tools": "0.1.1-rc.2",
+		"mdast-util-from-markdown": "2.0.3",
+		yaml: "2.9.0",
 	});
 	assert.equal(pkg.peerDependencies, undefined);
 	assert.equal(pkg.pi, undefined);
