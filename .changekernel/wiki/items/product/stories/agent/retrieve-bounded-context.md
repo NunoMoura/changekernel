@@ -13,7 +13,7 @@ source-history:
 ---
 # Explore Project Knowledge
 
-An Agent finds current accepted knowledge in scoped tracked Markdown, then retrieves native Git history or optional external information when the question needs it. Hot Wiki is not every page in the prompt; cold material may already have been analyzed or accepted in another context.
+An Agent finds current accepted knowledge in scoped tracked Markdown, then retrieves native Git history or optional external information when the question needs it. Hot Wiki is not every page in the prompt; cold material may already have been analyzed or accepted in another context. The runtime chooses its browsing and context tools rather than depending on one Kernel query tool or editor integration. Synthesized understanding leads with its essential scope and exceptions, with grounds and contextual links available for deeper reading; a new session does not repeat original research merely because its conversation is empty.
 
 Sources carry exact provenance, scope and historical disposition. A retrieved obsolete rule or generated synthesis does not become current knowledge. Missing, private, stale and truncated context limits assurance; applicable obligations cannot disappear through ranking or eviction.
 

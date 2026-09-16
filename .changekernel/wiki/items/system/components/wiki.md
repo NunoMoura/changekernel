@@ -50,6 +50,16 @@ A Change develops intent and relevant sources through refinement informed by Gat
 
 Humans may write documents directly using ordinary tools. Those drafts enter the same governed Gate Checks and acceptance path as agent-generated proposals; already adequate content need not be rewritten merely to pass through it. Discovery never silently stages, adopts or uploads work. Runtime sessions, transcripts, compaction and temporary working context belong to the agent runtime, not the Wiki.
 
+### Synthesis, authoring and retrieval
+
+The agent runtime owns discovery, navigation, context assembly and drafting through its choice of tools. ChangeKernel owns exact source interpretation, binding and governed acceptance; it does not require a single Wiki browsing tool, editor integration or model-backed language server. Ordinary source tools and derived views can access the same retained knowledge within the declared read and disclosure boundaries.
+
+Write reusable Project understanding rather than research transcripts or one document per assertion. Lead with the useful conclusion and its essential scope and exceptions, then preserve consequential grounds, assumptions, unresolved questions and source references. Before creating another Item, look for existing synthesis to refine. A fresh session should reuse that understanding without repeating its original research, while recognizing when changed conditions, missing support or a different scope require reassessment.
+
+Frontmatter identifies and classifies the document and records its provenance. The body carries synthesized knowledge and contextual links. Prefer ordinary knowledge links beside the assertions they qualify; a general reference is not automatically a support dependency or governing relationship. Folders provide addresses and optional organization, not a competing source of type, scope or acceptance. The graph is a derived navigation view, not another authored policy store.
+
+Check input declarations do not require every Wiki statement to become a typed frontmatter parameter. Bind exact Items or passages where text is sufficient. Introduce additional structured values only for demonstrated retrieval or evaluation needs, with explicit meaning, scope and one authoritative representation. An arbitrary preserved field is not automatically a library contract. Do not require automatic parameter extraction, a universal claim/entity registry or compilation of the whole Wiki before a Change can be evaluated.
+
 ## Desired state, reality and validation policy
 
 Wiki holds what the project agrees and intends, including accepted factual claims with their Evidence and limitations. Raw data supplies information; artifacts embody produced work. Neither source discovery nor agent synthesis makes a statement true or governing. An accepted desired outcome is not proof that it is realized. [Alignment](alignment.md) derives desired outcomes, observed current state and related Changes without a second State or task database.
@@ -58,7 +68,7 @@ Wiki holds what the project agrees and intends, including accepted factual claim
 
 All semantic Checks and Packs are custom, including first-party offerings. Wiki records which exact policies, Check definitions/Packs and execution settings the project adopts, with scope, reasons and exceptions. Packs distribute evaluation methods, not an automatically governing second policy store. Prefer adopted policy parameters supplied to a reusable evaluator; an inherently executable rule can be adopted by exact reference rather than duplicated in prose. Installation, axis labels, Skills and proposed configuration grant no authority. Changes to policy or evaluator selection follow the previously adopted transition rules, not the candidate's own waiver.
 
-The Kernel's managed-document representation and protected transition rules remain runtime contracts. They are not hidden semantic Checks or a promise that arbitrary adopted Packs establish universal justification. No validation may be reported where none occurred.
+The Kernel's managed-document representation and protected transition rules remain runtime contracts. They are not hidden semantic Checks or a promise that arbitrary adopted Packs establish universal justification. No validation may be reported where none occurred. A retained Check result belongs to an exact evaluation, not permanently to an Item. Any document coverage indicator is derived from those results, names the Check, sources, scope and current reuse eligibility, and does not mark the whole document true or verified. No visible or hidden frontmatter flag is required for result reuse.
 
 ## Structural and optional folders
 
