@@ -23,7 +23,7 @@ import {
 	type AgentRuntimePort,
 } from "../../ports/agent-runtime.ts";
 import {arrayField, decodeContract, exactRecord, isNamespacedIdentifier, rejectContract, textField, type ContractIssue} from "../../kernel/data-contracts/validation.ts";
-import {DECISION_CHECK_OUTPUT_SCHEMA} from "../../kernel/gates/semantic.ts";
+import {DECISION_CHECK_OUTPUT_SCHEMA} from "../../kernel/gates/decision-output.ts";
 
 export const AGENT_ROLE_POLICY_PROTOCOL = Object.freeze({id: "codewiki.agent-role-policy", version: "1.0.0"} as const);
 

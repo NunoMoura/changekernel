@@ -6,7 +6,7 @@ import {decodeProfileChangeTrace, type ProfileChangeTrace} from "../../kernel/ch
 import {decodeProjectSnapshot, type ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {reduceChangeTrace, type ReducedProfileChange} from "../../kernel/changes/reducer.ts";
 import {decodeContract, exactRecord, rejectContract, requiredField, textField} from "../../kernel/data-contracts/validation.ts";
-import {decodeDecisionSourceCitations} from "../../kernel/gates/semantic.ts";
+import {decodeDecisionSourceCitations} from "../../kernel/gates/decision-output.ts";
 import {decodeProfiledPathUtf8Hex, createProfiledWikiReference, type ProfiledWikiReference} from "../../kernel/wiki/profile-reference.ts";
 import {validateProfiledWikiTransaction, type ProfiledWikiMapping, type ProfiledWikiTransaction} from "../../kernel/wiki/profile-transaction.ts";
 import {WIKI_PROFILE_ID} from "../../kernel/wiki/profile.ts";

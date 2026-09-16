@@ -359,7 +359,7 @@ test("optional output retrieval stays below lifecycle policy and outside the Ker
 	const {graph, external} = await sourceGraph();
 	const output = "src/ports/agent-output.ts", effect = "src/server/effects/agent-output.ts";
 	assert.ok(graph.get(output).every(path => path.startsWith("src/kernel/") || path === "src/ports/agent-runtime.ts"));
-	assert.deepEqual(graph.get(effect), ["src/kernel/data-contracts/outcome.ts", "src/kernel/gates/semantic.ts", output, "src/ports/agent-runtime.ts", "src/server/effects/agent-runs.ts"]);
+	assert.deepEqual(graph.get(effect), ["src/kernel/data-contracts/outcome.ts", "src/kernel/gates/decision-output.ts", output, "src/ports/agent-runtime.ts", "src/server/effects/agent-runs.ts"]);
 	assert.equal(external.has(output), false);
 	assert.equal(external.has(effect), false);
 	assert.equal(reachable(graph, "src/server/commands/lifecycle.ts").includes(effect), false, "Output custody alone must not enable lifecycle evaluation");
@@ -391,10 +391,12 @@ test("native Wiki ownership assigns every production and test path exactly once"
 	}
 });
 
-test("selected intent-fit execution stays private and does not activate lifecycle or read-only entrypoints", async () => {
-	const {graph, external} = await sourceGraph(), check = "src/server/effects/decision-intent-fit.ts";
+test("unified Check contracts remain pure and do not activate lifecycle or read-only entrypoints", async () => {
+	const {graph, external} = await sourceGraph(), check = "src/kernel/gates/checks.ts";
+	assert.equal(graph.has("src/server/effects/decision-intent-fit.ts"), false, "Internal judges must not bypass explicit adoption");
+	assert.equal(graph.has("src/kernel/gates/semantic.ts"), false, "Superseded Gate scaffolding must not return");
 	assert.equal(external.has(check), false);
-	assert.ok(graph.get(check).every(path => path.startsWith("src/kernel/") || path.startsWith("src/ports/") || path.startsWith("src/server/") || path === "src/api/transport/envelope.ts"));
+	assert.ok(graph.get(check).every(path => path.startsWith("src/kernel/")));
 	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(check), false, entrypoint);
 	}

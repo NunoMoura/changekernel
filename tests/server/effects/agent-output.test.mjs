@@ -4,7 +4,7 @@ import {AGENT_RUN_OUTPUT_PORT_PROTOCOL, AGENT_RUN_OUTPUT_PROTOCOL, MAXIMUM_AGENT
 import {createAgentRunAuthorization, createAgentRunQuiescence, createAgentRunReceipt} from "../../../src/ports/agent-runtime.ts";
 import {readAuthorizedAgentRunOutput, readDecisionModelCheckOutput} from "../../../src/server/effects/agent-output.ts";
 import {DECISION_MODEL_CHECK_EXECUTION, DECISION_MODEL_CHECK_EXECUTION_DIGEST} from "../../../src/server/effects/agent-runs.ts";
-import {DECISION_CHECK_OUTPUT_PROTOCOL} from "../../../src/kernel/gates/semantic.ts";
+import {DECISION_CHECK_OUTPUT_PROTOCOL} from "../../../src/kernel/gates/decision-output.ts";
 import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
 import {createDshAgentOutputReader, DSH_EXECUTION_OUTPUT_HOST_PROTOCOL} from "../../../src/adapters/dsh/agent-output.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";

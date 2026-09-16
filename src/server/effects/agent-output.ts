@@ -1,7 +1,7 @@
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {AGENT_RUN_OUTPUT_PORT_PROTOCOL, createAgentRunOutputRequest, decodeAgentRunOutputBinding, decodeAgentRunOutputResponse, verifyAgentRunOutput, type AgentRunOutput, type AgentRunOutputPort} from "../../ports/agent-output.ts";
 import type {AgentRunAuthorization, AgentRunHandle, AgentRuntimeIssue} from "../../ports/agent-runtime.ts";
-import {parseDecisionCheckOutput, type DecisionCheckOutput} from "../../kernel/gates/semantic.ts";
+import {parseDecisionCheckOutput, type DecisionCheckOutput} from "../../kernel/gates/decision-output.ts";
 import {matchesDecisionModelCheckExecution} from "./agent-runs.ts";
 
 /**

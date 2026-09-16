@@ -15,8 +15,8 @@ import {decodeProfileChangeTrace, createEmptyProfileChangeTrace, appendProfileCh
 import {createAgentRunQuiescence, createAgentRunReceipt} from "../../../src/ports/agent-runtime.ts";
 import {AGENT_RUN_OUTPUT_PORT_PROTOCOL, AGENT_RUN_OUTPUT_PROTOCOL} from "../../../src/ports/agent-output.ts";
 import {authorizeDecisionModelCheckRun} from "../../../src/server/effects/agent-runs.ts";
-import {readDecisionModelCheckSources, readDecisionModelCheckMaterial, runDecisionProfileTransitionCheck, DECISION_PROFILE_TRANSITION_CHECK} from "../../../src/server/effects/decision-checks.ts";
-import {DECISION_CHECK_OUTPUT_PROTOCOL, verifySemanticGateOutcome, reduceSemanticGate, createSemanticGate} from "../../../src/kernel/gates/semantic.ts";
+import {readDecisionModelCheckSources, readDecisionModelCheckMaterial} from "../../../src/server/effects/decision-checks.ts";
+import {DECISION_CHECK_OUTPUT_PROTOCOL} from "../../../src/kernel/gates/decision-output.ts";
 import {WIKI_PROFILE_ID} from "../../../src/kernel/wiki/profile.ts";
 import {CHANGEKERNEL_VERSION} from "../../../src/kernel/identity/version.ts";
 import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
@@ -632,76 +632,6 @@ test("matching model input does not bypass authorization, output identity or sou
 		assert.equal((await modelMaterial(instance, swapped)).error.code, "invalid_receipt");
 		const raced = await modelMaterial(instance, value, value.material, () => git(subject.root, ["update-ref", "refs/heads/main", subject.afterCommit.hex]));
 		assert.equal(raced.error.code, "source_stale"); assert.equal("value" in raced, false);
-		assert.deepEqual(writes(instance), []);
-	} finally {await rm(subject.root, {recursive: true, force: true});}
-});
-
-function transitionCheck(instance, subject, input = decisionInput(subject), configuration = decisionConfiguration(instance)) {
-	return runDecisionProfileTransitionCheck(instance.store, configuration, instance.actor, input);
-}
-for (const algorithm of ["sha1", "sha256"]) test(`Decision ${algorithm}: profile transition code Check produces an exact scoped finding, never stage approval`, async () => {
-	const subject = await fixture(algorithm);
-	try {
-		accepted(await server(subject).call("changes.propose-profile", subject.input));
-		const instance = server(subject), baseline = await stableState(subject.root);
-		const result = admitted(await transitionCheck(instance, subject));
-		assert.equal(result.gate.stage, "decision");
-		assert.equal(result.gate.checks.length, 1);
-		assert.equal(result.gate.checks[0].checkId, DECISION_PROFILE_TRANSITION_CHECK.checkId);
-		assert.equal(result.finding.status, "supported");
-		assert.equal(result.finding.checkId, result.gate.checks[0].checkId);
-		assert.equal(result.finding.executionDigest, result.gate.checks[0].executionDigest);
-		assert.equal(result.finding.gateDigest, result.gate.gateDigest);
-		assert.equal(result.gate.contextDigest, admitted(semanticDigest("codewiki.profile-decision-grounds@1.0.0", result.grounds)));
-		assert.equal(result.gate.subject.changeId, PROFILE_CHANGE_ID);
-		assert.deepEqual(result.gate.subject.projectCommit, subject.beforeCommit);
-		assert.deepEqual(result.gate.subject.changeTip, decisionInput(subject).expectedChangeTip);
-		assert.equal(result.gate.contextComplete, false);
-		assert.deepEqual(result.finding.evidenceDigests, [], "Do not relabel transaction hashes as admitted evidence");
-		assert.equal(result.outcome.status, "stopped");
-		assert.deepEqual(result.outcome.stopReasons, ["incomplete_context", `missing_evidence:${DECISION_PROFILE_TRANSITION_CHECK.checkId}`]);
-		assert.deepEqual(admitted(verifySemanticGateOutcome({gate: result.gate, currentGate: result.gate, findings: [result.finding], outcome: result.outcome})), result.outcome);
-		assert.deepEqual(admitted(await transitionCheck(instance, subject)), result);
-		assert.ok(Object.isFrozen(result) && Object.isFrozen(result.finding) && Object.isFrozen(DECISION_PROFILE_TRANSITION_CHECK));
-		assert.deepEqual(writes(instance), []); assert.deepEqual(await stableState(subject.root), baseline);
-	} finally {await rm(subject.root, {recursive: true, force: true});}
-});
-test("profile transition code Check rejects caller selection, verdicts and unauthorized reads", async () => {
-	const subject = await fixture();
-	try {
-		accepted(await server(subject).call("changes.propose-profile", subject.input));
-		for (const options of [{capabilities: ["changes.read"]}, {wikiItemIds: []}, {changeIds: []}]) {
-			const denied = server(subject, options);
-			assert.equal((await transitionCheck(denied, subject)).error.code, "authorization_denied");
-			assert.deepEqual(denied.calls, []);
-		}
-		const instance = server(subject);
-		for (const patch of [{checks: []}, {contextComplete: true}, {finding: "supported"}]) {
-			const result = await transitionCheck(instance, subject, {...decisionInput(subject), ...patch});
-			assert.equal(result.error.code, "invalid_request"); assert.equal("value" in result, false);
-		}
-		assert.deepEqual(instance.calls, []);
-		git(subject.root, ["update-ref", "refs/heads/main", subject.afterCommit.hex]);
-		const stale = await transitionCheck(instance, subject);
-		assert.equal(stale.error.code, "source_stale"); assert.equal("value" in stale, false, "Reconstruction failure is not a semantic contradiction");
-		assert.deepEqual(writes(instance), []);
-	} finally {await rm(subject.root, {recursive: true, force: true});}
-});
-test("profile transition code Check execution binds configuration and findings cannot move to another Gate", async () => {
-	const subject = await fixture();
-	try {
-		accepted(await server(subject).call("changes.propose-profile", subject.input));
-		const instance = server(subject), original = admitted(await transitionCheck(instance, subject));
-		const configuration = decisionConfiguration(instance);
-		const changed = admitted(await transitionCheck(instance, subject, decisionInput(subject), {...configuration, limits: {...configuration.limits, maximumWikiItems: configuration.limits.maximumWikiItems + 1}}));
-		assert.notEqual(changed.gate.checks[0].executionDigest, original.gate.checks[0].executionDigest);
-		assert.notEqual(changed.gate.gateDigest, original.gate.gateDigest);
-		assert.equal(admitted(reduceSemanticGate({gate: original.gate, currentGate: changed.gate, findings: [original.finding]})).status, "stopped");
-		assert.equal(reduceSemanticGate({gate: changed.gate, currentGate: changed.gate, findings: [original.finding]}).ok, false);
-		const {protocol, gateDigest, ...body} = original.gate;
-		void protocol; void gateDigest;
-		const forgedComplete = admitted(createSemanticGate({...body, contextComplete: true}));
-		assert.equal(reduceSemanticGate({gate: forgedComplete, currentGate: forgedComplete, findings: [original.finding]}).ok, false);
 		assert.deepEqual(writes(instance), []);
 	} finally {await rm(subject.root, {recursive: true, force: true});}
 });

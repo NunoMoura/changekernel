@@ -32,14 +32,14 @@ test("canonical and Product identities are byte-identical across isolated proces
 import {decodeProfileChange} from "../../../src/kernel/changes/contracts.ts";
 import {decodeProfileChangeEvent} from "../../../src/kernel/changes/events.ts";
 import {decodeProfileChangeTrace, encodeProfileChangeTrace} from "../../../src/kernel/changes/trace.ts";
-import {decodeSemanticGate, decodeGateFinding} from "../../../src/kernel/gates/semantic.ts";
+import {decodeCheckDefinition, decodeCheckResult} from "../../../src/kernel/gates/checks.ts";
 import {admitted, profileRecord} from "../wiki/profile-fixtures.mjs";
-import {gate, finding} from "../gates/fixtures.mjs";
+import {fixture, result} from "../gates/check-fixtures.mjs";
 
 function currentFixtures() {
 	const {change, event} = profileRecord();
-	const selected = gate();
-	return [[decodeProfileChange, change], [decodeProfileChangeEvent, event], [decodeSemanticGate, selected], [decodeGateFinding, finding(selected)]];
+	const selected = fixture();
+	return [[decodeProfileChange, change], [decodeProfileChangeEvent, event], [decodeCheckDefinition, selected.definition], [decodeCheckResult, result(selected)]];
 }
 
 function reordered(value, seed) {
@@ -60,7 +60,7 @@ test("contract digests ignore object insertion order across deterministic corpus
 		for (const [decode, fixture] of fixtures) {
 			const decoded = decode(reordered(fixture, seed));
 			assert.equal(decoded.ok, true, `${seed}: ${decoded.ok ? "" : decoded.error.message}`);
-			const digestKey = Object.keys(fixture).find((key) => key.endsWith("Digest"));
+			const digestKey = Object.keys(fixture).find((key) => key === "digest" || key.endsWith("Digest"));
 			assert.equal(decoded.value[digestKey], fixture[digestKey]);
 		}
 	}
@@ -89,12 +89,12 @@ test("Trace parser rejects deterministic truncation and line mutation corpus", (
 	}
 });
 
-test("Finding digest detects every protected top-level mutation", () => {
-	const result = finding(gate());
-	for (const [key, value] of Object.entries(result)) {
-		if (key === "findingDigest") continue;
+test("Check result digest detects every protected top-level mutation", () => {
+	const retained = result(fixture());
+	for (const [key, value] of Object.entries(retained)) {
+		if (key === "digest") continue;
 		const replacement = value === null ? {} : typeof value === "string" ? `${value}x` : typeof value === "number" ? value + 1 : typeof value === "boolean" ? !value : null;
-		const mutated = {...result, [key]: replacement};
-		assert.equal(decodeGateFinding(mutated).ok, false, key);
+		const mutated = {...retained, [key]: replacement};
+		assert.equal(decodeCheckResult(mutated).ok, false, key);
 	}
 });

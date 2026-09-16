@@ -4,8 +4,7 @@ import {decodeContract, exactRecord, rejectContract, requiredField, textField} f
 import {sameGitOid} from "../../kernel/identity/git.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
-import {createSemanticGate, createGateFinding, reduceSemanticGate, type DecisionCheckOutput, type SemanticGate, type GateFinding, type SemanticGateOutcome} from "../../kernel/gates/semantic.ts";
-import type {CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
+import type {DecisionCheckOutput} from "../../kernel/gates/decision-output.ts";
 import {decodeAgentRunOutputBinding, type AgentRunOutput, type AgentRunOutputPort} from "../../ports/agent-output.ts";
 import {agentRunContextMaterialDigest, type AgentRunMaterial, type AgentRuntimeIssue} from "../../ports/agent-runtime.ts";
 import type {ProjectStorePort} from "../../ports/project-store.ts";
@@ -14,58 +13,6 @@ import {loadProfileDecisionGrounds, readProfileDecisionSourceSlices, type Profil
 import type {ProjectReadConfiguration} from "../queries/source.ts";
 import {matchesDecisionModelCheckExecution} from "./agent-runs.ts";
 import {readDecisionModelCheckOutput} from "./agent-output.ts";
-
-export const DECISION_PROFILE_TRANSITION_CHECK = Object.freeze({
-	checkId: "codewiki.check:decision.profile-transition-integrity",
-	purpose: "Verify structural validity of the profile Wiki transition against its recorded before/after sources.",
-	implementation: "codewiki.check.profile-transition-integrity@1.0.0",
-});
-
-/**
- * One backend-selected code check, not a complete Decision evaluation.
- * Reuses actual source/transaction validation, never a supplied validity flag.
- * Findings lack admitted durable evidence, and Decision context remains incomplete.
- * Failure to reconstruct an authorized subject returns an error, not a contradiction.
- */
-export async function runDecisionProfileTransitionCheck(
-	store: ProjectStorePort,
-	configuration: ProjectReadConfiguration,
-	actor: AuthorizedProjectActor,
-	input: unknown,
-): Promise<Outcome<Readonly<{gate: SemanticGate; finding: GateFinding; outcome: SemanticGateOutcome; grounds: CanonicalValue}>, ProductError>> {
-	const loaded = await loadProfileDecisionGrounds(store, configuration, actor, input);
-	if (!loaded.ok) return loaded;
-	const grounds = loaded.value;
-	const executionDigest = semanticDigest("codewiki.decision-code-check-execution@1.0.0", {
-		...DECISION_PROFILE_TRANSITION_CHECK, executor: "code",
-		kernelBuildDigest: configuration.kernelBuildDigest, configurationDigest: grounds.configurationDigest,
-	});
-	const subjectBody = Object.freeze({kind: "change" as const, repositoryId: grounds.project.repositoryId,
-		changeId: grounds.reduced.change.changeId, workId: null,
-		projectCommit: grounds.project.commit, projectTree: grounds.project.tree, changeTip: grounds.containing.commit,
-		artifactCommit: null, artifactTree: null,
-		facts: Object.freeze({"codewiki.fact:change": grounds.reduced.change.changeDigest, "codewiki.fact:transaction": grounds.transaction.transactionDigest})});
-	const subjectDigest = semanticDigest("codewiki.decision-profile-check-subject@1.0.0", subjectBody);
-	if (!executionDigest.ok || !subjectDigest.ok) return failure(checkRecordFailure());
-	const gate = createSemanticGate({stage: "decision", subject: {...subjectBody, subjectDigest: subjectDigest.value},
-		contextDigest: grounds.contextDigest, contextComplete: false,
-		kernelBuildDigest: configuration.kernelBuildDigest, configurationDigest: grounds.configurationDigest,
-		checks: [{checkId: DECISION_PROFILE_TRANSITION_CHECK.checkId, purpose: DECISION_PROFILE_TRANSITION_CHECK.purpose, executionDigest: executionDigest.value}]});
-	if (!gate.ok) return failure(checkRecordFailure());
-	const finding = createGateFinding({gateDigest: gate.value.gateDigest, checkId: DECISION_PROFILE_TRANSITION_CHECK.checkId,
-		executionDigest: executionDigest.value, producerId: "codewiki.producer:profile-transition-check", status: "supported",
-		reason: "The recorded profile Wiki transition was reconstructed and structurally validated against its exact before/after sources. This does not establish semantic soundness or permission to pursue the Change.",
-		// Source/transaction hashes are not admitted Evidence References.
-		evidenceDigests: [], assumptions: []});
-	if (!finding.ok) return failure(checkRecordFailure());
-	const outcome = reduceSemanticGate({gate: gate.value, currentGate: gate.value, findings: [finding.value]});
-	if (!outcome.ok) return failure(checkRecordFailure());
-	return success(Object.freeze({gate: gate.value, finding: finding.value, outcome: outcome.value, grounds: grounds.manifest}));
-}
-
-function checkRecordFailure(): ProductError {
-	return productError("internal_failure", "The code check observation could not be bound to its exact grounds.", "Do not infer a finding or stage success from an incomplete record.", false);
-}
 
 export interface DecisionModelCheckSources {
 	readonly contextDigest: Sha256Digest;
