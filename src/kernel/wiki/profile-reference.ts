@@ -62,7 +62,7 @@ const CONTRACT = `${PROFILED_WIKI_REFERENCE_PROTOCOL.id}@${PROFILED_WIKI_REFEREN
 const UTF8 = new TextEncoder();
 const UTF8_DECODER = new TextDecoder("utf-8", {fatal: true});
 const HEX = /^[0-9a-f]*$/u;
-const CHANGE_PATH = /^\.codewiki\/changes\/[^/]+(?:\/[^/]+)*$/u;
+const CHANGE_PATH = /^\.changekernel\/changes\/[^/]+(?:\/[^/]+)*$/u;
 
 /** Build immutable wire references from an already admitted transaction. */
 export function createProfiledWikiReference(
@@ -305,7 +305,7 @@ function validPath(value: string, change: boolean): boolean {
 	if (value.length === 0 || value.length > WIKI_PROFILE_LIMITS.pathBytes || UTF8.encode(value).byteLength > WIKI_PROFILE_LIMITS.pathBytes || value.includes("\0") || /[\\\u0000-\u001f\u007f\uFEFF]/u.test(value) || /[\uD800-\uDFFF]/u.test(value)) return false;
 	const segments = value.split("/");
 	if (segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) return false;
-	if (change) return value.startsWith(".codewiki/changes/") && segments.length >= 3;
+	if (change) return value.startsWith(".changekernel/changes/") && segments.length >= 3;
 	return wikiPath(value);
 }
 

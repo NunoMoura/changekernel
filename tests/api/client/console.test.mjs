@@ -106,7 +106,8 @@ test("renderChangesConsole renders the process table over Changes", () => {
 	assert.match(out, /CHG-a92f8b7c…\s+decision\s+—\s+—\s+needs you/u);
 	assert.match(out, /CHG-b7c1\s+planning\s+1\/4\s+2\/3\s+needs you/u);
 	assert.match(out, /CHG-c3d9\s+completed\s+4\/4\s+6\/6\s+—/u);
-	assert.match(out, /Detail: codewiki change <id>/u);
+	assert.match(out, /Detail: changekernel change <id> {3}Verification: changekernel checks {3}Audit: changekernel trace <id>/u);
+	assert.doesNotMatch(out, /\bcodewiki\b/iu);
 
 	assert.equal(renderChangesConsole({items: []}), "No Changes in this project.\nPropose one through the Project Server to begin.\n");
 });
@@ -157,7 +158,8 @@ test("renderProjectStatusConsole answers the five questions in three lines", () 
 	});
 	assert.match(out, /demo — Attention needed/u);
 	assert.match(out, /Changes: 3\s+Work: 8/u);
-	assert.match(out, /Needs you: 1 decision — run: codewiki changes/u);
+	assert.match(out, /Needs you: 1 decision — run: changekernel changes/u);
+	assert.doesNotMatch(out, /\bcodewiki\b/iu);
 
 	const clear = renderProjectStatusConsole({
 		project: "demo",

@@ -20,6 +20,8 @@ import {
 	type AgentRunReceipt,
 } from "../../ports/agent-runtime.ts";
 import {DSH_EXECUTION_HOST_PROTOCOL, type DshExecutionHost} from "./agent-runtime.ts";
+import {DSH_EXECUTION_OUTPUT_HOST_PROTOCOL, type DshExecutionOutputHost} from "./agent-output.ts";
+import {AGENT_RUN_OUTPUT_PROTOCOL, MAXIMUM_AGENT_OUTPUT_BYTES, decodeAgentRunOutput, decodeAgentRunOutputRequest, type AgentRunOutput} from "../../ports/agent-output.ts";
 import {runDshSession, type DshProviderInstaller, type DshSessionRunResult} from "./session-runner.ts";
 
 export const LOCAL_DSH_EXECUTION_HOST_PROTOCOL = Object.freeze({
@@ -45,6 +47,8 @@ export interface LocalDshExecutionHostOptions {
 	readonly providerInstaller: DshProviderInstaller;
 	readonly maximumConcurrentRuns?: number;
 	readonly maximumTrackedRuns?: number;
+	/** Output custody is transient; eviction never authorizes automatic re-execution. */
+	readonly maximumRetainedOutputBytes?: number;
 	readonly clock?: () => string;
 }
 
@@ -61,6 +65,7 @@ interface TrackedRun {
 	receipt: AgentRunReceipt | null;
 	quiescence: AgentRunQuiescence | null;
 	cancellationDigest: Sha256Digest | null;
+	output: AgentRunOutput | null;
 }
 
 /**
@@ -71,7 +76,7 @@ interface TrackedRun {
  */
 export function createLocalDshExecutionHost(
 	options: LocalDshExecutionHostOptions,
-): Outcome<DshExecutionHost, LocalDshExecutionHostIssue> {
+): Outcome<DshExecutionHost & DshExecutionOutputHost, LocalDshExecutionHostIssue> {
 	if (typeof options !== "object" || options === null || !isAbsolute(options.custodyRoot) || typeof options.providerInstaller !== "function") {
 		return failure(Object.freeze({
 			code: "invalid_options" as const,
@@ -80,7 +85,9 @@ export function createLocalDshExecutionHost(
 	}
 	const maximumConcurrentRuns = options.maximumConcurrentRuns ?? 4;
 	const maximumTrackedRuns = options.maximumTrackedRuns ?? 256;
-	if (!Number.isSafeInteger(maximumConcurrentRuns) || maximumConcurrentRuns < 1 || maximumConcurrentRuns > 64 ||
+	const maximumRetainedOutputBytes = options.maximumRetainedOutputBytes ?? 8 * 1024 * 1024;
+	if (!Number.isSafeInteger(maximumRetainedOutputBytes) || maximumRetainedOutputBytes < 1 || maximumRetainedOutputBytes > 64 * 1024 * 1024 ||
+		!Number.isSafeInteger(maximumConcurrentRuns) || maximumConcurrentRuns < 1 || maximumConcurrentRuns > 64 ||
 		!Number.isSafeInteger(maximumTrackedRuns) || maximumTrackedRuns < maximumConcurrentRuns || maximumTrackedRuns > 4_096) {
 		return failure(Object.freeze({
 			code: "invalid_options" as const,
@@ -89,10 +96,13 @@ export function createLocalDshExecutionHost(
 	}
 	const runs = new Map<string, TrackedRun>();
 	const clock = options.clock ?? systemTimestamp;
-	const execute = async (request: unknown): Promise<unknown> => executeHostRequest(request, {options, runs, clock, maximumConcurrentRuns, maximumTrackedRuns});
+	const context = {options, runs, clock, maximumConcurrentRuns, maximumTrackedRuns, maximumRetainedOutputBytes};
+	const execute = async (request: unknown): Promise<unknown> => executeHostRequest(request, context);
 	return success(Object.freeze({
 		protocol: DSH_EXECUTION_HOST_PROTOCOL,
 		hostProtocol: LOCAL_DSH_EXECUTION_HOST_PROTOCOL,
+		outputProtocol: DSH_EXECUTION_OUTPUT_HOST_PROTOCOL,
+		readOutput: async (request: unknown): Promise<unknown> => readTrackedOutput(request, context),
 		execute,
 	}));
 }
@@ -103,6 +113,7 @@ interface HostContext {
 	readonly clock: () => string;
 	readonly maximumConcurrentRuns: number;
 	readonly maximumTrackedRuns: number;
+	readonly maximumRetainedOutputBytes: number;
 }
 
 async function executeHostRequest(request: unknown, context: HostContext): Promise<LocalDshExecutionHostResponse> {
@@ -153,12 +164,24 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 		return errorEnvelope("invalid_request", "Agent Run start digest does not match its authorization.");
 	}
 	const existing = context.runs.get(authorization.value.runId);
-	if (existing) return handleSnapshot(existing);
-	const active = [...context.runs.values()].filter((run) => run.status !== "terminal").length;
-	if (active >= context.maximumConcurrentRuns) {
-		return errorEnvelope("authorization_conflict", "DSH execution host is at its concurrent Run bound.");
+	if (existing) return existing.authorizationDigest === authorization.value.authorizationDigest
+		? handleSnapshot(existing) : errorEnvelope("stale_authorization", "Agent Run authorization does not match the tracked Run.");
+	const admittedAt = context.clock();
+	if (!canonicalTimestamp(admittedAt)) return errorEnvelope("environment_unavailable", "Execution host clock is invalid.");
+	if (admittedAt < authorization.value.issuedAt || admittedAt >= authorization.value.deadlineAt) {
+		return errorEnvelope("stale_authorization", "Agent Run authorization is outside its execution window.");
 	}
-	evictTerminalRuns(context);
+	const active = [...context.runs.values()].filter((run) => run.status !== "terminal").length;
+	if (active >= context.maximumConcurrentRuns || context.runs.size >= context.maximumTrackedRuns) {
+		return errorEnvelope("authorization_conflict", "DSH execution host is at its active or tracked Run bound; execution identities cannot be evicted to authorize retries.");
+	}
+	const timeoutMs = Math.min(authorization.value.budget.timeoutMs, Date.parse(authorization.value.deadlineAt) - Date.parse(admittedAt));
+	const cutoffAt = new Date(Date.parse(admittedAt) + timeoutMs).toISOString();
+	const deadline = agentRunCancellationRequestDigest({requestDigest: authorization.value.authorizationDigest,
+		runId: authorization.value.runId, authorizationDigest: authorization.value.authorizationDigest,
+		reason: "deadline", requestedAt: cutoffAt});
+	if (!deadline.ok) return errorEnvelope("invalid_request", "Agent Run deadline cancellation binding is invalid.");
+	const startedMonotonic = performance.now();
 	const tracked: TrackedRun = {
 		runId: authorization.value.runId,
 		authorizationDigest: authorization.value.authorizationDigest,
@@ -167,8 +190,12 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 		receipt: null,
 		quiescence: null,
 		cancellationDigest: null,
+		output: null,
 	};
 	context.runs.set(authorization.value.runId, tracked);
+	// The timer requests cancellation. It never publishes custody closure or races
+	// the still-running execution with a synthetic terminal response.
+	const timer = setTimeout(() => cancelTrackedRun(tracked, deadline.value), timeoutMs);
 	try {
 		const result = await runDshSession({
 			authorization: authorization.value,
@@ -184,10 +211,20 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 			signal: tracked.controller.signal,
 			clock: context.clock,
 		});
-		await closeRun(tracked, result);
+		const closedAt = context.clock();
+		if (!canonicalTimestamp(closedAt) || result.startedAt < admittedAt || closedAt < result.finishedAt) {
+			throw new Error("Execution host cannot establish an ordered custody timestamp.");
+		}
+		if (closedAt >= cutoffAt || performance.now() - startedMonotonic >= timeoutMs) cancelTrackedRun(tracked, deadline.value);
+		await closeRun(tracked, result, closedAt);
+		retainOutput(tracked, result, authorization.value.budget.maximumOutputBytes, context);
 	} catch (error) {
-		context.runs.delete(authorization.value.runId);
+		// Cleanup can itself fail. Retain uncertain custody and prevent a second
+		// launch under this authorization, even when no receipt could be built.
+		cancelTrackedRun(tracked, null);
 		throw error;
+	} finally {
+		clearTimeout(timer);
 	}
 	return handleSnapshot(tracked);
 }
@@ -201,6 +238,7 @@ function executeInspect(input: CanonicalValue, context: HostContext): LocalDshEx
 	}
 	const tracked = context.runs.get(request.value.runId);
 	if (!tracked) return errorEnvelope("not_found", "Agent Run is not tracked by this Execution Host.");
+	if (tracked.authorizationDigest !== request.value.authorizationDigest) return errorEnvelope("stale_authorization", "Agent Run authorization does not match the tracked Run.");
 	return handleSnapshot(tracked);
 }
 
@@ -213,22 +251,27 @@ function executeCancellation(input: CanonicalValue, context: HostContext): Local
 	}
 	const tracked = context.runs.get(request.value.runId);
 	if (!tracked) return errorEnvelope("not_found", "Agent Run is not tracked by this Execution Host.");
-	if (tracked.status !== "terminal") {
-		tracked.status = "cancelling";
-		tracked.cancellationDigest = request.value.requestDigest;
-		tracked.controller.abort();
-	}
+	if (tracked.authorizationDigest !== request.value.authorizationDigest) return errorEnvelope("stale_authorization", "Agent Run authorization does not match the tracked Run.");
+	cancelTrackedRun(tracked, request.value.requestDigest);
 	return handleSnapshot(tracked);
+}
+
+function cancelTrackedRun(tracked: TrackedRun, cancellationDigest: Sha256Digest | null): void {
+	if (tracked.status === "terminal") return;
+	tracked.status = "cancelling";
+	tracked.cancellationDigest ??= cancellationDigest;
+	tracked.controller.abort();
 }
 
 async function closeRun(
 	tracked: TrackedRun,
 	result: DshSessionRunResult,
+	closedAt: string,
 ): Promise<void> {
 	const quiescence = createAgentRunQuiescence({
 		runId: tracked.runId,
 		authorizationDigest: tracked.authorizationDigest,
-		observedAt: result.finishedAt,
+		observedAt: closedAt,
 		processTreeTerminated: true,
 		providerRequestsClosed: true,
 		previewClosed: true,
@@ -238,10 +281,10 @@ async function closeRun(
 	const receipt = createAgentRunReceipt({
 		runId: tracked.runId,
 		authorizationDigest: tracked.authorizationDigest,
-		outcome: result.outcome,
+		outcome: tracked.controller.signal.aborted ? "cancelled" : result.outcome,
 		startedAt: result.startedAt,
 		finishedAt: result.finishedAt,
-		outputDigest: result.outputDigest,
+		outputDigest: tracked.controller.signal.aborted ? null : result.outputDigest,
 		usageDigest: result.usageDigest,
 		providerReceiptDigest: result.providerReceiptDigest,
 		sessionReceiptDigest: result.sessionReceiptDigest,
@@ -260,6 +303,37 @@ async function closeRun(
 	tracked.receipt = receipt.value;
 	tracked.quiescence = quiescence.value;
 	tracked.status = "terminal";
+}
+
+function readTrackedOutput(input: unknown, context: HostContext) {
+	const request = decodeAgentRunOutputRequest(input);
+	if (!request.ok) return errorEnvelope("invalid_request", "Agent Run output request is malformed.");
+	const tracked = context.runs.get(request.value.runId);
+	if (!tracked) return errorEnvelope("not_found", "Agent Run is not tracked by this Execution Host.");
+	if (tracked.authorizationDigest !== request.value.authorizationDigest) return errorEnvelope("stale_authorization", "Agent Run authorization does not match the tracked Run.");
+	if (tracked.status !== "terminal" || tracked.receipt === null || tracked.quiescence === null) return errorEnvelope("quiescence_unproven", "Output is unavailable before terminal custody closure.");
+	if (tracked.receipt.receiptDigest !== request.value.receiptDigest || tracked.receipt.outcome !== "completed") return errorEnvelope("invalid_receipt", "Output lookup does not match a completed receipt.");
+	if (tracked.output === null) return errorEnvelope("not_found", "Output bytes are unavailable or were evicted; receipt presence is not retained evidence.");
+	return success(tracked.output);
+}
+
+function retainOutput(tracked: TrackedRun, result: DshSessionRunResult, maximumOutputBytes: number, context: HostContext): void {
+	if (result.outcome !== "completed" || result.output === null || tracked.receipt === null || tracked.receipt.outcome !== "completed") return;
+	const bytes = Buffer.byteLength(result.output);
+	if (bytes > Math.min(MAXIMUM_AGENT_OUTPUT_BYTES, maximumOutputBytes, context.maximumRetainedOutputBytes)) return;
+	const output = decodeAgentRunOutput({protocol: AGENT_RUN_OUTPUT_PROTOCOL, runId: tracked.runId,
+		authorizationDigest: tracked.authorizationDigest, receiptDigest: tracked.receipt.receiptDigest,
+		outputDigest: result.outputDigest, text: result.output});
+	if (!output.ok) return;
+	let retainedBytes = [...context.runs.values()].reduce((total, run) => total + (run.output === null ? 0 : Buffer.byteLength(run.output.text)), 0);
+	for (const run of context.runs.values()) {
+		if (retainedBytes + bytes <= context.maximumRetainedOutputBytes) break;
+		if (run.output !== null) {
+			retainedBytes -= Buffer.byteLength(run.output.text);
+			run.output = null;
+		}
+	}
+	tracked.output = output.value;
 }
 
 function decodeStartRequest(input: CanonicalValue): Outcome<Readonly<{requestDigest: Sha256Digest; authorization: CanonicalValue; material: AgentRunMaterial}>, LocalDshExecutionHostIssue> {
@@ -341,20 +415,6 @@ function handleSnapshot(tracked: TrackedRun): LocalDshExecutionHostSuccess {
 			quiescence: tracked.quiescence,
 		}),
 	});
-}
-
-function evictTerminalRuns(context: HostContext): void {
-	while (context.runs.size >= context.maximumTrackedRuns) {
-		let evicted = false;
-		for (const [runId, tracked] of context.runs) {
-			if (tracked.status === "terminal") {
-				context.runs.delete(runId);
-				evicted = true;
-				break;
-			}
-		}
-		if (!evicted) break;
-	}
 }
 
 function sessionIdFor(runId: string): string {

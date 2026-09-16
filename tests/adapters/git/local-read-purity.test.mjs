@@ -20,8 +20,8 @@ import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
 import test from "node:test";
 
-import {createCodewikiClient} from "../../../src/api/client/index.ts";
-import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
+import {createChangeKernelClient} from "../../../src/api/client/index.ts";
+import {bootstrapChangeKernelProject} from "../../../src/adapters/git/bootstrap.ts";
 import {createLocalProjectServer} from "../../../src/adapters/git/local-server.ts";
 
 /**
@@ -31,7 +31,7 @@ import {createLocalProjectServer} from "../../../src/adapters/git/local-server.t
  * disposable external Git fixtures. The evidence mechanism is snapshot
  * comparison: `snapshotProjectState` records the fixture root itself (under
  * the stable path ".") plus every reachable path with exact permission modes,
- * file SHA-256 content digests, and symlink targets, `.git` and `.codewiki`
+ * file SHA-256 content digests, and symlink targets, `.git` and `.changekernel`
  * included, and the tests require composition and bounded authenticated reads
  * to leave that recorded state unchanged. Symlinks are never followed.
  *
@@ -55,7 +55,7 @@ import {createLocalProjectServer} from "../../../src/adapters/git/local-server.t
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const WIKI_ITEMS_SOURCE = join(sourceRoot, ".codewiki", "wiki", "items");
+const WIKI_ITEMS_SOURCE = join(sourceRoot, ".changekernel", "wiki", "items");
 const EXPIRES_AT = "2036-01-01T00:00:00Z";
 
 /**
@@ -259,7 +259,7 @@ function assertTypedOutcome(outcome, stage) {
 }
 
 function clientFor(local) {
-	const client = createCodewikiClient({
+	const client = createChangeKernelClient({
 		repositoryId: local.repositoryId,
 		transport: {send: (request) => local.server.handle(request)},
 		client: {kind: "cli", instanceId: "cw:client:local-purity-test"},
@@ -274,10 +274,7 @@ function requestIds() {
 	return () => `cw:request:purity-${counter += 1}`;
 }
 
-/**
- * Bounded legitimate reads over an initialized project: every call follows the
- * existing authenticated Client fixtures and must succeed.
- */
+/** Available discovery succeeds; unimplemented projections must fail without writes. */
 async function assertBoundedReadsSucceed(client) {
 	const nextRequestId = requestIds();
 	const source = {kind: "canonical"};
@@ -289,7 +286,8 @@ async function assertBoundedReadsSucceed(client) {
 	assert.equal(capabilities.ok, true, capabilities.ok ? "" : capabilities.error.message);
 
 	const status = await client.status({requestId: nextRequestId(), expiresAt: EXPIRES_AT, source});
-	assert.equal(status.ok, true, status.ok ? "" : status.error.message);
+	assert.equal(status.ok, false);
+	assert.equal(status.error.code, "unavailable");
 
 	const wikiList = await client.wiki({
 		requestId: nextRequestId(),
@@ -299,12 +297,13 @@ async function assertBoundedReadsSucceed(client) {
 		limit: 10,
 		cursor: null,
 	});
-	assert.equal(wikiList.ok, true, wikiList.ok ? "" : wikiList.error.message);
-	assert.ok(wikiList.value.data.items.length > 0, "the committed Wiki items must be readable.");
-	const itemId = wikiList.value.data.items[0].itemId;
+	assert.equal(wikiList.ok, false);
+	assert.equal(wikiList.error.code, "unavailable");
+	const itemId = "cw:item:source-history";
 
 	const wikiGet = await client.wiki({requestId: nextRequestId(), expiresAt: EXPIRES_AT, source, view: "get", itemId});
-	assert.equal(wikiGet.ok, true, wikiGet.ok ? "" : wikiGet.error.message);
+	assert.equal(wikiGet.ok, false);
+	assert.equal(wikiGet.error.code, "unavailable");
 
 	const changes = await client.changes({
 		requestId: nextRequestId(),
@@ -314,7 +313,8 @@ async function assertBoundedReadsSucceed(client) {
 		limit: 10,
 		cursor: null,
 	});
-	assert.equal(changes.ok, true, changes.ok ? "" : changes.error.message);
+	assert.equal(changes.ok, false);
+	assert.equal(changes.error.code, "unavailable");
 
 	const gates = await client.checks({
 		requestId: nextRequestId(),
@@ -325,7 +325,8 @@ async function assertBoundedReadsSucceed(client) {
 		limit: 10,
 		cursor: null,
 	});
-	assert.equal(gates.ok, true, gates.ok ? "" : gates.error.message);
+	assert.equal(gates.ok, false);
+	assert.equal(gates.error.code, "unavailable");
 
 	const results = await client.checks({
 		requestId: nextRequestId(),
@@ -336,10 +337,12 @@ async function assertBoundedReadsSucceed(client) {
 		limit: 10,
 		cursor: null,
 	});
-	assert.equal(results.ok, true, results.ok ? "" : results.error.message);
+	assert.equal(results.ok, false);
+	assert.equal(results.error.code, "unavailable");
 
 	const work = await client.work({requestId: nextRequestId(), expiresAt: EXPIRES_AT, source, changeId: null, limit: 10, cursor: null});
-	assert.equal(work.ok, true, work.ok ? "" : work.error.message);
+	assert.equal(work.ok, false);
+	assert.equal(work.error.code, "unavailable");
 
 	const alignment = await client.alignment({
 		requestId: nextRequestId(),
@@ -349,10 +352,12 @@ async function assertBoundedReadsSucceed(client) {
 		limit: 10,
 		cursor: null,
 	});
-	assert.equal(alignment.ok, true, alignment.ok ? "" : alignment.error.message);
+	assert.equal(alignment.ok, false);
+	assert.equal(alignment.error.code, "unavailable");
 
 	const audit = await client.audit({requestId: nextRequestId(), expiresAt: EXPIRES_AT, source, view: "source"});
-	assert.equal(audit.ok, true, audit.ok ? "" : audit.error.message);
+	assert.equal(audit.ok, false);
+	assert.equal(audit.error.code, "unavailable");
 }
 
 /**
@@ -379,9 +384,9 @@ test("snapshot inspection is deterministic, records the root, never follows syml
 	const root = await makeGitRoot("negative-control");
 	try {
 		await commitFixture(root, "git-only root");
-		await mkdir(join(root, ".codewiki", "wiki", "items"), {recursive: true});
-		await writeFile(join(root, ".codewiki", "config.json"), '{"project":"Negative Control"}\n', {mode: 0o600});
-		await writeFile(join(root, ".codewiki", "wiki", "items", "story.md"), "story bytes\n", {mode: 0o644});
+		await mkdir(join(root, ".changekernel", "wiki", "items"), {recursive: true});
+		await writeFile(join(root, ".changekernel", "config.json"), '{"project":"Negative Control"}\n', {mode: 0o600});
+		await writeFile(join(root, ".changekernel", "wiki", "items", "story.md"), "story bytes\n", {mode: 0o644});
 		await symlink("objects", join(root, ".git", "objects-view"));
 
 		const before = await snapshotProjectState(root);
@@ -415,9 +420,9 @@ test("snapshot inspection is deterministic, records the root, never follows syml
 		// Negative control: the harness must observe a new Git lock file,
 		// existing-file byte changes, and existing-file mode changes.
 		await writeFile(join(root, ".git", "index.lock"), "temporary git lock\n", {mode: 0o600});
-		const changedBytes = await readFile(join(root, ".codewiki", "config.json"), "utf8");
-		await writeFile(join(root, ".codewiki", "config.json"), `${changedBytes}mutated\n`);
-		await chmod(join(root, ".codewiki", "wiki", "items", "story.md"), 0o755);
+		const changedBytes = await readFile(join(root, ".changekernel", "config.json"), "utf8");
+		await writeFile(join(root, ".changekernel", "config.json"), `${changedBytes}mutated\n`);
+		await chmod(join(root, ".changekernel", "wiki", "items", "story.md"), 0o755);
 		await rm(join(root, ".git", "objects-view"));
 		await symlink("refs", join(root, ".git", "objects-view"));
 
@@ -428,11 +433,11 @@ test("snapshot inspection is deterministic, records the root, never follows syml
 			`the snapshot comparison must detect the new .git lock file, got:\n${changes.join("\n")}`,
 		);
 		assert.ok(
-			changes.some((change) => change.startsWith("bytes changed .codewiki/config.json: ")),
+			changes.some((change) => change.startsWith("bytes changed .changekernel/config.json: ")),
 			`the snapshot comparison must detect existing-file byte changes, got:\n${changes.join("\n")}`,
 		);
 		assert.ok(
-			changes.some((change) => change.startsWith("mode changed .codewiki/wiki/items/story.md: ")),
+			changes.some((change) => change.startsWith("mode changed .changekernel/wiki/items/story.md: ")),
 			`the snapshot comparison must detect existing-file mode changes, got:\n${changes.join("\n")}`,
 		);
 		assert.ok(
@@ -512,15 +517,15 @@ test("composition and bounded reads leave an explicitly bootstrapped, committed 
 	const root = await makeGitRoot("initialized");
 	try {
 		// Fixture setup: explicit bootstrap and legitimate committed semantic state.
-		const boot = await bootstrapCodewikiProject({projectRoot: root, project: "Purity Fixture"});
+		const boot = await bootstrapChangeKernelProject({projectRoot: root, project: "Purity Fixture"});
 		assert.equal(boot.ok, true, boot.ok ? "" : boot.error.message);
-		await cp(WIKI_ITEMS_SOURCE, join(root, ".codewiki", "wiki", "items"), {recursive: true});
-		await fixtureGit(root, ["add", ".codewiki"]);
-		await commitFixture(root, "bootstrap CodeWiki");
+		await cp(WIKI_ITEMS_SOURCE, join(root, ".changekernel", "wiki", "items"), {recursive: true});
+		await fixtureGit(root, ["add", ".changekernel"]);
+		await commitFixture(root, "bootstrap ChangeKernel");
 
 		const before = await snapshotProjectState(root);
 		assert.ok(before.get(".git/refs/heads/main"), "the fixture must have a committed canonical ref");
-		assert.ok(before.get(".codewiki/config.json"), "the fixture must have committed CodeWiki state");
+		assert.ok(before.get(".changekernel/config.json"), "the fixture must have committed ChangeKernel state");
 
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Purity Fixture"});
 		assertTypedOutcome(composed, "initialized composition");
@@ -541,12 +546,12 @@ test("composition and bounded reads leave an explicitly bootstrapped, committed 
 	}
 });
 
-test("composition over a Git-only root without .codewiki is typed and writes nothing", async () => {
+test("composition over a Git-only root without .changekernel is typed and writes nothing", async () => {
 	const root = await makeGitRoot("bare-git");
 	try {
 		await commitFixture(root, "git-only root");
 		const before = await snapshotProjectState(root);
-		assert.equal(before.has(".codewiki"), false, "the fixture must not contain CodeWiki state before composition");
+		assert.equal(before.has(".changekernel"), false, "the fixture must not contain ChangeKernel state before composition");
 
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Purity Bare"});
 		assertTypedOutcome(composed, "composition over a Git-only root");
@@ -569,14 +574,14 @@ test("composition and reads over committed partial semantic state stay typed and
 	const root = await makeGitRoot("partial");
 	try {
 		// Partial state: a committed config but no Wiki or Change roots at all.
-		await mkdir(join(root, ".codewiki"), {recursive: true});
+		await mkdir(join(root, ".changekernel"), {recursive: true});
 		await writeFile(
-			join(root, ".codewiki", "config.json"),
-			'{"protocolId":"codewiki.project-config","protocolVersion":"2.0.0","project":"Partial Fixture","wikiRoot":".codewiki/wiki","changeRoot":".codewiki/changes","worktreeIsolation":"none"}\n',
+			join(root, ".changekernel", "config.json"),
+			'{"protocolId":"codewiki.project-config","protocolVersion":"2.0.0","project":"Partial Fixture","wikiRoot":".changekernel/wiki","changeRoot":".changekernel/changes","worktreeIsolation":"none"}\n',
 			{mode: 0o600},
 		);
-		await fixtureGit(root, ["add", ".codewiki"]);
-		await commitFixture(root, "partial CodeWiki state");
+		await fixtureGit(root, ["add", ".changekernel"]);
+		await commitFixture(root, "partial ChangeKernel state");
 
 		const before = await snapshotProjectState(root);
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Partial Fixture"});
@@ -600,13 +605,13 @@ test("composition and reads over committed malformed semantic state stay typed a
 	const root = await makeGitRoot("malformed");
 	try {
 		// Malformed state: committed roots that contain undecodable bytes.
-		await mkdir(join(root, ".codewiki", "wiki", "items"), {recursive: true});
-		await mkdir(join(root, ".codewiki", "changes"), {recursive: true});
-		await writeFile(join(root, ".codewiki", "config.json"), '{"project":"Malformed Fixture"}\n', {mode: 0o600});
-		await writeFile(join(root, ".codewiki", "wiki", "items", "broken.md"), "\u0000\u0001garbage bytes\n");
-		await writeFile(join(root, ".codewiki", "changes", "CHG-d2malformed.jsonl"), "not a trace header\n");
-		await fixtureGit(root, ["add", ".codewiki"]);
-		await commitFixture(root, "malformed CodeWiki state");
+		await mkdir(join(root, ".changekernel", "wiki", "items"), {recursive: true});
+		await mkdir(join(root, ".changekernel", "changes"), {recursive: true});
+		await writeFile(join(root, ".changekernel", "config.json"), '{"project":"Malformed Fixture"}\n', {mode: 0o600});
+		await writeFile(join(root, ".changekernel", "wiki", "items", "broken.md"), "\u0000\u0001garbage bytes\n");
+		await writeFile(join(root, ".changekernel", "changes", "CHG-d2malformed.jsonl"), "not a trace header\n");
+		await fixtureGit(root, ["add", ".changekernel"]);
+		await commitFixture(root, "malformed ChangeKernel state");
 
 		const before = await snapshotProjectState(root);
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Malformed Fixture"});

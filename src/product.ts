@@ -8,28 +8,27 @@ import {
 	type CanonicalValue,
 } from "./kernel/data-contracts/canonical-json.ts";
 import {semanticDigest} from "./kernel/identity/semantic-digest.ts";
+import {CHANGEKERNEL_VERSION} from "./kernel/identity/version.ts";
 import type {Sha256Digest} from "./kernel/identity/sha256.ts";
 import {AGENT_RUNTIME_PORT_PROTOCOL} from "./ports/agent-runtime.ts";
-import {CHECK_RUNNER_PORT_PROTOCOL} from "./ports/check-runner.ts";
 import {PREVIEW_PORT_PROTOCOL} from "./ports/preview.ts";
 import {PROJECT_STORE_PORT_PROTOCOL} from "./ports/project-store.ts";
 import {PROJECT_ACCESS_POLICY_PROTOCOL} from "./server/authorization/policy.ts";
 import {AGENT_ROLE_POLICY_DIGEST, AGENT_ROLE_POLICY_PROTOCOL} from "./server/effects/agent-runs.ts";
 import {PROJECT_SERVER_PROTOCOL} from "./server/index.ts";
-import {PROJECT_SERVER_FACTS_PROTOCOL} from "./server/recovery/facts.ts";
 
-export interface CodewikiProductPolicy {
+export interface ChangeKernelProductPolicy {
 	readonly protocol: Readonly<{id: "codewiki.product-policy"; version: "1.0.0"}>;
-	readonly productId: "codewiki";
-	readonly package: Readonly<{name: "@nunomoura/codewiki"; version: "0.4.0-sk3g.1"}>;
+	readonly productId: "changekernel";
+	readonly package: Readonly<{name: "@nunomoura/changekernel"; version: typeof CHANGEKERNEL_VERSION}>;
 	readonly projectConfiguration: Readonly<{
 		protocol: Readonly<{id: "codewiki.project-config"; version: "2.0.0"}>;
-		semanticRoots: readonly [".codewiki/wiki/items", ".codewiki/changes"];
+		semanticRoots: readonly [".changekernel/wiki", ".changekernel/changes"];
 		forbiddenRoots: readonly [
-			".codewiki/kb",
-			".codewiki/traces",
-			".codewiki/runtime",
-			".codewiki/views",
+			".changekernel/kb",
+			".changekernel/traces",
+			".changekernel/runtime",
+			".changekernel/views",
 		];
 	}>;
 	readonly lifecycle: Readonly<{
@@ -54,23 +53,23 @@ export interface CodewikiProductPolicy {
 		unavailable: readonly ["Agent Work", "Preview"];
 	}>;
 	readonly checks: Readonly<{
-		selectionAuthority: "project";
+		selectionAuthority: "backend";
 		proposalSelection: "forbidden";
 	}>;
 }
 
 const POLICY_INPUT = {
 	protocol: {id: "codewiki.product-policy", version: "1.0.0"},
-	productId: "codewiki",
-	package: {name: "@nunomoura/codewiki", version: "0.4.0-sk3g.1"},
+	productId: "changekernel",
+	package: {name: "@nunomoura/changekernel", version: CHANGEKERNEL_VERSION},
 	projectConfiguration: {
 		protocol: {id: "codewiki.project-config", version: "2.0.0"},
-		semanticRoots: [".codewiki/wiki/items", ".codewiki/changes"],
+		semanticRoots: [".changekernel/wiki", ".changekernel/changes"],
 		forbiddenRoots: [
-			".codewiki/kb",
-			".codewiki/traces",
-			".codewiki/runtime",
-			".codewiki/views",
+			".changekernel/kb",
+			".changekernel/traces",
+			".changekernel/runtime",
+			".changekernel/views",
 		],
 	},
 	lifecycle: {
@@ -83,8 +82,6 @@ const POLICY_INPUT = {
 	},
 	ports: [
 		PROJECT_STORE_PORT_PROTOCOL,
-		CHECK_RUNNER_PORT_PROTOCOL,
-		{...PROJECT_SERVER_FACTS_PROTOCOL},
 		AGENT_RUNTIME_PORT_PROTOCOL,
 		PREVIEW_PORT_PROTOCOL,
 	],
@@ -98,25 +95,25 @@ const POLICY_INPUT = {
 		unavailable: ["Agent Work", "Preview"],
 	},
 	checks: {
-		selectionAuthority: "project",
+		selectionAuthority: "backend",
 		proposalSelection: "forbidden",
 	},
 } as const;
 
-export const CODEWIKI_PRODUCT: CodewikiProductPolicy = canonicalPolicy(POLICY_INPUT);
-export const CODEWIKI_PRODUCT_POLICY_DIGEST: Sha256Digest = policyDigest(CODEWIKI_PRODUCT);
+export const CHANGEKERNEL_PRODUCT: ChangeKernelProductPolicy = canonicalPolicy(POLICY_INPUT);
+export const CHANGEKERNEL_PRODUCT_POLICY_DIGEST: Sha256Digest = policyDigest(CHANGEKERNEL_PRODUCT);
 
-function canonicalPolicy(input: CanonicalValue): CodewikiProductPolicy {
+function canonicalPolicy(input: CanonicalValue): ChangeKernelProductPolicy {
 	const decoded = decodeCanonicalValue(input);
 	if (!decoded.ok) {
 		throw new Error(`Static Product policy is invalid: ${decoded.error.message}`);
 	}
-	// SAFETY: POLICY_INPUT fixes every field and literal required by CodewikiProductPolicy;
+	// SAFETY: POLICY_INPUT fixes every field and literal required by ChangeKernelProductPolicy;
 	// canonical decoding recursively validates and freezes those exact values.
-	return decoded.value as unknown as CodewikiProductPolicy;
+	return decoded.value as unknown as ChangeKernelProductPolicy;
 }
 
-function policyDigest(policy: CodewikiProductPolicy): Sha256Digest {
+function policyDigest(policy: ChangeKernelProductPolicy): Sha256Digest {
 	const digest = semanticDigest("codewiki.product-policy@1.0.0", policy);
 	if (!digest.ok) {
 		throw new Error(`Static Product policy digest failed: ${digest.error.message}`);

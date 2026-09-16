@@ -325,7 +325,7 @@ function sameOidList(left: readonly GitOid[], right: readonly GitOid[]): boolean
 function isPortableScope(value: string): boolean {
 	if (value.length === 0 || value.length > 512 || value.normalize("NFC") !== value || value.startsWith("/") || value.includes("\\") || value.includes("\0")) return false;
 	const segments = value.split("/");
-	return segments[0] !== ".codewiki" && segments[0] !== ".git" && segments[0] !== "check-packs" &&
+	return segments[0] !== ".changekernel" && segments[0] !== ".codewiki" && segments[0] !== ".git" && segments[0] !== "check-packs" &&
 		segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
 }
 

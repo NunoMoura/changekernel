@@ -1,12 +1,13 @@
-import {failure, type Outcome} from "../../kernel/data-contracts/outcome.ts";
+import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import type {GitOid} from "../../kernel/identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../../kernel/identity/semantic-digest.ts";
-import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
+import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {
 	agentRunContextMaterialDigest,
 	agentRunCancellationRequestDigest,
 	agentRunStartRequestDigest,
 	createAgentRunAuthorization,
+	decodeAgentRunAuthorization,
 	type AgentRunAuthorization,
 	type AgentRunBudget,
 	type AgentRunCancellationRequest,
@@ -21,7 +22,8 @@ import {
 	type AgentRuntimeIssue,
 	type AgentRuntimePort,
 } from "../../ports/agent-runtime.ts";
-import {isNamespacedIdentifier, type ContractIssue} from "../../kernel/data-contracts/validation.ts";
+import {arrayField, decodeContract, exactRecord, isNamespacedIdentifier, rejectContract, textField, type ContractIssue} from "../../kernel/data-contracts/validation.ts";
+import {DECISION_CHECK_OUTPUT_SCHEMA} from "../../kernel/gates/semantic.ts";
 
 export const AGENT_ROLE_POLICY_PROTOCOL = Object.freeze({id: "codewiki.agent-role-policy", version: "1.0.0"} as const);
 
@@ -141,6 +143,128 @@ export function authorizeAgentRun(
 		deadlineAt,
 		predecessor: input.predecessor,
 	});
+}
+
+/** Decision model check execution constraints; historical wire identities stay frozen. */
+export const DECISION_CHECK_OUTPUT_SCHEMA_DIGEST = staticDigest("codewiki.agent-output-schema@2.0.0", DECISION_CHECK_OUTPUT_SCHEMA);
+export const DECISION_MODEL_CHECK_EXECUTION = Object.freeze({
+	...AGENT_ROLE_POLICIES["model-check"],
+	outputSchemaDigest: DECISION_CHECK_OUTPUT_SCHEMA_DIGEST,
+});
+// Retain the hash domain and body keys for byte-compatible run identities.
+export const DECISION_MODEL_CHECK_EXECUTION_DIGEST = staticDigest("codewiki.decision-check-run-policy@1.0.0", {
+	parentPolicyDigest: AGENT_ROLE_POLICY_DIGEST,
+	stage: "decision", policy: DECISION_MODEL_CHECK_EXECUTION,
+});
+
+/**
+ * Authorize one model check in the Decision stage, not the whole stage.
+ * Callers must rebuild the exact subject/material under current Project authority.
+ * Output remains untrusted until finding admission; this does not qualify execution.
+ */
+export function authorizeDecisionModelCheckRun(
+	input: Omit<AuthorizeAgentRunInput, "role" | "stage">,
+): Outcome<AgentRunAuthorization, AgentRunAuthorizationIssue | ContractIssue | SemanticIdentityIssue> {
+	if (input.subject.changeId === null || input.subject.changeTip === null || input.subject.workId !== null ||
+		input.subject.artifactCommit !== null || input.subject.artifactTree !== null) {
+		return failure(authorizationIssue("policy_violation", "Decision model check requires an exact Change subject without Work or artifact scope."));
+	}
+	const base = authorizeAgentRun({...input, role: "model-check", stage: "decision"});
+	if (!base.ok) return base;
+	const {protocol, runId, authorizationDigest, ...body} = base.value;
+	void protocol; void runId; void authorizationDigest;
+	return createAgentRunAuthorization({...body, policyDigest: DECISION_MODEL_CHECK_EXECUTION_DIGEST,
+		outputSchemaDigest: DECISION_CHECK_OUTPUT_SCHEMA_DIGEST});
+}
+
+/**
+ * Resolve one check-model override from a backend-authorized route catalogue.
+ * Missing configuration inherits the interface route; explicit overrides never fall
+ * back. This selects metadata only, not provider availability or qualification.
+ */
+export function resolveCheckModelRoute(
+	configuration: unknown,
+	interfaceRouteId: unknown,
+	authorizedRoutes: unknown,
+): Outcome<AgentRunRoute, ContractIssue | AgentRuntimeIssue> {
+	const contract = "Check model configuration";
+	const parsed = decodeContract(contract, {configuration: configuration === undefined ? {} : configuration, interfaceRouteId, authorizedRoutes}, value => {
+		const record = exactRecord(contract, value, "$", ["configuration", "interfaceRouteId", "authorizedRoutes"]);
+		const config = exactRecord(contract, record.configuration!, "$.configuration", [], ["modelRoute"]);
+		const modelRoute = config.modelRoute === undefined ? "inherit" : textField(contract, config, "modelRoute", "$.configuration", {maximumBytes: 200});
+		if (modelRoute !== "inherit" && !isNamespacedIdentifier(modelRoute)) rejectContract("invalid_field", contract, "$.configuration.modelRoute", "Select inherit or one named model route.");
+		const inherited = record.interfaceRouteId;
+		if (inherited !== null && (typeof inherited !== "string" || !isNamespacedIdentifier(inherited))) rejectContract("invalid_field", contract, "$.interfaceRouteId", "Interface route must be a named route or null.");
+		const seen = new Set<string>();
+		const routes = arrayField(contract, record, "authorizedRoutes", "$", 32).map((entry, index) => {
+			const path = `$.authorizedRoutes[${index}]`;
+			const route = exactRecord(contract, entry, path, ["routeId", "providerId", "modelId", "routeDigest"]);
+			const routeId = textField(contract, route, "routeId", path, {maximumBytes: 200});
+			const providerId = textField(contract, route, "providerId", path, {maximumBytes: 200});
+			const modelId = textField(contract, route, "modelId", path, {maximumBytes: 200});
+			if (![routeId, providerId, modelId].every(isNamespacedIdentifier) || seen.has(routeId)) rejectContract("invalid_field", contract, path, "Routes require unique names and valid provider/model identities.");
+			seen.add(routeId);
+			const digest = decodeSha256Digest(route.routeDigest);
+			const expected = semanticDigest("codewiki.agent-route@1.0.0", {routeId, providerId, modelId});
+			if (!digest.ok || !expected.ok || digest.value !== expected.value) rejectContract("invalid_field", contract, path, "Model route digest differs from its identities.");
+			return Object.freeze({routeId, providerId, modelId, routeDigest: digest.value});
+		});
+		return Object.freeze({selected: modelRoute === "inherit" ? inherited : modelRoute, routes});
+	});
+	if (!parsed.ok) return parsed;
+	const route = parsed.value.routes.find(entry => entry.routeId === parsed.value.selected);
+	return route ? success(route) : failure(runtimeIssue("environment_unavailable", "Selected check model route is absent from the backend-authorized catalogue; no fallback was attempted."));
+}
+
+/** Inheritance binds the complete observed interface identity, not a reused route name. */
+export function resolveObservedCheckModelRoute(configuration: unknown, interfaceRoute: unknown, authorizedRoutes: unknown) {
+	const snapshot = decodeContract("Check model observations", {configuration: configuration === undefined ? {} : configuration, interfaceRoute, authorizedRoutes}, value => {
+		const record = exactRecord("Check model observations", value, "$", ["configuration", "interfaceRoute", "authorizedRoutes"]);
+		return Object.freeze({interfaceRoute: record.interfaceRoute, authorizedRoutes: record.authorizedRoutes,
+			configuration: exactRecord("Check model observations", record.configuration!, "$.configuration", [], ["modelRoute"])});
+	});
+	if (!snapshot.ok) return snapshot;
+	const observed = decodeContract("Interface model route", snapshot.value.interfaceRoute, value => value === null ? null :
+		exactRecord("Interface model route", value, "$", ["routeId", "providerId", "modelId", "routeDigest"]));
+	if (!observed.ok) return observed;
+	const verified = observed.value === null ? null : resolveCheckModelRoute(undefined, observed.value.routeId, [observed.value]);
+	if (verified !== null && !verified.ok) return verified;
+	const inherited = verified?.value ?? null;
+	const selected = resolveCheckModelRoute(snapshot.value.configuration, inherited?.routeId ?? null, snapshot.value.authorizedRoutes);
+	if (!selected.ok) return selected;
+	const inherits = snapshot.value.configuration.modelRoute === undefined || snapshot.value.configuration.modelRoute === "inherit";
+	if (inherits && selected.value.routeDigest !== inherited?.routeDigest) {
+		return failure(runtimeIssue("environment_unavailable", "The interface model differs from the backend-authorized route; no substitution was attempted."));
+	}
+	return selected;
+}
+
+/** Internal composition; the backend, not client configuration, supplies authorized routes. */
+export function authorizeConfiguredDecisionModelCheckRun(
+	input: Omit<AuthorizeAgentRunInput, "role" | "stage" | "route">,
+	configuration: unknown,
+	interfaceRouteId: unknown,
+	authorizedRoutes: unknown,
+): Outcome<AgentRunAuthorization, AgentRunAuthorizationIssue | ContractIssue | SemanticIdentityIssue | AgentRuntimeIssue> {
+	const route = resolveCheckModelRoute(configuration, interfaceRouteId, authorizedRoutes);
+	return route.ok ? authorizeDecisionModelCheckRun({...input, route: route.value}) : route;
+}
+
+/** Recompute execution compatibility; the historical policyDigest field alone is insufficient. */
+export function matchesDecisionModelCheckExecution(input: unknown): boolean {
+	const decoded = decodeAgentRunAuthorization(input);
+	if (!decoded.ok) return false;
+	const authorization = decoded.value;
+	if (authorization.role !== "model-check" || authorization.stage !== "decision" ||
+		authorization.subject.changeId === null || authorization.subject.changeTip === null ||
+		authorization.subject.workId !== null || authorization.subject.artifactCommit !== null || authorization.subject.artifactTree !== null) return false;
+	const policy = semanticDigest("codewiki.decision-check-run-policy@1.0.0", {
+		parentPolicyDigest: AGENT_ROLE_POLICY_DIGEST, stage: authorization.stage,
+		policy: {role: authorization.role, toolIds: authorization.toolIds, capabilities: authorization.capabilities,
+			previewWork: authorization.previewSubjectDigest !== null, writable: authorization.writableScope.length !== 0,
+			budget: authorization.budget, outputSchemaDigest: authorization.outputSchemaDigest},
+	});
+	return policy.ok && policy.value === DECISION_MODEL_CHECK_EXECUTION_DIGEST && authorization.policyDigest === policy.value;
 }
 
 export async function startAuthorizedAgentRun(

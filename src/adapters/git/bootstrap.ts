@@ -18,6 +18,7 @@ export type BootstrapFailureCode =
 	| "invalid_project"
 	| "invalid_root"
 	| "io_error"
+	| "legacy_state"
 	| "staging_exists";
 
 export interface BootstrapFailure {
@@ -40,15 +41,11 @@ export interface BootstrapReceipt {
 	readonly project: string;
 	readonly createdPaths: readonly string[];
 	readonly configDigest: Sha256Digest;
-	readonly checkPackLockDigest: Sha256Digest;
-	readonly checkPackResources: readonly [];
 }
 
 export type BootstrapResult = Outcome<BootstrapReceipt, BootstrapFailure>;
 
-const EMPTY_CHECK_PACK_LOCK = '{"packages":{},"protocolId":"codewiki.check-pack-lock","protocolVersion":"1.0.0"}\n';
-
-export async function bootstrapCodewikiProject(
+export async function bootstrapChangeKernelProject(
 	request: BootstrapRequest,
 ): Promise<BootstrapResult> {
 	const root = resolve(request.projectRoot);
@@ -56,7 +53,7 @@ export async function bootstrapCodewikiProject(
 	if (!config.ok) {
 		return failure(bootstrapFailure(
 			"invalid_project",
-			".codewiki/config.json",
+			".changekernel/config.json",
 			config.error.message,
 			config.error,
 		));
@@ -64,30 +61,34 @@ export async function bootstrapCodewikiProject(
 	const rootCheck = await inspectRoot(root);
 	if (!rootCheck.ok) return rootCheck;
 
-	const finalRoot = join(root, ".codewiki");
-	const stagingRoot = join(root, ".codewiki.bootstrap");
+	for (const legacyPath of [".codewiki", ".codewiki.bootstrap"]) {
+		const legacy = await pathKind(join(root, legacyPath));
+		if (!legacy.ok) return legacy;
+		if (legacy.value === "present") {
+			return failure(bootstrapFailure("legacy_state", legacyPath, "Legacy project state requires an explicit migration before bootstrap."));
+		}
+	}
+
+	const finalRoot = join(root, ".changekernel");
+	const stagingRoot = join(root, ".changekernel.bootstrap");
 	const finalExists = await pathKind(finalRoot);
 	if (!finalExists.ok) return finalExists;
 	if (finalExists.value !== "missing") {
-		return failure(bootstrapFailure("already_exists", ".codewiki", "Managed .codewiki state already exists."));
+		return failure(bootstrapFailure("already_exists", ".changekernel", "Managed .changekernel state already exists."));
 	}
 	const stagingExists = await pathKind(stagingRoot);
 	if (!stagingExists.ok) return stagingExists;
 	if (stagingExists.value !== "missing") {
-		return failure(bootstrapFailure("staging_exists", ".codewiki.bootstrap", "Bootstrap staging path already exists."));
+		return failure(bootstrapFailure("staging_exists", ".changekernel.bootstrap", "Bootstrap staging path already exists."));
 	}
 
 	let stagingCreated = false;
 	try {
 		await mkdir(stagingRoot, {mode: 0o700});
 		stagingCreated = true;
-		await mkdir(join(stagingRoot, "wiki", "items"), {recursive: true, mode: 0o700});
+		await mkdir(join(stagingRoot, "wiki"), {recursive: true, mode: 0o700});
 		await mkdir(join(stagingRoot, "changes"), {recursive: true, mode: 0o700});
 		await writeFile(join(stagingRoot, "config.json"), config.value, {flag: "wx", mode: 0o600});
-		await writeFile(join(stagingRoot, "check-packs.lock.json"), EMPTY_CHECK_PACK_LOCK, {
-			flag: "wx",
-			mode: 0o600,
-		});
 		await rename(stagingRoot, finalRoot);
 		stagingCreated = false;
 	} catch (error) {
@@ -95,22 +96,19 @@ export async function bootstrapCodewikiProject(
 		const detail = error instanceof Error ? error.message : "Unknown filesystem failure.";
 		return failure(bootstrapFailure(
 			"io_error",
-			".codewiki",
+			".changekernel",
 			cleanupMessage === null ? detail : `${detail} Cleanup failed: ${cleanupMessage}`,
 		));
 	}
 
 	const createdPaths = [
-		".codewiki/config.json",
-		".codewiki/check-packs.lock.json",
+		".changekernel/config.json",
 	].sort(compareText);
 	return success(Object.freeze({
 		protocol: Object.freeze({id: "codewiki.project-bootstrap-receipt", version: "1.0.0"}),
 		project: request.project,
 		createdPaths: Object.freeze(createdPaths),
 		configDigest: sha256Digest(config.value),
-		checkPackLockDigest: sha256Digest(EMPTY_CHECK_PACK_LOCK),
-		checkPackResources: Object.freeze([] as const),
 	}));
 }
 

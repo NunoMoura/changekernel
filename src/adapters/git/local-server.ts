@@ -3,14 +3,12 @@ import {join, resolve} from "node:path";
 
 import {decodeGitRef} from "../../kernel/identity/git.ts";
 import {createGitProjectStore} from "./project-store.ts";
-import {CODEWIKI_PRODUCT_POLICY_DIGEST} from "../../product.ts";
+import {CHANGEKERNEL_PRODUCT_POLICY_DIGEST} from "../../product.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {sha256Digest} from "../../kernel/identity/sha256.ts";
 import {AGENT_RUNTIME_PORT_PROTOCOL} from "../../ports/agent-runtime.ts";
-import {CHECK_RUNNER_PORT_PROTOCOL} from "../../ports/check-runner.ts";
 import {createProjectAccessPolicy, projectAccessProofDigest} from "../../server/authorization/policy.ts";
 import {createProjectServer} from "../../server/index.ts";
-import {createMemoryProjectServerFacts} from "../../server/recovery/facts.ts";
 
 export const LOCAL_PROJECT_SERVER_PROTOCOL = Object.freeze({
 	id: "codewiki.local-project-server",
@@ -48,8 +46,8 @@ const READ_CAPABILITIES = [
 
 /**
  * Bounded local Project Server composition for read-first Console use.
- * Composes the real Git Project Store, an unavailable Check Runner (read views remain
- * factual), an unavailable Agent Runtime, and a least-privilege local read policy.
+ * Composes the real Git Project Store, an unavailable Agent Runtime, and a
+ * least-privilege local read policy. Unimplemented reads report unavailable.
  * Composition never bootstraps, copies, repairs, or rewrites semantic state; it only
  * binds read interfaces over an existing Git root. It opens the Store once and uses
  * that Store's observed repository location and storage object format for both the
@@ -81,11 +79,6 @@ export async function createLocalProjectServer(
 	}
 	const objectFormat = store.value.objectFormat;
 
-	const facts = createMemoryProjectServerFacts();
-	if (!facts.ok) {
-		return failure(issue("binding_failed", "Local Project Server facts could not be created."));
-	}
-
 	const proof = `local-console:${repositoryId}`;
 	const proofDigest = projectAccessProofDigest(proof);
 	if (!proofDigest.ok) {
@@ -115,14 +108,11 @@ export async function createLocalProjectServer(
 		return failure(issue("binding_failed", "Local access policy is invalid."));
 	}
 
-	const unavailable = async () => failure({code: "executor_unavailable", message: "This local composition is read-only."} as const);
 	const runtimeUnavailable = async () => failure({code: "environment_unavailable", message: "Agent Runs are unavailable in the local read-only composition."} as const);
 
 	const bound = createProjectServer({
 		ports: {
 			projectStore: store.value,
-			checkRunner: {protocol: CHECK_RUNNER_PORT_PROTOCOL, run: unavailable},
-			facts: facts.value,
 			agentRuntime: {protocol: AGENT_RUNTIME_PORT_PROTOCOL, start: runtimeUnavailable, inspect: runtimeUnavailable, cancel: runtimeUnavailable},
 		},
 		accessPolicy: accessPolicy.value,
@@ -131,8 +121,7 @@ export async function createLocalProjectServer(
 			repositoryId,
 			objectFormat: objectFormat,
 			canonicalRef: canonicalRef,
-			kernelBuildDigest: CODEWIKI_PRODUCT_POLICY_DIGEST,
-			retiredWikiItemIds: [],
+			kernelBuildDigest: CHANGEKERNEL_PRODUCT_POLICY_DIGEST,
 		},
 	});
 	if (!bound.ok) {

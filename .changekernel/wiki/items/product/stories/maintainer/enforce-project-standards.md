@@ -1,0 +1,21 @@
+---
+title: Preserve Shared Commitments
+aliases:
+  - Enforce Collaboration Policy
+source-id: cw:story:maintainer.enforce-project-standards
+source-history:
+  provenance:
+    - attributes:
+        codewiki.legacy:source-digest: sha256:b2f66b6e893b76455777eab2cb1231c7839ea4ac8580e7122cadb173c89a8bc5
+        codewiki.legacy:source-path: product/stories/maintainer/enforce-project-standards.md
+      kind: codewiki.legacy:knowledge
+      subjectId: cw:story:maintainer.enforce-project-standards
+  relationships: []
+---
+# Preserve Shared Commitments
+
+A Maintainer adopts project policy in Wiki and selects exact custom Checks or Packs to evaluate it. Wiki owns accepted meaning, scope and exceptions; evaluators supply methods, not a competing policy ledger. A concise adopted reference can identify a machine-defined rule without duplicating its logic. First-party Packs are optional reusable definitions using the same contract as company-authored Checks.
+
+Agents prepare attributable cases and perform authorized work; read-only Checks return Boolean results with Evidence and corrective feedback. The Kernel enforces exact subjects, policy selection, permission, isolation, budgets and durable transitions, not a hidden semantic baseline. Results report selected coverage honestly rather than claiming that arbitrary configured Checks prove every aspect of a Change.
+
+A proposed commitment revision is assessed as a revision. It cannot activate its own exemption or weaker evaluator, but old policy need not be frozen forever: its authorized revision procedure governs the transition. Missing required inputs, unchecked conditions and unavailable execution cannot be reported as validation. Skills may guide work; only actual runtime boundaries prevent forbidden effects before they occur.

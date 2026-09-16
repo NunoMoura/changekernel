@@ -1,3 +1,4 @@
+import {CHANGEKERNEL_VERSION} from "../../../src/kernel/identity/version.ts";
 import assert from "node:assert/strict";
 import {execFile} from "node:child_process";
 import {mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
@@ -29,7 +30,7 @@ function config(objectFormat) {
 		objectFormat,
 		canonicalRef: ref.value,
 		kernelBuildDigest: BUILD_DIGEST,
-		retiredWikiItemIds: Object.freeze([]),
+		kernelVersion: CHANGEKERNEL_VERSION,
 		limits: Object.freeze({
 			maximumWikiItems: 64,
 			maximumWikiFileBytes: 2 * 1024 * 1024,
@@ -83,21 +84,21 @@ function profileDocument(path, type, title, number, options = {}) {
 
 function coreDocuments(algorithm = "sha1") {
 	const documents = WIKI_CORE_TYPES.map((title, index) => profileDocument(
-		`.codewiki/wiki/types/${title}.md`,
+		`.changekernel/wiki/types/${title}.md`,
 		"TypeDefinition",
 		title,
 		index + 10,
 		{algorithm},
 	));
 	documents.push(profileDocument(
-		".codewiki/wiki/types/FieldObservation.md",
+		".changekernel/wiki/types/FieldObservation.md",
 		"TypeDefinition",
 		"FieldObservation",
 		20,
 		{algorithm, base: "Claim", body: "A specialized field observation."},
 	));
 	documents.push(profileDocument(
-		".codewiki/wiki/fieldwork/cafe.md",
+		".changekernel/wiki/fieldwork/cafe.md",
 		"FieldObservation",
 		"Cafe\u0301",
 		21,
@@ -246,14 +247,14 @@ async function nativeRepository(algorithm) {
 		"README.md": "\uFEFFraw\r\n",
 	}, "profile baseline");
 	const newDefinition = profileDocument(
-		".codewiki/wiki/types/Definition.md",
+		".changekernel/wiki/types/Definition.md",
 		"TypeDefinition",
 		"Definition",
 		10,
 		{algorithm, body: "Updated exact Definition meaning."},
 	);
 	const newCustomDefinition = profileDocument(
-		".codewiki/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 20,
+		".changekernel/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 20,
 		{algorithm, base: "Entity", body: "Revised field observation classification."},
 	);
 	const newCommitHex = await commitFixture(root, [newDefinition, newCustomDefinition], {}, "profile revision");
@@ -269,16 +270,16 @@ async function nativeRepository(algorithm) {
 	};
 }
 
-async function runProfile(store, source, objectFormat = "sha1", limits = materialLimits(), profile = WIKI_PROFILE_ID) {
-	return loadProfiledWikiSource(store, config(objectFormat), source, profile, limits);
+async function runProfile(store, source, objectFormat = "sha1", limits = materialLimits(), kernelVersion = CHANGEKERNEL_VERSION) {
+	return loadProfiledWikiSource(store, {...config(objectFormat), kernelVersion}, source, limits);
 }
 
 test("explicit profile gate performs zero Store I/O and query remains read-only", async () => {
 	const store = fakeStore();
-	const rejected = expectFailure(await runProfile(store, {kind: "canonical"}, "sha1", materialLimits(), "codewiki.legacy@1.0.0"), "unsupported_profile");
+	const rejected = expectFailure(await runProfile(store, {kind: "canonical"}, "sha1", materialLimits(), "codewiki.legacy@1.0.0"), "unsupported_kernel_version");
 	assert.equal(rejected.operation, "admit_profile");
 	assert.equal(rejected.cause.kind, "profile");
-	assert.equal(rejected.cause.profile.code, "unsupported_profile");
+	assert.equal(rejected.cause.profile.code, "unsupported_kernel_version");
 	assert.deepEqual(store.snapshotReads, []);
 	assert.deepEqual(store.treeReads, []);
 	assert.deepEqual(store.blobReads, []);
@@ -308,7 +309,7 @@ test("profile source admits all core/custom files, preserves passive corpus and 
 	const binding = result.value.typeContext.bindings.find((value) => value.item.path.endsWith("/cafe.md"));
 	assert.ok(binding);
 	assert.deepEqual(binding.item.blob, item.blob);
-	assert.equal(binding.definition.path, ".codewiki/wiki/types/FieldObservation.md");
+	assert.equal(binding.definition.path, ".changekernel/wiki/types/FieldObservation.md");
 	assert.equal(result.value.snapshot.commit.hex, `${"0".repeat(39)}1`);
 	assert.equal(result.value.typeContext.snapshot.hex, result.value.snapshot.commit.hex);
 	assert.equal(store.snapshotReads.length, 1);
@@ -387,17 +388,17 @@ test("profile decoder and type binding reject malformed, missing, duplicate and 
 	assert.equal(missingError.cause.binding.code, "unresolved_type");
 
 	const duplicate = coreDocuments();
-	duplicate.push(profileDocument(".codewiki/wiki/types/Definition-copy.md", "TypeDefinition", "Definition", 60));
+	duplicate.push(profileDocument(".changekernel/wiki/types/Definition-copy.md", "TypeDefinition", "Definition", 60));
 	const duplicateError = expectFailure(await runProfile(fakeStore({documents: duplicate}), {kind: "canonical"}), "invalid_type");
 	assert.equal(duplicateError.cause.kind, "binding");
 
 	const duplicateCustom = coreDocuments();
-	duplicateCustom.push(profileDocument(".codewiki/wiki/types/FieldObservation-copy.md", "TypeDefinition", "FieldObservation", 62, {base: "Claim"}));
+	duplicateCustom.push(profileDocument(".changekernel/wiki/types/FieldObservation-copy.md", "TypeDefinition", "FieldObservation", 62, {base: "Claim"}));
 	const duplicateCustomError = expectFailure(await runProfile(fakeStore({documents: duplicateCustom}), {kind: "canonical"}), "invalid_type");
 	assert.equal(duplicateCustomError.cause.kind, "binding");
 
 	const unknown = coreDocuments();
-	unknown.push(profileDocument(".codewiki/wiki/unknown/unknown.md", "UnknownType", "Unknown", 61));
+	unknown.push(profileDocument(".changekernel/wiki/unknown/unknown.md", "UnknownType", "Unknown", 61));
 	const unknownError = expectFailure(await runProfile(fakeStore({documents: unknown}), {kind: "canonical"}), "unresolved_type");
 	assert.equal(unknownError.cause.kind, "binding");
 
@@ -411,7 +412,7 @@ test("profile decoder and type binding reject malformed, missing, duplicate and 
 
 test("managed budgets preflight count, actual file bytes and aggregate context before parsing", async () => {
 	const tooMany = Array.from({length: WIKI_PROFILE_LIMITS.files + 1}, (_, index) => Object.freeze({
-		path: `.codewiki/wiki/items/${index}.md`,
+		path: `.changekernel/wiki/items/${index}.md`,
 		mode: "100644",
 		oid: oid(index + 100),
 		bytes: new Uint8Array(),
@@ -423,7 +424,7 @@ test("managed budgets preflight count, actual file bytes and aggregate context b
 	assert.equal(countStore.blobReads.length, tooMany.length);
 
 	const large = [Object.freeze({
-		path: ".codewiki/wiki/items/large.md",
+		path: ".changekernel/wiki/items/large.md",
 		mode: "100644",
 		oid: oid(200),
 		bytes: textBytes("x".repeat(WIKI_PROFILE_LIMITS.fileBytes + 1)),
@@ -434,7 +435,7 @@ test("managed budgets preflight count, actual file bytes and aggregate context b
 	assert.equal(fileError.cause.budget, "file_bytes");
 
 	const aggregate = Array.from({length: 9}, (_, index) => Object.freeze({
-		path: `.codewiki/wiki/items/aggregate-${index}.md`,
+		path: `.changekernel/wiki/items/aggregate-${index}.md`,
 		mode: "100644",
 		oid: oid(index + 300),
 		bytes: textBytes("x".repeat(950_000)),
@@ -449,7 +450,7 @@ test("managed budgets preflight count, actual file bytes and aggregate context b
 test("managed preflight rejects UTF-8 overflow before encoding the offending text", async (t) => {
 	const texts = ["x".repeat(WIKI_PROFILE_LIMITS.fileBytes + 1), "é".repeat(WIKI_PROFILE_LIMITS.fileBytes / 2 + 1),
 		"😀".repeat(WIKI_PROFILE_LIMITS.fileBytes / 4 + 1)];
-	const documents = texts.map((text, index) => Object.freeze({path: `.codewiki/wiki/items/large-${index}.md`,
+	const documents = texts.map((text, index) => Object.freeze({path: `.changekernel/wiki/items/large-${index}.md`,
 		mode: "100644", oid: oid(600 + index), bytes: textBytes(text)}));
 	const encode = TextEncoder.prototype.encode;
 	let offendingEncodes = 0;
@@ -474,7 +475,7 @@ test("managed exact aggregate limit is inclusive and a later byte fails prefligh
 	assert.equal(documents.reduce((sum, document) => sum + document.bytes.byteLength, 0), WIKI_PROFILE_LIMITS.contextBytes);
 	const result = await runProfile(fakeStore({documents}), {kind: "canonical"});
 	assert.equal(result.ok, true, result.ok ? "" : result.error.message);
-	documents.push({path: ".codewiki/wiki/items/overflow.md", mode: "100644", oid: oid(700), bytes: textBytes("x")});
+	documents.push({path: ".changekernel/wiki/items/overflow.md", mode: "100644", oid: oid(700), bytes: textBytes("x")});
 	const error = expectFailure(await runProfile(fakeStore({documents}), {kind: "canonical"}), "limit_exceeded");
 	assert.equal(error.cause.budget, "context_bytes");
 });
@@ -533,7 +534,7 @@ test("native SHA-1 and SHA-256 stores resolve canonical, managed Change and hist
 			const transaction = validateProfiledWikiTransaction({
 				profile: WIKI_PROFILE_ID,
 				kernelBuildDigest: BUILD_DIGEST,
-				responsibleChangePath: `.codewiki/changes/${CHANGE}`,
+				responsibleChangePath: `.changekernel/changes/${CHANGE}`,
 				before: oldResult.value,
 				after: current.value,
 				mappings: [
@@ -561,7 +562,7 @@ test("native SHA-1 and SHA-256 stores resolve canonical, managed Change and hist
 			assert.deepEqual(current.value.corpus.documents.find((file) => file.path === "docs/raw.md").text, "This is deliberately not a managed profile.\n");
 			const currentCafe = current.value.managedFiles.find((file) => file.path.endsWith("/cafe.md"));
 			assert.equal(currentCafe.metadata.origins[0].reference, "../../changes/CHG-profile");
-			const expectedDefinitionBlob = await fixtureGit(repository.root, ["rev-parse", `${repository.newCommit.hex}:.codewiki/wiki/types/Definition.md`]);
+			const expectedDefinitionBlob = await fixtureGit(repository.root, ["rev-parse", `${repository.newCommit.hex}:.changekernel/wiki/types/Definition.md`]);
 			assert.equal(current.value.managedFiles.find((file) => file.path.endsWith("/Definition.md")).blob.hex, expectedDefinitionBlob);
 			const expectedTree = await fixtureGit(repository.root, ["rev-parse", `${repository.newCommit.hex}^{tree}`]);
 			assert.equal(current.value.snapshot.tree.hex, expectedTree);
@@ -575,7 +576,7 @@ test("native SHA-1 and SHA-256 stores resolve canonical, managed Change and hist
 			const historical = validateProfiledWikiTransaction({
 				profile: WIKI_PROFILE_ID,
 				kernelBuildDigest: BUILD_DIGEST,
-				responsibleChangePath: `.codewiki/changes/${CHANGE}`,
+				responsibleChangePath: `.changekernel/changes/${CHANGE}`,
 				before: repeat.value,
 				after: reopenedNew.value,
 				mappings: transaction.value.mappings,

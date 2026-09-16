@@ -1,5 +1,4 @@
 import {
-	arrayField,
 	assertDigestMatch,
 	decodeContract,
 	exactRecord,
@@ -10,468 +9,20 @@ import {
 	protocolIdentity,
 	rejectContract,
 	requiredField,
-	sortedUniqueTextArray,
 	textField,
 	type CanonicalRecord,
 	type ContractIssue,
 } from "../data-contracts/validation.ts";
 import type {CanonicalValue} from "../data-contracts/canonical-json.ts";
 import {failure, type Outcome} from "../data-contracts/outcome.ts";
-import {CHECK_STAGES, type CheckStage} from "../gates/contracts.ts";
-import {decodeGitOidValue, gitOidText, type GitOid} from "../identity/git.ts";
+import {decodeGitOidValue, sameGitOid, type GitOid} from "../identity/git.ts";
 import {semanticDigest, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
-import {decodeWorkValue, validateWorkPlan, workPlanDigest, type Work} from "../work/contracts.ts";
-import {decodeChangeValue, decodeProfileChangeValue, type Change, type ProfileChange} from "./contracts.ts";
+import {decodeProfileChangeValue, type ProfileChange} from "./contracts.ts";
+import {decodeInquiryChangeValue, INQUIRY_CANONICAL_LIMITS, INQUIRY_LIMITS, type InquiryChange} from "./inquiry.ts";
 import {WIKI_PROFILE_ID} from "../wiki/profile.ts";
 
-export const CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "1.1.0");
 export const CONTAINING_COMMIT = "containing_commit" as const;
-export const CHANGE_EVENT_KINDS = Object.freeze([
-	"change.committed",
-	"change.completed",
-	"change.deferred",
-	"change.planned",
-	"change.proposed",
-	"change.rejected",
-	"change.resumed",
-	"change.revised",
-	"change.superseded",
-	"change.withdrawn",
-	"effect.recorded",
-	"gate.recorded",
-	"review.reconciled",
-	"work.assigned",
-	"work.attempt.recorded",
-	"work.claimed",
-	"work.integrated",
-] as const);
-
-export type ChangeEventKind = (typeof CHANGE_EVENT_KINDS)[number];
-export type SemanticEventOwners = Readonly<{[event: string]: string}>;
-
-export interface ProposedPayload {readonly change: Change;}
-export interface DecisionPayload {readonly reason: string; readonly gateDigest: Sha256Digest;}
-export interface ResumedPayload {readonly reason: string;}
-export interface CommittedPayload {readonly decisionGateDigest: Sha256Digest; readonly wikiTree: GitOid;}
-export interface PlannedPayload {readonly planningGateDigest: Sha256Digest; readonly planDigest: Sha256Digest; readonly work: readonly Work[];}
-export type RecordedGateStatus = "failed" | "passed" | "stopped";
-
-export interface GateRecordedPayload {
-	readonly gateDigest: Sha256Digest;
-	readonly outcomeDigest: Sha256Digest;
-	readonly stage: CheckStage;
-	readonly status: RecordedGateStatus;
-	readonly subjectDigest: Sha256Digest;
-	readonly workId: string | null;
-	readonly runDigests: readonly Sha256Digest[];
-	readonly resultDigests: readonly Sha256Digest[];
-	readonly evidenceDigests: readonly Sha256Digest[];
-}
-export interface WorkClaimedPayload {readonly workId: string; readonly claimId: string; readonly receiptDigest: Sha256Digest;}
-export interface WorkAssignedPayload {
-	readonly workId: string;
-	readonly claimId: string;
-	readonly assignmentId: string;
-	readonly baseCommit: GitOid;
-	readonly baseTree: GitOid;
-	readonly runRequestDigest: Sha256Digest;
-}
-export interface WorkAttemptPayload {
-	readonly workId: string;
-	readonly assignmentId: string;
-	readonly runId: string;
-	readonly runReceiptDigest: Sha256Digest;
-	readonly resultCommit: GitOid;
-	readonly resultTree: GitOid;
-}
-export interface WorkIntegratedPayload {
-	readonly workId: string;
-	readonly resultCommit: GitOid;
-	readonly resultTree: GitOid;
-	readonly implementationGateDigest: Sha256Digest;
-}
-export interface ReviewReconciledPayload {
-	readonly prospectiveTree: GitOid;
-	readonly integratedWorkIds: readonly string[];
-	readonly reviewSubjectDigest: Sha256Digest;
-}
-export interface CompletedPayload {readonly completionTree: GitOid; readonly reviewGateDigest: Sha256Digest | null;}
-export interface SupersededPayload {readonly supersedingChangeId: string; readonly supersedingCommit: GitOid;}
-export interface EffectRecordedPayload {
-	readonly capability: string;
-	readonly authorizationId: string;
-	readonly kernelBuildDigest: Sha256Digest;
-	readonly requestDigest: Sha256Digest;
-	readonly receiptDigest: Sha256Digest;
-	readonly status: "failed" | "passed" | "stopped";
-	readonly subjectOids: readonly GitOid[];
-}
-
-export type ChangeEventPayload =
-	| ProposedPayload
-	| DecisionPayload
-	| ResumedPayload
-	| CommittedPayload
-	| PlannedPayload
-	| GateRecordedPayload
-	| WorkClaimedPayload
-	| WorkAssignedPayload
-	| WorkAttemptPayload
-	| WorkIntegratedPayload
-	| ReviewReconciledPayload
-	| CompletedPayload
-	| SupersededPayload
-	| EffectRecordedPayload;
-
-export interface ChangeEventBody {
-	readonly protocol: typeof CHANGE_EVENT_PROTOCOL;
-	readonly kind: ChangeEventKind;
-	readonly ownerItemId: string;
-	readonly actorId: string;
-	readonly authorityId: string;
-	readonly commandId: string;
-	readonly commandDigest: Sha256Digest;
-	readonly occurredAt: string;
-	readonly expectedProjectHead: GitOid;
-	readonly expectedChangeTip: GitOid | null;
-	readonly containingCommit: typeof CONTAINING_COMMIT;
-	readonly predecessorEventDigest: Sha256Digest | null;
-	readonly payload: ChangeEventPayload;
-}
-
-export interface ChangeEvent extends ChangeEventBody {
-	readonly eventDigest: Sha256Digest;
-}
-
-export function createChangeEvent(
-	body: Omit<ChangeEventBody, "protocol" | "containingCommit">,
-	owners: SemanticEventOwners,
-): Outcome<ChangeEvent, ContractIssue | SemanticIdentityIssue> {
-	const value = {...body, protocol: CHANGE_EVENT_PROTOCOL, containingCommit: CONTAINING_COMMIT};
-	const digest = semanticDigest(protocolLabel(), value);
-	if (!digest.ok) return failure(digest.error);
-	return decodeChangeEvent({...value, eventDigest: digest.value}, owners);
-}
-
-export function decodeChangeEvent(
-	input: unknown,
-	owners: SemanticEventOwners,
-): Outcome<ChangeEvent, ContractIssue> {
-	return decodeContract("Change event", input, (value) => decodeChangeEventValue(value, owners));
-}
-
-export function decodeChangeEventValue(
-	value: CanonicalValue,
-	owners: SemanticEventOwners,
-	path = "$",
-): ChangeEvent {
-	const record = exactRecord("Change event", value, path, [
-		"actorId",
-		"authorityId",
-		"commandDigest",
-		"commandId",
-		"containingCommit",
-		"eventDigest",
-		"expectedChangeTip",
-		"expectedProjectHead",
-		"kind",
-		"occurredAt",
-		"ownerItemId",
-		"payload",
-		"predecessorEventDigest",
-		"protocol",
-	]);
-	protocolField("Change event", record, path, CHANGE_EVENT_PROTOCOL);
-	const kind = literalField("Change event", record, "kind", CHANGE_EVENT_KINDS, path);
-	const ownerItemId = namespacedField(record, "ownerItemId", path);
-	const expectedOwner = owners[kind];
-	if (expectedOwner === undefined || expectedOwner !== ownerItemId) {
-		rejectContract("invalid_field", "Change event", `${path}.ownerItemId`, "Semantic event owner is absent or does not match native ownership.");
-	}
-	const marker = textField("Change event", record, "containingCommit", path, {maximumBytes: 32});
-	if (marker !== CONTAINING_COMMIT) rejectContract("invalid_field", "Change event", `${path}.containingCommit`, `Expected ${CONTAINING_COMMIT}.`);
-	const expectedProjectHead = decodeGitOidValue(requiredField("Change event", record, "expectedProjectHead", path), `${path}.expectedProjectHead`);
-	const expectedChangeTip = nullableValue(requiredField("Change event", record, "expectedChangeTip", path), (entry) => decodeGitOidValue(entry, `${path}.expectedChangeTip`));
-	if (expectedChangeTip !== null && expectedChangeTip.algorithm !== expectedProjectHead.algorithm) {
-		rejectContract("invalid_field", "Change event", `${path}.expectedChangeTip`, "Expected heads must use one Git object format.");
-	}
-	const predecessorEventDigest = nullableDigestField(record, "predecessorEventDigest", path);
-	const eventDigest = digestField(record, "eventDigest", path);
-	const result = Object.freeze({
-		protocol: CHANGE_EVENT_PROTOCOL,
-		kind,
-		ownerItemId,
-		actorId: namespacedField(record, "actorId", path),
-		authorityId: namespacedField(record, "authorityId", path),
-		commandId: namespacedField(record, "commandId", path),
-		commandDigest: digestField(record, "commandDigest", path),
-		occurredAt: textField("Change event", record, "occurredAt", path, {
-			maximumBytes: 35,
-			pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u,
-		}),
-		expectedProjectHead,
-		expectedChangeTip,
-		containingCommit: CONTAINING_COMMIT,
-		predecessorEventDigest,
-		payload: decodePayload(kind, requiredField("Change event", record, "payload", path), `${path}.payload`),
-		eventDigest,
-	});
-	const {eventDigest: _eventDigest, ...body} = result;
-	const expected = semanticDigest(protocolLabel(), body);
-	if (!expected.ok) rejectContract("invalid_field", "Change event", `${path}.eventDigest`, expected.error.message);
-	assertDigestMatch("Change event", `${path}.eventDigest`, eventDigest, expected.value);
-	return result;
-}
-
-function decodePayload(kind: ChangeEventKind, value: CanonicalValue, path: string): ChangeEventPayload {
-	switch (kind) {
-		case "change.proposed":
-		case "change.revised":
-			return decodeProposed(value, path);
-		case "change.deferred":
-		case "change.rejected":
-		case "change.withdrawn":
-			return decodeDecision(value, path);
-		case "change.resumed":
-			return decodeResumed(value, path);
-		case "change.committed":
-			return decodeCommitted(value, path);
-		case "change.planned":
-			return decodePlanned(value, path);
-		case "gate.recorded":
-			return decodeGateRecorded(value, path);
-		case "work.claimed":
-			return decodeWorkClaimed(value, path);
-		case "work.assigned":
-			return decodeWorkAssigned(value, path);
-		case "work.attempt.recorded":
-			return decodeWorkAttempt(value, path);
-		case "work.integrated":
-			return decodeWorkIntegrated(value, path);
-		case "review.reconciled":
-			return decodeReviewReconciled(value, path);
-		case "change.completed":
-			return decodeCompleted(value, path);
-		case "change.superseded":
-			return decodeSuperseded(value, path);
-		case "effect.recorded":
-			return decodeEffectRecorded(value, path);
-		default:
-			rejectContract("invalid_field", "Change Event", path, "Change Event kind has no payload decoder.");
-	}
-}
-
-function decodeProposed(value: CanonicalValue, path: string): ProposedPayload {
-	const record = exactRecord("Change event", value, path, ["change"]);
-	return Object.freeze({change: decodeChangeValue(requiredField("Change event", record, "change", path), `${path}.change`)});
-}
-
-function decodeDecision(value: CanonicalValue, path: string): DecisionPayload {
-	const record = exactRecord("Change event", value, path, ["gateDigest", "reason"]);
-	return Object.freeze({
-		reason: textField("Change event", record, "reason", path, {maximumBytes: 16_384}),
-		gateDigest: digestField(record, "gateDigest", path),
-	});
-}
-
-function decodeResumed(value: CanonicalValue, path: string): ResumedPayload {
-	const record = exactRecord("Change event", value, path, ["reason"]);
-	return Object.freeze({reason: textField("Change event", record, "reason", path, {maximumBytes: 16_384})});
-}
-
-function decodeCommitted(value: CanonicalValue, path: string): CommittedPayload {
-	const record = exactRecord("Change event", value, path, ["decisionGateDigest", "wikiTree"]);
-	return Object.freeze({
-		decisionGateDigest: digestField(record, "decisionGateDigest", path),
-		wikiTree: decodeGitOidValue(requiredField("Change event", record, "wikiTree", path), `${path}.wikiTree`),
-	});
-}
-
-function decodePlanned(value: CanonicalValue, path: string): PlannedPayload {
-	const record = exactRecord("Change event", value, path, ["planDigest", "planningGateDigest", "work"]);
-	const work = arrayField("Change event", record, "work", path, 1_024).map((entry, index) => decodeWorkValue(entry, `${path}.work[${index}]`));
-	if (work.length === 0) rejectContract("missing_field", "Change event", `${path}.work`, "Project Change plan requires Work.");
-	const plan = validateWorkPlan(work[0]?.changeId ?? "", work);
-	if (!plan.ok) rejectContract("invalid_field", "Change event", `${path}.work`, plan.error.message);
-	const planDigest = digestField(record, "planDigest", path);
-	const expectedDigest = workPlanDigest(plan.value);
-	if (!expectedDigest.ok || expectedDigest.value !== planDigest) rejectContract("invalid_field", "Change event", `${path}.planDigest`, "Work plan digest mismatch.");
-	return Object.freeze({planningGateDigest: digestField(record, "planningGateDigest", path), planDigest, work: plan.value});
-}
-
-function decodeGateRecorded(value: CanonicalValue, path: string): GateRecordedPayload {
-	const record = exactRecord("Change event", value, path, ["evidenceDigests", "gateDigest", "outcomeDigest", "resultDigests", "runDigests", "stage", "status", "subjectDigest", "workId"]);
-	const stage = literalField("Change event", record, "stage", CHECK_STAGES, path);
-	const workId = nullableNamespacedField(record, "workId", path);
-	if ((stage === "implementation") !== (workId !== null)) {
-		rejectContract("invalid_field", "Change event", `${path}.workId`, "Only Implementation Gate records carry Work identity.");
-	}
-	return Object.freeze({
-		gateDigest: digestField(record, "gateDigest", path),
-		outcomeDigest: digestField(record, "outcomeDigest", path),
-		stage,
-		status: literalField("Change event", record, "status", ["failed", "passed", "stopped"] as const, path),
-		subjectDigest: digestField(record, "subjectDigest", path),
-		workId,
-		runDigests: digestSet(record, "runDigests", path),
-		resultDigests: digestSet(record, "resultDigests", path),
-		evidenceDigests: digestSet(record, "evidenceDigests", path),
-	});
-}
-
-function decodeWorkClaimed(value: CanonicalValue, path: string): WorkClaimedPayload {
-	const record = exactRecord("Change event", value, path, ["claimId", "receiptDigest", "workId"]);
-	return Object.freeze({
-		workId: namespacedField(record, "workId", path),
-		claimId: namespacedField(record, "claimId", path),
-		receiptDigest: digestField(record, "receiptDigest", path),
-	});
-}
-
-function decodeWorkAssigned(value: CanonicalValue, path: string): WorkAssignedPayload {
-	const record = exactRecord("Change event", value, path, ["assignmentId", "baseCommit", "baseTree", "claimId", "runRequestDigest", "workId"]);
-	const baseCommit = decodeGitOidValue(requiredField("Change event", record, "baseCommit", path), `${path}.baseCommit`);
-	const baseTree = decodeGitOidValue(requiredField("Change event", record, "baseTree", path), `${path}.baseTree`);
-	if (baseCommit.algorithm !== baseTree.algorithm) rejectContract("invalid_field", "Change event", path, "Assignment base OIDs must use one format.");
-	return Object.freeze({
-		workId: namespacedField(record, "workId", path),
-		claimId: namespacedField(record, "claimId", path),
-		assignmentId: namespacedField(record, "assignmentId", path),
-		baseCommit,
-		baseTree,
-		runRequestDigest: digestField(record, "runRequestDigest", path),
-	});
-}
-
-function decodeWorkAttempt(value: CanonicalValue, path: string): WorkAttemptPayload {
-	const record = exactRecord("Change event", value, path, ["assignmentId", "resultCommit", "resultTree", "runId", "runReceiptDigest", "workId"]);
-	const resultCommit = decodeGitOidValue(requiredField("Change event", record, "resultCommit", path), `${path}.resultCommit`);
-	const resultTree = decodeGitOidValue(requiredField("Change event", record, "resultTree", path), `${path}.resultTree`);
-	if (resultCommit.algorithm !== resultTree.algorithm) rejectContract("invalid_field", "Change event", path, "Work result OIDs must use one format.");
-	return Object.freeze({
-		workId: namespacedField(record, "workId", path),
-		assignmentId: namespacedField(record, "assignmentId", path),
-		runId: namespacedField(record, "runId", path),
-		runReceiptDigest: digestField(record, "runReceiptDigest", path),
-		resultCommit,
-		resultTree,
-	});
-}
-
-function decodeWorkIntegrated(value: CanonicalValue, path: string): WorkIntegratedPayload {
-	const record = exactRecord("Change event", value, path, ["implementationGateDigest", "resultCommit", "resultTree", "workId"]);
-	const resultCommit = decodeGitOidValue(requiredField("Change event", record, "resultCommit", path), `${path}.resultCommit`);
-	const resultTree = decodeGitOidValue(requiredField("Change event", record, "resultTree", path), `${path}.resultTree`);
-	if (resultCommit.algorithm !== resultTree.algorithm) rejectContract("invalid_field", "Change event", path, "Integrated Work OIDs must use one format.");
-	return Object.freeze({
-		workId: namespacedField(record, "workId", path),
-		resultCommit,
-		resultTree,
-		implementationGateDigest: digestField(record, "implementationGateDigest", path),
-	});
-}
-
-function decodeReviewReconciled(value: CanonicalValue, path: string): ReviewReconciledPayload {
-	const record = exactRecord("Change event", value, path, ["integratedWorkIds", "prospectiveTree", "reviewSubjectDigest"]);
-	const integratedWorkIds = sortedUniqueTextArray("Change event", requiredField("Change event", record, "integratedWorkIds", path), `${path}.integratedWorkIds`, {
-		maximumEntries: 1_024,
-		maximumBytes: 256,
-	});
-	if (integratedWorkIds.some((entry) => !isNamespacedIdentifier(entry))) rejectContract("invalid_field", "Change event", `${path}.integratedWorkIds`, "Integrated Work identities must be namespaced.");
-	return Object.freeze({
-		prospectiveTree: decodeGitOidValue(requiredField("Change event", record, "prospectiveTree", path), `${path}.prospectiveTree`),
-		integratedWorkIds,
-		reviewSubjectDigest: digestField(record, "reviewSubjectDigest", path),
-	});
-}
-
-function decodeCompleted(value: CanonicalValue, path: string): CompletedPayload {
-	const record = exactRecord("Change event", value, path, ["completionTree", "reviewGateDigest"]);
-	return Object.freeze({
-		completionTree: decodeGitOidValue(requiredField("Change event", record, "completionTree", path), `${path}.completionTree`),
-		reviewGateDigest: nullableDigestField(record, "reviewGateDigest", path),
-	});
-}
-
-function decodeSuperseded(value: CanonicalValue, path: string): SupersededPayload {
-	const record = exactRecord("Change event", value, path, ["supersedingChangeId", "supersedingCommit"]);
-	return Object.freeze({
-		supersedingChangeId: changeIdField(record, "supersedingChangeId", path),
-		supersedingCommit: decodeGitOidValue(requiredField("Change event", record, "supersedingCommit", path), `${path}.supersedingCommit`),
-	});
-}
-
-function decodeEffectRecorded(value: CanonicalValue, path: string): EffectRecordedPayload {
-	const record = exactRecord("Change event", value, path, ["authorizationId", "capability", "kernelBuildDigest", "receiptDigest", "requestDigest", "status", "subjectOids"]);
-	const subjectOids = arrayField("Change event", record, "subjectOids", path, 64).map((entry, index) =>
-		decodeGitOidValue(entry, `${path}.subjectOids[${index}]`));
-	if (subjectOids.length === 0) rejectContract("missing_field", "Change event", `${path}.subjectOids`, "Protected effect requires at least one exact subject OID.");
-	assertStrictOrder(subjectOids.map(gitOidText), `${path}.subjectOids`);
-	if (new Set(subjectOids.map((entry) => entry.algorithm)).size > 1) rejectContract("invalid_field", "Change event", `${path}.subjectOids`, "Protected effect subject OIDs must use one object format.");
-	return Object.freeze({
-		capability: namespacedField(record, "capability", path),
-		authorizationId: namespacedField(record, "authorizationId", path),
-		kernelBuildDigest: digestField(record, "kernelBuildDigest", path),
-		requestDigest: digestField(record, "requestDigest", path),
-		receiptDigest: digestField(record, "receiptDigest", path),
-		status: literalField("Change event", record, "status", ["failed", "passed", "stopped"] as const, path),
-		subjectOids: Object.freeze(subjectOids),
-	});
-}
-
-function namespacedField(record: CanonicalRecord, field: string, path: string): string {
-	const value = textField("Change event", record, field, path, {maximumBytes: 256});
-	if (!isNamespacedIdentifier(value)) rejectContract("invalid_field", "Change event", `${path}.${field}`, "Identity must be canonical namespaced text.");
-	return value;
-}
-
-function nullableNamespacedField(record: CanonicalRecord, field: string, path: string): string | null {
-	const value = requiredField("Change event", record, field, path);
-	if (value === null) return null;
-	if (typeof value !== "string" || !isNamespacedIdentifier(value)) {
-		rejectContract("invalid_field", "Change event", `${path}.${field}`, "Identity must be canonical namespaced text or null.");
-	}
-	return value;
-}
-
-function changeIdField(record: CanonicalRecord, field: string, path: string): string {
-	return textField("Change event", record, field, path, {maximumBytes: 200, pattern: /^CHG-[A-Za-z0-9][A-Za-z0-9._-]*$/u});
-}
-
-function digestField(record: CanonicalRecord, field: string, path: string): Sha256Digest {
-	const decoded = decodeSha256Digest(record[field]);
-	if (!decoded.ok) rejectContract("invalid_field", "Change event", `${path}.${field}`, decoded.error.message);
-	return decoded.value;
-}
-
-function nullableDigestField(record: CanonicalRecord, field: string, path: string): Sha256Digest | null {
-	const value = requiredField("Change event", record, field, path);
-	if (value === null) return null;
-	const decoded = decodeSha256Digest(value);
-	if (!decoded.ok) rejectContract("invalid_field", "Change event", `${path}.${field}`, decoded.error.message);
-	return decoded.value;
-}
-
-function digestSet(record: CanonicalRecord, field: string, path: string): readonly Sha256Digest[] {
-	const values = arrayField("Change event", record, field, path, 256).map((entry, index) => {
-		const decoded = decodeSha256Digest(entry);
-		if (!decoded.ok) rejectContract("invalid_field", "Change event", `${path}.${field}[${index}]`, decoded.error.message);
-		return decoded.value;
-	});
-	assertStrictOrder(values, `${path}.${field}`);
-	return Object.freeze(values);
-}
-
-function assertStrictOrder(values: readonly string[], path: string): void {
-	for (let index = 1; index < values.length; index += 1) {
-		if ((values[index - 1] ?? "") >= (values[index] ?? "")) rejectContract("non_canonical_order", "Change event", path, "Values must be strictly sorted and unique.");
-	}
-}
-
-function protocolLabel(): string {
-	return `${CHANGE_EVENT_PROTOCOL.id}@${CHANGE_EVENT_PROTOCOL.version}`;
-}
 
 export const PROFILE_CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "2.0.0");
 export const PROFILE_CHANGE_EVENT_KINDS = Object.freeze(["change.proposed"] as const);
@@ -618,4 +169,98 @@ function nullableProfileDigest(record: CanonicalRecord, field: string, path: str
 
 function profileEventProtocolLabel(): string {
 	return `${PROFILE_CHANGE_EVENT_PROTOCOL.id}@${PROFILE_CHANGE_EVENT_PROTOCOL.version}`;
+}
+
+export const INQUIRY_CHANGE_EVENT_PROTOCOL = protocolIdentity("codewiki.change-event", "3.0.0");
+export const INQUIRY_CHANGE_EVENT_KINDS = Object.freeze(["change.proposed", "change.revised"] as const);
+export const INQUIRY_EVENT_CANONICAL_LIMITS = Object.freeze({
+	...INQUIRY_CANONICAL_LIMITS,
+	// A full Change plus a maximally JSON-escaped revision reason and bounded framing.
+	maximumTextBytes: INQUIRY_LIMITS.changeBytes + 6 * INQUIRY_LIMITS.proseBytes + 8 * 1024,
+});
+export interface InquiryChangeOwnerBinding {
+	readonly kind: "kernel";
+	readonly profile: typeof WIKI_PROFILE_ID;
+	readonly kernelBuildDigest: Sha256Digest;
+}
+export interface InquiryChangeProposedPayload {readonly change: InquiryChange;}
+export interface InquiryChangeRevisedPayload extends InquiryChangeProposedPayload {readonly reason: string;}
+export interface InquiryChangeEventBody {
+	readonly protocol: typeof INQUIRY_CHANGE_EVENT_PROTOCOL;
+	readonly kind: (typeof INQUIRY_CHANGE_EVENT_KINDS)[number];
+	readonly ownerBinding: InquiryChangeOwnerBinding;
+	readonly actorId: string;
+	readonly authorityId: string;
+	readonly commandId: string;
+	readonly commandDigest: Sha256Digest;
+	readonly occurredAt: string;
+	readonly expectedProjectHead: GitOid;
+	readonly expectedChangeTip: GitOid | null;
+	readonly containingCommit: typeof CONTAINING_COMMIT;
+	readonly predecessorEventDigest: Sha256Digest | null;
+	readonly payload: InquiryChangeProposedPayload | InquiryChangeRevisedPayload;
+}
+export interface InquiryChangeEvent extends InquiryChangeEventBody {readonly eventDigest: Sha256Digest;}
+const INQUIRY_EVENT_FIELDS = [
+	"actorId", "authorityId", "commandDigest", "commandId", "expectedChangeTip", "expectedProjectHead",
+	"kind", "occurredAt", "ownerBinding", "payload", "predecessorEventDigest",
+];
+const INQUIRY_EVENT_DOMAIN = `${INQUIRY_CHANGE_EVENT_PROTOCOL.id}@${INQUIRY_CHANGE_EVENT_PROTOCOL.version}`;
+
+export function createInquiryChangeEvent(body: Omit<InquiryChangeEventBody, "protocol" | "containingCommit">): Outcome<InquiryChangeEvent, ContractIssue> {
+	return decodeContract("Inquiry Change event", body, (value) => {
+		const record = exactRecord("Inquiry Change event", value, "$", INQUIRY_EVENT_FIELDS);
+		const content = {...record, protocol: {...INQUIRY_CHANGE_EVENT_PROTOCOL}, containingCommit: CONTAINING_COMMIT};
+		const digest = semanticDigest(INQUIRY_EVENT_DOMAIN, content);
+		if (!digest.ok) rejectContract("invalid_field", "Inquiry Change event", "$", digest.error.message);
+		return decodeInquiryChangeEventValue({...content, eventDigest: digest.value});
+	}, INQUIRY_EVENT_CANONICAL_LIMITS);
+}
+export function decodeInquiryChangeEvent(input: unknown): Outcome<InquiryChangeEvent, ContractIssue> {
+	return decodeContract("Inquiry Change event", input, decodeInquiryChangeEventValue, INQUIRY_EVENT_CANONICAL_LIMITS);
+}
+export function decodeInquiryChangeEventValue(value: CanonicalValue, path = "$"): InquiryChangeEvent {
+	const contract = "Inquiry Change event";
+	const record = exactRecord(contract, value, path, [...INQUIRY_EVENT_FIELDS, "protocol", "containingCommit", "eventDigest"]);
+	protocolField(contract, record, path, INQUIRY_CHANGE_EVENT_PROTOCOL);
+	const kind = literalField(contract, record, "kind", INQUIRY_CHANGE_EVENT_KINDS, path);
+	const owner = exactRecord(contract, requiredField(contract, record, "ownerBinding", path), `${path}.ownerBinding`, ["kind", "profile", "kernelBuildDigest"]);
+	const ownerBinding = Object.freeze({
+		kind: literalField(contract, owner, "kind", ["kernel"] as const, `${path}.ownerBinding`),
+		profile: literalField(contract, owner, "profile", [WIKI_PROFILE_ID] as const, `${path}.ownerBinding`),
+		kernelBuildDigest: profileDigestField(owner, "kernelBuildDigest", `${path}.ownerBinding`),
+	});
+	const rawPayload = exactRecord(contract, requiredField(contract, record, "payload", path), `${path}.payload`, kind === "change.proposed" ? ["change"] : ["change", "reason"]);
+	const change = decodeInquiryChangeValue(requiredField(contract, rawPayload, "change", `${path}.payload`), `${path}.payload.change`);
+	let payload: InquiryChangeProposedPayload | InquiryChangeRevisedPayload = Object.freeze({change});
+	if (kind === "change.revised") {
+		const reason = textField(contract, rawPayload, "reason", `${path}.payload`, {maximumBytes: INQUIRY_LIMITS.proseBytes});
+		if (reason.trim().length === 0 || /[\uD800-\uDFFF]/u.test(reason)) rejectContract("invalid_field", contract, `${path}.payload.reason`, "Revision reason must be nonblank Unicode text.");
+		payload = Object.freeze({change, reason});
+	}
+	const expectedProjectHead = decodeGitOidValue(requiredField(contract, record, "expectedProjectHead", path), `${path}.expectedProjectHead`);
+	const expectedChangeTip = nullableValue(requiredField(contract, record, "expectedChangeTip", path), (entry) => decodeGitOidValue(entry, `${path}.expectedChangeTip`));
+	const predecessorEventDigest = nullableProfileDigest(record, "predecessorEventDigest", path);
+	if (!sameGitOid(expectedProjectHead, change.baseline.commit) || (expectedChangeTip !== null && expectedChangeTip.algorithm !== expectedProjectHead.algorithm)) {
+		rejectContract("invalid_field", contract, path, "Event grounds must match the complete baseline and object format.");
+	}
+	if (kind === "change.proposed" ? (change.revision !== 1 || expectedChangeTip !== null || predecessorEventDigest !== null) : (change.revision < 2 || expectedChangeTip === null || predecessorEventDigest === null)) {
+		rejectContract("invalid_field", contract, path, "Proposal requires revision 1 and null tips; revision requires non-null exact tip and predecessor.");
+	}
+	const attachment = change.wikiConsequences;
+	if (attachment.kind === "profile" && attachment.reference.kernelBuildDigest !== ownerBinding.kernelBuildDigest) rejectContract("invalid_field", contract, `${path}.ownerBinding`, "Kernel owner build differs from attached profile reference.");
+	const containingCommit = literalField(contract, record, "containingCommit", [CONTAINING_COMMIT] as const, path);
+	const eventDigest = profileDigestField(record, "eventDigest", path);
+	const result = Object.freeze({
+		protocol: INQUIRY_CHANGE_EVENT_PROTOCOL, kind, ownerBinding,
+		actorId: profileNamespacedField(record, "actorId", path), authorityId: profileNamespacedField(record, "authorityId", path),
+		commandId: profileNamespacedField(record, "commandId", path), commandDigest: profileDigestField(record, "commandDigest", path),
+		occurredAt: textField(contract, record, "occurredAt", path, {maximumBytes: 35, pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u}),
+		expectedProjectHead, expectedChangeTip, containingCommit, predecessorEventDigest, payload, eventDigest,
+	});
+	const {eventDigest: _digest, ...body} = result;
+	const expected = semanticDigest(INQUIRY_EVENT_DOMAIN, body);
+	if (!expected.ok) rejectContract("invalid_field", contract, path, expected.error.message);
+	assertDigestMatch(contract, `${path}.eventDigest`, eventDigest, expected.value);
+	return result;
 }

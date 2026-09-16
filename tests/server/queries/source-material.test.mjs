@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {failure, success} from "../../../src/kernel/data-contracts/outcome.ts";
 import {decodeGitOid} from "../../../src/kernel/identity/git.ts";
+import {CHANGEKERNEL_VERSION} from "../../../src/kernel/identity/version.ts";
 import {createProjectSnapshot} from "../../../src/kernel/changes/snapshot.ts";
 import {loadMarkdownMaterialSource} from "../../../src/server/queries/material-source.ts";
 import {resolveProjectSource} from "../../../src/server/queries/source.ts";
@@ -23,7 +24,7 @@ const configuration = Object.freeze({
 	objectFormat: "sha1",
 	canonicalRef: "refs/heads/main",
 	kernelBuildDigest: BUILD_DIGEST,
-	retiredWikiItemIds: [],
+	kernelVersion: CHANGEKERNEL_VERSION,
 	limits: Object.freeze({
 		maximumWikiItems: 64,
 		maximumWikiFileBytes: 64 * 1024,

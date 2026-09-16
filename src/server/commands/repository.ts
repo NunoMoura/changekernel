@@ -1,15 +1,11 @@
 import {canonicalJson} from "../../kernel/data-contracts/canonical-json.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
-	appendChangeEvent,
 	appendProfileChangeEvent,
-	encodeChangeTrace,
 	encodeProfileChangeTrace,
-	type ChangeTrace,
 	type ProfileChangeTrace,
 } from "../../kernel/changes/trace.ts";
 import type {ProfileChangeEvent} from "../../kernel/changes/events.ts";
-import type {ChangeEvent, SemanticEventOwners} from "../../kernel/changes/events.ts";
 import type {ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {gitOidText, sameGitOid, type GitOid, type GitRef} from "../../kernel/identity/git.ts";
 import {sha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
@@ -28,7 +24,7 @@ import {
 } from "../../ports/project-store.ts";
 import {productError, type ProductError} from "../../api/transport/envelope.ts";
 import type {AuthorizedProjectActor} from "../authorization/policy.ts";
-import {loadProjectSource, loadWikiSource, type LoadedChange, type LoadedWikiSource, type ProjectReadConfiguration} from "../queries/source.ts";
+import type {ProjectReadConfiguration} from "../queries/source.ts";
 
 export interface LifecycleCommitter {
 	readonly name: string;
@@ -42,20 +38,12 @@ export interface LifecycleRepositoryEnvironment {
 	readonly maximumTreeEntries: number;
 }
 
-export interface LoadedLifecycleChange {
-	readonly project: LoadedWikiSource;
-	readonly source: LoadedWikiSource;
-	readonly change: LoadedChange;
-}
-
-export interface TraceCommitResult<T extends ChangeTrace | ProfileChangeTrace = ChangeTrace> {
+export interface TraceCommitResult {
 	readonly commit: GitOid;
 	readonly tree: GitOid;
-	readonly trace: T;
+	readonly trace: ProfileChangeTrace;
 	readonly traceBlob: GitOid;
 }
-
-export type ProfileTraceCommitResult = TraceCommitResult<ProfileChangeTrace>;
 
 export interface TreeDeltaEntry {
 	readonly path: string;
@@ -64,27 +52,8 @@ export interface TreeDeltaEntry {
 }
 
 const ZERO_DIGEST = `sha256:${"0".repeat(64)}` as Sha256Digest;
-const TRACE_PREFIX = ".codewiki/changes/";
 
-export async function loadCanonical(
-	environment: LifecycleRepositoryEnvironment,
-): Promise<Outcome<LoadedWikiSource, ProductError>> {
-	const loaded = await loadWikiSource(environment.store, environment.configuration, {kind: "canonical"});
-	return loaded.ok ? success(loaded.value) : failure(sourceFailure(loaded.error.code));
-}
-
-export async function loadLifecycleChange(
-	environment: LifecycleRepositoryEnvironment,
-	changeId: string,
-): Promise<Outcome<LoadedLifecycleChange, ProductError>> {
-	const project = await loadCanonical(environment);
-	if (!project.ok) return project;
-	const source = await loadProjectSource(environment.store, environment.configuration, {kind: "change", changeId}, [changeId]);
-	if (!source.ok) return failure(sourceFailure(source.error.code));
-	const change = source.value.changes.find((entry) => entry.trace.header.changeId === changeId);
-	if (!change) return failure(productError("not_found", "That Change is unavailable.", "Refresh Changes and choose an available Change.", false));
-	return success(Object.freeze({project: project.value, source: source.value, change}));
-}
+const TRACE_PREFIX = ".changekernel/changes/";
 
 export function tracePath(changeId: string): string {
 	return `${TRACE_PREFIX}TRACE-${changeId}.jsonl`;
@@ -93,38 +62,6 @@ export function tracePath(changeId: string): string {
 export function managedChangeRef(changeId: string): GitRef {
 	return `refs/codewiki/changes/${changeId}` as GitRef;
 }
-
-export function verifyCommandBinding(
-	loaded: LoadedLifecycleChange,
-	expectedProjectHead: GitOid,
-	expectedChangeTip: GitOid,
-): Outcome<true, ProductError> {
-	if (!sameGitOid(loaded.project.snapshot.commit, expectedProjectHead) || !sameGitOid(loaded.source.snapshot.commit, expectedChangeTip)) {
-		return failure(productError(
-			"source_stale",
-			"Project or Change state advanced before this action.",
-			"Refresh the Change, reconcile the exact new state, and retry explicitly.",
-			true,
-		));
-	}
-	return success(true);
-}
-
-export function commandAlreadyRecorded(trace: ChangeTrace, commandId: string): ChangeEvent | null {
-	return trace.events.find((event) => event.commandId === commandId) ?? null;
-}
-
-type LegacyTraceCommitInput = Readonly<{
-	base: ProjectSnapshot;
-	parents: readonly GitOid[];
-	trace: ChangeTrace;
-	events: readonly ChangeEvent[];
-	owners: SemanticEventOwners;
-	mutations?: readonly ProjectStoreTreeMutation[];
-	actor: AuthorizedProjectActor;
-	timestamp: string;
-	message: string;
-}>;
 
 type ProfileTraceCommitInput = Readonly<{
 	base: ProjectSnapshot;
@@ -137,21 +74,11 @@ type ProfileTraceCommitInput = Readonly<{
 	message: string;
 }>;
 
-export function appendTraceCommit(
-	environment: LifecycleRepositoryEnvironment,
-	input: LegacyTraceCommitInput,
-): Promise<Outcome<TraceCommitResult, ProductError>>;
-export function appendTraceCommit(
-	environment: LifecycleRepositoryEnvironment,
-	input: ProfileTraceCommitInput,
-): Promise<Outcome<ProfileTraceCommitResult, ProductError>>;
 export async function appendTraceCommit(
 	environment: LifecycleRepositoryEnvironment,
-	input: LegacyTraceCommitInput | ProfileTraceCommitInput,
-): Promise<Outcome<TraceCommitResult<ChangeTrace | ProfileChangeTrace>, ProductError>> {
-	const prepared = "owners" in input
-		? prepareTrace(input.trace, input.events, (trace, event) => appendChangeEvent(trace, event, input.owners), (trace) => encodeChangeTrace(trace, input.owners))
-		: prepareTrace(input.trace, input.events, appendProfileChangeEvent, encodeProfileChangeTrace);
+	input: ProfileTraceCommitInput,
+): Promise<Outcome<TraceCommitResult, ProductError>> {
+	const prepared = prepareTrace(input.trace, input.events, appendProfileChangeEvent, encodeProfileChangeTrace);
 	if (!prepared.ok) return prepared;
 	const {trace, text} = prepared.value;
 	const traceLocation = tracePath(trace.header.changeId);
@@ -301,32 +228,6 @@ export function diffTreeEntries(
 	}));
 }
 
-export function mutationsFromDelta(delta: readonly TreeDeltaEntry[]): readonly ProjectStoreTreeMutation[] {
-	return Object.freeze(delta.map((entry) => entry.after === null
-		? Object.freeze({path: entry.path, mode: null, kind: null, oid: null})
-		: Object.freeze({path: entry.path, mode: entry.after.mode, kind: entry.after.kind, oid: entry.after.oid})));
-}
-
-export async function filteredTree(
-	environment: LifecycleRepositoryEnvironment,
-	entries: readonly ProjectStoreTreeEntry[],
-	include: (path: string) => boolean,
-	authorizationId: string,
-): Promise<Outcome<GitOid, ProductError>> {
-	const mutations: ProjectStoreTreeMutation[] = [];
-	for (const entry of entries) {
-		if (!include(entry.path)) continue;
-		mutations.push(Object.freeze({
-			path: entry.path,
-			mode: entry.mode,
-			kind: entry.kind,
-			oid: entry.oid,
-		}));
-	}
-	if (mutations.length === 0) return failure(invalidState("Required Project artifact tree is empty."));
-	return writeTree(environment, null, Object.freeze(mutations), authorizationId);
-}
-
 export function tracePrefixPreserved(before: string, after: string): boolean {
 	return after.startsWith(before) && after.length > before.length;
 }
@@ -338,26 +239,16 @@ export function canonicalCommandDigest(operation: string, input: unknown): Outco
 		: failure(productError("invalid_request", "The action input is not canonical.", "Refresh and submit canonical bounded values.", true));
 }
 
-export function eventCommandId(commandId: string, suffix: string): string {
-	return suffix.length === 0 ? commandId : `${commandId}:${suffix}`;
-}
-
 function actorIdentity(actor: AuthorizedProjectActor, timestamp: string): GitCommitIdentity {
 	return Object.freeze({
 		name: actor.actorId,
-		email: `${sha256Digest(actor.actorId).slice(7, 31)}@actors.codewiki.invalid`,
+		email: `${sha256Digest(actor.actorId).slice(7, 31)}@actors.changekernel.invalid`,
 		timestamp,
 	});
 }
 
 function sameEntry(left: ProjectStoreTreeEntry | null, right: ProjectStoreTreeEntry | null): boolean {
 	return left === null ? right === null : right !== null && left.mode === right.mode && left.kind === right.kind && sameGitOid(left.oid, right.oid);
-}
-
-function sourceFailure(code: string): ProductError {
-	if (code === "source_stale") return productError("source_stale", "Project state changed while it was being read.", "Refresh and retry the action.", true);
-	if (code === "source_not_found") return productError("source_not_found", "The requested Project state is unavailable.", "Refresh Project status and retry.", false);
-	return invalidState("Project lifecycle state could not be validated.");
 }
 
 function storeFailure(issue: ProjectStoreIssue): ProductError {

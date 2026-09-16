@@ -152,7 +152,7 @@ export function renderChangesConsole(data: unknown): string {
 		);
 	}
 
-	lines.push("", "Detail: codewiki change <id>   Verification: codewiki checks   Audit: codewiki trace <id>");
+	lines.push("", "Detail: changekernel change <id>   Verification: changekernel checks   Audit: changekernel trace <id>");
 	return `${lines.join("\n")}\n`;
 }
 
@@ -259,7 +259,7 @@ export function renderProjectStatusConsole(data: unknown): string {
 		`${project} — ${statusLabel}`,
 		`Changes: ${totalChanges}   Work: ${totalWork}   Checks failing/stopped: ${failedChecks + stoppedChecks}`,
 		attentionCount > 0
-			? `Needs you: ${attentionCount} decision${attentionCount === 1 ? "" : "s"} — run: codewiki changes`
+			? `Needs you: ${attentionCount} decision${attentionCount === 1 ? "" : "s"} — run: changekernel changes`
 			: "Needs you: nothing — all clear",
 	];
 	return `${lines.join("\n")}\n`;

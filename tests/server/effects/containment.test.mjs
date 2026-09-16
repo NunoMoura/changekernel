@@ -1,30 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-	createDshAgentRuntime,
-} from "../../../src/adapters/dsh/agent-runtime.ts";
-import {
-	createLocalDshExecutionHost,
-} from "../../../src/adapters/dsh/local-execution-host.ts";
-import {
-	createLocalPreviewAdapter,
-} from "../../../src/adapters/preview/local.ts";
+import {createLocalPreviewAdapter} from "../../../src/adapters/preview/local.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {semanticDigest} from "../../../src/kernel/identity/semantic-digest.ts";
-import {
-	AGENT_ROLE_POLICIES,
-	AGENT_ROLE_POLICY_DIGEST,
-	authorizeAgentRun,
-} from "../../../src/server/effects/agent-runs.ts";
-import {
-	createPreviewSubject,
-	previewRequestDigest,
-} from "../../../src/ports/preview.ts";
-import {
-	createWork,
-	workAllowsPath,
-} from "../../../src/kernel/work/contracts.ts";
+import {AGENT_ROLE_POLICIES, AGENT_ROLE_POLICY_DIGEST, authorizeAgentRun} from "../../../src/server/effects/agent-runs.ts";
+import {createPreviewSubject, previewRequestDigest} from "../../../src/ports/preview.ts";
 
 const digest = (c) => `sha256:${c.repeat(64)}`;
 const semantic = (protocol, value) => {
@@ -74,6 +55,9 @@ function workerAuthInput(overrides = {}) {
 
 test("Workers cannot receive or authorize writable scope over Wiki, Change Trace, or managed roots", () => {
 	for (const forbiddenScope of [
+		[".changekernel/**"],
+		[".changekernel/wiki/**"],
+		[".changekernel/changes/**"],
 		[".codewiki/**"],
 		[".codewiki/wiki/**"],
 		[".codewiki/changes/**"],
@@ -86,50 +70,6 @@ test("Workers cannot receive or authorize writable scope over Wiki, Change Trace
 	]) {
 		const auth = authorizeAgentRun(workerAuthInput({writableScope: forbiddenScope}));
 		assert.equal(auth.ok, false, `Forbidden scope should be rejected: ${forbiddenScope.join(",")}`);
-	}
-});
-
-test("Work unit contracts and workAllowsPath fail closed on forbidden project roots", () => {
-	const validWork = createWork({
-		changeId: "CHG-containment",
-		ordinal: 1,
-		workType: "codewiki.work:source",
-		targets: [{itemId: "cw:component:test", facets: ["source"]}],
-		writablePaths: ["src/**"],
-		dependencies: [],
-		capabilities: ["codewiki.capability:workbench.write"],
-		acceptance: ["tests pass"],
-	});
-	assert.equal(validWork.ok, true);
-
-	assert.equal(workAllowsPath(validWork.value, "src/index.ts"), true);
-	assert.equal(workAllowsPath(validWork.value, "src/adapters/git.ts"), true);
-	assert.equal(workAllowsPath(validWork.value, ".codewiki/wiki/items/product.md"), false);
-	assert.equal(workAllowsPath(validWork.value, ".codewiki/changes/TRACE.jsonl"), false);
-	assert.equal(workAllowsPath(validWork.value, ".git/refs/heads/main"), false);
-	assert.equal(workAllowsPath(validWork.value, "check-packs/decision/check.json"), false);
-	assert.equal(workAllowsPath(validWork.value, "package.json"), false);
-
-	for (const badPattern of [
-		".codewiki/**",
-		".git/**",
-		"check-packs/**",
-		"../src/**",
-		"/etc/passwd",
-		"src/..",
-		"src/./sub",
-	]) {
-		const badWork = createWork({
-			changeId: "CHG-containment",
-			ordinal: 2,
-			workType: "codewiki.work:source",
-			targets: [{itemId: "cw:component:test", facets: ["source"]}],
-			writablePaths: [badPattern],
-			dependencies: [],
-			capabilities: [],
-			acceptance: ["test"],
-		});
-		assert.equal(badWork.ok, false, `Pattern should be rejected: ${badPattern}`);
 	}
 });
 
@@ -183,6 +123,7 @@ test("Preview adapter enforces profile-only execution, path containment, and lea
 		["/absolute"],
 		["../traversal"],
 		[".git/**"],
+		[".changekernel/**"],
 		[".codewiki/**"],
 	]) {
 		const badSubject = createPreviewSubject({
@@ -236,22 +177,4 @@ test("Preview adapter enforces profile-only execution, path containment, and lea
 	assert.equal(reqDigest1.ok, true);
 	const obs1 = await adapter.value.observe({...reqDraft1, requestDigest: reqDigest1.value});
 	assert.equal(obs1.ok, true);
-});
-
-test("DSH Execution Host enforces concurrency bound and rejects overflow with authorization_conflict", async () => {
-	const host = createLocalDshExecutionHost({
-		custodyRoot: "/tmp",
-		providerInstaller: async () => ({providerReceiptDigest: null, dispose: () => {}}),
-		maximumConcurrentRuns: 1,
-	});
-	assert.equal(host.ok, true);
-	const runtime = createDshAgentRuntime(host.value);
-	assert.equal(runtime.ok, true);
-
-	// Test bounds construction
-	assert.equal(createLocalDshExecutionHost({
-		custodyRoot: "/tmp",
-		providerInstaller: async () => ({providerReceiptDigest: null, dispose: () => {}}),
-		maximumConcurrentRuns: 0,
-	}).ok, false);
 });

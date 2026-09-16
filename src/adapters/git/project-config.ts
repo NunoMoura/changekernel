@@ -15,17 +15,7 @@ export const PROJECT_CONFIG_PROTOCOL = Object.freeze({
 const MAXIMUM_CONFIG_BYTES = 1 * 1_024 * 1_024;
 const UTF8 = new TextEncoder();
 
-const ALLOWED_TOP_LEVEL_KEYS = Object.freeze([
-	"hosts",
-	"preview",
-	"project",
-	"protocol",
-	"quality",
-	"retention",
-	"runtime",
-	"triagePreferences",
-	"userStandards",
-] as const);
+const ALLOWED_TOP_LEVEL_KEYS = Object.freeze(["project", "protocol", "runtime"] as const);
 
 export type ProjectConfigFailureCode =
 	| "invalid_json"
@@ -133,90 +123,7 @@ export function serializeBootstrapProjectConfig(
 }
 
 function bootstrapProjectConfigValue(project: string): CanonicalValue {
-	return {
-		protocol: PROJECT_CONFIG_PROTOCOL,
-		project,
-		preview: {
-			profiles: [],
-			uiPreviewTargets: [],
-		},
-		runtime: {
-			maxWorkers: 1,
-			worktreeIsolation: "none",
-			worktreeSetupCommands: [],
-			automation: "manual",
-			agency: "assist",
-			budgets: {maxIterations: 1},
-			modelRouting: {
-				qualityFloor: "standard",
-				maxEscalations: 0,
-				estimatedInputTokens: 75_000,
-				estimatedOutputTokens: 25_000,
-				routes: [],
-				roleRoutes: {
-					harness: null,
-					decision: "inherit",
-					planning: "inherit",
-					review: "inherit",
-					workers: [],
-				},
-				escalationTransitions: [],
-			},
-			approval: {
-				cadence: "per_iteration",
-				destructiveAction: "ask",
-				riskEscalation: "ask",
-				requireExpectedBytes: true,
-			},
-			stopConditions: [
-				"semantic_decision",
-				"risk_escalation",
-				"destructive_action",
-			],
-		},
-		retention: {
-			enabled: true,
-			archiveRefPrefix: "refs/codewiki/archive/",
-			hotTraceLimit: 20,
-			requireCloseRecord: true,
-			hydrateOnDemand: true,
-		},
-		hosts: {
-			pi: {enabled: false},
-			mcp: {enabled: false},
-		},
-		userStandards: [],
-		triagePreferences: [],
-		quality: {
-			judge: {
-				enabled: false,
-				provider: "none",
-				promptVersion: "loop-quality-judge.v3",
-				timeoutMs: 30_000,
-			},
-			review: {
-				enabled: true,
-				autoEvidence: true,
-				includeCachedEvidence: true,
-				timeoutMs: 15_000,
-				fastTimeoutMs: 3_000,
-				maxCachedEvidenceAgeMs: 600_000,
-				enabledPacks: [
-					"tsjs.typescript",
-					"tsjs.lint",
-					"python.ruff",
-					"python.pyright",
-					"go.test",
-					"go.vet",
-					"rust.cargo-test",
-					"rust.cargo-clippy",
-					"shell.shellcheck",
-				],
-				disabledPacks: [],
-				requiredPacks: [],
-			},
-		},
-	};
+	return {protocol: PROJECT_CONFIG_PROTOCOL, project};
 }
 
 function configFailure(

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {decodeProfiledWikiFile} from "../../../src/adapters/git/wiki-profile.ts";
+import {decodeKernelWikiFile} from "../../../src/adapters/git/wiki-profile.ts";
+import {CHANGEKERNEL_VERSION} from "../../../src/kernel/identity/version.ts";
 import {bindWikiTypes, WIKI_CORE_TYPES, WIKI_PROFILE_ID, WIKI_PROFILE_LIMITS} from "../../../src/kernel/wiki/profile.ts";
 
 const UTF8 = new TextEncoder();
@@ -34,7 +35,7 @@ function yamlHeader(values = header()) {
 	}).join("\n");
 }
 
-function file({headerText = yamlHeader(), body = "# Title\n\nMeaning.\n", path = ".codewiki/wiki/items/title.md", blob = oid(1), mode = "100644", bytes} = {}) {
+function file({headerText = yamlHeader(), body = "# Title\n\nMeaning.\n", path = ".changekernel/wiki/items/title.md", blob = oid(1), mode = "100644", bytes} = {}) {
 	return {
 		path,
 		mode,
@@ -44,13 +45,24 @@ function file({headerText = yamlHeader(), body = "# Title\n\nMeaning.\n", path =
 }
 
 function decode(options = {}) {
-	return decodeProfiledWikiFile(WIKI_PROFILE_ID, file(options));
+	return decodeKernelWikiFile(CHANGEKERNEL_VERSION, file(options));
 }
 
 function assertRejected(result, code) {
 	assert.equal(result.ok, false, result.ok ? "expected rejection" : result.error.message);
 	if (code) assert.equal(result.error.code, code);
 }
+
+test("only the current Kernel version selects document decoding, before input access", () => {
+	assert.equal(decodeKernelWikiFile(CHANGEKERNEL_VERSION, file()).ok, true);
+	assertRejected(decodeKernelWikiFile(CHANGEKERNEL_VERSION, file({headerText: "{}"})), "invalid_metadata");
+	let reads = 0;
+	const hostile = Object.defineProperty({}, "path", {get() {reads++; throw new Error("must not read");}});
+	for (const unsupported of [undefined, null, "latest", "999.0.0", WIKI_PROFILE_ID]) {
+		assertRejected(decodeKernelWikiFile(unsupported, hostile), "unsupported_kernel_version");
+	}
+	assert.equal(reads, 0);
+});
 
 test("accepts block/flow YAML, optional unknown data, and exact non-NFC Markdown", () => {
 	const decomposed = "Cafe\u0301";
@@ -126,7 +138,7 @@ test("snapshots native bytes without shadow getters, iterators or species", () =
 	for (const key of ["byteLength", "byteOffset", "buffer", Symbol.iterator]) {
 		Object.defineProperty(input.bytes, key, {get() { invoked += 1; throw new Error("must not run"); }});
 	}
-	const result = decodeProfiledWikiFile(WIKI_PROFILE_ID, input);
+	const result = decodeKernelWikiFile(CHANGEKERNEL_VERSION, input);
 	assert.equal(result.ok, true, result.ok ? "" : result.error.message);
 	assert.equal(result.value.byteLength, file().bytes.byteLength);
 	assert.equal(invoked, 0);
@@ -158,16 +170,16 @@ test("accepts exact byte/header limits and rejects one-byte overruns", () => {
 
 test("decodes a complete SHA-256 type context from exact profile bytes", () => {
 	const sources = WIKI_CORE_TYPES.map((title, index) => file({
-		path: `.codewiki/wiki/types/${title}.md`, blob: oid(index + 1, "sha256"),
+		path: `.changekernel/wiki/types/${title}.md`, blob: oid(index + 1, "sha256"),
 		headerText: yamlHeader(header({type: "TypeDefinition", title})), body: `# ${title}\n\nCategory meaning.\n`,
 	}));
-	sources.push(file({path: ".codewiki/wiki/types/FieldObservation.md", blob: oid(10, "sha256"),
+	sources.push(file({path: ".changekernel/wiki/types/FieldObservation.md", blob: oid(10, "sha256"),
 		headerText: yamlHeader(header({type: "TypeDefinition", title: "FieldObservation", "codewiki-base": "Claim"})),
 		body: "# FieldObservation\n\nSpecialized claim.\n",
 	}));
 	sources.push(file({blob: oid(11, "sha256"), headerText: yamlHeader(header({type: "FieldObservation"}))}));
 	const parsed = sources.map((source) => {
-		const decoded = decodeProfiledWikiFile(WIKI_PROFILE_ID, source);
+		const decoded = decodeKernelWikiFile(CHANGEKERNEL_VERSION, source);
 		assert.equal(decoded.ok, true, decoded.ok ? "" : decoded.error.message);
 		assert.equal(decoded.value.text, decoder.decode(source.bytes));
 		return decoded.value;
@@ -182,8 +194,8 @@ test("decodes a complete SHA-256 type context from exact profile bytes", () => {
 
 test("requires explicit profile selection and does not fall back to legacy envelopes", () => {
 	const input = file();
-	assertRejected(decodeProfiledWikiFile(undefined, input), "unsupported_profile");
-	assertRejected(decodeProfiledWikiFile("codewiki.wiki-item@1.0.0", input), "unsupported_profile");
+	assertRejected(decodeKernelWikiFile(undefined, input), "unsupported_kernel_version");
+	assertRejected(decodeKernelWikiFile("codewiki.wiki-item@1.0.0", input), "unsupported_kernel_version");
 	const legacy = file({headerText: JSON.stringify({
 		protocol: "codewiki.wiki-item@1.0.0",
 		itemId: "cw:item:legacy",
@@ -194,7 +206,7 @@ test("requires explicit profile selection and does not fall back to legacy envel
 		relationships: [],
 		provenance: [],
 	})});
-	assertRejected(decodeProfiledWikiFile(WIKI_PROFILE_ID, legacy), "invalid_metadata");
+	assertRejected(decodeKernelWikiFile(CHANGEKERNEL_VERSION, legacy), "invalid_metadata");
 });
 
 test("rejects malformed file descriptors, encoding, line endings, paths, and modes", () => {
@@ -202,10 +214,10 @@ test("rejects malformed file descriptors, encoding, line endings, paths, and mod
 	assertRejected(decode({bytes: UTF8.encode("\uFEFF---\ntype: Claim\n---\n# Title\n\nMeaning")}), "invalid_file");
 	assertRejected(decode({bytes: UTF8.encode(`---\r\ntype: Claim\r\n---\r\n# Title\r\n\r\nMeaning`) }), "invalid_file");
 	assertRejected(decode({bytes: UTF8.encode(`---\ntype: Claim\ntitle: Title\ncodewiki-origin: [../../changes/x]\ncodewiki-revision: ../../changes/x\n---\n# Title\n\n\0`) }), "invalid_file");
-	assertRejected(decode({path: ".codewiki/wiki/items/../title.md"}), "invalid_file");
-	assertRejected(decode({path: ".codewiki/wiki/items/title.md", mode: "100755"}), "invalid_file");
+	assertRejected(decode({path: ".changekernel/wiki/items/../title.md"}), "invalid_file");
+	assertRejected(decode({path: ".changekernel/wiki/items/title.md", mode: "100755"}), "invalid_file");
 	assertRejected(decode({blob: {algorithm: "sha1", hex: "0".repeat(40)}}), "invalid_file");
-	assertRejected(decode({path: ".codewiki/wiki/items/title.md", bytes: "not bytes"}), "invalid_file");
+	assertRejected(decode({path: ".changekernel/wiki/items/title.md", bytes: "not bytes"}), "invalid_file");
 });
 
 test("rejects unsupported YAML constructs and extra documents before composition", () => {
@@ -294,7 +306,7 @@ test("preserves caller purity and copies blob identities", () => {
 	const blob = oid(7);
 	const bytes = UTF8.encode("---\ntype: Claim\ntitle: Title\ncodewiki-origin: [../../changes/x]\ncodewiki-revision: ../../changes/x\n---\n# Title\n\nMeaning.\n");
 	const input = file({blob, bytes});
-	const result = decodeProfiledWikiFile(WIKI_PROFILE_ID, input);
+	const result = decodeKernelWikiFile(CHANGEKERNEL_VERSION, input);
 	assert.equal(result.ok, true, result.ok ? "" : result.error.message);
 	assert.notStrictEqual(result.value.blob, blob);
 	assert.equal(result.value.text, decoder.decode(bytes));
@@ -310,12 +322,12 @@ test("does not invoke descriptor accessors while reading file input", () => {
 	const input = {
 		get path() {
 			invoked = true;
-			return ".codewiki/wiki/items/title.md";
+			return ".changekernel/wiki/items/title.md";
 		},
 		mode: "100644",
 		blob: oid(1),
 		bytes: UTF8.encode("bad"),
 	};
-	assertRejected(decodeProfiledWikiFile(WIKI_PROFILE_ID, input), "invalid_file");
+	assertRejected(decodeKernelWikiFile(CHANGEKERNEL_VERSION, input), "invalid_file");
 	assert.equal(invoked, false);
 });

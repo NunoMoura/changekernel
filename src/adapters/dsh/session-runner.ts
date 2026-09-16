@@ -80,6 +80,7 @@ export async function runDshSession(input: RunDshSessionInput): Promise<DshSessi
 	const startedAt = now();
 	const execution = await createExecution(input);
 	try {
+		if (input.signal?.aborted) throw new Error("DSH Run was cancelled before model execution.");
 		execution.agent.agent.followup(createUserMessage({
 			content: [{type: "text", text: input.material.prompt}],
 			source: {kind: "user"},
@@ -101,7 +102,9 @@ async function createExecution(input: RunDshSessionInput): Promise<DshExecution>
 	let provider: DshProviderLease | undefined;
 	let agent: AgentHandle | undefined;
 	try {
+		if (input.signal?.aborted) throw new Error("DSH Run was cancelled before provider installation.");
 		provider = await input.installProvider(context, input.authorization);
+		if (input.signal?.aborted) throw new Error("DSH Run was cancelled before model execution.");
 		const agentOptions = {
 			provider: input.authorization.route.providerId,
 			model: input.authorization.route.modelId,

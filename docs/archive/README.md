@@ -1,6 +1,6 @@
-# Historical CodeWiki evidence
+# Historical project evidence
 
-These documents are byte-preserved historical plans and contracts, not current instructions or competing roadmaps. The sole active development scope, queue, and evidence ledger is [SEMANTIC_KERNEL_PLAN.md](../../SEMANTIC_KERNEL_PLAN.md). Current source and tests determine executable behavior; the active Wiki describes desired behavior.
+These documents are byte-preserved historical plans and contracts, not current instructions or competing roadmaps. [Wiki](../../.changekernel/wiki/) defines desired behavior, source/tests define executable behavior, and [AGENTS.md](../../AGENTS.md) holds development procedure. The [temporary bootstrap status](../../CHANGEKERNEL_STATUS.md) retains unfinished work until qualified Change/Work can own it; it is not an architectural roadmap.
 
 | Original repository path | Preserved document | Original Git blob |
 | --- | --- | --- |

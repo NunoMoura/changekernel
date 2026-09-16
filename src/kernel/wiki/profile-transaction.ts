@@ -562,7 +562,7 @@ function changePath(value: unknown): string | null {
 		UTF8.encode(value).byteLength > WIKI_PROFILE_LIMITS.pathBytes || UNPAIRED_SURROGATE.test(value) ||
 		/[\\\u0000-\u001f\u007f\uFEFF]/u.test(value) || value.startsWith("/")) return null;
 	const segments = value.split("/");
-	return value.startsWith(".codewiki/changes/") && segments.length >= 3 &&
+	return value.startsWith(".changekernel/changes/") && segments.length >= 3 &&
 		segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..") ? value : null;
 }
 

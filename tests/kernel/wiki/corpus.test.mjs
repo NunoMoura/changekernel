@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import test from "node:test";
 import {readMarkdownCorpus} from "../../../src/kernel/wiki/corpus.ts";
-import {markdownEntry, oid} from "./fixtures.mjs";
+const oid = (value, algorithm = "sha1") => ({algorithm, hex: value.toString(16).padStart(algorithm === "sha1" ? 40 : 64, "0")});
 
 const UTF8 = new TextEncoder();
 const LIMITS = Object.freeze({
@@ -67,14 +67,6 @@ test("valid UTF-8 round-trips without BOM, newline, normalization or control-dat
 	assert.deepEqual(UTF8.encode(document.text), UTF8.encode(text));
 	assert.equal(document.byteLength, UTF8.encode(text).length);
 	assert.equal(document.path, "cafe\u0301/📝.md");
-});
-
-test("existing canonical envelope fixtures remain exact opaque text", () => {
-	const legacy = markdownEntry({path: ".codewiki/wiki/items/example.md", itemId: "cw:claim:example", title: "Example", body: "Original body\n"});
-	const result = value(request([{path: legacy.path, mode: legacy.mode, oid: legacy.blob, bytes: legacy.bytes}]));
-	assert.deepEqual(UTF8.encode(result.documents[0].text), legacy.bytes);
-	assert.equal("item" in result.documents[0], false);
-	assert.equal("accepted" in result.documents[0], false);
 });
 
 test("executable Markdown is read only as data", () => {

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Completed active ChangeKernel naming: the release export is `CHANGEKERNEL_VERSION` without a compatibility alias, the current core design is `system/components/changekernel.md`, and the temporary pre-dogfood note is `CHANGEKERNEL_STATUS.md`. Updated current labels, links and diagnostics while preserving historical records, source identities, serialized protocol/document fields and package version values.
+
+- Renamed CodeWiki to ChangeKernel: repository and package identity, `changekernel` executable, current public exports, documentation and `.changekernel/` managed root. Change remains the organizing primitive for projects in any domain. Historical Change records, source provenance and existing protocol/document-field identifiers are retained without inventing adoption or controller authority. Bootstrap rejects legacy `.codewiki/` state pending explicit migration; Agent and Preview writable scopes protect both roots.
+
 ### Added
 
 - Added SK3H terminal-first Console and plain-language formatting helpers (`renderProjectStatusConsole`, `renderChangesConsole`, `renderChangeDetailConsole`, `renderChecksConsole`, `renderConsole`, `sanitizeTerminalText`). Default views answer what changed, why it matters, what Work and Checks are complete or blocked, what happens next, and whether the user must act while sanitizing ANSI escape codes and stripping raw backend identifiers from ordinary presentation.

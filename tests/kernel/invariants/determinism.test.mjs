@@ -7,9 +7,9 @@ const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const script = `
 import {canonicalJson} from ${JSON.stringify(new URL("../../../src/kernel/data-contracts/canonical-json.ts", import.meta.url).href)};
 import {semanticDigest} from ${JSON.stringify(new URL("../../../src/kernel/identity/semantic-digest.ts", import.meta.url).href)};
-import {CODEWIKI_PRODUCT_POLICY_DIGEST} from ${JSON.stringify(new URL("../../../src/product.ts", import.meta.url).href)};
+import {CHANGEKERNEL_PRODUCT_POLICY_DIGEST} from ${JSON.stringify(new URL("../../../src/product.ts", import.meta.url).href)};
 const value={omega:[3,2,1],alpha:{z:false,a:"stable"}};
-console.log(JSON.stringify({json:canonicalJson(value).value,digest:semanticDigest("codewiki.determinism@1.0.0",value).value,product:CODEWIKI_PRODUCT_POLICY_DIGEST}));
+console.log(JSON.stringify({json:canonicalJson(value).value,digest:semanticDigest("codewiki.determinism@1.0.0",value).value,product:CHANGEKERNEL_PRODUCT_POLICY_DIGEST}));
 `;
 
 function observe() {
@@ -29,17 +29,18 @@ test("canonical and Product identities are byte-identical across isolated proces
 	assert.match(parsed.digest, /^sha256:[0-9a-f]{64}$/);
 	assert.match(parsed.product, /^sha256:[0-9a-f]{64}$/);
 });
-import {decodeChange} from "../../../src/kernel/changes/contracts.ts";
-import {decodeChangeEvent} from "../../../src/kernel/changes/events.ts";
-import {decodeChangeTrace, encodeChangeTrace} from "../../../src/kernel/changes/trace.ts";
-import {decodeGate, decodeResult} from "../../../src/kernel/gates/contracts.ts";
-import {reduceGate} from "../../../src/kernel/gates/reducer.ts";
-import {decodeWork} from "../../../src/kernel/work/contracts.ts";
-import {changeFixture} from "../changes/contracts.test.mjs";
-import {EVENT_OWNERS, eventFixture} from "../changes/events.test.mjs";
-import {validTrace} from "../changes/reducer.test.mjs";
-import {completedRunFixture, gateFixture, registrationFixture} from "../gates/contracts.test.mjs";
-import {workFixture} from "../work/contracts.test.mjs";
+import {decodeProfileChange} from "../../../src/kernel/changes/contracts.ts";
+import {decodeProfileChangeEvent} from "../../../src/kernel/changes/events.ts";
+import {decodeProfileChangeTrace, encodeProfileChangeTrace} from "../../../src/kernel/changes/trace.ts";
+import {decodeSemanticGate, decodeGateFinding} from "../../../src/kernel/gates/semantic.ts";
+import {admitted, profileRecord} from "../wiki/profile-fixtures.mjs";
+import {gate, finding} from "../gates/fixtures.mjs";
+
+function currentFixtures() {
+	const {change, event} = profileRecord();
+	const selected = gate();
+	return [[decodeProfileChange, change], [decodeProfileChangeEvent, event], [decodeSemanticGate, selected], [decodeGateFinding, finding(selected)]];
+}
 
 function reordered(value, seed) {
 	const entries = Object.entries(value);
@@ -54,12 +55,7 @@ function score(text, seed) {
 }
 
 test("contract digests ignore object insertion order across deterministic corpus", () => {
-	const fixtures = [
-		[decodeChange, changeFixture()],
-		[(value) => decodeChangeEvent(value, EVENT_OWNERS), eventFixture()],
-		[decodeWork, workFixture()],
-		[decodeGate, gateFixture()],
-	];
+	const fixtures = currentFixtures();
 	for (let seed = 0; seed < 256; seed += 1) {
 		for (const [decode, fixture] of fixtures) {
 			const decoded = decode(reordered(fixture, seed));
@@ -71,12 +67,7 @@ test("contract digests ignore object insertion order across deterministic corpus
 });
 
 test("exact decoders reject bounded unknown-field fuzz without throwing", () => {
-	const fixtures = [
-		[decodeChange, changeFixture()],
-		[(value) => decodeChangeEvent(value, EVENT_OWNERS), eventFixture()],
-		[decodeWork, workFixture()],
-		[decodeGate, gateFixture()],
-	];
+	const fixtures = currentFixtures();
 	for (let index = 0; index < 512; index += 1) {
 		const [decode, fixture] = fixtures[index % fixtures.length];
 		const input = {...fixture, [`fuzz${index}`]: index};
@@ -85,45 +76,25 @@ test("exact decoders reject bounded unknown-field fuzz without throwing", () => 
 	}
 });
 
-test("Gate reduction is permutation-invariant for independent active Checks", () => {
-	const first = registrationFixture();
-	const second = registrationFixture({packId: "z-pack", definition: {...first.definition, id: "z_check"}, enforcement: "advisory"});
-	const checks = [first, second].sort((left, right) => `${left.stage}/${left.packId}/${left.definition.id}`.localeCompare(`${right.stage}/${right.packId}/${right.definition.id}`));
-	const gate = gateFixture({activeChecks: checks});
-	const a = completedRunFixture(gate, first);
-	const b = completedRunFixture(gate, second);
-	const baseline = reduceGate({gate, currentSubject: gate.subject, currentKernelBuildDigest: gate.kernelBuildDigest, kernelValidation: "passed", runs: [a.run, b.run], results: [a.result, b.result]});
-	assert.equal(baseline.ok, true);
-	for (const [runs, results] of [
-		[[b.run, a.run], [a.result, b.result]],
-		[[a.run, b.run], [b.result, a.result]],
-		[[b.run, a.run], [b.result, a.result]],
-	]) {
-		const result = reduceGate({gate, currentSubject: gate.subject, currentKernelBuildDigest: gate.kernelBuildDigest, kernelValidation: "passed", runs, results});
-		assert.equal(result.ok, true);
-		assert.equal(result.value.outcomeDigest, baseline.value.outcomeDigest);
-	}
-});
-
 test("Trace parser rejects deterministic truncation and line mutation corpus", () => {
-	const encoded = encodeChangeTrace(validTrace().trace, EVENT_OWNERS).value;
+	const encoded = admitted(encodeProfileChangeTrace(profileRecord().trace));
 	for (let index = 0; index < encoded.length; index += Math.max(1, Math.floor(encoded.length / 128))) {
-		assert.equal(decodeChangeTrace(encoded.slice(0, index), EVENT_OWNERS).ok, false);
+		assert.equal(decodeProfileChangeTrace(encoded.slice(0, index)).ok, false);
 	}
 	const lines = encoded.trimEnd().split("\n");
 	for (let index = 0; index < lines.length; index += 1) {
 		const mutated = [...lines];
 		mutated[index] = `${mutated[index]} `;
-		assert.equal(decodeChangeTrace(`${mutated.join("\n")}\n`, EVENT_OWNERS).ok, false);
+		assert.equal(decodeProfileChangeTrace(`${mutated.join("\n")}\n`).ok, false);
 	}
 });
 
-test("Result digest detects every protected top-level mutation", () => {
-	const result = completedRunFixture().result;
+test("Finding digest detects every protected top-level mutation", () => {
+	const result = finding(gate());
 	for (const [key, value] of Object.entries(result)) {
-		if (key === "resultDigest") continue;
+		if (key === "findingDigest") continue;
 		const replacement = value === null ? {} : typeof value === "string" ? `${value}x` : typeof value === "number" ? value + 1 : typeof value === "boolean" ? !value : null;
 		const mutated = {...result, [key]: replacement};
-		assert.equal(decodeResult(mutated).ok, false, key);
+		assert.equal(decodeGateFinding(mutated).ok, false, key);
 	}
 });

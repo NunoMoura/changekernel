@@ -1,6 +1,6 @@
 // CLI preflight boundary tests (R1-2 slice D1).
 //
-// STUB-BASED EVIDENCE: these tests copy the actual bin/codewiki.mjs into a
+// STUB-BASED EVIDENCE: these tests copy the actual bin/changekernel.mjs into a
 // disposable external directory and pair it with a clearly labelled stub
 // dist/index.js. They observe argument validation, runtime import/composition
 // timing, root selection, and output dispatch at the CLI boundary. They are NOT
@@ -15,22 +15,22 @@ import {fileURLToPath} from "node:url";
 import test from "node:test";
 
 const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const sourceBin = join(sourceRoot, "bin", "codewiki.mjs");
+const sourceBin = join(sourceRoot, "bin", "changekernel.mjs");
 
 // Test stub runtime — NOT the real Project Server. Records composition and
-// dispatch through CODEWIKI_CLI_STUB_LOG; CODEWIKI_CLI_STUB_FAIL selects a
+// dispatch through CHANGEKERNEL_CLI_STUB_LOG; CHANGEKERNEL_CLI_STUB_FAIL selects a
 // failure mode for error-path coverage.
-const STUB_INDEX = `// CodeWiki CLI command test stub — NOT the real Project Server or Kernel.
+const STUB_INDEX = `// ChangeKernel CLI command test stub — NOT the real Project Server or Kernel.
 import {appendFileSync} from "node:fs";
 
 const log = (entry) => {
-	appendFileSync(process.env.CODEWIKI_CLI_STUB_LOG, JSON.stringify(entry) + "\\n");
+	appendFileSync(process.env.CHANGEKERNEL_CLI_STUB_LOG, JSON.stringify(entry) + "\\n");
 };
 
 // Top-level import marker: proves the runtime module was actually loaded.
 log({kind: "import"});
 
-const failMode = () => process.env.CODEWIKI_CLI_STUB_FAIL ?? "";
+const failMode = () => process.env.CHANGEKERNEL_CLI_STUB_FAIL ?? "";
 const fail = () => ({ok: false, error: {code: failMode(), message: \`stub \${failMode()}\`, hint: \`stub hint for \${failMode()}\`}});
 
 export async function createLocalProjectServer({projectRoot, projectName}) {
@@ -39,7 +39,7 @@ export async function createLocalProjectServer({projectRoot, projectName}) {
 	return {ok: true, value: {repositoryId: "cw:repository:stub", server: {handle: () => ({ok: true, value: null})}, projectName}};
 }
 
-export function createCodewikiClient(init) {
+export function createChangeKernelClient(init) {
 	log({kind: "client", clientKind: init.client.kind, identityRef: init.authentication.identityRef});
 	return {ok: true, value: {
 		status: async () => {
@@ -60,7 +60,7 @@ export function createCodewikiClient(init) {
 		audit: async (request) => {
 			log({kind: "audit", view: request.view, changeId: request.changeId});
 			if (failMode()) return fail();
-			return {ok: true, value: {reduced: {state: "accepted", latestEventDigest: "stub-latest-digest", traceDigest: "stub-trace-digest"}, path: ".codewiki/changes/stub-change"}};
+			return {ok: true, value: {reduced: {state: "accepted", latestEventDigest: "stub-latest-digest", traceDigest: "stub-trace-digest"}, path: ".changekernel/changes/stub-change"}};
 		},
 	}};
 }
@@ -80,14 +80,14 @@ export function sanitizeTerminalText(input) {
 `;
 
 async function makeHarness(label) {
-	const dir = await mkdtemp(join(tmpdir(), `codewiki-cli-${label}-`));
+	const dir = await mkdtemp(join(tmpdir(), `changekernel-cli-${label}-`));
 	await mkdir(join(dir, "bin"), {recursive: true});
 	await mkdir(join(dir, "dist"), {recursive: true});
-	await copyFile(sourceBin, join(dir, "bin", "codewiki.mjs"));
+	await copyFile(sourceBin, join(dir, "bin", "changekernel.mjs"));
 	await writeFile(join(dir, "dist", "index.js"), STUB_INDEX);
 	const logFile = join(dir, "stub.log");
 	await writeFile(logFile, "");
-	return {dir, bin: join(dir, "bin", "codewiki.mjs"), logFile};
+	return {dir, bin: join(dir, "bin", "changekernel.mjs"), logFile};
 }
 
 function runBin(harness, args, {cwd, fail = "", bin} = {}) {
@@ -95,7 +95,7 @@ function runBin(harness, args, {cwd, fail = "", bin} = {}) {
 		execFile(
 			process.execPath,
 			[bin ?? harness.bin, ...args],
-			{cwd: cwd ?? harness.dir, env: {...process.env, CODEWIKI_CLI_STUB_LOG: harness.logFile, CODEWIKI_CLI_STUB_FAIL: fail}},
+			{cwd: cwd ?? harness.dir, env: {...process.env, CHANGEKERNEL_CLI_STUB_LOG: harness.logFile, CHANGEKERNEL_CLI_STUB_FAIL: fail}},
 			(error, stdout, stderr) => {
 				resolvePromise({code: error?.code ?? (error ? 1 : 0), stdout, stderr});
 			},
@@ -461,7 +461,7 @@ test("changes dispatch keeps the empty-list message and exit 1 semantics", async
 	try {
 		const out = await runBin(harness, ["changes"]);
 		assert.equal(out.code, 1);
-		assert.match(out.stdout, /No Changes in codewiki-cli-dispatch-changes-\S* yet\./u);
+		assert.match(out.stdout, /No Changes in changekernel-cli-dispatch-changes-\S* yet\./u);
 		assert.match(out.stdout, /Propose one through the Project Server to begin\./u);
 		assert.deepEqual(kinds(await readLog(harness)), ["import", "compose", "client", "changes"]);
 	} finally {
@@ -505,7 +505,7 @@ test("trace --json emits the bounded audit JSON with exit 0", async () => {
 		assert.deepEqual(Object.keys(parsed).sort(), ["changeId", "latestEventDigest", "state", "traceDigest", "tracePath"]);
 		assert.equal(parsed.changeId, "cw:change:stub");
 		assert.equal(parsed.state, "accepted");
-		assert.equal(parsed.tracePath, ".codewiki/changes/stub-change");
+		assert.equal(parsed.tracePath, ".changekernel/changes/stub-change");
 		assert.deepEqual(kinds(await readLog(harness)), ["import", "compose", "client", "audit"]);
 	} finally {
 		await rm(harness.dir, {recursive: true, force: true});
@@ -544,7 +544,7 @@ test("other failures print the sanitized hint, and composition failures fail clo
 	try {
 		const hinted = await runBin(harness, ["status"], {fail: "stub_error"});
 		assert.equal(hinted.code, 2);
-		assert.match(hinted.stderr, /codewiki: status: stub hint for stub_error/u);
+		assert.match(hinted.stderr, /changekernel: status: stub hint for stub_error/u);
 
 		const composed = await runBin(harness, ["status"], {fail: "compose"});
 		assert.equal(composed.code, 2);

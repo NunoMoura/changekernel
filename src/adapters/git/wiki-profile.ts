@@ -1,10 +1,10 @@
 import {fromMarkdown} from "mdast-util-from-markdown";
 import {Composer, Parser, isMap, isScalar, isSeq, type CST} from "yaml";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
-import {decodeGitOid} from "../../kernel/identity/git.ts";
-import type {WikiFileInput} from "../../kernel/wiki/file.ts";
+import {decodeGitOid, type GitOid} from "../../kernel/identity/git.ts";
 import {
 	decodeWikiMetadata,
+	resolveKernelWikiContract,
 	wikiIssue,
 	wikiPath,
 	WIKI_PROFILE_ID,
@@ -14,6 +14,13 @@ import {
 	type WikiValue,
 	type ProfiledWikiFile,
 } from "../../kernel/wiki/profile.ts";
+
+export interface WikiFileInput {
+	readonly path: string;
+	readonly mode: string;
+	readonly blob: GitOid;
+	readonly bytes: Uint8Array;
+}
 
 const UTF8 = new TextEncoder();
 const UTF8_DECODER = new TextDecoder("utf-8", {fatal: true, ignoreBOM: true});
@@ -70,9 +77,10 @@ function snapshotBytes(bytes: Uint8Array): Uint8Array {
 	}
 }
 
-/** Profile selection is mandatory. This function never falls back to legacy decoding. */
-export function decodeProfiledWikiFile(profile: unknown, input: WikiFileInput): Outcome<ProfiledWikiFile, WikiIssue> {
-	if (profile !== WIKI_PROFILE_ID) return failure(wikiIssue("unsupported_profile", "$", "An explicit supported profile is required."));
+/** Current managed documents use the contract selected by an exact Kernel release. */
+export function decodeKernelWikiFile(kernelVersion: unknown, input: WikiFileInput): Outcome<ProfiledWikiFile, WikiIssue> {
+	const contract = resolveKernelWikiContract(kernelVersion);
+	if (!contract.ok) return contract;
 	let path: unknown;
 	try {
 		path = ownDataProperty(input, "path").value;

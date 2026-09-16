@@ -7,14 +7,14 @@ import {fileURLToPath} from "node:url";
 import {promisify} from "node:util";
 import test from "node:test";
 
-import {createCodewikiClient} from "../../../src/api/client/index.ts";
-import {bootstrapCodewikiProject} from "../../../src/adapters/git/bootstrap.ts";
+import {createChangeKernelClient} from "../../../src/api/client/index.ts";
+import {bootstrapChangeKernelProject} from "../../../src/adapters/git/bootstrap.ts";
 import {createLocalProjectServer} from "../../../src/adapters/git/local-server.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const WIKI_ITEMS_SOURCE = join(sourceRoot, ".codewiki", "wiki", "items");
+const WIKI_ITEMS_SOURCE = join(sourceRoot, ".changekernel", "wiki", "items");
 const EXPIRES_AT = "2036-01-01T00:00:00Z";
 
 /**
@@ -49,18 +49,18 @@ async function makeGitProject(label) {
 }
 
 /**
- * Explicit initialization: fixtures bootstrap CodeWiki state during setup,
+ * Explicit initialization: fixtures bootstrap ChangeKernel state during setup,
  * before composition. Composition itself never bootstraps.
  */
 async function bootstrapFixture(root, project) {
-	const boot = await bootstrapCodewikiProject({projectRoot: root, project});
+	const boot = await bootstrapChangeKernelProject({projectRoot: root, project});
 	assert.equal(boot.ok, true, boot.ok ? "" : boot.error.message);
 }
 
-async function commitCodewiki(root) {
-	await cp(WIKI_ITEMS_SOURCE, join(root, ".codewiki", "wiki", "items"), {recursive: true});
-	await fixtureGit(root, ["add", ".codewiki"]);
-	await fixtureGit(root, ["commit", "-q", "--no-verify", "--allow-empty", "-m", "bootstrap CodeWiki"]);
+async function commitChangeKernel(root) {
+	await cp(WIKI_ITEMS_SOURCE, join(root, ".changekernel", "wiki", "items"), {recursive: true});
+	await fixtureGit(root, ["add", ".changekernel"]);
+	await fixtureGit(root, ["commit", "-q", "--no-verify", "--allow-empty", "-m", "bootstrap ChangeKernel"]);
 }
 
 async function commitFixture(root, message) {
@@ -98,7 +98,7 @@ function assertTypedOutcome(outcome, stage) {
 }
 
 function clientFor(local) {
-	return createCodewikiClient({
+	return createChangeKernelClient({
 		repositoryId: local.repositoryId,
 		transport: {send: (request) => local.server.handle(request)},
 		client: {kind: "cli", instanceId: "cw:client:local-test"},
@@ -110,7 +110,7 @@ test("local composition binds and serves real reads over explicitly bootstrapped
 	const root = await makeGitProject("bind");
 	try {
 		await bootstrapFixture(root, "Local Test");
-		await commitCodewiki(root);
+		await commitChangeKernel(root);
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Local Test"});
 		assert.equal(composed.ok, true, composed.ok ? "" : composed.error.message);
 		assert.equal(composed.value.objectFormat, "sha1");
@@ -123,10 +123,8 @@ test("local composition binds and serves real reads over explicitly bootstrapped
 		assert.equal(discover.value.status, "available");
 
 		const status = await client.status({requestId: "cw:request:s1", expiresAt: EXPIRES_AT, source: {kind: "canonical"}});
-		assert.equal(status.ok, true, status.ok ? "" : status.error.message);
-		assert.equal(status.value.project, "Local Test");
-		assert.equal(status.value.changes.total, 0);
-		assert.equal(status.value.status, "ready");
+		assert.equal(status.ok, false);
+		assert.equal(status.error.code, "unavailable");
 	} finally {
 		await rm(root, {recursive: true, force: true});
 	}
@@ -136,7 +134,7 @@ test("local composition is idempotent and denies a well-formed lifecycle mutatio
 	const root = await makeGitProject("idem");
 	try {
 		await bootstrapFixture(root, "Idem");
-		await commitCodewiki(root);
+		await commitChangeKernel(root);
 		const first = await createLocalProjectServer({projectRoot: root, projectName: "Idem"});
 		assert.equal(first.ok, true, first.ok ? "" : first.error.message);
 		const second = await createLocalProjectServer({projectRoot: root, projectName: "Idem"});
@@ -146,7 +144,7 @@ test("local composition is idempotent and denies a well-formed lifecycle mutatio
 		// A contract-valid proposal reusing the existing lifecycle fixture
 		// shape: refusal must come from authorization, not from request shape.
 		const projectHead = await headOid(root);
-		const path = ".codewiki/wiki/items/system/components/project-server.md";
+		const path = ".changekernel/wiki/items/system/components/project-server.md";
 		const content = await readFile(join(root, path), "utf8");
 		const client = clientFor(first.value);
 		const denied = await client.proposeChanges({
@@ -187,7 +185,7 @@ test("local composition binds a Git-only root without creating semantic state", 
 		const before = await sortedEntries(root);
 		const composed = await createLocalProjectServer({projectRoot: root, projectName: "Git Only"});
 		assert.equal(composed.ok, true, composed.ok ? "" : composed.error.message);
-		assert.equal(before.includes(".codewiki"), false, "the fixture must be a Git-only root");
+		assert.equal(before.includes(".changekernel"), false, "the fixture must be a Git-only root");
 		assert.deepEqual(await sortedEntries(root), before, "composition must not create semantic state in a Git-only root");
 
 		const client = clientFor(composed.value);
@@ -221,7 +219,7 @@ test("local composition rejects non-Git and nested roots without their own .git,
 		const composed = await createLocalProjectServer({projectRoot: nonGit});
 		assert.equal(composed.ok, false);
 		assert.equal(composed.error.code, "invalid_project_root");
-		assert.deepEqual(await sortedEntries(nonGit), before, "rejection must not bootstrap Git or CodeWiki state");
+		assert.deepEqual(await sortedEntries(nonGit), before, "rejection must not bootstrap Git or ChangeKernel state");
 
 		const nested = join(outer, "nested");
 		await mkdir(nested);

@@ -1,11 +1,12 @@
 {
-	"name": "@nunomoura/codewiki",
+	"name": "@nunomoura/changekernel",
 	"version": "0.4.0-sk3g.1",
-	"description": "Deterministic Semantic Kernel, governed local lifecycle, authenticated Project API, and bounded bootstrap for CodeWiki projects.",
+	"description": "The semantic foundation for project change: a shared project layer for people, agents, harnesses and applications across any domain.",
 	"keywords": [
-		"documentation",
-		"wiki",
-		"semantic-kernel",
+		"changekernel",
+		"semantic-change",
+		"project-knowledge",
+		"git",
 		"governance"
 	],
 	"type": "module",
@@ -22,21 +23,21 @@
 		"build": "npm run clean && tsc -p tsconfig.build.json",
 		"prepack": "npm run build",
 		"typecheck": "tsc --noEmit",
-		"test:smoke": "node --experimental-strip-types --test tests/adapters/dsh/*.test.mjs tests/adapters/git/*.test.mjs tests/adapters/preview/*.test.mjs tests/api/client/*.test.mjs tests/api/contracts/*.test.mjs tests/api/transport/*.test.mjs tests/kernel/data-contracts/*.test.mjs tests/kernel/identity/*.test.mjs tests/kernel/invariants/*.test.mjs tests/kernel/wiki/*.test.mjs tests/package/*.test.mjs tests/ports/*.test.mjs tests/server/*.test.mjs tests/server/authorization/*.test.mjs tests/server/commands/*.test.mjs tests/server/effects/*.test.mjs tests/server/queries/*.test.mjs",
+		"test:smoke": "node --experimental-strip-types --test \"tests/**/*.test.mjs\"",
 		"test:pack": "npm pack --dry-run",
 		"test": "npm run typecheck && npm run build && npm run test:smoke",
-		"audit:codewiki": "npm test && npm run build && npm run test:pack && npm audit --omit=dev && git diff --check"
+		"audit:changekernel": "npm test && npm run build && npm run test:pack && npm audit --omit=dev && git diff --check"
 	},
 	"license": "MIT",
 	"author": "Nuno Moura",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/NunoMoura/codewiki.git"
+		"url": "git+https://github.com/NunoMoura/changekernel.git"
 	},
 	"bugs": {
-		"url": "https://github.com/NunoMoura/codewiki/issues"
+		"url": "https://github.com/NunoMoura/changekernel/issues"
 	},
-	"homepage": "https://github.com/NunoMoura/codewiki#readme",
+	"homepage": "https://github.com/NunoMoura/changekernel#readme",
 	"files": [
 		"dist",
 		"README.md",
@@ -76,6 +77,6 @@
 		"yaml": "2.9.0"
 	},
 	"bin": {
-		"codewiki": "./bin/codewiki.mjs"
+		"changekernel": "./bin/changekernel.mjs"
 	}
 }

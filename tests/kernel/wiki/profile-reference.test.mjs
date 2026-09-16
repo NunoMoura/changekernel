@@ -39,15 +39,27 @@ test("reference decoder rejects hostile data and inconsistent complete identitie
 
 test("transport text and node budgets precede reference expansion", () => {
 	const value = admitted(createProfiledWikiReference(profileFixture().transaction));
-	const before = Array.from({length: 512}, (_, index) => ({blob: value.mappings[0].before[0].blob, pathUtf8Hex: profileReferencePathUtf8Hex(`.codewiki/wiki/items/${String(index).padStart(3, "0")}${"a".repeat(4060)}.md`)}));
+	const before = Array.from({length: 512}, (_, index) => ({blob: value.mappings[0].before[0].blob, pathUtf8Hex: profileReferencePathUtf8Hex(`.changekernel/wiki/items/${String(index).padStart(3, "0")}${"a".repeat(4060)}.md`)}));
 	const text = decodeProfiledWikiReference({...value, mappings: [{kind: "merge", before, after: value.mappings[0].after}]});
 	assert.equal(text.ok, false); assert.equal(text.error.cause.code, "too_much_text");
 	const nodes = decodeProfiledWikiReference({...value, excess: Array.from({length: 101}, () => Array(1024).fill(null))});
 	assert.equal(nodes.ok, false); assert.equal(nodes.error.cause.code, "too_many_nodes");
 });
 
+test("managed references use the ChangeKernel root without accepting legacy path aliases", () => {
+	const reference = admitted(createProfiledWikiReference(profileFixture().transaction));
+	const legacyChangePath = Buffer.from(".codewiki/changes/TRACE-CHG-profile-test.jsonl", "utf8").toString("hex");
+	assert.equal(decodeProfiledPathUtf8Hex(legacyChangePath, true).ok, false);
+	assert.equal(decodeProfiledWikiReference({...reference, changePathUtf8Hex: legacyChangePath}).ok, false);
+	const legacyWikiPath = Buffer.from(".codewiki/wiki/items/claim.md", "utf8").toString("hex");
+	assert.equal(decodeProfiledPathUtf8Hex(legacyWikiPath).ok, false);
+	assert.equal(decodeProfiledWikiReference({...reference, mappings: [{...reference.mappings[0],
+		before: [{...reference.mappings[0].before[0], pathUtf8Hex: legacyWikiPath}],
+	}]}).ok, false);
+});
+
 test("exact path tokens preserve decomposed and astral Unicode and reject ambiguous bytes", () => {
-	for (const path of [PROFILE_PATH, ".codewiki/wiki/items/🌱.md"]) {
+	for (const path of [PROFILE_PATH, ".changekernel/wiki/items/🌱.md"]) {
 		assert.equal(admitted(decodeProfiledPathUtf8Hex(profileReferencePathUtf8Hex(path))), path);
 	}
 	const good = profileReferencePathUtf8Hex(PROFILE_PATH);

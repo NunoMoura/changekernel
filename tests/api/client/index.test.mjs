@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {createCodewikiClient} from "../../../src/api/client/index.ts";
+import {createChangeKernelClient} from "../../../src/api/client/index.ts";
 import {createProductTransportResponse} from "../../../src/api/transport/envelope.ts";
 
 const OPTIONS = {requestId: "cw:request:one", expiresAt: "2026-09-05T00:00:00Z"};
 
 function clientWith(send) {
-	return createCodewikiClient({
+	return createChangeKernelClient({
 		repositoryId: "cw:repository:test",
 		transport: {send},
 		client: {kind: "sdk", instanceId: "cw:client:test"},
@@ -73,7 +73,7 @@ test("Client SDK rejects thrown, malformed, mismatched, and forged responses", a
 });
 
 test("Client SDK fails closed before transport for malformed identity and request", async () => {
-	assert.equal(createCodewikiClient({repositoryId: "cw:repository:test", transport: {send: async () => null}, client: {kind: "cli", instanceId: "plain"}, authentication: {identityRef: "cw:identity:test", proof: "proof"}}).ok, false);
+	assert.equal(createChangeKernelClient({repositoryId: "cw:repository:test", transport: {send: async () => null}, client: {kind: "cli", instanceId: "plain"}, authentication: {identityRef: "cw:identity:test", proof: "proof"}}).ok, false);
 	let called = false;
 	const client = clientWith(async () => { called = true; return null; }).value;
 	const result = await client.wiki({

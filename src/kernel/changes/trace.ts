@@ -1,21 +1,25 @@
 import {
 	assertDigestMatch, decodeContract, exactRecord, isNamespacedIdentifier, literalField,
-	protocolField, protocolIdentity, rejectContract, textField, type ContractIssue,
+	protocolField, protocolIdentity, rejectContract, requiredField, textField, type ContractIssue,
 } from "../data-contracts/validation.ts";
-import {canonicalJson, parseCanonicalJson, type CanonicalValue} from "../data-contracts/canonical-json.ts";
+import {canonicalJson, DEFAULT_CANONICAL_LIMITS, parseCanonicalJson, type CanonicalLimits, type CanonicalValue} from "../data-contracts/canonical-json.ts";
 import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {semanticDigest, semanticId, type SemanticIdentityIssue} from "../identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../identity/sha256.ts";
 import {decodeGitOid, type GitObjectFormat} from "../identity/git.ts";
-import {decodeChangeEvent, decodeProfileChangeEvent, type ChangeEvent, type ProfileChangeEvent, type SemanticEventOwners} from "./events.ts";
-
-export const CHANGE_TRACE_PROTOCOL = protocolIdentity("codewiki.change-trace", "14.0.0");
+import {decodeProfileChangeEvent, decodeInquiryChangeEvent, INQUIRY_EVENT_CANONICAL_LIMITS, type ProfileChangeEvent, type InquiryChangeEvent} from "./events.ts";
 export const PROFILE_CHANGE_TRACE_PROTOCOL = protocolIdentity("codewiki.change-trace", "15.0.0");
+export const INQUIRY_CHANGE_TRACE_PROTOCOL = protocolIdentity("codewiki.change-trace", "16.0.0");
+export const MAX_INQUIRY_TRACE_BYTES = 1024 * 1024;
+export const MAX_INQUIRY_TRACE_EVENTS = 64;
+const INQUIRY_TRACE_CANONICAL_LIMITS: CanonicalLimits = Object.freeze({
+	maximumDepth: 40, maximumEntriesPerContainer: 1024, maximumNodes: 100_000,
+	maximumTextBytes: MAX_INQUIRY_TRACE_BYTES,
+});
 export const MAX_TRACE_BYTES = 16 * 1024 * 1024;
-export const MAX_TRACE_EVENTS = 4_096;
 
 export interface ChangeTraceHeaderBody {
-	readonly protocol: typeof CHANGE_TRACE_PROTOCOL;
+	readonly protocol: typeof PROFILE_CHANGE_TRACE_PROTOCOL;
 	readonly traceId: string;
 	readonly repositoryId: string;
 	readonly changeId: string;
@@ -24,87 +28,103 @@ export interface ChangeTraceHeaderBody {
 	readonly createdAt: string;
 }
 export interface ChangeTraceHeader extends ChangeTraceHeaderBody {readonly headerDigest: Sha256Digest;}
-type TraceEvent = ChangeEvent | ProfileChangeEvent;
+type TraceEvent = ProfileChangeEvent | InquiryChangeEvent;
 interface TraceRecord<E extends TraceEvent> {
 	readonly header: ChangeTraceHeader;
 	readonly events: readonly E[];
 	readonly traceDigest: Sha256Digest;
 }
-export type ChangeTrace = TraceRecord<ChangeEvent>;
 export type ProfileChangeTraceHeaderBody = ChangeTraceHeaderBody;
 export type ProfileChangeTraceHeader = ChangeTraceHeader;
 export type ProfileChangeTrace = TraceRecord<ProfileChangeEvent>;
+export type InquiryChangeTraceHeaderBody = ChangeTraceHeaderBody;
+export type InquiryChangeTraceHeader = ChangeTraceHeader;
+export type InquiryChangeTrace = TraceRecord<InquiryChangeEvent>;
 export type ChangeTraceIssue = ContractIssue | SemanticIdentityIssue | Readonly<{code: "invalid_trace"; path: string; message: string}>;
 export type ProfileChangeTraceIssue = ChangeTraceIssue;
 
 type HeaderInput = Omit<ChangeTraceHeaderBody, "protocol" | "traceId">;
-type TraceProtocol = typeof CHANGE_TRACE_PROTOCOL;
+type TraceProtocol = typeof PROFILE_CHANGE_TRACE_PROTOCOL;
 interface TraceCodec<E extends TraceEvent> {
 	readonly protocol: TraceProtocol;
 	readonly maximumEvents: number;
+	readonly maximumBytes?: number;
+	readonly lineLimits?: CanonicalLimits;
 	readonly decodeEvent: (input: unknown) => Outcome<E, ContractIssue>;
 }
+const INQUIRY_CODEC: TraceCodec<InquiryChangeEvent> = Object.freeze({
+	protocol: INQUIRY_CHANGE_TRACE_PROTOCOL, maximumEvents: MAX_INQUIRY_TRACE_EVENTS,
+	maximumBytes: MAX_INQUIRY_TRACE_BYTES, lineLimits: INQUIRY_EVENT_CANONICAL_LIMITS, decodeEvent: decodeInquiryChangeEvent,
+});
 const PROFILE_CODEC: TraceCodec<ProfileChangeEvent> = Object.freeze({
 	protocol: PROFILE_CHANGE_TRACE_PROTOCOL, maximumEvents: 1, decodeEvent: decodeProfileChangeEvent,
 });
-function legacyCodec(owners: SemanticEventOwners): TraceCodec<ChangeEvent> {
-	return {protocol: CHANGE_TRACE_PROTOCOL, maximumEvents: MAX_TRACE_EVENTS, decodeEvent: (input) => decodeChangeEvent(input, owners)};
-}
 function protocolLabel(protocol: TraceProtocol): string {return `${protocol.id}@${protocol.version}`;}
-
-export function traceIdentity(repositoryId: string, changeId: string): Outcome<string, SemanticIdentityIssue> {
-	return semanticId("cw:trace", protocolLabel(CHANGE_TRACE_PROTOCOL), {repositoryId, changeId});
-}
 export function profileTraceIdentity(repositoryId: string, changeId: string): Outcome<string, SemanticIdentityIssue> {
 	return semanticId("cw:trace", protocolLabel(PROFILE_CHANGE_TRACE_PROTOCOL), {repositoryId, changeId});
-}
-export function createChangeTraceHeader(body: HeaderInput): Outcome<ChangeTraceHeader, ChangeTraceIssue> {
-	return createHeader(body, CHANGE_TRACE_PROTOCOL);
 }
 export function createProfileChangeTraceHeader(body: HeaderInput): Outcome<ProfileChangeTraceHeader, ChangeTraceIssue> {
 	return createHeader(body, PROFILE_CHANGE_TRACE_PROTOCOL);
 }
-export function decodeChangeTraceHeader(input: unknown): Outcome<ChangeTraceHeader, ContractIssue> {
-	return decodeHeader(input, CHANGE_TRACE_PROTOCOL);
-}
 export function decodeProfileChangeTraceHeader(input: unknown): Outcome<ProfileChangeTraceHeader, ContractIssue> {
 	return decodeHeader(input, PROFILE_CHANGE_TRACE_PROTOCOL);
-}
-export function createEmptyChangeTrace(header: ChangeTraceHeader): Outcome<ChangeTrace, ChangeTraceIssue> {
-	return emptyTrace<ChangeEvent>(header, CHANGE_TRACE_PROTOCOL);
 }
 export function createEmptyProfileChangeTrace(header: ProfileChangeTraceHeader): Outcome<ProfileChangeTrace, ChangeTraceIssue> {
 	return emptyTrace<ProfileChangeEvent>(header, PROFILE_CHANGE_TRACE_PROTOCOL);
 }
-export function appendChangeEvent(trace: ChangeTrace, event: ChangeEvent, owners: SemanticEventOwners): Outcome<ChangeTrace, ChangeTraceIssue> {
-	return appendEvent(trace, event, legacyCodec(owners));
-}
 export function appendProfileChangeEvent(trace: ProfileChangeTrace, event: ProfileChangeEvent): Outcome<ProfileChangeTrace, ChangeTraceIssue> {
 	return appendEvent(trace, event, PROFILE_CODEC);
 }
-export function validateChangeTrace(trace: ChangeTrace, owners: SemanticEventOwners, allowEmpty = false): Outcome<ChangeTrace, ChangeTraceIssue> {
-	return validateTrace(trace, legacyCodec(owners), allowEmpty);
-}
-export function validateProfileChangeTrace(trace: ProfileChangeTrace, allowEmpty = false): Outcome<ProfileChangeTrace, ChangeTraceIssue> {
+export function validateProfileChangeTrace(trace: unknown, allowEmpty = false): Outcome<ProfileChangeTrace, ChangeTraceIssue> {
 	return validateTrace(trace, PROFILE_CODEC, allowEmpty);
-}
-export function decodeChangeTrace(text: string, owners: SemanticEventOwners): Outcome<ChangeTrace, ChangeTraceIssue> {
-	return decodeTrace(text, legacyCodec(owners));
 }
 export function decodeProfileChangeTrace(text: string): Outcome<ProfileChangeTrace, ChangeTraceIssue> {
 	return decodeTrace(text, PROFILE_CODEC);
-}
-export function encodeChangeTrace(trace: ChangeTrace, owners: SemanticEventOwners): Outcome<string, ChangeTraceIssue> {
-	return encodeTrace(trace, legacyCodec(owners));
 }
 export function encodeProfileChangeTrace(trace: ProfileChangeTrace): Outcome<string, ChangeTraceIssue> {
 	return encodeTrace(trace, PROFILE_CODEC);
 }
 
+export function inquiryTraceIdentity(repositoryId: string, changeId: string): Outcome<string, SemanticIdentityIssue> {
+	return semanticId("cw:trace", protocolLabel(INQUIRY_CHANGE_TRACE_PROTOCOL), {repositoryId, changeId});
+}
+export function createInquiryChangeTraceHeader(body: HeaderInput): Outcome<InquiryChangeTraceHeader, ChangeTraceIssue> {
+	return createHeader(body, INQUIRY_CHANGE_TRACE_PROTOCOL);
+}
+export function decodeInquiryChangeTraceHeader(input: unknown): Outcome<InquiryChangeTraceHeader, ContractIssue> {
+	return decodeHeader(input, INQUIRY_CHANGE_TRACE_PROTOCOL);
+}
+export function createEmptyInquiryChangeTrace(header: InquiryChangeTraceHeader): Outcome<InquiryChangeTrace, ChangeTraceIssue> {
+	return emptyTrace<InquiryChangeEvent>(header, INQUIRY_CHANGE_TRACE_PROTOCOL);
+}
+export function appendInquiryChangeEvent(trace: InquiryChangeTrace, event: InquiryChangeEvent): Outcome<InquiryChangeTrace, ChangeTraceIssue> {
+	return appendEvent(trace, event, INQUIRY_CODEC);
+}
+export function validateInquiryChangeTrace(trace: unknown, allowEmpty = false): Outcome<InquiryChangeTrace, ChangeTraceIssue> {
+	return validateTrace(trace, INQUIRY_CODEC, allowEmpty);
+}
+export function decodeInquiryChangeTrace(text: string): Outcome<InquiryChangeTrace, ChangeTraceIssue> {
+	return decodeTrace(text, INQUIRY_CODEC);
+}
+export function encodeInquiryChangeTrace(trace: InquiryChangeTrace): Outcome<string, ChangeTraceIssue> {
+	return encodeTrace(trace, INQUIRY_CODEC);
+}
+
 function createHeader(body: HeaderInput, protocol: TraceProtocol): Outcome<ChangeTraceHeader, ChangeTraceIssue> {
-	const identity = semanticId("cw:trace", protocolLabel(protocol), {repositoryId: body.repositoryId, changeId: body.changeId});
+	const owned = decodeContract("Change Trace header", body, value => {
+		const record = exactRecord("Change Trace header", value, "$", ["changeId", "createdAt", "createdBy", "objectFormat", "repositoryId"]);
+		return {
+			changeId: textField("Change Trace header", record, "changeId"),
+			createdAt: textField("Change Trace header", record, "createdAt"),
+			createdBy: textField("Change Trace header", record, "createdBy"),
+			objectFormat: literalField("Change Trace header", record, "objectFormat", ["sha1", "sha256"] as const),
+			repositoryId: textField("Change Trace header", record, "repositoryId"),
+		};
+	});
+	if (!owned.ok) return owned;
+	const identity = semanticId("cw:trace", protocolLabel(protocol), {repositoryId: owned.value.repositoryId, changeId: owned.value.changeId});
 	if (!identity.ok) return identity;
-	const value = {...body, protocol, traceId: identity.value};
+	const value = {...owned.value, protocol, traceId: identity.value};
 	const digest = semanticDigest(`${protocolLabel(protocol)}/header`, value);
 	if (!digest.ok) return digest;
 	return decodeHeader({...value, headerDigest: digest.value}, protocol);
@@ -146,7 +166,17 @@ function appendEvent<E extends TraceEvent>(trace: TraceRecord<E>, event: E, code
 	const issue = validateNextEvent(prefix.value.header, prefix.value.events, decoded.value);
 	return issue ? failure(issue) : materializeTrace(prefix.value.header, [...prefix.value.events, decoded.value]);
 }
-function validateTrace<E extends TraceEvent>(trace: TraceRecord<E>, codec: TraceCodec<E>, allowEmpty: boolean): Outcome<TraceRecord<E>, ChangeTraceIssue> {
+function validateTrace<E extends TraceEvent>(input: unknown, codec: TraceCodec<E>, allowEmpty: boolean): Outcome<TraceRecord<E>, ChangeTraceIssue> {
+	const limits = codec.protocol.version === INQUIRY_CHANGE_TRACE_PROTOCOL.version
+		? INQUIRY_TRACE_CANONICAL_LIMITS
+		: {...DEFAULT_CANONICAL_LIMITS, maximumDepth: DEFAULT_CANONICAL_LIMITS.maximumDepth + 2, maximumTextBytes: MAX_TRACE_BYTES};
+	const owned = decodeContract("Change Trace", input, (value) => {
+		const record = exactRecord("Change Trace", value, "$", ["header", "events", "traceDigest"]);
+		return {header: requiredField("Change Trace", record, "header"), events: requiredField("Change Trace", record, "events"), traceDigest: requiredField("Change Trace", record, "traceDigest")};
+	}, limits);
+	return owned.ok ? validateTraceRecord(owned.value, codec, allowEmpty) : owned;
+}
+function validateTraceRecord<E extends TraceEvent>(trace: Readonly<{header: unknown; events: unknown; traceDigest: unknown}>, codec: TraceCodec<E>, allowEmpty: boolean): Outcome<TraceRecord<E>, ChangeTraceIssue> {
 	const header = decodeHeader(trace.header, codec.protocol);
 	if (!header.ok) return header;
 	if (!Array.isArray(trace.events) || trace.events.length > codec.maximumEvents || (!allowEmpty && trace.events.length === 0)) return failure(traceIssue("$.events", "Change Trace event count is invalid."));
@@ -163,17 +193,18 @@ function validateTrace<E extends TraceEvent>(trace: TraceRecord<E>, codec: Trace
 	return result.value.traceDigest === trace.traceDigest ? result : failure(traceIssue("$.traceDigest", "Change Trace digest does not match immutable prefix."));
 }
 function decodeTrace<E extends TraceEvent>(text: string, codec: TraceCodec<E>): Outcome<TraceRecord<E>, ChangeTraceIssue> {
-	if (typeof text !== "string" || text.length === 0 || text.length > MAX_TRACE_BYTES || new TextEncoder().encode(text).byteLength > MAX_TRACE_BYTES) return failure(traceIssue("$", "Change Trace byte length is outside bounds."));
+	const maximumBytes = codec.maximumBytes ?? MAX_TRACE_BYTES;
+	if (typeof text !== "string" || text.length === 0 || text.length > maximumBytes || new TextEncoder().encode(text).byteLength > maximumBytes) return failure(traceIssue("$", "Change Trace byte length is outside bounds."));
 	if (!text.endsWith("\n") || text.includes("\r")) return failure(traceIssue("$", "Change Trace must use LF lines and one terminal LF."));
 	const lines = text.slice(0, -1).split("\n");
 	if (lines.length < 2 || lines.length > codec.maximumEvents + 1 || lines.some((line) => line.length === 0)) return failure(traceIssue("$", "Change Trace line count or empty-line structure is invalid."));
-	const headerLine = parseCanonicalJson(lines[0] ?? "", {requireCanonicalBytes: true});
+	const headerLine = parseCanonicalJson(lines[0] ?? "", {requireCanonicalBytes: true, limits: codec.lineLimits});
 	if (!headerLine.ok) return failure(traceIssue("$[0]", headerLine.error.message));
 	const header = decodeHeader(headerLine.value, codec.protocol);
 	if (!header.ok) return header;
 	const events: E[] = [];
 	for (let index = 1; index < lines.length; index += 1) {
-		const line = parseCanonicalJson(lines[index] ?? "", {requireCanonicalBytes: true});
+		const line = parseCanonicalJson(lines[index] ?? "", {requireCanonicalBytes: true, limits: codec.lineLimits});
 		if (!line.ok) return failure(traceIssue(`$[${index}]`, line.error.message));
 		const event = codec.decodeEvent(line.value);
 		if (!event.ok) return event;
@@ -188,12 +219,12 @@ function encodeTrace<E extends TraceEvent>(trace: TraceRecord<E>, codec: TraceCo
 	if (!validated.ok) return validated;
 	const lines: string[] = [];
 	for (const [index, value] of [validated.value.header, ...validated.value.events].entries()) {
-		const encoded = canonicalJson(value);
+		const encoded = canonicalJson(value, codec.lineLimits);
 		if (!encoded.ok) return failure(traceIssue(`$[${index}]`, encoded.error.message));
 		lines.push(encoded.value);
 	}
 	const text = `${lines.join("\n")}\n`;
-	if (new TextEncoder().encode(text).byteLength > MAX_TRACE_BYTES) return failure(traceIssue("$", "Encoded Change Trace exceeds byte limit."));
+	if (new TextEncoder().encode(text).byteLength > (codec.maximumBytes ?? MAX_TRACE_BYTES)) return failure(traceIssue("$", "Encoded Change Trace exceeds byte limit."));
 	return success(text);
 }
 function validateNextEvent(header: ChangeTraceHeader, prefix: readonly TraceEvent[], event: TraceEvent): Extract<ChangeTraceIssue, {code: "invalid_trace"}> | null {
@@ -204,7 +235,20 @@ function validateNextEvent(header: ChangeTraceHeader, prefix: readonly TraceEven
 		const change = "change" in event.payload ? event.payload.change : null;
 		if (!change || change.changeId !== header.changeId || change.repositoryId !== header.repositoryId) return traceIssue("$.event.payload.change", "Change event targets another Trace identity.");
 	}
+	if (header.protocol.version === INQUIRY_CHANGE_TRACE_PROTOCOL.version) {
+		if (!isInquiryEvent(event)) return traceIssue("$.event.protocol", "Inquiry Trace requires Event 3.");
+		const previous = prefix.at(-1);
+		if (prefix.some((entry) => entry.commandId === event.commandId)) return traceIssue("$.event.commandId", "Inquiry command identity is duplicated.");
+		if (previous) {
+			if (!isInquiryEvent(previous) || event.kind !== "change.revised" || event.payload.change.revision !== previous.payload.change.revision + 1 || event.payload.change.profile !== previous.payload.change.profile) {
+				return traceIssue("$.event.payload.change", "Inquiry revision must preserve profile and increment exactly once; proposals cannot recur.");
+			}
+		}
+	}
 	return null;
+}
+function isInquiryEvent(event: TraceEvent): event is InquiryChangeEvent {
+	return event.protocol.id === "codewiki.change-event" && event.protocol.version === "3.0.0";
 }
 function containsForeignGitOid(value: unknown, objectFormat: GitObjectFormat): boolean {
 	if (Array.isArray(value)) return value.some((entry) => containsForeignGitOid(entry, objectFormat));
@@ -214,6 +258,15 @@ function containsForeignGitOid(value: unknown, objectFormat: GitObjectFormat): b
 	return Object.values(value).some((entry) => containsForeignGitOid(entry, objectFormat));
 }
 function materializeTrace<E extends TraceEvent>(header: ChangeTraceHeader, events: readonly E[]): Outcome<TraceRecord<E>, ChangeTraceIssue> {
+	if (header.protocol.version === INQUIRY_CHANGE_TRACE_PROTOCOL.version) {
+		let bytes = 0;
+		for (const value of [header, ...events]) {
+			const encoded = canonicalJson(value, INQUIRY_EVENT_CANONICAL_LIMITS);
+			if (!encoded.ok) return failure(traceIssue("$", encoded.error.message));
+			bytes += new TextEncoder().encode(encoded.value).byteLength + 1;
+			if (bytes > MAX_INQUIRY_TRACE_BYTES) return failure(traceIssue("$", "Inquiry Trace exceeds 1 MiB."));
+		}
+	}
 	const digest = semanticDigest(protocolLabel(header.protocol), {headerDigest: header.headerDigest, eventDigests: events.map((event) => event.eventDigest)});
 	if (!digest.ok) return digest;
 	return success(Object.freeze({header, events: Object.freeze([...events]), traceDigest: digest.value}));

@@ -1,6 +1,7 @@
+import {CHANGEKERNEL_VERSION} from "../../../src/kernel/identity/version.ts";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
-import {decodeProfiledWikiFile} from "../../../src/adapters/git/wiki-profile.ts";
+import {decodeKernelWikiFile} from "../../../src/adapters/git/wiki-profile.ts";
 import {createProjectSnapshot} from "../../../src/kernel/changes/snapshot.ts";
 import {WIKI_CORE_TYPES, WIKI_PROFILE_ID} from "../../../src/kernel/wiki/profile.ts";
 import {validateProfiledWikiTransaction} from "../../../src/kernel/wiki/profile-transaction.ts";
@@ -10,10 +11,10 @@ import {createProfileChangeEvent} from "../../../src/kernel/changes/events.ts";
 import {createProfileChangeTraceHeader, createEmptyProfileChangeTrace, appendProfileChangeEvent} from "../../../src/kernel/changes/trace.ts";
 
 export const PROFILE_CHANGE_ID = "CHG-profile-test";
-export const PROFILE_CHANGE_PATH = `.codewiki/changes/TRACE-${PROFILE_CHANGE_ID}.jsonl`;
+export const PROFILE_CHANGE_PATH = `.changekernel/changes/TRACE-${PROFILE_CHANGE_ID}.jsonl`;
 export const PROFILE_BUILD = `sha256:${"b".repeat(64)}`;
 export const PROFILE_REPOSITORY = "cw:repository:profile-lifecycle";
-export const PROFILE_PATH = ".codewiki/wiki/items/Cafe\u0301.md";
+export const PROFILE_PATH = ".changekernel/wiki/items/Cafe\u0301.md";
 export const PROFILE_PROPOSAL = Object.freeze({
 	changeType: "correction", realization: "wiki-only", intent: "Clarify the shared claim.",
 	rationale: "Exact source grounds are available.", acceptance: ["Claim has explicit grounds."],
@@ -36,11 +37,11 @@ export function gitOid(hex, algorithm = "sha1") {
 export function profileFile(path, text, algorithm = "sha1") {
 	const bytes = new TextEncoder().encode(text);
 	const hex = createHash(algorithm).update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
-	return admitted(decodeProfiledWikiFile(WIKI_PROFILE_ID, {bytes, path, mode: "100644", blob: gitOid(hex, algorithm)}));
+	return admitted(decodeKernelWikiFile(CHANGEKERNEL_VERSION, {bytes, path, mode: "100644", blob: gitOid(hex, algorithm)}));
 }
 
 export function profileFixture(algorithm = "sha1") {
-	const core = WIKI_CORE_TYPES.map((name) => profileFile(`.codewiki/wiki/types/${name}.md`, profileText(name, "TypeDefinition"), algorithm));
+	const core = WIKI_CORE_TYPES.map((name) => profileFile(`.changekernel/wiki/types/${name}.md`, profileText(name, "TypeDefinition"), algorithm));
 	const beforeFile = profileFile(PROFILE_PATH, profileText("Claim"), algorithm);
 	const afterFile = profileFile(PROFILE_PATH, profileText("Claim", "Claim", `TRACE-${PROFILE_CHANGE_ID}.jsonl`, "Revised meaning with explicit grounds."), algorithm);
 	const snapshot = (commit, tree, parents = []) => admitted(createProjectSnapshot({

@@ -1,6 +1,8 @@
 import {failure, success, type Outcome} from "../data-contracts/outcome.ts";
 import {decodeGitOid, type GitOid} from "../identity/git.ts";
+import {CHANGEKERNEL_VERSION} from "../identity/version.ts";
 
+/** Internal document-format identity owned by the current Kernel contract. */
 export const WIKI_PROFILE_ID = "codewiki.wiki-profile@1.0.0" as const;
 
 export interface WikiProfileLimits {
@@ -14,13 +16,6 @@ export interface WikiProfileLimits {
 	readonly contextBytes: number;
 }
 
-export interface WikiProfile {
-	readonly id: "codewiki.wiki-profile";
-	readonly version: "1.0.0";
-	readonly identifier: typeof WIKI_PROFILE_ID;
-	readonly limits: WikiProfileLimits;
-}
-
 export const WIKI_PROFILE_LIMITS: WikiProfileLimits = Object.freeze({
 	fileBytes: 1024 * 1024,
 	headerBytes: 64 * 1024,
@@ -32,12 +27,19 @@ export const WIKI_PROFILE_LIMITS: WikiProfileLimits = Object.freeze({
 	contextBytes: 8 * 1024 * 1024,
 });
 
-export const WIKI_PROFILE: WikiProfile = Object.freeze({
-	id: "codewiki.wiki-profile",
-	version: "1.0.0",
-	identifier: WIKI_PROFILE_ID,
+/** Current document rules belong to this Kernel release, not a separate profile release. */
+export const KERNEL_WIKI_CONTRACT = Object.freeze({
+	kernelVersion: CHANGEKERNEL_VERSION,
+	format: WIKI_PROFILE_ID,
 	limits: WIKI_PROFILE_LIMITS,
 });
+
+/** Exact supported release only: never infer compatibility from a version range or document bytes. */
+export function resolveKernelWikiContract(version: unknown): Outcome<typeof KERNEL_WIKI_CONTRACT, WikiIssue> {
+	return version === CHANGEKERNEL_VERSION
+		? success(KERNEL_WIKI_CONTRACT)
+		: failure(wikiIssue("unsupported_kernel_version", "$", "An exact supported ChangeKernel version is required."));
+}
 
 export const WIKI_CORE_TYPES = Object.freeze([
 	"Definition",
@@ -55,6 +57,7 @@ export interface WikiMapping {readonly [key: string]: WikiValue}
 export interface WikiIssue {
 	readonly code:
 		| "unsupported_profile"
+		| "unsupported_kernel_version"
 		| "invalid_file"
 		| "invalid_yaml"
 		| "invalid_metadata"
@@ -116,7 +119,7 @@ export function wikiIssue(code: WikiIssue["code"], path: string, message: string
 export function wikiPath(path: unknown): path is string {
 	return typeof path === "string" && path.length <= WIKI_PROFILE_LIMITS.pathBytes &&
 		UTF8.encode(path).byteLength <= WIKI_PROFILE_LIMITS.pathBytes &&
-		path.startsWith(".codewiki/wiki/") && /\.(?:md|markdown)$/u.test(path) &&
+		path.startsWith(".changekernel/wiki/") && /\.(?:md|markdown)$/u.test(path) &&
 		!FORBIDDEN_PATH_CHARACTER.test(path) && !UNPAIRED_SURROGATE.test(path) &&
 		path.split("/").every((segment) => segment !== "" && segment !== "." && segment !== "..");
 }
@@ -152,8 +155,8 @@ export function resolveChangeReference(itemPath: string, reference: unknown): Ou
 	if (UTF8.encode(path).byteLength > WIKI_PROFILE_LIMITS.pathBytes) {
 		return failure(wikiIssue("limit_exceeded", issuePath, "Resolved Change reference exceeds the path byte limit."));
 	}
-	if (!path.startsWith(".codewiki/changes/") || segments.length < 3) {
-		return failure(wikiIssue("invalid_metadata", issuePath, "Change reference must resolve inside .codewiki/changes/."));
+	if (!path.startsWith(".changekernel/changes/") || segments.length < 3) {
+		return failure(wikiIssue("invalid_metadata", issuePath, "Change reference must resolve inside .changekernel/changes/."));
 	}
 	return success(Object.freeze({reference, path}));
 }
@@ -292,7 +295,7 @@ export function decodeWikiMetadata(path: string, input: unknown): Outcome<WikiMe
 
 	let base: WikiBaseType | undefined;
 	if (type === "TypeDefinition") {
-		if (!path.startsWith(".codewiki/wiki/types/") || !TYPE_NAME.test(title)) {
+		if (!path.startsWith(".changekernel/wiki/types/") || !TYPE_NAME.test(title)) {
 			return failure(wikiIssue("invalid_type", path, "TypeDefinitions belong under types/ and declare an ASCII PascalCase title."));
 		}
 		if (!coreType(title)) {

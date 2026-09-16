@@ -1,0 +1,49 @@
+---
+title: Change Lifecycle
+aliases: []
+source-id: cw:flow:change-lifecycle
+source-history:
+  provenance:
+    - attributes:
+        codewiki.legacy:source-digest: sha256:e7a8556fdc48492d58e44e7417f82cf8b45edd4d1a4daaffafd341cf88cf7904
+        codewiki.legacy:source-path: system/flows/change-lifecycle.md
+      kind: codewiki.legacy:knowledge
+      subjectId: cw:flow:change-lifecycle
+  relationships:
+    - attributes:
+        codewiki.legacy:relationship:
+          rationale: Change Lifecycle preserves accepted meaning from intake through verified completion.
+          target: cw:story:maintainer.maintain-intent
+          type: realizes
+      predicate: codewiki.legacy:realizes
+      targetItemId: cw:story:maintainer.maintain-intent
+    - attributes:
+        codewiki.legacy:relationship:
+          rationale: Change Lifecycle advances exact state through Gate-controlled stages.
+          target: cw:story:maintainer.automate-safe-work
+          type: realizes
+      predicate: codewiki.legacy:realizes
+      targetItemId: cw:story:maintainer.automate-safe-work
+---
+# Change Lifecycle
+
+A Change carries intentional evolution through Decision, Planning, Implementation and Review. Each stage is a loop between an agent preparing or repairing a scoped candidate and the project's adopted [Checks](../components/checks.md). The same read-only function contract, Boolean results, Evidence and feedback apply throughout; actual questions belong to the selected definitions/Packs rather than hidden Kernel judgments.
+
+Common [intake](../components/change-intake.md) admits attributed proposals from conversation, documents, discoveries, external signals or other Changes. Unfinished inquiry may be retained before concrete effects are known. Evaluation requires a fixed structured candidate and selected inputs; missing inputs make Checks unready, not inactive. A derived proposal preserves exact source relationships and needs its own current evaluation and authority.
+
+| Loop | Purpose and assessment boundary |
+| --- | --- |
+| Decision | Assess whether pursuing exact intent and effects is justified under the adopted criteria; do not claim a completed plan or realized benefit. |
+| Planning | Develop work boundaries, paths, intermediate outcomes, dependencies and Evidence needs within accepted scope. |
+| Implementation | Perform authorized attempts and collect Evidence about actual partial artifacts and effects. Checks do not perform the worker's edits. |
+| Review | Assess the actual combined outcome, realization claims and remaining gaps under the selected Checks. |
+
+Run applicable ready Checks on immutable inputs, retain results and send failures to their cause. Continue with repair or inquiry, pause for clarification/budget/unavailable execution, or terminate by rejection/withdrawal. Only successful progression requires all applicable required valid passes and separate transition authority. An empty selection cannot be presented as validated success. Execution errors are not semantic counterevidence; approval cannot turn a failed Check into a pass. No routine human Check verdict or new approval is needed for every delegated Work unit.
+
+Adopted selection comes from current authorized state, not the candidate's proposed replacement. Agents cannot reduce scrutiny by labels, omitted data or installing a Pack. Cheap preconditions and required-input checks precede expensive work; independent Checks can run concurrently within limits. Reuse retained evaluations only under verified input and execution equivalence, not by stage name, confidence or repeated retries.
+
+A pass report explains selected coverage, reasons, Evidence, uncertainty and what comes next. After applicable acceptance it supplies the concise commit explanation and a fresh next-stage session's context; it does not grant permission or replace canonical records. [Decision to Planning](decision-to-planning.md) specifies the first handoff. Meaningful source changes can invalidate readiness; starting a fresh session alone does not require rerunning judgments.
+
+Only accepted scoped transitions promote, revise, retire or re-adopt Wiki. Checkpointing, checking, approval, adoption, realization and external delivery are distinct. An accepted desired outcome can remain unrealized with its [gap and related work](../components/alignment.md) visible. Branches and commits are not stage flags or a mandatory four-commit protocol.
+
+Feedback routes artifact defects to Implementation, path conflicts to Planning and material intent/design/scope/authority changes to Decision. Assess joined artifacts rather than inheriting isolated successes. Preserve original reasons, actual source versions and stopped or unknown effects. Git retains exact accepted outcomes and history; recovery does not repeat a model or protected effect to invent the old result. See [Planning to Implementation](planning-to-implementation.md), [Implementation to Review](implementation-to-review.md), and [recovery](recovery.md).

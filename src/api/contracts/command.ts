@@ -528,7 +528,7 @@ function wikiPathField(record: CanonicalRecord, field: string, path: string): st
 }
 
 function isWikiItemPath(value: string): boolean {
-	return value.startsWith(".codewiki/wiki/items/") && /\.(?:md|ya?ml)$/u.test(value) && value.normalize("NFC") === value &&
+	return value.startsWith(".changekernel/wiki/items/") && /\.(?:md|ya?ml)$/u.test(value) && value.normalize("NFC") === value &&
 		!/[\\\0\r\n]/u.test(value) && value.split("/").every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
 }
 

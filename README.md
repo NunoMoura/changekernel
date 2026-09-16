@@ -1,8 +1,12 @@
-# CodeWiki
+# ChangeKernel
 
-CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents across software, operations, research and other teams. It preserves justified, revisable understanding rather than requiring participants to restart inquiry from memory alone.
+**The semantic foundation for project change.**
 
-**This is source development, not an operationally qualified dogfood release.** Desired behavior is not a claim of current implementation. [SEMANTIC_KERNEL_PLAN.md](SEMANTIC_KERNEL_PLAN.md) owns the active scope, gaps, procedures and validation status.
+ChangeKernel is a shared project layer for people, agents, harnesses and applications across any domain. Change is its organizing primitive; Wiki retains accepted project knowledge. ChangeKernel is not an agent, a harness or an operating-system kernel.
+
+The local product combines a pure semantic core, Project Server runtime, Wiki, semantic Git management and the Decision, Planning, Implementation and Review lifecycle. It works without a Hub. The optional **Hub** adds shared hosting, team access and collaboration using the same semantic foundation; a GitHub alternative is a longer-term ambition, not an initial feature-parity claim.
+
+**This is source development, not an operationally qualified dogfood release.** Wiki defines desired behavior; source/tests define what exists. The [temporary status](CHANGEKERNEL_STATUS.md) preserves unfinished work, not a separate architectural roadmap.
 
 ## Core model
 
@@ -12,17 +16,21 @@ CodeWiki is a knowledge-and-change collaboration hub for humans and AI Agents ac
 
 Hot Wiki is the current validation basis, not every page loaded into every prompt. Retired knowledge remains available as cold information through native Git history. Optional external connectors extend available material from users' databases and services. No separate Archive/Sources knowledge system or duplicate history database is required; the core works without external data connectors. Retrieval and context eviction do not change adoption status.
 
-Decision, Planning, Implementation and Review share one semantic foundation. Findings distinguish supported, contradicted and unresolved claims with scope and evidence. Tests and model judgments have limits; committing a procedure does not prove adoption. Ordinary Markdown/Obsidian workflows need no proprietary frontmatter, mandatory IDs or parallel Skills/Check Pack policy system.
+Desired design: **Wiki holds what we agree; agents propose and produce changes; adopted Checks evaluate them using Evidence; ChangeKernel controls acceptance and remembers why.** Checks are custom read-only functions that may mix code and bounded model inference; Packs distribute reusable evaluators, not a second policy authority. Wiki records exact adopted policy. TypeScript/JavaScript comes first; Python and marketplace distribution come later. The pure core enforces identity, permissions, execution contracts and durable transitions, not hidden semantic judgments.
 
-See [product](.codewiki/wiki/items/product/codewiki-console.md), [Wiki](.codewiki/wiki/items/system/components/wiki.md), [Change](.codewiki/wiki/items/system/components/change-trace.md), [validation](.codewiki/wiki/items/system/components/checks.md), and [information/evidence](.codewiki/wiki/items/system/components/evidence.md).
+Desired/current-state and related-Change views connect accepted outcomes, scoped Evidence and ongoing work. An observation is one way to obtain Evidence, not another product object. Git retains exact Project sources and history; large or sensitive Evidence may use authorized immutable external custody. Neither a commit nor a model assessment proves truth or realization. These revised contracts are desired state, not completed executable capabilities.
+
+See [product](.changekernel/wiki/items/product/changekernel.md), [Wiki](.changekernel/wiki/items/system/components/wiki.md), [Change](.changekernel/wiki/items/system/components/change-trace.md), [validation](.changekernel/wiki/items/system/components/checks.md), and [information/evidence](.changekernel/wiki/items/system/components/evidence.md).
 
 ## Executable foundation
 
-The private package remains `@nunomoura/codewiki`. Source includes bounded deterministic contracts/identities, exact Wiki transactions/views, Change reduction and Work dependencies, legacy Check/Gate mechanics, a [Git Project Store](src/adapters/git/project-store.ts), authenticated [Project Server](src/server/index.ts), [Client SDK](src/api/client/index.ts), and partial execution/recovery adapters. [src/index.ts](src/index.ts), [package.json](package.json) and tests define actual exports.
+The private package is `@nunomoura/changekernel`; its executable is `changekernel`. Source includes bounded deterministic contracts/identities, managed Wiki transactions, Change reduction and Work dependencies, semantic Checks, a [Git Project Store](src/adapters/git/project-store.ts), authenticated [Project Server](src/server/index.ts), [Client SDK](src/api/client/index.ts), and partial execution/recovery adapters. [src/index.ts](src/index.ts), [package.json](package.json) and tests define actual exports.
 
-Current structural validation and field/body diff are not the target consequential evaluator. Local Check/Agent execution is unavailable; process-local facts and injected/replay tests do not establish durable semantic continuation or operational qualification. The new hot/cold adoption and retrieval contracts remain implementation work in the plan.
+Concrete profile-native proposals and recovery are checkpointed; the early-inquiry Kernel work is not accepted as complete. The full new-path Gate/decision/Work loop and external qualification remain unfinished. Structural validation, process-local facts and injected/replay tests do not establish consequential judgment or durable operational continuation.
 
-The reader still requires canonical envelopes under `.codewiki/wiki/items/`; explicit bootstrap creates that tree, `.codewiki/changes/`, config and an empty Check Pack lock. This is executable behavior, not the authoring destination. Do not flatten paths, strip envelopes, delete policy, re-bootstrap existing state or invent historical Changes. Reader/writer changes and separately authorized live conversion need their own evidence; current controller/state compatibility remains unresolved.
+One [Kernel release version](.changekernel/wiki/items/system/components/changekernel.md#versioning-and-document-contract) owns managed document rules. `createProjectServer` uses the running `CHANGEKERNEL_VERSION` by default; an explicit `project.kernelVersion` must match it. The `wikiProfile` selector, legacy lifecycle engine, old Wiki envelopes/projections, binary Gate/Work engines, Check Runner port and memory-only Gate store are removed. Obsolete tests and the unused Kernel export file are removed with them; remaining suites run directly through recursive discovery. Available operations are Project discovery/capabilities, managed-document proposal and Changes get. Other operations, including Console status/list projections, report unavailable rather than falling back to old behavior.
+
+Bootstrap creates empty `.changekernel/wiki/` and `.changekernel/changes/` roots plus minimal identity configuration. It seeds no Check Pack, automation policy or adoption record. This source repository's Wiki uses readable source metadata while preserving desired intent and relevant historical information; it is not automatically an adopted Wiki conforming to the new Kernel. Genuine Change traces and Git history remain unchanged. Pre-release implementations can be replaced without permanent compatibility promises; an actual supported deployment requires an explicitly scoped transition.
 
 ## Development
 
@@ -36,13 +44,15 @@ npm run build
 
 Use proactive diagnostics and actual exit status. Native tests prove their asserted conditions, not release readiness. Architecture guards and imported suites must evolve deliberately rather than be weakened to hide changes.
 
-Pack/test candidates only in disposable external projects with isolated Pi settings. This mutable checkout never governs itself: do not load CodeWiki from it or its `.pi/`, invoke `wiki_*` tools or `/wiki-*` commands here, or add local package links, duplicate skills or controller pins. Protected effects and release/controller transitions need applicable explicit authority; the plan supplies the procedure. A build or documentation checkpoint does not grant them.
+Pack/test candidates only in disposable external projects with isolated Pi settings. This mutable checkout never governs itself: do not load ChangeKernel from it or its `.pi/`, invoke `wiki_*` tools or `/wiki-*` commands here, or add local package links, duplicate skills or controller pins. Protected effects and release/controller transitions need applicable explicit authority. A build or documentation checkpoint does not grant them. [Minimum local dogfood](.changekernel/wiki/items/system/components/package.md#minimum-local-dogfood) requires a pinned external controller, explicit adoption/authority, one complete governed loop, durable recovery and qualification of the same release bytes. A short agent instruction points to that controller; it cannot replace enforcement.
+
+Work directly in the main session, using [AGENTS.md](AGENTS.md). Product Planning belongs in Change/Work, not standalone plan documents.
 
 ## Repository truth
 
-- [`.codewiki/wiki/`](.codewiki/wiki/): stable desired behavior; supported envelopes and provenance remain until a scoped transition changes them.
-- [`.codewiki/changes/`](.codewiki/changes/): governed lifecycle history.
-- [`SEMANTIC_KERNEL_PLAN.md`](SEMANTIC_KERNEL_PLAN.md): the sole active roadmap and status ledger, with exact Git references for cold historical evidence.
+- [`.changekernel/wiki/`](.changekernel/wiki/): stable desired behavior; readable source metadata and historical provenance do not fabricate qualified adoption.
+- [`.changekernel/changes/`](.changekernel/changes/): governed lifecycle history.
+- [`CHANGEKERNEL_STATUS.md`](CHANGEKERNEL_STATUS.md): short temporary pre-dogfood gap note. Change/Work replaces it after qualified adoption.
 - [`src/`](src/) and [`tests/`](tests/): executable truth. Git preserves exact history; [existing archives](docs/archive/README.md) are historical evidence, not active queues.
 
 Private runtime state, generated views, caches, credentials and package artifacts are not source truth. Future implicit Markdown discovery does not reclassify every file in this source checkout as governing policy.

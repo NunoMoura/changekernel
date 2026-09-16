@@ -1,181 +1,15 @@
 import assert from "node:assert/strict";
 import {readFile, readdir, stat} from "node:fs/promises";
-import {dirname, join, relative, resolve} from "node:path";
+import {dirname, join, matchesGlob, relative, resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import test from "node:test";
 import ts from "typescript";
-import "../changes/contracts.test.mjs";
-import "../changes/events.test.mjs";
-import "../changes/reducer.test.mjs";
-import "../changes/snapshot.test.mjs";
-import "../changes/trace.test.mjs";
-import "../evidence/reference.test.mjs";
-import "../gates/check-definition.test.mjs";
-import "../gates/contracts.test.mjs";
-import "../gates/reducer.test.mjs";
-import "../gates/selection.test.mjs";
-import "../work/contracts.test.mjs";
-import "../work/state.test.mjs";
-import {partitionWikiAttributes} from "../../../src/kernel/wiki/attributes.ts";
-import {
-	decodeComponentOwnership,
-	ownersForPath,
-} from "../../../src/kernel/wiki/ownership.ts";
+import {parse} from "yaml";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const SOURCE_ALLOWLIST = [
-	"src/adapters/dsh/agent-runtime.ts",
-	"src/adapters/dsh/local-execution-host.ts",
-	"src/adapters/dsh/session-runner.ts",
-	"src/adapters/git/bootstrap.ts",
-	"src/adapters/git/local-server.ts",
-	"src/adapters/git/project-config.ts",
-	"src/adapters/git/project-store.ts",
-	"src/adapters/git/wiki-profile.ts",
-	"src/adapters/git/wiki.ts",
-	"src/adapters/preview/local.ts",
-	"src/api/client/console.ts",
-	"src/api/client/index.ts",
-	"src/api/contracts/command.ts",
-	"src/api/contracts/read.ts",
-	"src/api/transport/envelope.ts",
-	"src/index.ts",
-	"src/kernel/changes/contracts.ts",
-	"src/kernel/changes/events.ts",
-	"src/kernel/changes/reducer.ts",
-	"src/kernel/changes/snapshot.ts",
-	"src/kernel/changes/trace.ts",
-	"src/kernel/data-contracts/canonical-json.ts",
-	"src/kernel/data-contracts/outcome.ts",
-	"src/kernel/data-contracts/validation.ts",
-	"src/kernel/evidence/reference.ts",
-	"src/kernel/gates/check-definition.ts",
-	"src/kernel/gates/contracts.ts",
-	"src/kernel/gates/reducer.ts",
-	"src/kernel/gates/selection.ts",
-	"src/kernel/identity/base32.ts",
-	"src/kernel/identity/build.ts",
-	"src/kernel/identity/git.ts",
-	"src/kernel/identity/semantic-digest.ts",
-	"src/kernel/identity/sha256.ts",
-	"src/kernel/index.ts",
-	"src/kernel/wiki/attributes.ts",
-	"src/kernel/wiki/corpus.ts",
-	"src/kernel/wiki/file.ts",
-	"src/kernel/wiki/item.ts",
-	"src/kernel/wiki/links.ts",
-	"src/kernel/wiki/ownership.ts",
-	"src/kernel/wiki/profile-reference.ts",
-	"src/kernel/wiki/profile-transaction.ts",
-	"src/kernel/wiki/profile.ts",
-	"src/kernel/wiki/transaction.ts",
-	"src/kernel/wiki/tree.ts",
-	"src/kernel/wiki/views.ts",
-	"src/kernel/work/contracts.ts",
-	"src/kernel/work/state.ts",
-	"src/ports/agent-runtime.ts",
-	"src/ports/check-runner.ts",
-	"src/ports/preview.ts",
-	"src/ports/project-store.ts",
-	"src/product.ts",
-	"src/server/authorization/policy.ts",
-	"src/server/commands/gates.ts",
-	"src/server/commands/lifecycle.ts",
-	"src/server/commands/repository.ts",
-	"src/server/effects/agent-runs.ts",
-	"src/server/index.ts",
-	"src/server/queries/material-source.ts",
-	"src/server/queries/profile-change.ts",
-	"src/server/queries/profile-source.ts",
-	"src/server/queries/project.ts",
-	"src/server/queries/source.ts",
-	"src/server/queries/wiki.ts",
-	"src/server/recovery/facts.ts",
-];
-const BIN_ALLOWLIST = ["bin/codewiki.mjs"];
-const TEST_ALLOWLIST = [
-	"tests/adapters/dsh/agent-runtime.test.mjs",
-	"tests/adapters/dsh/fixtures/replay-session.jsonl",
-	"tests/adapters/dsh/local-execution-host.test.mjs",
-	"tests/adapters/dsh/session-runner.test.mjs",
-	"tests/adapters/git/bootstrap.test.mjs",
-	"tests/adapters/git/codewiki-bin.test.mjs",
-	"tests/adapters/git/local-read-purity.test.mjs",
-	"tests/adapters/git/local-server.test.mjs",
-	"tests/adapters/git/project-config.test.mjs",
-	"tests/adapters/git/project-store.test.mjs",
-	"tests/adapters/git/wiki-profile.test.mjs",
-	"tests/adapters/git/wiki.test.mjs",
-	"tests/adapters/preview/local.test.mjs",
-	"tests/api/client/cli-command.test.mjs",
-	"tests/api/client/console.test.mjs",
-	"tests/api/client/index.test.mjs",
-	"tests/api/contracts/profile-lifecycle.test.mjs",
-	"tests/api/contracts/read.test.mjs",
-	"tests/api/transport/envelope.test.mjs",
-	"tests/kernel/changes/contracts.test.mjs",
-	"tests/kernel/changes/events.test.mjs",
-	"tests/kernel/changes/reducer.test.mjs",
-	"tests/kernel/changes/snapshot.test.mjs",
-	"tests/kernel/changes/trace.test.mjs",
-	"tests/kernel/data-contracts/canonical-json.test.mjs",
-	"tests/kernel/data-contracts/outcome.test.mjs",
-	"tests/kernel/data-contracts/validation.test.mjs",
-	"tests/kernel/evidence/reference.test.mjs",
-	"tests/kernel/gates/check-definition.test.mjs",
-	"tests/kernel/gates/contracts.test.mjs",
-	"tests/kernel/gates/reducer.test.mjs",
-	"tests/kernel/gates/selection.test.mjs",
-	"tests/kernel/identity/build.test.mjs",
-	"tests/kernel/identity/git.test.mjs",
-	"tests/kernel/identity/semantic-digest.test.mjs",
-	"tests/kernel/identity/sha256.test.mjs",
-	"tests/kernel/invariants/architecture.test.mjs",
-	"tests/kernel/invariants/determinism.test.mjs",
-	"tests/kernel/wiki/attributes.test.mjs",
-	"tests/kernel/wiki/corpus.test.mjs",
-	"tests/kernel/wiki/fixtures.mjs",
-	"tests/kernel/wiki/item.test.mjs",
-	"tests/kernel/wiki/ownership.test.mjs",
-	"tests/kernel/wiki/profile-fixtures.mjs",
-	"tests/kernel/wiki/profile-reference.test.mjs",
-	"tests/kernel/wiki/profile-transaction.test.mjs",
-	"tests/kernel/wiki/profile.test.mjs",
-	"tests/kernel/wiki/properties.test.mjs",
-	"tests/kernel/wiki/transaction.test.mjs",
-	"tests/kernel/wiki/tree.test.mjs",
-	"tests/kernel/wiki/views.test.mjs",
-	"tests/kernel/work/contracts.test.mjs",
-	"tests/kernel/work/state.test.mjs",
-	"tests/package/composition.test.mjs",
-	"tests/ports/agent-runtime.test.mjs",
-	"tests/ports/check-runner.test.mjs",
-	"tests/ports/preview.test.mjs",
-	"tests/ports/project-store.test.mjs",
-	"tests/server/authorization/policy.test.mjs",
-	"tests/server/commands/lifecycle.test.mjs",
-	"tests/server/commands/profile-lifecycle.test.mjs",
-	"tests/server/effects/agent-runs.test.mjs",
-	"tests/server/effects/containment.test.mjs",
-	"tests/server/index.test.mjs",
-	"tests/server/queries/profile-source.test.mjs",
-	"tests/server/queries/read-api.test.mjs",
-	"tests/server/queries/source-material.test.mjs",
-];
-const DELETED_ROOTS = [
-	"benchmarks",
-	"diagnostics",
-	"rules",
-	"scripts",
-	".tmp-worktrees",
-];
-const FORBIDDEN_SOURCE_FRAGMENTS = [
-	"/domains/",
-	"/knowledge/kb",
-	"backend-v1",
-	"runtime/builds",
-	"pi-extension",
-];
+const SOURCE_FILES = (await walk(join(repoRoot, "src"))).sort();
+const TEST_FILES = (await walk(join(repoRoot, "tests"))).sort();
+const BIN_FILES = (await walk(join(repoRoot, "bin"))).sort();
 
 async function walk(root) {
 	const output = [];
@@ -216,11 +50,14 @@ function relativeTarget(from, specifier) {
 	return relative(repoRoot, resolve(dirname(join(repoRoot, from)), specifier)).split("\\").join("/");
 }
 
-async function sourceGraph() {
+const sourceAnalysis = analyzeSource();
+function sourceGraph() { return sourceAnalysis; }
+
+async function analyzeSource() {
 	const graph = new Map();
 	const external = new Map();
 	const calls = new Map();
-	for (const path of SOURCE_ALLOWLIST) {
+	for (const path of SOURCE_FILES) {
 		const text = await readFile(join(repoRoot, path), "utf8");
 		const parsed = parseImports(path, text);
 		const internal = [];
@@ -273,47 +110,36 @@ function reachable(graph, root) {
 
 async function wikiOwnership() {
 	const ownership = [];
-	for (const path of await walk(join(repoRoot, ".codewiki", "wiki", "items"))) {
+	for (const path of await walk(join(repoRoot, ".changekernel", "wiki"))) {
+		if (!path.endsWith(".md")) continue;
 		const text = await readFile(join(repoRoot, path), "utf8");
-		if (!text.startsWith("---\n")) continue;
+		assert.ok(text.startsWith("---\n"), path);
 		const end = text.indexOf("\n---\n", 4);
 		assert.notEqual(end, -1, path);
-		const header = JSON.parse(text.slice(4, end));
-		const partitioned = partitionWikiAttributes(header.attributes ?? {});
-		assert.equal(partitioned.ok, true, path);
-		assert.ok(Object.keys(partitioned.value.semantic).every((key) => !key.startsWith("codewiki.legacy:")), path);
-		assert.ok(Object.keys(partitioned.value.provenance).every((key) => key.startsWith("codewiki.legacy:")), path);
-		const decoded = decodeComponentOwnership(header.itemId, header.attributes ?? {});
-		assert.equal(decoded.ok, true, `${path}: ${decoded.error?.message ?? "invalid ownership"}`);
-		if (decoded.value !== null) ownership.push(decoded.value);
+		const header = parse(text.slice(4, end));
+		assert.equal(typeof header.title, "string", path);
+		assert.equal(typeof header["source-id"], "string", path);
+		assert.equal("protocol" in header, false, "Source design is not a legacy Item envelope");
+		assert.equal("codewiki-origin" in header, false, "Conversion must not invent adoption");
+		if (header.ownership) {
+			for (const field of ["sourcePatterns", "testPatterns"]) {
+				assert.ok(Array.isArray(header.ownership[field]), path + ": " + field);
+				assert.ok(header.ownership[field].every(pattern => typeof pattern === "string" && pattern.length > 0), path);
+			}
+			ownership.push({componentId: header["source-id"], ...header.ownership});
+		}
 	}
 	return ownership;
 }
 
 async function productionOwnershipPaths() {
-	const paths = [...SOURCE_ALLOWLIST, ...BIN_ALLOWLIST, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", ".codewiki/config.json", ".codewiki/check-packs.lock.json"];
-	// Project policy is optional; adopted files still require native ownership.
-	const checkPacks = await stat(join(repoRoot, ".codewiki/check-packs")).catch(error => {
-		if (error.code === "ENOENT") return null;
-		throw error;
-	});
-	if (checkPacks !== null) paths.push(...await walk(join(repoRoot, ".codewiki/check-packs")));
-	return [...new Set(paths)].sort();
+	return [...SOURCE_FILES, ...BIN_FILES, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json"].sort();
 }
-
-test("active source and tests equal the frozen allowlist", async () => {
-	assert.deepEqual((await walk(join(repoRoot, "src"))).sort(), SOURCE_ALLOWLIST);
-	assert.deepEqual((await walk(join(repoRoot, "tests"))).sort(), TEST_ALLOWLIST);
-	assert.deepEqual((await walk(join(repoRoot, "bin"))).sort(), BIN_ALLOWLIST);
-	for (const root of DELETED_ROOTS) {
-		await assert.rejects(stat(join(repoRoot, root)), {code: "ENOENT"});
-	}
-});
 
 test("shipped executables bind only Node utilities and the curated runtime entrypoint", async () => {
 	const pkg = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
-	assert.deepEqual(Object.values(pkg.bin).map(path => path.replace(/^\.\//u, "")).sort(), BIN_ALLOWLIST);
-	for (const path of BIN_ALLOWLIST) {
+	assert.deepEqual(Object.values(pkg.bin).map(path => path.replace(/^\.\//u, "")).sort(), BIN_FILES);
+	for (const path of BIN_FILES) {
 		const parsed = parseImports(path, await readFile(join(repoRoot, path), "utf8"));
 		assert.deepEqual(parsed.imports.sort(), ["node:path", "node:process"], path);
 		assert.deepEqual(parsed.dynamicImports, ["../dist/index.js"], path);
@@ -399,7 +225,6 @@ test("corpus remains internal with a bounded data/identity import closure", asyn
 		corpus,
 	]);
 	assert.equal(reachable(graph, "src/index.ts").includes(corpus), true);
-	assert.equal(reachable(graph, "src/kernel/index.ts").includes(corpus), false);
 });
 
 test("material loading stays internal and only composes source, Store and passive corpus contracts", async () => {
@@ -416,7 +241,6 @@ test("material loading stays internal and only composes source, Store and passiv
 	]);
 	assert.equal(external.has(material), false, "No parser, filesystem, runtime or model dependency");
 	assert.equal(reachable(graph, "src/index.ts").includes(material), true, "Composed through profile lifecycle, not a new package export");
-	assert.equal(reachable(graph, "src/kernel/index.ts").includes(material), false);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(material)).map(([path]) => path), ["src/server/queries/profile-source.ts"]);
 });
 
@@ -436,7 +260,6 @@ test("profiled material loading composes only through lifecycle and retains adap
 	]);
 	assert.equal(external.has(profiled), false);
 	assert.equal(reachable(graph, "src/index.ts").includes(profiled), true);
-	assert.equal(reachable(graph, "src/kernel/index.ts").includes(profiled), false);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(profiled)).map(([path]) => path), ["src/server/commands/lifecycle.ts", "src/server/queries/profile-change.ts"]);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes("src/adapters/git/wiki-profile.ts")).map(([path]) => path), [
 		"src/server/queries/profile-source.ts",
@@ -457,26 +280,12 @@ test("public reachability contains only target foundation paths", async () => {
 	const paths = reachable(graph, "src/index.ts");
 	assert.ok(paths.includes("src/product.ts"));
 	assert.ok(paths.includes("src/adapters/git/bootstrap.ts"));
-	for (const path of paths) {
-		for (const fragment of FORBIDDEN_SOURCE_FRAGMENTS) {
-			assert.equal(path.includes(fragment), false, `${path}: ${fragment}`);
-		}
-	}
+
 	const pkg = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 	assert.deepEqual(Object.keys(pkg.exports), [".", "./package.json"]);
-	assert.deepEqual(pkg.dependencies, {
-		"@deepseek-ai/cordis": "4.0.1",
-		"@deepseek-ai/dsh-agent": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-agent-loop": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-invariants": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-llm": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-session": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-session-persistence-jsonl": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-system-prompt": "0.1.1-rc.2",
-		"@deepseek-ai/dsh-tools": "0.1.1-rc.2",
-		"mdast-util-from-markdown": "2.0.3",
-		"yaml": "2.9.0",
-	});
+	for (const [name, version] of Object.entries(pkg.dependencies)) {
+		assert.match(version, /^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/u, name + ": runtime dependencies must be pinned");
+	}
 	assert.equal(pkg.peerDependencies, undefined);
 	assert.equal(pkg.pi, undefined);
 });
@@ -488,22 +297,23 @@ test("profile interpretation is composed without moving parsing into the Kernel"
 	assert.deepEqual(graph.get(kernelProfile), [
 		"src/kernel/data-contracts/outcome.ts",
 		"src/kernel/identity/git.ts",
+		"src/kernel/identity/version.ts",
 	]);
+	assert.deepEqual(graph.get("src/kernel/identity/version.ts"), []);
+	assert.equal(external.has("src/kernel/identity/version.ts"), false);
 	assert.deepEqual(graph.get(adapterProfile), [
 		"src/kernel/data-contracts/outcome.ts",
 		"src/kernel/identity/git.ts",
-		"src/kernel/wiki/file.ts",
 		kernelProfile,
 	]);
 	assert.deepEqual(external.get(kernelProfile), undefined);
 	assert.deepEqual(external.get(adapterProfile), ["mdast-util-from-markdown", "yaml"]);
 	assert.equal(reachable(graph, "src/index.ts").includes(kernelProfile), true);
 	assert.equal(reachable(graph, "src/index.ts").includes(adapterProfile), true);
-	assert.equal(reachable(graph, "src/kernel/index.ts").includes(adapterProfile), false);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(kernelProfile)).map(([path]) => path), [
-		adapterProfile, "src/api/contracts/command.ts", "src/kernel/changes/events.ts", "src/kernel/wiki/profile-reference.ts",
+		adapterProfile, "src/api/contracts/command.ts", "src/kernel/changes/events.ts", "src/kernel/changes/inquiry.ts", "src/kernel/wiki/profile-reference.ts",
 		"src/kernel/wiki/profile-transaction.ts", "src/server/commands/lifecycle.ts", "src/server/index.ts",
-		"src/server/queries/profile-change.ts", "src/server/queries/profile-source.ts", "src/server/queries/source.ts",
+		"src/server/queries/profile-change.ts", "src/server/queries/profile-source.ts",
 	]);
 });
 
@@ -519,7 +329,7 @@ test("profile transaction admission remains pure under exact authorized lifecycl
 		"src/kernel/wiki/profile.ts",
 	]);
 	assert.deepEqual(external.get(transaction), undefined);
-	for (const entrypoint of ["src/index.ts", "src/kernel/index.ts"]) assert.equal(reachable(graph, entrypoint).includes(transaction), true, entrypoint);
+	assert.equal(reachable(graph, "src/index.ts").includes(transaction), true);
 	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(transaction)).map(([path]) => path), [
 		"src/api/contracts/command.ts", "src/kernel/wiki/profile-reference.ts", "src/server/commands/lifecycle.ts", "src/server/queries/profile-change.ts",
 	]);
@@ -528,45 +338,71 @@ test("profile transaction admission remains pure under exact authorized lifecycl
 	}
 });
 
-test("native Wiki ownership assigns every production and test path exactly once", async () => {
-	const ownership = await wikiOwnership();
-	assert.equal(ownership.length, 21);
-	const roles = Object.fromEntries(ownership
-		.filter((entry) => entry.roles.length > 0)
-		.map((entry) => [entry.componentId, entry.roles]));
-	assert.deepEqual(roles, {
-		"cw:component:checks": ["model-check"],
-		"cw:component:decision": ["decision"],
-		"cw:component:implementation": ["worker"],
-		"cw:component:planning": ["planning"],
-		"cw:component:review": ["review"],
-	});
-	for (const path of await productionOwnershipPaths()) {
-		const owners = ownersForPath(ownership, "source", path);
-		assert.equal(owners.ok, true, path);
-		assert.equal(owners.value.length, 1, `${path}: ${owners.value.join(", ")}`);
-	}
-	for (const path of TEST_ALLOWLIST) {
-		const owners = ownersForPath(ownership, "test", path);
-		assert.equal(owners.ok, true, path);
-		assert.equal(owners.value.length, 1, `${path}: ${owners.value.join(", ")}`);
+test("inquiry contracts stay internal with only common event/reducer consumers and no alternate lifecycle", async () => {
+	const {graph, external} = await sourceGraph();
+	const inquiry = "src/kernel/changes/inquiry.ts";
+	assert.deepEqual(graph.get(inquiry), [
+		"src/kernel/changes/contracts.ts", "src/kernel/changes/snapshot.ts",
+		"src/kernel/data-contracts/canonical-json.ts", "src/kernel/data-contracts/outcome.ts", "src/kernel/data-contracts/validation.ts",
+		"src/kernel/identity/git.ts", "src/kernel/identity/semantic-digest.ts", "src/kernel/identity/sha256.ts",
+		"src/kernel/wiki/profile-reference.ts", "src/kernel/wiki/profile.ts",
+	]);
+	assert.equal(external.has(inquiry), false);
+	assert.deepEqual([...graph].filter(([, targets]) => targets.includes(inquiry)).map(([path]) => path), [
+		"src/kernel/changes/events.ts", "src/kernel/changes/reducer.ts",
+	]);
+	assert.equal((await readFile(join(repoRoot, "src/kernel/changes/reducer.ts"), "utf8")).includes("reduceInquiryChangeTrace"), false);
+	assert.equal((await readFile(join(repoRoot, "src/kernel/changes/contracts.ts"), "utf8")).includes("./inquiry.ts"), false, "No cyclic contract re-export");
+});
+
+test("optional output retrieval stays below lifecycle policy and outside the Kernel", async () => {
+	const {graph, external} = await sourceGraph();
+	const output = "src/ports/agent-output.ts", effect = "src/server/effects/agent-output.ts";
+	assert.ok(graph.get(output).every(path => path.startsWith("src/kernel/") || path === "src/ports/agent-runtime.ts"));
+	assert.deepEqual(graph.get(effect), ["src/kernel/data-contracts/outcome.ts", "src/kernel/gates/semantic.ts", output, "src/ports/agent-runtime.ts", "src/server/effects/agent-runs.ts"]);
+	assert.equal(external.has(output), false);
+	assert.equal(external.has(effect), false);
+	assert.equal(reachable(graph, "src/server/commands/lifecycle.ts").includes(effect), false, "Output custody alone must not enable lifecycle evaluation");
+	assert.equal(reachable(graph, "src/server/commands/lifecycle.ts").includes("src/server/effects/decision-checks.ts"), false, "Source verification alone must not enable lifecycle evaluation");
+});
+
+test("project check settings remain outside read-only composition and storage parsing", async () => {
+	const {graph, external} = await sourceGraph();
+	const bridge = "src/adapters/git/check-model.ts";
+	assert.deepEqual(graph.get(bridge), [
+		"src/adapters/git/project-config.ts", "src/kernel/data-contracts/canonical-json.ts",
+		"src/kernel/data-contracts/outcome.ts", "src/server/effects/agent-runs.ts",
+	]);
+	assert.equal(external.has(bridge), false);
+	for (const entrypoint of ["src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts", "src/server/commands/lifecycle.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(bridge), false, entrypoint);
 	}
 });
 
-test("native Wiki ownership assigns the current semantic event catalog exactly once", async () => {
-	const traced = Object.fromEntries((await wikiOwnership())
-		.filter((entry) => entry.traceEvents.length > 0)
-		.map((entry) => [entry.componentId, entry.traceEvents]));
-	assert.deepEqual(traced, {
-		"cw:component:change-intake": ["change.proposed", "change.revised"],
-		"cw:component:checks": ["gate.recorded"],
-		"cw:component:decision": ["change.committed", "change.deferred", "change.rejected", "change.resumed", "change.withdrawn"],
-		"cw:component:implementation": ["work.assigned", "work.attempt.recorded", "work.claimed", "work.integrated"],
-		"cw:component:planning": ["change.planned"],
-		"cw:component:project-server": ["change.completed", "change.superseded", "effect.recorded"],
-		"cw:component:review": ["review.reconciled"],
-	});
-	const config = JSON.parse(await readFile(join(repoRoot, ".codewiki", "config.json"), "utf8"));
-	assert.equal("domain" in config, false);
-	assert.equal(config.protocol.id, "codewiki.project-config");
+test("native Wiki ownership assigns every production and test path exactly once", async () => {
+	const ownership = await wikiOwnership();
+	for (const path of await productionOwnershipPaths()) {
+		const owners = ownership.filter(entry => entry.sourcePatterns.some(pattern => matchesGlob(path, pattern)));
+		assert.equal(owners.length, 1, `${path}: ${owners.map(entry => entry.componentId).join(", ")}`);
+	}
+	for (const path of TEST_FILES) {
+		const owners = ownership.filter(entry => entry.testPatterns.some(pattern => matchesGlob(path, pattern)));
+		assert.equal(owners.length, 1, `${path}: ${owners.map(entry => entry.componentId).join(", ")}`);
+	}
+});
+
+test("selected intent-fit execution stays private and does not activate lifecycle or read-only entrypoints", async () => {
+	const {graph, external} = await sourceGraph(), check = "src/server/effects/decision-intent-fit.ts";
+	assert.equal(external.has(check), false);
+	assert.ok(graph.get(check).every(path => path.startsWith("src/kernel/") || path.startsWith("src/ports/") || path.startsWith("src/server/") || path === "src/api/transport/envelope.ts"));
+	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(check), false, entrypoint);
+	}
+});
+
+test("suites use shared fixtures instead of registering other suites", async () => {
+	for (const path of TEST_FILES.filter(path => path.endsWith(".mjs"))) {
+		const imports = parseImports(path, await readFile(join(repoRoot, path), "utf8"));
+		assert.ok([...imports.imports, ...imports.dynamicImports].every(target => target === null || !target.endsWith(".test.mjs")), path + ": use a fixture module, not test registration");
+	}
 });

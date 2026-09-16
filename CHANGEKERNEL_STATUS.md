@@ -1,0 +1,26 @@
+# ChangeKernel source-development status
+
+This is the short pre-dogfood gap note, not a second design specification or architectural roadmap. Wiki owns desired state; qualified Change/Work will replace this note after explicit adoption and controller handoff. Read `AGENTS.md` before coding. Never load this mutable checkout as its own controller or invoke ChangeKernel lifecycle tools here.
+
+## Current checkpoint
+
+- Source checkpoint on `audit/clean-baseline`, built on `64e4f18c88250e3e3679f72ca22c9cb6c15aeeb5`: current naming, native source cleanup, partial early-inquiry and evaluation foundations, regression tests, and agreed Wiki design. Git records the exact checkpoint and remote state; committing source does not qualify a release or activate a controller. Both stashes and untracked `outputs/` remain outside this checkpoint and must be preserved.
+- Current branding is ChangeKernel, including the `CHANGEKERNEL_VERSION` export, the core Wiki page at `.changekernel/wiki/items/system/components/changekernel.md`, and this `CHANGEKERNEL_STATUS.md` note. Package and remote identities already use `changekernel`. Historical records, stable source identities and serialized protocol/document fields retain their recorded meaning; no old version export or document-path alias is kept.
+- Public operations remain Project discovery/capabilities, `changes.propose-profile`, and individual Changes get. Early-inquiry contracts, structural transition validation, source citations, model-route selection and intent-fit execution are partial internal foundations, not a complete governed lifecycle.
+- The agreed [Check contract](.changekernel/wiki/items/system/components/checks.md), [Evidence contract](.changekernel/wiki/items/system/components/evidence.md), [desired/current/work views](.changekernel/wiki/items/system/components/alignment.md), and [minimum release](.changekernel/wiki/items/system/components/package.md#minimum-local-dogfood) now supersede the plan to extend mandatory internal semantic Checks and findings. Unified custom Checks/Packs, durable accepted Evidence, complete lifecycle and qualified external control remain unimplemented.
+
+## Next native implementation scope
+
+1. Establish the versioned unified Check/input/result contract and exact project adoption/activation bindings. Replace superseded internal Check/Gate scaffolding and its obsolete tests; do not rename historical records or resurrect the removed lifecycle engine.
+2. Prove one isolated TypeScript/JavaScript runner with bounded inputs, read-only execution and one authorized model-call primitive, including a supported local/private route and honest limits. Add a small explicitly adopted first-party Pack for the supported loop, not an unconditional catalogue.
+3. Bind checkpointed sources, durable Evidence and recoverable Check results; prove missing-input fail-fast, activation versus readiness, exact-input reuse and actionable failure feedback. No live provider or paid execution without applicable authorization.
+4. Complete exact Decision acceptance and pass-report persistence, fresh-session Planning, one bounded Work path and actual Review. Expose a minimal desired outcome, scoped realization assessment and related Change from retained records; do not add another state database.
+5. Freeze a uniquely versioned candidate and qualify the same immutable bytes in disposable external projects: success, consequential block/repair, malicious extension denial, stale inputs, restart and fresh-session continuation. Explicit activation and controller handoff remain separate requirements.
+
+Python, marketplace infrastructure, Hub, broad connectors, automatic model routing, parallel workers and advanced dependency-aware caching are not first-release work. The release contract owns durable success criteria; this note records only the unfinished bridge. Source development still uses native tools until qualified external control is explicitly available.
+
+## Verification and preserved evidence
+
+The preceding design update passed `npm test` with **479/479 tests**, including type checks and build. Its documentation and preservation evidence remains under `/tmp/changekernel-wiki-foundation-8jlm55pp/`; earlier intent-fit evidence remains at `~/.local/state/codewiki/evidence/decision-intent-fit-wfT3h5/`, and earlier rename evidence at `/tmp/changekernel-rename-cleanup-jpgs89fl/`. Temporary files are not release qualification evidence.
+
+This naming pass updates active documentation, the version export and its callers, diagnostics and regression assertions. Four focused assertions failed against the old names before correction. Pre-edit source hashes, copies and validation logs are under `/tmp/changekernel-naming-_uo2k1zx/`. Fresh `npm test` passed **479/479 tests**, including type checks and build, with exit status 0. All 131 checked documentation links resolve; four diagrams and all 47 Wiki source identities and historical metadata blocks remain valid. Language-server probes reported no errors, confirming 23 of 29 changed paths clean; six executable paths were inconclusive. `git diff --check` passed. Historical Change traces, source provenance, archived documents, outputs, procedure files and Git refs/index/stashes remain preserved. No lifecycle mutation, adoption, qualification, activation or controller handoff is performed.

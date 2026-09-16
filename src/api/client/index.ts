@@ -70,7 +70,7 @@ export type SupersedeChangeCall = SupersedeChangeInput & ProductCallOptions;
 export type WorkCandidateCall = WorkCandidateInput & ProductCallOptions;
 export type WorkCommandCall = WorkCommandInput & ProductCallOptions;
 
-export interface CodewikiClient {
+export interface ChangeKernelClient {
 	discover(options: ProductCallOptions): Promise<Outcome<CanonicalValue, ProductError>>;
 	capabilities(options: ProductCallOptions): Promise<Outcome<CanonicalValue, ProductError>>;
 	status(request: ProjectStatusCall): Promise<Outcome<CanonicalValue, ProductError>>;
@@ -101,7 +101,7 @@ export interface CodewikiClient {
 	requestProtectedEffect(request: ProtectedEffectCall): Promise<Outcome<CanonicalValue, ProductError>>;
 }
 
-export function createCodewikiClient(input: ProductClientInput): Outcome<CodewikiClient, ProductError> {
+export function createChangeKernelClient(input: ProductClientInput): Outcome<ChangeKernelClient, ProductError> {
 	if (!validClientInput(input)) return failure(productError(
 		"invalid_request",
 		"Client identity or sign-in proof is invalid.",
@@ -150,7 +150,7 @@ export function createCodewikiClient(input: ProductClientInput): Outcome<Codewik
 		if (response.value.data === null) return failure(transportError());
 		return success(response.value.data);
 	};
-	const client: CodewikiClient = Object.freeze({
+	const client: ChangeKernelClient = Object.freeze({
 		discover: (options: ProductCallOptions) => invoke("project.discover", Object.freeze({}), options),
 		capabilities: (options: ProductCallOptions) => invoke("project.capabilities", Object.freeze({}), options),
 		status: (request: ProjectStatusCall) => invoke("project.status", Object.freeze({source: request.source}), request),

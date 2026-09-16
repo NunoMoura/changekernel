@@ -10,7 +10,7 @@ import {
 } from "../../../src/kernel/wiki/profile-transaction.ts";
 
 const UTF8 = new TextEncoder();
-const CHANGE_PATH = ".codewiki/changes/CHG-profile";
+const CHANGE_PATH = ".changekernel/changes/CHG-profile";
 const BUILD_DIGEST = `sha256:${"a".repeat(64)}`;
 
 function oid(number, algorithm = "sha1") {
@@ -60,7 +60,7 @@ function profileFile(path, type, title, number, options = {}) {
 }
 
 function coreFiles(algorithm = "sha1") {
-	return WIKI_CORE_TYPES.map((name, index) => profileFile(`.codewiki/wiki/types/${name}.md`, "TypeDefinition", name, index + 1, {algorithm}));
+	return WIKI_CORE_TYPES.map((name, index) => profileFile(`.changekernel/wiki/types/${name}.md`, "TypeDefinition", name, index + 1, {algorithm}));
 }
 
 function source(files, commit, tree, algorithm = "sha1", extra = {}) {
@@ -148,36 +148,36 @@ test("admits explicit revise transaction and returns detached immutable source/c
 
 test("accepts every explicit mapping shape and requires exact changed endpoint coverage", () => {
 	const core = coreFiles();
-	const addFile = validRevision(".codewiki/wiki/items/added.md", "Claim", "Added", 100);
+	const addFile = validRevision(".changekernel/wiki/items/added.md", "Claim", "Added", 100);
 	const addResult = validateProfiledWikiTransaction(request(
 		source(core, 1, 2), source([...core, addFile], 3, 4), [mapping("add", [], [addFile])],
 	));
 	assert.equal(addResult.ok, true, addResult.ok ? "" : addResult.error.message);
 
-	const retireFile = validRevision(".codewiki/wiki/items/retired.md", "Claim", "Retired", 101);
+	const retireFile = validRevision(".changekernel/wiki/items/retired.md", "Claim", "Retired", 101);
 	const retireResult = validateProfiledWikiTransaction(request(
 		source([...core, retireFile], 1, 2), source(core, 3, 4), [mapping("retire", [retireFile], [])],
 	));
 	assert.equal(retireResult.ok, true, retireResult.ok ? "" : retireResult.error.message);
 
-	const oldRename = validRevision(".codewiki/wiki/items/old-name.md", "Claim", "OldName", 102);
-	const newRename = validRevision(".codewiki/wiki/items/new-name.md", "Claim", "OldName", 102);
+	const oldRename = validRevision(".changekernel/wiki/items/old-name.md", "Claim", "OldName", 102);
+	const newRename = validRevision(".changekernel/wiki/items/new-name.md", "Claim", "OldName", 102);
 	const renameResult = validateProfiledWikiTransaction(request(
 		source([...core, oldRename], 1, 2), source([...core, newRename], 3, 4), [mapping("rename", [oldRename], [newRename])],
 	));
 	assert.equal(renameResult.ok, true, renameResult.ok ? "" : renameResult.error.message);
 
-	const oldSplit = validRevision(".codewiki/wiki/items/split.md", "Claim", "Split", 103);
-	const splitLeft = validRevision(".codewiki/wiki/items/split-left.md", "Claim", "SplitLeft", 104);
-	const splitRight = validRevision(".codewiki/wiki/items/split-right.md", "Claim", "SplitRight", 105);
+	const oldSplit = validRevision(".changekernel/wiki/items/split.md", "Claim", "Split", 103);
+	const splitLeft = validRevision(".changekernel/wiki/items/split-left.md", "Claim", "SplitLeft", 104);
+	const splitRight = validRevision(".changekernel/wiki/items/split-right.md", "Claim", "SplitRight", 105);
 	const splitResult = validateProfiledWikiTransaction(request(
 		source([...core, oldSplit], 1, 2), source([...core, splitLeft, splitRight], 3, 4), [mapping("split", [oldSplit], [splitLeft, splitRight])],
 	));
 	assert.equal(splitResult.ok, true, splitResult.ok ? "" : splitResult.error.message);
 
-	const mergeLeft = validRevision(".codewiki/wiki/items/merge-left.md", "Claim", "MergeLeft", 106);
-	const mergeRight = validRevision(".codewiki/wiki/items/merge-right.md", "Claim", "MergeRight", 107);
-	const merged = validRevision(".codewiki/wiki/items/merged.md", "Claim", "Merged", 108);
+	const mergeLeft = validRevision(".changekernel/wiki/items/merge-left.md", "Claim", "MergeLeft", 106);
+	const mergeRight = validRevision(".changekernel/wiki/items/merge-right.md", "Claim", "MergeRight", 107);
+	const merged = validRevision(".changekernel/wiki/items/merged.md", "Claim", "Merged", 108);
 	const mergeResult = validateProfiledWikiTransaction(request(
 		source([...core, mergeLeft, mergeRight], 1, 2), source([...core, merged], 3, 4), [mapping("merge", [mergeLeft, mergeRight], [merged])],
 	));
@@ -236,12 +236,12 @@ test("rejects scope, identity, incomplete snapshot, profile and build failures b
 
 test("preserves exact UTF-8/reference spelling while ordinary lineage compares normalized targets", () => {
 	const before = coreFiles();
-	const oldFile = profileFile(".codewiki/wiki/items/cafe.md", "Claim", "Cafe\u0301", 200, {
+	const oldFile = profileFile(".changekernel/wiki/items/cafe.md", "Claim", "Cafe\u0301", 200, {
 		origin: "./../../changes/lineage",
 		revision: "../../changes/CHG-profile",
 		body: "# Cafe\u0301\n\nExact old text.\n",
 	});
-	const newFile = profileFile(".codewiki/wiki/items/cafe.md", "Claim", "Cafe\u0301", 201, {
+	const newFile = profileFile(".changekernel/wiki/items/cafe.md", "Claim", "Cafe\u0301", 201, {
 		origin: "../../changes/lineage",
 		revision: "./../../changes/CHG-profile",
 		body: "# Cafe\u0301\n\nExact new text.\n",
@@ -256,7 +256,7 @@ test("preserves exact UTF-8/reference spelling while ordinary lineage compares n
 	assert.equal(admitted.metadata.origins[0].reference, "../../changes/lineage");
 	assert.equal(admitted.metadata.revision.reference, "./../../changes/CHG-profile");
 	assert.equal(admitted.body, "# Cafe\u0301\n\nExact new text.\n");
-	const conflictingText = profileFile(".codewiki/wiki/items/other.md", "Claim", "Other", 200, {
+	const conflictingText = profileFile(".changekernel/wiki/items/other.md", "Claim", "Other", 200, {
 		origin: "./../../changes/lineage",
 		revision: "../../changes/CHG-profile",
 		body: "# Other\n\nDifferent bytes with same claimed blob.\n",
@@ -284,9 +284,9 @@ test("rejects hostile accessors, custom iteration and sparse source collections 
 
 test("recomputes type contexts and labels conservative type-catalogue impacts", () => {
 	const core = coreFiles();
-	const customBefore = profileFile(".codewiki/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 300, {base: "Claim"});
-	const customAfter = profileFile(".codewiki/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 301, {base: "Entity"});
-	const instance = profileFile(".codewiki/wiki/items/observation.md", "FieldObservation", "Observation", 302);
+	const customBefore = profileFile(".changekernel/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 300, {base: "Claim"});
+	const customAfter = profileFile(".changekernel/wiki/types/FieldObservation.md", "TypeDefinition", "FieldObservation", 301, {base: "Entity"});
+	const instance = profileFile(".changekernel/wiki/items/observation.md", "FieldObservation", "Observation", 302);
 	const result = validateProfiledWikiTransaction(request(
 		source([...core, customBefore, instance], 1, 2), source([...core, customAfter, instance], 3, 4), [revise(customBefore, customAfter)],
 	));
@@ -378,7 +378,7 @@ test("admission caps aggregate endpoints before inspecting overflow endpoint dat
 
 test("maximum file, mapping and aggregate endpoint counts are inclusive", () => {
 	const beforeFiles = [...coreFiles(), ...Array.from({length: WIKI_PROFILE_LIMITS.files - WIKI_CORE_TYPES.length}, (_, index) =>
-		profileFile(`.codewiki/wiki/items/item-${index}.md`, "Claim", `Item${index}`, 1000 + index))];
+		profileFile(`.changekernel/wiki/items/item-${index}.md`, "Claim", `Item${index}`, 1000 + index))];
 	const afterFiles = beforeFiles.map((file, index) => profileFile(file.path, file.metadata.type, file.metadata.title, 2000 + index,
 		{body: `${file.body}\nRevised.\n`}));
 	const mappings = [...beforeFiles.map((file) => mapping("retire", [file], [])), ...afterFiles.map((file) => mapping("add", [], [file]))];
@@ -390,8 +390,8 @@ test("maximum file, mapping and aggregate endpoint counts are inclusive", () => 
 
 test("lineage failures, cross-directory rename and undeclared retirement are explicit", () => {
 	const core = coreFiles();
-	const oldFile = profileFile(".codewiki/wiki/items/old.md", "Claim", "Old", 500);
-	const moved = profileFile(".codewiki/wiki/items/deep/new.md", "Claim", "Old", 501,
+	const oldFile = profileFile(".changekernel/wiki/items/old.md", "Claim", "Old", 500);
+	const moved = profileFile(".changekernel/wiki/items/deep/new.md", "Claim", "Old", 501,
 		{origin: "../../../changes/CHG-profile", revision: "./../../../changes/CHG-profile"});
 	const movedResult = validateProfiledWikiTransaction(request(source([...core, oldFile], 1, 2),
 		source([...core, moved], 3, 4), [mapping("rename", [oldFile], [moved])]));
@@ -410,10 +410,10 @@ test("lineage failures, cross-directory rename and undeclared retirement are exp
 test("bad subjects and nested accessors fail without invoking getters", () => {
 	const fixture = baseRevisionFixture();
 	const base = request(fixture.before, fixture.after, [revise(fixture.beforeDefinition, fixture.afterDefinition)]);
-	for (const path of [".codewiki/changes/bad\npath", ".codewiki/changes/\uFEFFbad", ".codewiki/changes/a/../b", ".codewiki/changes/"]) {
+	for (const path of [".changekernel/changes/bad\npath", ".changekernel/changes/\uFEFFbad", ".changekernel/changes/a/../b", ".changekernel/changes/"]) {
 		assertFailure(validateProfiledWikiTransaction({...base, responsibleChangePath: path}), "invalid_input");
 	}
-	for (const [subject, code] of [[{path: ".codewiki/wiki/missing.md", blob: oid(1)}, "missing_endpoint"],
+	for (const [subject, code] of [[{path: ".changekernel/wiki/missing.md", blob: oid(1)}, "missing_endpoint"],
 		[{path: "docs/raw.md", blob: oid(1)}, "invalid_endpoint"],
 		[{path: fixture.beforeDefinition.path, blob: oid(1, "sha256")}, "identity_mismatch"]]) {
 		const kind = subject.path === fixture.beforeDefinition.path ? "revise" : "rename";
@@ -453,9 +453,9 @@ test("all returned levels are frozen and independent of subsequent caller mutati
 
 test("digest binds mapping grouping, exact path bytes, responsible Change and blob subjects", () => {
 	const core = coreFiles();
-	const left = profileFile(".codewiki/wiki/items/left.md", "Claim", "Left", 600);
-	const right = profileFile(".codewiki/wiki/items/right.md", "Claim", "Right", 601);
-	const merged = profileFile(".codewiki/wiki/items/merged.md", "Claim", "Merged", 602);
+	const left = profileFile(".changekernel/wiki/items/left.md", "Claim", "Left", 600);
+	const right = profileFile(".changekernel/wiki/items/right.md", "Claim", "Right", 601);
+	const merged = profileFile(".changekernel/wiki/items/merged.md", "Claim", "Merged", 602);
 	const before = source([...core, left, right], 1, 2);
 	const after = source([...core, merged], 3, 4);
 	const combined = validateProfiledWikiTransaction(request(before, after, [mapping("merge", [right, left], [merged])]));
@@ -468,7 +468,7 @@ test("digest binds mapping grouping, exact path bytes, responsible Change and bl
 	assert.notEqual(separate.value.transactionDigest, combined.value.transactionDigest);
 	const digests = [];
 	for (const spelling of ["café", "cafe\u0301"]) {
-		const file = profileFile(`.codewiki/wiki/items/${spelling}.md`, "Claim", "Same", 610);
+		const file = profileFile(`.changekernel/wiki/items/${spelling}.md`, "Claim", "Same", 610);
 		const result = validateProfiledWikiTransaction(request(source([...core, file], 1, 2), source([...core, file], 3, 4), []));
 		assert.equal(result.ok, true, result.ok ? "" : result.error.message);
 		digests.push(result.value.transactionDigest);
@@ -476,7 +476,7 @@ test("digest binds mapping grouping, exact path bytes, responsible Change and bl
 	assert.notEqual(digests[0], digests[1]);
 	const empty = request(source(core, 1, 2), source(core, 3, 4), []);
 	const original = validateProfiledWikiTransaction(empty);
-	const changed = validateProfiledWikiTransaction({...empty, responsibleChangePath: ".codewiki/changes/another"});
+	const changed = validateProfiledWikiTransaction({...empty, responsibleChangePath: ".changekernel/changes/another"});
 	assert.equal(changed.ok, true);
 	assert.notEqual(changed.value.transactionDigest, original.value.transactionDigest);
 	const differentBlob = {...merged, blob: oid(603)};
@@ -487,8 +487,8 @@ test("digest binds mapping grouping, exact path bytes, responsible Change and bl
 
 test("same claimed blob cannot carry different text bytes", () => {
 	const core = coreFiles();
-	const before = profileFile(".codewiki/wiki/items/item.md", "Claim", "Item", 400, {body: "# Item\n\nBefore.\n"});
-	const after = profileFile(".codewiki/wiki/items/item.md", "Claim", "Item", 400, {body: "# Item\n\nAfter.\n"});
+	const before = profileFile(".changekernel/wiki/items/item.md", "Claim", "Item", 400, {body: "# Item\n\nBefore.\n"});
+	const after = profileFile(".changekernel/wiki/items/item.md", "Claim", "Item", 400, {body: "# Item\n\nAfter.\n"});
 	const result = validateProfiledWikiTransaction(request(
 		source([...core, before], 1, 2), source([...core, after], 3, 4), [mapping("revise", [before], [after])],
 	));

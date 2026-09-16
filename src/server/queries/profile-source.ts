@@ -1,11 +1,11 @@
-import {decodeProfiledWikiFile} from "../../adapters/git/wiki-profile.ts";
+import {decodeKernelWikiFile} from "../../adapters/git/wiki-profile.ts";
 import type {ProjectSourceSelector} from "../../api/contracts/read.ts";
 import type {ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {
 	bindWikiTypes,
+	resolveKernelWikiContract,
 	wikiIssue,
-	WIKI_PROFILE_ID,
 	WIKI_PROFILE_LIMITS,
 	type ProfiledWikiFile,
 	type WikiIssue,
@@ -45,21 +45,17 @@ export interface ProfiledWikiSourceIssue {
 const UTF8 = new TextEncoder();
 
 /**
- * Loads one exact passive source, then admits its explicitly selected Wiki
- * profile. This is a private interpretation seam: it does not read or write
- * lifecycle state, infer Item continuity, or construct legacy Item IDs.
+ * Loads one exact passive source under the configured Kernel document contract.
+ * This does not write lifecycle state or infer Item continuity or acceptance.
  */
 export async function loadProfiledWikiSource(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
 	source: ProjectSourceSelector,
-	profile: unknown,
 	limits: MarkdownCorpusLimits,
 ): Promise<Outcome<LoadedProfiledWikiSource, ProfiledWikiSourceIssue>> {
-	if (profile !== WIKI_PROFILE_ID) {
-		const unsupported = wikiIssue("unsupported_profile", "$", "An explicit supported profile is required.");
-		return failure(profileIssue(unsupported, "admit_profile"));
-	}
+	const contract = resolveKernelWikiContract(configuration.kernelVersion);
+	if (!contract.ok) return failure(profileIssue(contract.error, "admit_profile"));
 
 	const material = await loadMarkdownMaterialSource(store, configuration, source, limits);
 	if (!material.ok) return failure(materialIssue(material.error));
@@ -69,7 +65,7 @@ export async function loadProfiledWikiSource(
 
 	const managedFiles: ProfiledWikiFile[] = [];
 	for (const input of pending.value) {
-		const decoded = decodeProfiledWikiFile(profile, input);
+		const decoded = decodeKernelWikiFile(contract.value.kernelVersion, input);
 		if (!decoded.ok) return failure(profileIssue(decoded.error, "read_profile"));
 		managedFiles.push(decoded.value);
 	}
@@ -95,7 +91,7 @@ interface ProfiledWikiFileInput {
 function admittedManagedInputs(
 	material: LoadedMarkdownMaterialSource,
 ): Outcome<readonly ProfiledWikiFileInput[], ProfiledWikiSourceIssue> {
-	const managedDocuments = material.corpus.documents.filter((document) => document.path.startsWith(".codewiki/wiki/"));
+	const managedDocuments = material.corpus.documents.filter((document) => document.path.startsWith(".changekernel/wiki/"));
 	if (managedDocuments.length > WIKI_PROFILE_LIMITS.files) {
 		return failure(budgetIssue("files", `Managed Wiki file count exceeds ${WIKI_PROFILE_LIMITS.files}.`));
 	}

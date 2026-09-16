@@ -4,13 +4,17 @@ import {canonicalJson, decodeCanonicalValue, type CanonicalValue} from "../../ke
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 import {decodeProfileChangeTrace, type ProfileChangeTrace} from "../../kernel/changes/trace.ts";
 import {decodeProjectSnapshot, type ProjectSnapshot} from "../../kernel/changes/snapshot.ts";
-import {reduceChangeTrace} from "../../kernel/changes/reducer.ts";
+import {reduceChangeTrace, type ReducedProfileChange} from "../../kernel/changes/reducer.ts";
+import {decodeContract, exactRecord, rejectContract, requiredField, textField} from "../../kernel/data-contracts/validation.ts";
+import {decodeDecisionSourceCitations} from "../../kernel/gates/semantic.ts";
 import {decodeProfiledPathUtf8Hex, createProfiledWikiReference, type ProfiledWikiReference} from "../../kernel/wiki/profile-reference.ts";
 import {validateProfiledWikiTransaction, type ProfiledWikiMapping, type ProfiledWikiTransaction} from "../../kernel/wiki/profile-transaction.ts";
 import {WIKI_PROFILE_ID} from "../../kernel/wiki/profile.ts";
+import {CHANGEKERNEL_VERSION} from "../../kernel/identity/version.ts";
 import type {MarkdownCorpusLimits} from "../../kernel/wiki/corpus.ts";
-import {sameGitOid, type GitOid} from "../../kernel/identity/git.ts";
-import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
+import {decodeGitOidValue, sameGitOid, type GitOid} from "../../kernel/identity/git.ts";
+import {sha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
+import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
 import type {ProjectStorePort, ProjectStoreTreeEntry} from "../../ports/project-store.ts";
 import {profileScopeGuard, type AuthorizedProjectActor} from "../authorization/policy.ts";
 import type {ProjectReadConfiguration} from "./source.ts";
@@ -35,13 +39,43 @@ export async function readProfileChange(
 	return loadProfileChangeRecord(store, configuration, input);
 }
 
+interface VerifiedProfileChange {
+	readonly containing: ProjectSnapshot;
+	readonly trace: ProfileChangeTrace;
+	readonly reduced: ReducedProfileChange;
+	readonly before: LoadedProfiledWikiSource;
+	readonly after: LoadedProfiledWikiSource;
+	readonly transaction: ProfiledWikiTransaction;
+}
+
 /** Internal exact loader; callers authorize their own read or command-replay operation. */
 export async function loadProfileChangeRecord(
 	store: ProjectStorePort,
 	configuration: ProjectReadConfiguration,
 	input: Extract<ChangesReadInput, {view: "get"}>,
 ): Promise<Outcome<CanonicalValue, ProductError>> {
-	if (configuration.wikiProfile !== WIKI_PROFILE_ID || configuration.retiredWikiItemIds.length !== 0) return failure(unavailable("Profile-native Change reads require explicit profile configuration without legacy retirement reservations."));
+	const loaded = await loadVerifiedProfileChange(store, configuration, input);
+	if (!loaded.ok) return loaded;
+	const {reduced, trace, before, after, transaction} = loaded.value;
+	const output = decodeCanonicalValue(Object.freeze({
+		change: reduced.change,
+		status: reduced.state,
+		stateDigest: reduced.stateDigest,
+		trace,
+		reference: reduced.change.reference,
+		transactionDigest: transaction.transactionDigest,
+		before: Object.freeze({commit: before.snapshot.commit, tree: before.snapshot.tree}),
+		after: Object.freeze({commit: after.snapshot.commit, tree: after.snapshot.tree}),
+	}));
+	return output.ok ? success(output.value) : failure(invalidProject("Profile Change read result is not canonical-safe."));
+}
+
+async function loadVerifiedProfileChange(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	input: Extract<ChangesReadInput, {view: "get"}>,
+): Promise<Outcome<VerifiedProfileChange, ProductError>> {
+	if (configuration.kernelVersion !== CHANGEKERNEL_VERSION) return failure(unavailable("Change reads require the current Kernel document contract."));
 	if (input.source.kind === "change" && input.source.changeId !== input.changeId) return failure(notFound());
 	const source = await resolveProjectSourceDetailed(store, configuration, input.source);
 	if (!source.ok) return failure(invalidProject(source.error.message));
@@ -53,12 +87,12 @@ export async function loadProfileChangeRecord(
 	if (!event || event.payload.change.changeId !== input.changeId) return failure(notFound());
 	const reduced = reduceChangeTrace(trace.value.trace);
 	if (!reduced.ok || reduced.value.state !== "proposed") return failure(invalidProject("Profile Change reducer rejected retained lifecycle facts."));
-	if (event.ownerBinding.profile !== configuration.wikiProfile) {
+	if (event.ownerBinding.profile !== WIKI_PROFILE_ID) {
 		return failure(invalidProject("Profile Change owner binding does not match the selected profile."));
 	}
-	const before = await loadProfiledWikiSource(store, configuration, {kind: "commit", commit: event.payload.change.reference.before.commit}, WIKI_PROFILE_ID, profileSourceLimits(configuration));
+	const before = await loadProfiledWikiSource(store, configuration, {kind: "commit", commit: event.payload.change.reference.before.commit}, profileSourceLimits(configuration));
 	if (!before.ok) return failure(invalidProject(`Exact before-source admission failed (${before.error.operation}: ${before.error.code}).`));
-	const after = await loadProfiledWikiSource(store, configuration, {kind: "commit", commit: event.payload.change.reference.after.commit}, WIKI_PROFILE_ID, profileSourceLimits(configuration));
+	const after = await loadProfiledWikiSource(store, configuration, {kind: "commit", commit: event.payload.change.reference.after.commit}, profileSourceLimits(configuration));
 	if (!after.ok) return failure(invalidProject(`Exact candidate-source admission failed (${after.error.operation}: ${after.error.code}).`));
 	const transaction = rebuildTransaction(event.payload.change.reference, before.value, after.value, event.ownerBinding.kernelBuildDigest, input.changeId);
 	if (!transaction.ok) return failure(invalidProject(transaction.error));
@@ -74,17 +108,178 @@ export async function loadProfileChangeRecord(
 	}
 	const placement = await verifyProposalPlacement(store, configuration, containing.value, trace.value.path, before.value, after.value);
 	if (!placement.ok) return placement;
-	const output = decodeCanonicalValue(Object.freeze({
-		change: event.payload.change,
-		status: reduced.value.state,
-		stateDigest: reduced.value.stateDigest,
-		trace: trace.value.trace,
-		reference: event.payload.change.reference,
-		transactionDigest: transaction.value.transactionDigest,
-		before: Object.freeze({commit: before.value.snapshot.commit, tree: before.value.snapshot.tree}),
-		after: Object.freeze({commit: after.value.snapshot.commit, tree: after.value.snapshot.tree}),
+	return success(Object.freeze({
+		containing: containing.value, trace: trace.value.trace, reduced: reduced.value,
+		before: before.value, after: after.value, transaction: transaction.value,
 	}));
-	return output.ok ? success(output.value) : failure(invalidProject("Profile Change read result is not canonical-safe."));
+}
+
+export interface ProfileDecisionGrounds extends VerifiedProfileChange {
+	readonly project: ProjectSnapshot;
+	readonly manifest: CanonicalValue;
+	readonly contextDigest: Sha256Digest;
+	readonly configurationDigest: Sha256Digest;
+}
+
+/**
+ * Rebuild the concrete profile proposal's Decision material after authorization.
+ * This is internal preparation, not an enabled lifecycle command. Complete Git
+ * inventories do not establish semantic coverage, evidence provenance or approval.
+ * No contextComplete flag is inferred here. Consumers must retain exclusions and
+ * establish applicable obligations and evidence before selecting or running checks.
+ */
+export async function loadProfileDecisionGrounds(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	actor: AuthorizedProjectActor,
+	input: unknown,
+): Promise<Outcome<ProfileDecisionGrounds, ProductError>> {
+	const scope = profileScopeGuard(actor, "decision.evaluate", {});
+	if (scope !== null) return failure(scope);
+	if (configuration.kernelVersion !== CHANGEKERNEL_VERSION) {
+		return failure(unavailable("Decision grounds require the current Kernel document contract."));
+	}
+	const request = decodeContract("Profile Decision grounds", input, value => {
+		const record = exactRecord("Profile Decision grounds", value, "$", ["changeId", "expectedProjectHead", "expectedChangeTip"]);
+		return Object.freeze({
+			changeId: textField("Profile Decision grounds", record, "changeId", "$", {maximumBytes: 200, pattern: /^CHG-[A-Za-z0-9][A-Za-z0-9._-]*$/u}),
+			expectedProjectHead: decodeGitOidValue(requiredField("Profile Decision grounds", record, "expectedProjectHead")),
+			expectedChangeTip: decodeGitOidValue(requiredField("Profile Decision grounds", record, "expectedChangeTip")),
+		});
+	});
+	if (!request.ok) return failure(productError("invalid_request", "Decision grounds request is malformed.", "Supply exact Project and Change heads.", false));
+	const {changeId, expectedProjectHead, expectedChangeTip} = request.value;
+	if (actor.changeIds !== null && !actor.changeIds.includes(changeId)) {
+		return failure(productError("authorization_denied", "This Actor cannot evaluate that profile Change.", "Ask for the applicable Change scope.", true));
+	}
+	if (expectedProjectHead.algorithm !== configuration.objectFormat || expectedChangeTip.algorithm !== configuration.objectFormat) {
+		return failure(productError("invalid_request", "Decision heads use another Git object format.", "Refresh exact Project state.", false));
+	}
+	const configurationDigest = semanticDigest("codewiki.profile-decision-configuration@1.0.0", configuration);
+	if (!configurationDigest.ok) return failure(invalidProject("Decision configuration cannot be bound canonically."));
+	const resolved = await resolveProjectSourceDetailed(store, configuration, {kind: "canonical"});
+	if (!resolved.ok) return failure(invalidProject("Current Project snapshot is unavailable."));
+	const project = decodeProjectSnapshot(resolved.value);
+	if (!project.ok || !project.value.complete || project.value.repositoryId !== configuration.repositoryId || project.value.objectFormat !== configuration.objectFormat) {
+		return failure(invalidProject("Decision requires a complete current Project snapshot."));
+	}
+	if (!sameGitOid(project.value.commit, expectedProjectHead)) return failure(staleDecisionGrounds());
+	const loaded = await loadVerifiedProfileChange(store, configuration, {view: "get", changeId, source: {kind: "change", changeId}});
+	if (!loaded.ok) return loaded;
+	const {containing, trace, reduced, before, after, transaction} = loaded.value;
+	if (!sameGitOid(containing.commit, expectedChangeTip) || !sameGitOid(before.snapshot.commit, project.value.commit)) {
+		return failure(staleDecisionGrounds());
+	}
+	if (before.snapshot.snapshotDigest !== project.value.snapshotDigest) return failure(invalidProject("Decision baseline contradicts the observed Project snapshot."));
+	if (reduced.change.reference.kernelBuildDigest !== configuration.kernelBuildDigest) {
+		return failure(unavailable("Decision grounds require the current Kernel interpretation build; historical reads remain available."));
+	}
+	const manifest = decodeCanonicalValue({
+		protocol: "codewiki.profile-decision-grounds@1.0.0",
+		profile: WIKI_PROFILE_ID, kernelBuildDigest: configuration.kernelBuildDigest,
+		configurationDigest: configurationDigest.value,
+		project: project.value, containing, changeDigest: reduced.change.changeDigest,
+		traceDigest: trace.traceDigest, stateDigest: reduced.stateDigest,
+		transactionDigest: transaction.transactionDigest,
+		before: decisionSourceManifest(before), after: decisionSourceManifest(after),
+	});
+	if (!manifest.ok) return failure(productError("limit_exceeded", "Decision source manifest exceeds canonical data bounds.", "Do not truncate required grounds; reduce the supported scope explicitly.", false));
+	const contextDigest = semanticDigest("codewiki.profile-decision-grounds@1.0.0", manifest.value);
+	if (!contextDigest.ok) return failure(invalidProject("Decision context cannot be bound canonically."));
+	return success(Object.freeze({...loaded.value, project: project.value, manifest: manifest.value,
+		contextDigest: contextDigest.value, configurationDigest: configurationDigest.value}));
+}
+
+export interface ProfileDecisionSourceSlice {
+	readonly citation: Readonly<{
+		protocol: "codewiki.profile-decision-source-citation@1.0.0";
+		contextDigest: Sha256Digest;
+		side: "before" | "after";
+		pathUtf8Hex: string;
+		snapshotDigest: Sha256Digest;
+		blob: GitOid;
+		sourceDigest: Sha256Digest;
+		startByte: number;
+		endByte: number;
+		sliceDigest: Sha256Digest;
+		citationDigest: Sha256Digest;
+	}>;
+	/** Exact decoded bytes, including BOM and non-normalized text. Not canonical prose. */
+	readonly text: string;
+}
+
+/**
+ * Internal authorized source lookup, not finding admission or durable evidence.
+ * The backend rebuilds grounds itself; callers supply only source coordinates.
+ * A verified quotation does not prove its truth, relevance or semantic coverage.
+ */
+export async function readProfileDecisionSourceSlices(
+	store: ProjectStorePort,
+	configuration: ProjectReadConfiguration,
+	actor: AuthorizedProjectActor,
+	input: unknown,
+): Promise<Outcome<Readonly<{contextDigest: Sha256Digest; slices: readonly ProfileDecisionSourceSlice[]}>, ProductError>> {
+	const scope = profileScopeGuard(actor, "decision.evaluate", {});
+	if (scope !== null) return failure(scope);
+	const contract = "Profile Decision source citations";
+	const request = decodeContract(contract, input, value => {
+		const record = exactRecord(contract, value, "$", ["changeId", "expectedProjectHead", "expectedChangeTip", "citations"]);
+		const decoded = decodeDecisionSourceCitations(requiredField(contract, record, "citations"));
+		if (!decoded.ok) rejectContract("invalid_field", contract, "$.citations", decoded.error.message);
+		const citations = decoded.value;
+		if (citations.length === 0) rejectContract("invalid_field", contract, "$.citations", "Source lookup requires at least one citation.");
+		return Object.freeze({grounds: {changeId: record.changeId, expectedProjectHead: record.expectedProjectHead, expectedChangeTip: record.expectedChangeTip}, citations});
+	}, {maximumDepth: 8, maximumNodes: 2048, maximumEntriesPerContainer: 64, maximumTextBytes: 256 * 1024});
+	if (!request.ok) return failure(productError("invalid_request", "Source citation request is malformed or exceeds its bounds.", "Supply distinct bounded source coordinates, not findings or completeness claims.", false));
+	const grounds = await loadProfileDecisionGrounds(store, configuration, actor, request.value.grounds);
+	if (!grounds.ok) return grounds;
+	const sources = {
+		before: new Map(grounds.value.before.corpus.documents.map(document => [pathHex(document.path), document])),
+		after: new Map(grounds.value.after.corpus.documents.map(document => [pathHex(document.path), document])),
+	};
+	const slices: ProfileDecisionSourceSlice[] = [];
+	for (const requested of request.value.citations) {
+		const source = grounds.value[requested.side];
+		const document = sources[requested.side].get(requested.pathUtf8Hex);
+		if (!document) return failure(productError("unavailable", "Citation does not name an admitted Markdown source on the requested side.", "Retain excluded or missing sources as an evidence gap.", false));
+		const bytes = new TextEncoder().encode(document.text);
+		if (sha256Digest(bytes) !== requested.sourceDigest) return failure(productError("source_stale", "Citation source digest differs from the backend-read document.", "Rebuild citations against exact current grounds.", false));
+		if (requested.endByte > bytes.byteLength) return failure(productError("invalid_request", "Citation exceeds its source bytes.", "Supply an exact UTF-8 byte range.", false));
+		const selected = bytes.subarray(requested.startByte, requested.endByte);
+		let text: string;
+		try {text = new TextDecoder("utf-8", {fatal: true, ignoreBOM: true}).decode(selected);} catch {
+			return failure(productError("invalid_request", "Citation cuts through a UTF-8 character.", "Use complete UTF-8 character boundaries.", false));
+		}
+		const citationBody = Object.freeze({protocol: "codewiki.profile-decision-source-citation@1.0.0" as const,
+			contextDigest: grounds.value.contextDigest, ...requested,
+			snapshotDigest: source.snapshot.snapshotDigest, blob: document.oid, sliceDigest: sha256Digest(selected)});
+		const citationDigest = semanticDigest(citationBody.protocol, citationBody);
+		if (!citationDigest.ok) return failure(invalidProject("Source citation cannot be bound canonically."));
+		slices.push(Object.freeze({citation: Object.freeze({...citationBody, citationDigest: citationDigest.value}), text}));
+	}
+	slices.sort((left, right) => left.citation.citationDigest < right.citation.citationDigest ? -1 : left.citation.citationDigest > right.citation.citationDigest ? 1 : 0);
+	return success(Object.freeze({contextDigest: grounds.value.contextDigest, slices: Object.freeze(slices)}));
+}
+
+function decisionSourceManifest(source: LoadedProfiledWikiSource) {
+	const byPath = (left: {pathUtf8Hex: string}, right: {pathUtf8Hex: string}): number =>
+		left.pathUtf8Hex < right.pathUtf8Hex ? -1 : left.pathUtf8Hex > right.pathUtf8Hex ? 1 : 0;
+	return {
+		snapshot: source.snapshot,
+		documents: source.corpus.documents.map(document => ({
+			pathUtf8Hex: pathHex(document.path), mode: document.mode, blob: document.oid,
+			byteLength: document.byteLength, contentDigest: sha256Digest(document.text),
+		})).sort(byPath),
+		exclusions: source.corpus.exclusions.map(entry => ({
+			pathUtf8Hex: pathHex(entry.path), mode: entry.mode, blob: entry.oid, reason: entry.reason,
+		})).sort(byPath),
+	};
+}
+function pathHex(path: string): string {
+	return Array.from(new TextEncoder().encode(path), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+function staleDecisionGrounds(): ProductError {
+	return productError("source_stale", "Decision grounds no longer match the requested Project baseline and Change tip.", "Refresh and rebuild Decision grounds before execution.", false);
 }
 
 async function readTrace(
@@ -97,11 +292,11 @@ async function readTrace(
 		repositoryId: configuration.repositoryId,
 		objectFormat: configuration.objectFormat,
 		commit,
-		pathPrefix: ".codewiki/changes",
+		pathPrefix: ".changekernel/changes",
 		maximumEntries: configuration.limits.maximumChangeTraces,
 	});
 	if (!tree.ok || !sameGitOid(tree.value.commit, commit) || tree.value.entries.length > configuration.limits.maximumChangeTraces) return failure(invalidProject("Profile Change Trace tree is unavailable or bound to another commit."));
-	const path = `.codewiki/changes/TRACE-${changeId}.jsonl`;
+	const path = `.changekernel/changes/TRACE-${changeId}.jsonl`;
 	const entry = tree.value.entries.find((candidate) => candidate.path === path);
 	if (!entry || entry.kind !== "blob" || entry.mode !== "100644" || entry.oid.algorithm !== configuration.objectFormat || tree.value.entries.filter((candidate) => candidate.path === path).length !== 1) return failure(notFound());
 	const blob = await store.readBlob({
@@ -171,7 +366,7 @@ function rebuildTransaction(
 	changeId: string,
 ): Outcome<ProfiledWikiTransaction, string> {
 	const changePath = decodeProfiledPathUtf8Hex(reference.changePathUtf8Hex, true);
-	if (!changePath.ok || changePath.value !== `.codewiki/changes/TRACE-${changeId}.jsonl`) return failure("Profile Change reference path does not match requested Change.");
+	if (!changePath.ok || changePath.value !== `.changekernel/changes/TRACE-${changeId}.jsonl`) return failure("Profile Change reference path does not match requested Change.");
 	const mappings: ProfiledWikiMapping[] = [];
 	for (const mapping of reference.mappings) {
 		const decodeEndpoints = (entries: typeof mapping.before): Outcome<readonly Readonly<{path: string; blob: GitOid}>[], string> => {

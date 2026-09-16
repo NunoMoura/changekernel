@@ -147,7 +147,7 @@ test("Agent Run authorization deterministically binds role, exact subject, route
 test("Agent Run authorization rejects role, protected scope, preview, attempt, and digest drift", () => {
 	for (const input of [
 		authorizationInput({role: "review"}),
-		authorizationInput({writableScope: [".codewiki/wiki/**"]}),
+		authorizationInput({writableScope: [".changekernel/wiki/**"]}),
 		authorizationInput({capabilities: [], previewSubjectDigest: digest("7")}),
 		authorizationInput({attempt: 2, predecessor: null}),
 	]) {
