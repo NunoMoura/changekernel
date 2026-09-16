@@ -17,7 +17,7 @@ export interface PiCheckBackendOptions extends Omit<LinuxCheckHostOptions, "mode
  * Private composition for one literal-loopback OpenAI-compatible Check route.
  * This does not verify a release, adopt policy, authorize calls or prove that the
  * loopback service itself processes data locally. Those remain host obligations.
- * Producer execution and durable recovery are deliberately not supplied here.
+ * Producer execution and recovery of unresolved attempts are not supplied here.
  */
 export async function createPiCheckBackend(input: PiCheckBackendOptions) {
 	const options = Object.freeze({...input});
@@ -48,7 +48,7 @@ export async function createPiCheckBackend(input: PiCheckBackendOptions) {
 		providerConfigurationDigest, temperature: provider.temperature, reasoningEffort: null}, binding =>
 		Object.freeze({...createPiOpenAIProvider(provider), routeDigest: binding.routeDigest, settingsDigest: binding.settingsDigest}));
 	if (!model.ok) return model;
-	const host = await createLinuxCheckHost({custodyRoot: options.custodyRoot, authorize: options.authorize, model: model.value});
+	const host = await createLinuxCheckHost({custodyRoot: options.custodyRoot, stateIdentity: options.stateIdentity, authorize: options.authorize, model: model.value});
 	if (!host.ok) return host;
 	return success(Object.freeze({...host.value, modelBinding: Object.freeze({routeDigest: model.value.routeDigest, settingsDigest: model.value.settingsDigest})}));
 }

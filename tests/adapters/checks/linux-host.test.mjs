@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
-import {mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {createServer} from "node:http";
 import test from "node:test";
 import {CHECK_MODEL_PORT_PROTOCOL} from "../../../src/ports/check-model.ts";
 import {createLinuxCheckHost} from "../../../src/adapters/checks/linux-host.ts";
+import {initializeCheckJournal} from "../../../src/adapters/checks/journal.ts";
 import {fixture, ok, digest, limits, body} from "../../kernel/gates/check-fixtures.mjs";
 const hash = value => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 const successful = {passed: true, failureKind: null, feedback: {summary: "Condition holds.", where: "Supplied case", reason: "Exact source supports this condition.", resolution: null, preserve: ["Keep accepted intent."]}, evidenceDigests: [digest("1")], limitations: []};
@@ -33,7 +34,9 @@ test("Linux isolated Check execution in a disposable external project", {timeout
 		if (mode === "ignore-cancel") return new Promise(() => {});
 		return Promise.resolve({value: mode === "malformed" ? {confidence: 1} : {supported: true, reason: "Fixture support."}, inputTokens: mode === "overspend" ? 999999 : 25, outputTokens: 10});
 	}};
-	const created = await createLinuxCheckHost({custodyRoot: root, authorize: () => authorized, model: provider});
+	const stateIdentity = await initializeCheckJournal(root);
+	const options = {custodyRoot: root, stateIdentity, authorize: () => authorized, model: provider};
+	const created = await createLinuxCheckHost(options);
 	assert.equal(created.ok, true, JSON.stringify(created));
 	const host = created.value;
 	try {
@@ -43,7 +46,7 @@ test("Linux isolated Check execution in a disposable external project", {timeout
 			assert.equal(run.result.passed, true); assert.equal(run.modelCalls, 0);
 			assert.equal(run.result.inputDigest, input.selection.inputs[0].digest);
 			assert.equal(run.dependenciesDigest, host.dependenciesDigest);
-			assert.equal((await host.run(input)).error.code, "already-attempted");
+			assert.equal(ok(await host.run(input)).reused, true);
 		});
 		await t.test("denied, unready and mismatched artifacts never execute", async () => {
 			const input = request(host, artifact("/* distinct */"));
@@ -141,9 +144,15 @@ for (const operation of [() => fs.readFile(${JSON.stringify(secret)}), () => fs.
 			mode = "ignore-cancel";
 			const source = artifact(`await api.model('pending', {supported:'boolean', reason:'string'});`);
 			const run = await host.run(modelRequest(host, source, {milliseconds: 2000}));
-			assert.equal(run.error.code, "operational-error"); assert.match(run.error.message, /custody is unresolved/u);
+			assert.equal(run.error.code, "operational-error"); assert.match(run.error.message, /custody.*unresolved/u);
 			assert.equal(observed.signal.aborted, true);
 			assert.equal((await host.run(request(host, artifact("/* after unresolved */")))).error.code, "unsupported");
+			const reopened = ok(await createLinuxCheckHost(options)), before = calls;
+			try {assert.equal((await reopened.run(request(reopened, artifact("/* reopened unresolved */")))).error.code, "operational-error");}
+			finally {await reopened.dispose();}
+			assert.equal(calls, before);
+			await host.dispose();
+			assert.equal((await readdir(root)).some(name => name.startsWith("check-host-")), true, "Uncertain execution material remains available for investigation");
 		});
 	} finally {await host.dispose(); await rm(root, {recursive: true, force: true});}
 });

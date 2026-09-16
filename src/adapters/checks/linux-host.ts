@@ -11,13 +11,16 @@ import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
 import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {CHECK_MODEL_PORT_PROTOCOL, UncertainCheckModelCustody, decodeCheckModelStructure, decodeCheckModelValue, type CheckModelPort} from "../../ports/check-model.ts";
 import {CHECK_WORKER_PROTOCOL, CHECK_WORKER_SOURCE} from "./worker-source.ts";
+import {openCheckJournal, type RetainedCheckValue} from "./journal.ts";
 
 const execute = promisify(execFile);
 const LIBRARIES = ["libdl.so.2", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libpthread.so.0", "libc.so.6", "ld-linux-x86-64.so.2"];
-const PROFILE = "changekernel.check-host.linux-systemd-bwrap@1.0.0";
+const PROFILE = "changekernel.check-host.linux-systemd-bwrap@2.0.0";
 export interface LinuxCheckHostOptions {
-	/** Owner-private disposable directory outside the project checkout. */
+	/** Owner-private persistent directory outside the project checkout. Never rotate it to retry. */
 	readonly custodyRoot: string;
+	/** Identity returned by explicit one-time journal provisioning. */
+	readonly stateIdentity: Sha256Digest;
 	/** Authenticated backend decision, never supplied by a Check or candidate. */
 	readonly authorize: (binding: Readonly<{selectionDigest: Sha256Digest; inputDigest: Sha256Digest; executionDigest: Sha256Digest; permissionDigest: Sha256Digest}>) => boolean;
 	readonly model?: CheckModelPort;
@@ -36,7 +39,8 @@ function json(value: unknown): string {
  * memory, swap, task and wall-time bounds. Bubblewrap supplies a read-only root,
  * isolated network/process namespaces and no project, home, sockets or credentials.
  * Node permissions are additional restrictions, not the containment boundary.
- * This is transient custody: restart/retry authorization requires later retention.
+ * The durable journal retains exact completions and blocks unresolved attempts.
+ * Unknown custody is never reclaimed automatically on restart.
  */
 export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 	if (process.platform !== "linux" || process.arch !== "x64" || !isAbsolute(options.custodyRoot) || typeof options.authorize !== "function") return issue("unsupported", "Linux x64, an external custody root and an authenticated authorizer are required.");
@@ -48,6 +52,7 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 		const cwd = await realpath(process.cwd()), root = await realpath(options.custodyRoot);
 		const location = relative(cwd, root);
 		if (!location || (!location.startsWith(`..${sep}`) && location !== ".." && !isAbsolute(location))) return issue("unsupported", "Check custody must be outside the project checkout.");
+		const journal = await openCheckJournal(root, options.stateIdentity);
 		directory = await mkdtemp(join(root, "check-host-"));
 		const runtime = join(directory, "runtime"); await mkdir(runtime, {mode: 0o700});
 		const identities: Record<string, string> = {};
@@ -60,9 +65,8 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 		const identity = semanticDigest(PROFILE, {identities, worker: bytesDigest(CHECK_WORKER_SOURCE), profile: PROFILE});
 		if (!identity.ok) throw new Error("Runtime identity is invalid.");
 		const dependenciesDigest = identity.value;
-		const attempts = new Set<string>();
 		const active = new Set<Promise<unknown>>();
-		let disposed = false, custodyUncertain = false;
+		let disposed = false, custodyUncertain = false, retainCustody = false;
 		const custody = directory;
 		return success(Object.freeze({dependenciesDigest,
 			async run(input: unknown, signal?: AbortSignal) {
@@ -73,7 +77,7 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			async dispose() {
 				disposed = true;
 				await Promise.allSettled([...active]);
-				await rm(custody, {recursive: true, force: true});
+				if (!retainCustody) await rm(custody, {recursive: true, force: true});
 			},
 		}));
 
@@ -102,30 +106,58 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			const inputText = json({input: selectedInput.value, parameters: adopted.parameters});
 			if (Buffer.byteLength(inputText) > adopted.limits.inputBytes) return issue("invalid-input", "Selected inputs and adopted parameters exceed the execution input budget.");
 			if (signal?.aborted) return issue("operational-error", "Execution was cancelled before launch.");
-			if (authorize(Object.freeze({selectionDigest: selection.value.digest, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest, permissionDigest: adopted.permissionDigest})) !== true) return issue("denied", "Current authority does not permit this exact execution.");
-			if (attempts.has(entry.inputDigest) || attempts.size >= 256) return issue("already-attempted", "Execution was already attempted or transient custody is full; do not silently retry.");
-			attempts.add(entry.inputDigest);
-			let scratch: string | undefined;
+			const binding = Object.freeze({selectionDigest: selection.value.digest, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest, permissionDigest: adopted.permissionDigest});
+			if (authorize(binding) !== true) return issue("denied", "Current authority does not permit this exact execution.");
+			let attempt;
+			try {attempt = await journal.begin(binding);} catch {
+				custodyUncertain = true;
+				return issue("operational-error", "Check state is unavailable, conflicting or unresolved; no execution or automatic retry is permitted.");
+			}
+			if (attempt.kind === "retained") {
+				const value = attempt.value;
+				if (value && (value.dependenciesDigest !== dependenciesDigest || value.result.checkId !== entry.checkId || value.result.producerId !== "changekernel:producer:linux-check-host" || value.modelCalls > adopted.limits.modelCalls || Buffer.byteLength(json(value.result)) > adopted.limits.outputBytes || value.result.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest)))) {
+					custodyUncertain = true; return issue("operational-error", "Retained Check violates its current binding or result bounds.");
+				}
+				if (signal?.aborted) return issue("operational-error", "Retained result delivery was cancelled.");
+				if (authorize(binding) !== true) return issue("denied", "Current authority does not permit retained result delivery.");
+				if (!value) return issue("already-attempted", "This execution previously failed; retry requires explicit investigation and authorization.");
+				return success(Object.freeze({...value, modelCalls: 0, reused: true}));
+			}
+			let scratch: string | undefined, completed: RetainedCheckValue | undefined;
 			try {
 				// Host binaries must still match the profile admitted into the definition.
 				for (const binary of ["bwrap", "systemd-run", "systemctl"]) if (identities[binary] !== bytesDigest(await readFile(`/usr/bin/${binary}`))) throw new Error("Containment binary changed.");
 				scratch = await mkdtemp(join(custody, "run-"));
-				await Promise.all([
+				const writes = await Promise.allSettled([
 					writeFile(join(scratch, "worker.mjs"), CHECK_WORKER_SOURCE, {mode: 0o400}),
 					writeFile(join(scratch, "check.mjs"), artifact, {mode: 0o400}),
 					writeFile(join(scratch, "input.json"), inputText, {mode: 0o400}),
 				]);
+				if (writes.some(write => write.status === "rejected")) throw new Error("Execution material could not be prepared.");
+				if (signal?.aborted || authorize(binding) !== true) throw new Error("Authority or cancellation changed before dispatch.");
 				const output = await executeIsolated(runtime, scratch, adopted.limits, adopted.model ? model : undefined, signal);
 				const decoded = decodeContract("Check return", output.value, value => exactRecord("Check return", value, "$", ["passed", "failureKind", "feedback", "evidenceDigests", "limitations"]));
 				if (!decoded.ok) throw new Error("Check returned a malformed semantic result.");
 				const result = createCheckResult({...decoded.value, checkId: entry.checkId, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest,
 					producerId: "changekernel:producer:linux-check-host", status: "completed"});
 				if (!result.ok || Buffer.byteLength(json(result.value)) > adopted.limits.outputBytes || result.value.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest))) throw new Error("Check result violates its exact result or Evidence bounds.");
-				return success(Object.freeze({result: result.value, dependenciesDigest, modelCalls: output.modelCalls}));
+				completed = Object.freeze({result: result.value, dependenciesDigest, modelCalls: output.modelCalls});
 			} catch (error) {
 				if (error instanceof UncertainCustody) custodyUncertain = true;
-				return issue("operational-error", custodyUncertain ? "Execution custody is unresolved; the host is blocked until explicit investigation. No semantic verdict is available." : "Execution, containment, model service or result validation failed; no semantic verdict was fabricated. Retry requires explicit investigation and authorization.");
-			} finally {if (scratch) await rm(scratch, {recursive: true, force: true});}
+			} finally {
+				if (scratch && custodyUncertain) retainCustody = true;
+				else try {if (scratch) await rm(scratch, {recursive: true, force: true});} catch {custodyUncertain = true; retainCustody = true;}
+			}
+			// Publish only after execution, provider custody and scratch cleanup settle.
+			// If publication fails, retain the reservation and block this host too.
+			if (!custodyUncertain) try {await attempt.finish(completed ?? null);} catch {custodyUncertain = true;}
+			if (custodyUncertain) return issue("operational-error", "Execution custody or durable completion is unresolved; explicit investigation is required. No semantic verdict is available.");
+			if (completed) {
+				if (signal?.aborted) return issue("operational-error", "Completed result delivery was cancelled; completion is retained.");
+				if (authorize(binding) !== true) return issue("denied", "Current authority does not permit completed result delivery.");
+				return success(Object.freeze({...completed, reused: false}));
+			}
+			return issue("operational-error", "Execution, containment, model service or result validation failed; no semantic verdict was fabricated. Retry requires explicit investigation and authorization.");
 		}
 	} catch {
 		if (directory) await rm(directory, {recursive: true, force: true});

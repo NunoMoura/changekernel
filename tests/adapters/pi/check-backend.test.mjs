@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdtemp, rm} from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdtemp, mkdir, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {createPiCheckBackend} from '../../../src/adapters/pi/check-backend.ts';
+import {initializeCheckJournal} from '../../../src/adapters/checks/journal.ts';
 import {fixture, ok, digest, limits} from '../../kernel/gates/check-fixtures.mjs';
 import {localServer, answer} from './http-fixtures.mjs';
 
 const hash = value => `sha256:${createHash('sha256').update(value).digest('hex')}`;
 const budgets = {...limits, milliseconds: 5000, memoryBytes: 128 * 1024 * 1024, modelCalls: 1, modelInputTokens: 8192, modelOutputTokens: 256};
 function configuration(root, baseUrl, authorize = () => true) {
-  return {custodyRoot: root, authorize, backendIdentityDigest: digest('a'), credentialBindingDigest: digest('b'),
+  return {...root, authorize, backendIdentityDigest: digest('a'), credentialBindingDigest: digest('b'),
     provider: {providerId: 'fixture-provider', modelId: 'fixture-model', baseUrl, apiKey: 'fixture-not-a-credential',
       maximumResponseBytes: 4096, maximumOutputTokens: 256, contextWindow: 32768, timeoutMs: 2000, temperature: 0}};
 }
@@ -32,7 +35,7 @@ function request(host, label, patch = {}) {
 async function directory(t) {
   const root = await mkdtemp(join(tmpdir(), 'changekernel-pi-backend-'));
   t.after(() => rm(root, {recursive: true, force: true}));
-  return root;
+  return {custodyRoot: root, stateIdentity: await initializeCheckJournal(root)};
 }
 async function backend(t, config) {
   const host = ok(await createPiCheckBackend(config));
@@ -69,7 +72,9 @@ test('Configured Pi backend executes adopted Checks through the isolated Linux h
     assert.equal(server.requests[0].body.temperature, 0);
     assert.equal(server.requests[0].body.max_tokens, 256);
     assert.equal(JSON.stringify(server.requests[0].body).includes('fixture-not-a-credential'), false);
-    assert.equal((await host.run(input)).error.code, 'already-attempted');
+    const retained = ok(await host.run(input));
+    assert.equal(retained.reused, true); assert.equal(retained.modelCalls, 0);
+    assert.deepEqual(retained.result, value.result);
     assert.equal(server.requests.length, 1);
   });
   await t.test('denied authority, missing inputs and a different adopted route never call the provider', async () => {
@@ -137,6 +142,75 @@ test('Backend configuration is snapshotted and its complete public identity chan
   assert.equal(server.requests.length, 0);
   assert.equal(ok(await first.run(request(first, 'snapshot'))).result.passed, true);
   assert.equal(server.requests[0].headers.authorization, 'Bearer fixture-not-a-credential');
+});
+
+test('Fresh backend processes deliver retained true/false results only with current authority', {timeout: 60000}, async t => {
+  const root = await directory(t); let passed = true;
+  const server = await localServer(t, (_request, response) => answer(response, {text: JSON.stringify({passed, reason: 'Retained assessment.'})}));
+  const config = configuration(root, server.baseUrl), host = await backend(t, config), runs = [];
+  for (const verdict of [true, false]) {
+    passed = verdict; const input = request(host, `restart-${verdict}`), completed = ok(await host.run(input));
+    assert.equal(completed.reused, false); runs.push({input, completed});
+  }
+  const changedInput = request(host, 'restart-true', {input: {slots: runs[0].input.selection.inputs[0].slots.map(slot => ({...slot, value: 'Revised fixture intent.'}))}});
+  passed = true;
+  await host.dispose(); assert.equal(server.requests.length, 2);
+  const module = new URL('../../../src/adapters/pi/check-backend.ts', import.meta.url).href;
+  async function reopened(input, authority = true) {
+    const script = `import {createPiCheckBackend} from ${JSON.stringify(module)};
+      let checks=0;
+      const created=await createPiCheckBackend({...${JSON.stringify(config)},authorize:()=>${JSON.stringify(authority)}==='drift' ? ++checks===1 : ${JSON.stringify(authority)}});
+      if(!created.ok) console.log(JSON.stringify(created));
+      else try {console.log(JSON.stringify(await created.value.run(${JSON.stringify(input)})));} finally {await created.value.dispose();}`;
+    return JSON.parse((await promisify(execFile)(process.execPath, ['--experimental-strip-types', '--input-type=module', '-e', script], {timeout:15000})).stdout);
+  }
+  for (const {input, completed} of runs) {
+    const delivered = ok(await reopened(input));
+    assert.equal(delivered.reused, true); assert.equal(delivered.modelCalls, 0); assert.deepEqual(delivered.result, completed.result);
+    assert.equal((await reopened(input, false)).error.code, 'denied');
+    assert.equal((await reopened(input, 'drift')).error.code, 'denied');
+  }
+  assert.equal(server.requests.length, 2, 'Restart and denied retrieval never make another model call');
+  const original = runs[0].input;
+  const newSelection = {...original, selection:{...original.selection, current:{...original.selection.current, permissionDigests:[digest('d'),digest('f')]}}};
+  assert.equal(ok(await reopened(newSelection)).reused, true);
+  assert.equal((await reopened(newSelection, false)).error.code, 'denied');
+  assert.equal(server.requests.length, 2, 'A newly authorized selection of unchanged exact inputs does not repeat inference');
+  assert.equal(ok(await reopened(changedInput)).reused, false);
+  assert.equal(ok(await reopened(changedInput)).reused, true);
+  assert.equal(server.requests.length, 3, 'Changed exact inputs require a new authorized evaluation');
+  await rm(join(root.custodyRoot, 'check-state-v1'), {recursive:true});
+  assert.equal((await reopened(runs[0].input)).error.code, 'unsupported');
+  assert.equal(server.requests.length, 3, 'Missing state is not silently initialized');
+});
+
+test('Revoked result-delivery authority does not erase a completed execution or cause another model call', {timeout:30000}, async t => {
+  const root = await directory(t); let allowed = true;
+  const server = await localServer(t, (_request, response) => {allowed = false; answer(response);});
+  const host = await backend(t, configuration(root, server.baseUrl, () => allowed)), input = request(host, 'delivery-revoked');
+  assert.equal((await host.run(input)).error.code, 'denied');
+  assert.equal((await host.run(input)).error.code, 'denied');
+  allowed = true;
+  const retained = ok(await host.run(input)); assert.equal(retained.reused, true); assert.equal(retained.modelCalls, 0);
+  assert.equal(server.requests.length, 1);
+});
+
+test('Failure to persist completion blocks acknowledgement and a reopened backend', {timeout:30000}, async t => {
+  const root = await directory(t);
+  const server = await localServer(t, async (_request, response) => {
+    // Reservation must already exist before the first model request.
+    const claim = JSON.parse(await readFile(join(root.custodyRoot, 'check-state-v1/000/claim.json'), 'utf8'));
+    assert.equal(claim.inputDigest, input.selection.inputs[0].digest);
+    await mkdir(join(root.custodyRoot, 'check-state-v1/000/terminal.json'), {mode:0o700});
+    answer(response);
+  });
+  const config = configuration(root, server.baseUrl), host = await backend(t, config), input = request(host, 'storage-failure');
+  assert.equal((await host.run(input)).error.code, 'operational-error');
+  assert.equal((await host.run(input)).error.code, 'unsupported');
+  await host.dispose();
+  const reopened = await backend(t, config);
+  assert.equal((await reopened.run(input)).error.code, 'operational-error');
+  assert.equal(server.requests.length, 1);
 });
 
 test('Unsupported destinations, missing identities and invalid bounds fail without inference or fallback', async t => {

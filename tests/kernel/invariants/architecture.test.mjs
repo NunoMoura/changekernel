@@ -165,6 +165,8 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 			"node:path",
 			"node:url",
 			"node:util",
+		] : path === "src/adapters/checks/journal.ts" ? [
+			"node:fs", "node:crypto", "node:fs/promises", "node:path",
 		] : path === "src/adapters/checks/linux-host.ts" ? [
 			"node:child_process", "node:crypto", "node:fs/promises", "node:path", "node:util",
 		] : path.startsWith("src/adapters/pi/") ? [
@@ -397,12 +399,15 @@ test("unified Check contracts remain pure and do not activate lifecycle or read-
 
 test("isolated Check execution stays private and loads custom code only in the disposable worker", async () => {
 	const {graph, external} = await sourceGraph();
-	const host = "src/adapters/checks/linux-host.ts", worker = "src/adapters/checks/worker-source.ts";
-	assert.ok(graph.get(host).every(path => path.startsWith("src/kernel/") || path === worker || path === "src/ports/check-model.ts"));
+	const host = "src/adapters/checks/linux-host.ts", worker = "src/adapters/checks/worker-source.ts", journal = "src/adapters/checks/journal.ts";
+	assert.ok(graph.get(host).every(path => path.startsWith("src/kernel/") || path === worker || path === journal || path === "src/ports/check-model.ts"));
+	assert.ok(graph.get(journal).every(path => path.startsWith("src/kernel/")));
+	assert.ok(external.get(journal).every(path => ["node:fs", "node:crypto", "node:fs/promises", "node:path"].includes(path)));
 	assert.ok(graph.get(worker).every(path => path.startsWith("src/kernel/")));
 	assert.equal(external.has(worker), false, "The authoring library exports worker bytes, not a host-side runtime");
 	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(host), false, entrypoint);
+		assert.equal(reachable(graph, entrypoint).includes(journal), false, entrypoint);
 	}
 });
 
