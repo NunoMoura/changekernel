@@ -6,7 +6,7 @@ import {readAuthorizedAgentRunOutput, readDecisionModelCheckOutput} from "../../
 import {DECISION_MODEL_CHECK_EXECUTION, DECISION_MODEL_CHECK_EXECUTION_DIGEST} from "../../../src/server/effects/agent-runs.ts";
 import {DECISION_CHECK_OUTPUT_PROTOCOL} from "../../../src/kernel/gates/decision-output.ts";
 import {canonicalJson} from "../../../src/kernel/data-contracts/canonical-json.ts";
-import {createDshAgentOutputReader, DSH_EXECUTION_OUTPUT_HOST_PROTOCOL} from "../../../src/adapters/dsh/agent-output.ts";
+import {createPiAgentOutputReader, PI_EXECUTION_OUTPUT_HOST_PROTOCOL} from "../../../src/adapters/pi/agent-output.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {semanticDigest} from "../../../src/kernel/identity/semantic-digest.ts";
 
@@ -143,11 +143,11 @@ test("output lookup snapshots authority and receipt bindings before awaiting ext
 	assert.deepEqual(admitted(result), original.output);
 });
 
-test("DSH optional reader validates its protocol, request and output receipt independently", async () => {
-	assert.equal(createDshAgentOutputReader({outputProtocol: {id: "wrong", version: "1.0.0"}, readOutput: async () => null}).ok, false);
+test("Pi optional reader validates its protocol, request and output receipt independently", async () => {
+	assert.equal(createPiAgentOutputReader({outputProtocol: {id: "wrong", version: "1.0.0"}, readOutput: async () => null}).ok, false);
 	const value = bundle(); let calls = 0;
-	const host = {outputProtocol: DSH_EXECUTION_OUTPUT_HOST_PROTOCOL, readOutput: async () => {calls++; return {ok: true, value: value.output};}};
-	const reader = admitted(createDshAgentOutputReader(host));
+	const host = {outputProtocol: PI_EXECUTION_OUTPUT_HOST_PROTOCOL, readOutput: async () => {calls++; return {ok: true, value: value.output};}};
+	const reader = admitted(createPiAgentOutputReader(host));
 	assert.equal((await reader.read({...requestFor(value), requestDigest: digest("f")})).error.code, "invalid_request");
 	assert.equal(calls, 0);
 	assert.deepEqual(admitted(await reader.read(requestFor(value))), value.output);

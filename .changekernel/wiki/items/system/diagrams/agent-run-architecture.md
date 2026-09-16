@@ -1,5 +1,5 @@
 ---
-title: DSH Run Architecture
+title: Agent Run Architecture
 aliases: []
 source-id: cw:diagram:runtime
 source-history:
@@ -14,7 +14,7 @@ source-history:
 {
   "codewiki_id": "cw:diagram:runtime",
   "id": "runtime",
-  "purpose": "Show replaceable Agent execution (including a possible DSH adapter), bounded tools/model observations, real custody, exact evidence and fresh-process reconciliation without treating a worktree as a sandbox.",
+  "purpose": "Show replaceable Agent execution (using Pi model and session adapters), bounded tools/model observations, real custody, exact evidence and fresh-process reconciliation without treating a worktree as a sandbox.",
   "components": [
     {
       "id": "service",

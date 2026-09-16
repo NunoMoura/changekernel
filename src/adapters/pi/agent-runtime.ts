@@ -20,53 +20,53 @@ import {
 import {decodeCanonicalValue, type CanonicalValue} from "../../kernel/data-contracts/canonical-json.ts";
 import {failure, success, type Outcome} from "../../kernel/data-contracts/outcome.ts";
 
-export const DSH_EXECUTION_HOST_PROTOCOL = Object.freeze({
-	id: "codewiki.dsh-execution-host",
+export const PI_EXECUTION_HOST_PROTOCOL = Object.freeze({
+	id: "codewiki.pi-execution-host",
 	version: "1.0.0",
 } as const);
-export const DSH_AGENT_RUNTIME_ADAPTER_PROTOCOL = Object.freeze({
-	id: "codewiki.adapter.agent-runtime.dsh",
+export const PI_AGENT_RUNTIME_ADAPTER_PROTOCOL = Object.freeze({
+	id: "codewiki.adapter.agent-runtime.pi",
 	version: "1.0.0",
 } as const);
 
-export type DshHostOperation = "cancel" | "inspect" | "start";
+export type PiHostOperation = "cancel" | "inspect" | "start";
 
-export interface DshExecutionHostRequest {
-	readonly protocol: typeof DSH_EXECUTION_HOST_PROTOCOL;
-	readonly operation: DshHostOperation;
+export interface PiExecutionHostRequest {
+	readonly protocol: typeof PI_EXECUTION_HOST_PROTOCOL;
+	readonly operation: PiHostOperation;
 	readonly input: CanonicalValue;
 }
 
 /**
- * Qualified execution host owns DSH process/session/provider/tool mechanics.
+ * Qualified execution host owns Pi process/session/provider/tool mechanics.
  * Adapter sends one strict message and treats every response as untrusted data.
  */
-export interface DshExecutionHost {
-	readonly protocol: typeof DSH_EXECUTION_HOST_PROTOCOL;
-	execute(request: DshExecutionHostRequest): Promise<unknown>;
+export interface PiExecutionHost {
+	readonly protocol: typeof PI_EXECUTION_HOST_PROTOCOL;
+	execute(request: PiExecutionHostRequest): Promise<unknown>;
 }
 
-export interface DshAgentRuntimeAdapter extends AgentRuntimePort {
-	readonly adapterProtocol: typeof DSH_AGENT_RUNTIME_ADAPTER_PROTOCOL;
+export interface PiAgentRuntimeAdapter extends AgentRuntimePort {
+	readonly adapterProtocol: typeof PI_AGENT_RUNTIME_ADAPTER_PROTOCOL;
 }
 
-export interface DshAgentRuntimeBindingIssue {
+export interface PiAgentRuntimeBindingIssue {
 	readonly code: "invalid_execution_host";
 	readonly message: string;
 }
 
-export function createDshAgentRuntime(
-	host: DshExecutionHost,
-): Outcome<DshAgentRuntimeAdapter, DshAgentRuntimeBindingIssue> {
-	if (typeof host !== "object" || host === null || !sameProtocol(host.protocol, DSH_EXECUTION_HOST_PROTOCOL) || typeof host.execute !== "function") {
+export function createPiAgentRuntime(
+	host: PiExecutionHost,
+): Outcome<PiAgentRuntimeAdapter, PiAgentRuntimeBindingIssue> {
+	if (typeof host !== "object" || host === null || !sameProtocol(host.protocol, PI_EXECUTION_HOST_PROTOCOL) || typeof host.execute !== "function") {
 		return failure(Object.freeze({
 			code: "invalid_execution_host" as const,
-			message: `DSH execution host must bind ${DSH_EXECUTION_HOST_PROTOCOL.id}@${DSH_EXECUTION_HOST_PROTOCOL.version}.`,
+			message: `Pi execution host must bind ${PI_EXECUTION_HOST_PROTOCOL.id}@${PI_EXECUTION_HOST_PROTOCOL.version}.`,
 		}));
 	}
 	return success(Object.freeze({
 		protocol: AGENT_RUNTIME_PORT_PROTOCOL,
-		adapterProtocol: DSH_AGENT_RUNTIME_ADAPTER_PROTOCOL,
+		adapterProtocol: PI_AGENT_RUNTIME_ADAPTER_PROTOCOL,
 		start: async (request: AgentRunStartRequest) => executeStart(host, request),
 		inspect: async (request: AgentRunInspectRequest) => executeInspect(host, request),
 		cancel: async (request: AgentRunCancellationRequest) => executeCancellation(host, request),
@@ -74,7 +74,7 @@ export function createDshAgentRuntime(
 }
 
 async function executeStart(
-	host: DshExecutionHost,
+	host: PiExecutionHost,
 	request: AgentRunStartRequest,
 ): Promise<Outcome<AgentRunHandle, AgentRuntimeIssue>> {
 	const authorization = decodeAgentRunAuthorization(request.authorization);
@@ -87,7 +87,7 @@ async function executeStart(
 }
 
 async function executeInspect(
-	host: DshExecutionHost,
+	host: PiExecutionHost,
 	request: AgentRunInspectRequest,
 ): Promise<Outcome<AgentRunHandle, AgentRuntimeIssue>> {
 	const expected = agentRunInspectRequestDigest(request);
@@ -98,7 +98,7 @@ async function executeInspect(
 }
 
 async function executeCancellation(
-	host: DshExecutionHost,
+	host: PiExecutionHost,
 	request: AgentRunCancellationRequest,
 ): Promise<Outcome<AgentRunHandle, AgentRuntimeIssue>> {
 	const expected = agentRunCancellationRequestDigest(request);
@@ -111,16 +111,16 @@ async function executeCancellation(
 }
 
 async function executeHost(
-	host: DshExecutionHost,
-	operation: DshHostOperation,
+	host: PiExecutionHost,
+	operation: PiHostOperation,
 	input: CanonicalValue,
 	expected: Pick<AgentRunAuthorization, "runId" | "authorizationDigest">,
 ): Promise<Outcome<AgentRunHandle, AgentRuntimeIssue>> {
 	let raw: unknown;
 	try {
-		raw = await host.execute(Object.freeze({protocol: DSH_EXECUTION_HOST_PROTOCOL, operation, input}));
+		raw = await host.execute(Object.freeze({protocol: PI_EXECUTION_HOST_PROTOCOL, operation, input}));
 	} catch {
-		return failure(runtimeIssue("transport_lost", "DSH execution host response was lost."));
+		return failure(runtimeIssue("transport_lost", "Pi execution host response was lost."));
 	}
 	const response = decodeHostResponse(raw);
 	if (!response.ok) return response;
@@ -145,7 +145,7 @@ function decodeHostResponse(input: unknown): Outcome<CanonicalValue, AgentRuntim
 		maximumTextBytes: 64 * 1_024 * 1_024,
 	});
 	if (!canonical.ok || typeof canonical.value !== "object" || canonical.value === null || Array.isArray(canonical.value)) {
-		return failure(runtimeIssue("invalid_receipt", "DSH execution host returned a malformed response."));
+		return failure(runtimeIssue("invalid_receipt", "Pi execution host returned a malformed response."));
 	}
 	const record = canonical.value as Readonly<Record<string, CanonicalValue>>;
 	if (record.ok === true && exactKeys(record, ["ok", "value"])) return success(record.value as CanonicalValue);
@@ -156,25 +156,25 @@ function decodeHostResponse(input: unknown): Outcome<CanonicalValue, AgentRuntim
 			if (runtimeIssueCodes.has(code)) return failure(runtimeIssue(code, boundedMessage(error.message)));
 		}
 	}
-	return failure(runtimeIssue("invalid_receipt", "DSH execution host returned an invalid response envelope."));
+	return failure(runtimeIssue("invalid_receipt", "Pi execution host returned an invalid response envelope."));
 }
 
 function decodeRunHandle(
 	input: CanonicalValue,
 	expected: Pick<AgentRunAuthorization, "runId" | "authorizationDigest">,
 ): Outcome<AgentRunHandle, AgentRuntimeIssue> {
-	if (typeof input !== "object" || input === null || Array.isArray(input)) return failure(runtimeIssue("invalid_receipt", "DSH Run handle is malformed."));
+	if (typeof input !== "object" || input === null || Array.isArray(input)) return failure(runtimeIssue("invalid_receipt", "Pi Run handle is malformed."));
 	const record = input as Readonly<Record<string, CanonicalValue>>;
 	if (!exactKeys(record, ["authorizationDigest", "quiescence", "receipt", "runId", "status"]) ||
 		typeof record.runId !== "string" || typeof record.authorizationDigest !== "string" || typeof record.status !== "string" || !operationalStatuses.has(record.status as AgentRunOperationalStatus)) {
-		return failure(runtimeIssue("invalid_receipt", "DSH Run handle is malformed."));
+		return failure(runtimeIssue("invalid_receipt", "Pi Run handle is malformed."));
 	}
 	if (record.runId !== expected.runId || record.authorizationDigest !== expected.authorizationDigest) {
-		return failure(runtimeIssue("stale_authorization", "DSH Run handle does not bind the authorized Run."));
+		return failure(runtimeIssue("stale_authorization", "Pi Run handle does not bind the authorized Run."));
 	}
 	const receipt = record.receipt === null ? null : decodeAgentRunReceipt(record.receipt);
 	const quiescence = record.quiescence === null ? null : decodeAgentRunQuiescence(record.quiescence);
-	if (receipt !== null && !receipt.ok || quiescence !== null && !quiescence.ok) return failure(runtimeIssue("invalid_receipt", "DSH terminal evidence is invalid."));
+	if (receipt !== null && !receipt.ok || quiescence !== null && !quiescence.ok) return failure(runtimeIssue("invalid_receipt", "Pi terminal evidence is invalid."));
 	const decodedReceipt = receipt?.ok ? receipt.value : null;
 	const decodedQuiescence = quiescence?.ok ? quiescence.value : null;
 	if (record.status === "terminal") {
@@ -182,10 +182,10 @@ function decodeRunHandle(
 			decodedReceipt.authorizationDigest !== expected.authorizationDigest || decodedQuiescence.runId !== expected.runId ||
 			decodedQuiescence.authorizationDigest !== expected.authorizationDigest || !receiptCustodyClosed(decodedReceipt) ||
 			decodedReceipt.custody.quiescenceDigest !== decodedQuiescence.quiescenceDigest) {
-			return failure(runtimeIssue("quiescence_unproven", "DSH terminal Run lacks matching custody closure."));
+			return failure(runtimeIssue("quiescence_unproven", "Pi terminal Run lacks matching custody closure."));
 		}
 	} else if (decodedReceipt !== null || decodedQuiescence !== null) {
-		return failure(runtimeIssue("invalid_receipt", "Nonterminal DSH Run cannot return terminal evidence."));
+		return failure(runtimeIssue("invalid_receipt", "Nonterminal Pi Run cannot return terminal evidence."));
 	}
 	return success(Object.freeze({
 		runId: expected.runId,

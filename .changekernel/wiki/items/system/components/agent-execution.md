@@ -2,16 +2,16 @@
 title: Agent Execution
 aliases:
   - Agent Runtime
-  - DSH Run Execution
+  - Pi Run Execution
 source-id: cw:component:runtime
 ownership:
   sourcePatterns:
-    - src/adapters/dsh/**
+    - src/adapters/pi/**
     - src/ports/agent-output.ts
     - src/ports/agent-runtime.ts
     - src/ports/check-model.ts
   testPatterns:
-    - tests/adapters/dsh/**
+    - tests/adapters/pi/**
     - tests/ports/agent-runtime.test.mjs
 source-history:
   provenance:
@@ -59,7 +59,7 @@ source-history:
 ---
 # Agent Execution
 
-Agent execution attempts bounded work or supplies interpretations for a Change under explicit authority. An Agent Runtime interface separates the semantic service from a particular harness; DSH is an execution adapter, not a knowledge primitive or mandatory product host.
+Agent execution attempts bounded work or supplies interpretations for a Change under explicit authority. An Agent Runtime interface separates the semantic service from the execution library. Pi supplies the model and producer-session implementation; it is not a knowledge primitive or the Product's policy authority. ChangeKernel does not maintain a second harness or a permanent compatibility layer for a superseded runtime.
 
 A run binds exact project/baseline/candidate context, role, permitted tools and effects, and resource limits. Knowledge queries remain scoped and source-bound. Context omissions, redaction, or truncation must be reported; copied prose or generated instructions do not grant authority beyond the run's capabilities.
 
@@ -73,11 +73,17 @@ Private run/session/custody state is distinct from portable accepted knowledge a
 
 Agents perform exploratory tool use, synthesis, authorized artifact changes and Evidence collection. Custom Checks are separate bounded functions: they receive prepared inputs, compute and optionally call the authorized model primitive. They cannot write Project artifacts, Wiki, sources, policy, lifecycle records or Project Server code. Models invoked by Checks have no tools or inherited producer conversation.
 
-The first Check runner supports TypeScript/JavaScript outside the Project Server process, with host-enforced input/read scopes, network and credential restrictions, memory/time/output/model-call limits and observable termination. A library declaration is not a sandbox. Local-only policy also constrains supporting services and forbids remote fallback. Python and other runners share the versioned message contract only after separate support and qualification. These are desired execution boundaries; the partial DSH custody helpers below do not establish them.
+The first Check runner supports TypeScript/JavaScript outside the Project Server process, with host-enforced input/read scopes, network and credential restrictions, memory/time/output/model-call limits and observable termination. A library declaration is not a sandbox. Local-only policy also constrains supporting services and forbids remote fallback. Python and other runners share the versioned message contract only after separate support and qualification. These are desired execution boundaries; cooperative session and custody helpers alone do not establish them.
 
-DSH owns model transport and stream assembly for the Check model primitive as well as harness mechanics for producer agents. The Check execution host supplies operating-system containment and forwards only the exact authorized, tool-free request through a shared model port. A DSH-backed Check call uses a fresh model registry without producer conversation, an agent loop, tool registration, automatic retry or fallback. ChangeKernel must not grow a parallel provider client for this path. Backend installation binds the DSH provider configuration, locality, model and settings; receipt consistency alone does not prove that deployment boundary. The installer must have a supported way to enforce the [provider transport boundary](provider-boundary.md#effects-and-host-trust), including redirect rejection and raw stream/error byte limits before parsing. Translated-chunk counters cannot bound every byte consumed by a provider. A native adapter without those controls remains unsupported for this route until separate containment or a supported provider seam is qualified.
+`pi-ai` owns model request serialization, provider protocols and stream assembly. Checks use it directly, without a producer session, tools, inherited conversation, discovery, automatic retry or fallback. Producer agents use `pi-coding-agent` sessions rather than a ChangeKernel-written agent loop. The execution host supplies operating-system containment and forwards only the exact authorized request through the shared model port.
 
-The initial bridge requests canonical structured JSON and validates it without repair or another inference attempt. This is not provider-constrained decoding: the current provider-neutral DSH request contract has no structured-output setting. Explicit completion, bounded output and usage are required; cached input and separately reported reasoning cannot disappear from budget accounting. Cancellation covers setup, model dispatch and cleanup. Cleanup failure must remain uncertain custody and block reuse rather than masquerading as a closed ordinary error.
+Backend installation binds provider configuration, credentials, locality, model and settings; a consistent receipt does not prove that boundary. The initial supported integration is an explicitly configured OpenAI-compatible HTTP route. Pi's public per-request `fetch` hook enforces the [provider transport boundary](provider-boundary.md#effects-and-host-trust): reject redirects and bound decoded response and error bodies before model parsing, including framing omitted from translated chunks. This hook is not a replacement provider client, a raw socket-byte limit or hard memory containment; transport buffers and decompression remain execution-host concerns. Other Pi providers and transports require separate support and qualification.
+
+The model bridge requests canonical structured JSON and validates it without repair or another inference attempt; this is not provider-constrained decoding. Explicit completion, bounded output and usable token usage are required. Pi reports cached input separately; its output count already includes reasoning, so reasoning is not charged twice. Missing or inconsistent usage is an operational failure, not zero-cost execution. Cancellation covers setup, dispatch and cleanup. Cleanup failure remains uncertain custody and blocks reuse.
+
+Producer sessions receive explicit models, in-memory credentials/settings and an explicit resource loader. Project or user settings, extensions, skills, prompt templates and context files are not discovered implicitly. Tools are allowlisted by admitted names; unimplemented tool bindings are unavailable. Automatic retry and compaction are disabled until explicitly supported and bound to the run's authority. A resolved prompt promise or an idle agent is not success: inspect terminal state, usage and receipt-bound output.
+
+Private session logs use the pinned Pi format, outside Project Git, with bounded reads/writes and exact identity checks on resume. Session identifiers, formats and receipt domains remain runtime-specific. Never relabel an older runtime's log or receipt as a Pi result, and never reconstruct a lost result by inference. Resume support does not itself authorize continued work or restore durable accepted Evidence.
 
 ## Time bounds and uncertain execution
 
@@ -89,7 +95,7 @@ Cancellation is a request, not proof of termination. While cleanup is pending, t
 
 ## Receipt-bound output custody
 
-Agent Runtime handles remain metadata, not embedded output or accepted Check results. An optional `codewiki.port.agent-run-output@1.0.0` capability retrieves bounded output through a separate `codewiki.dsh-execution-output-host@1.0.0` host capability. Neither capability widens Agent Runtime 1.1.0 or the execution-host 1.0.0 message grammar. Only backend wiring supplies the reader; a user-supplied run identifier or digest is not an authority grant.
+Agent Runtime handles remain metadata, not embedded output or accepted Check results. An optional `codewiki.port.agent-run-output@1.0.0` capability retrieves bounded output through a separate `codewiki.pi-execution-output-host@1.0.0` host capability. Neither capability widens Agent Runtime 1.1.0 or the execution-host 1.0.0 message grammar. Only backend wiring supplies the reader; a user-supplied run identifier or digest is not an authority grant.
 
 Every lookup binds the run, authorization and exact terminal receipt. The host rejects mismatched authorization before disclosing a handle, returning output or cancelling work. The backend snapshots the completed binding before awaiting output, checks the receipt and quiescence identities and execution window, re-admits the response as bounded own data, and verifies the text digest and authorized byte budget. Recomputed hashes alone establish consistency, not provider honesty, containment or present-day Project authority. The existing `codewiki.agent-output@1.0.0` digest requires canonical text; noncanonical text is rejected rather than normalized.
 

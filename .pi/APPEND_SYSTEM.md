@@ -12,4 +12,4 @@ This repository develops ChangeKernel as a normal source package. It must never 
 - Do not install ChangeKernel under this repository's `.pi/` directory or create project-local package links, duplicate skills, executable Plugin paths, controller pins, or dogfood state.
 - Only an immutable externally installed Product release that passed exact-subject qualification, activation, and any required explicit controller handoff may govern a later candidate. Release activation alone does not transfer controller authority.
 - Pack and test candidate bytes only in disposable external projects with isolated Pi settings.
-- Generated Views, private DSH/Preview state, runtime scratch, credentials, caches, sockets, worktrees, and package artifacts are not source truth and do not belong in project Git.
+- Generated Views, private agent/Preview state, runtime scratch, credentials, caches, sockets, worktrees, and package artifacts are not source truth and do not belong in project Git.

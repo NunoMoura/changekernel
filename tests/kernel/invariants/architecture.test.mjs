@@ -167,20 +167,11 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 			"node:util",
 		] : path === "src/adapters/checks/linux-host.ts" ? [
 			"node:child_process", "node:crypto", "node:fs/promises", "node:path", "node:util",
-		] : path.startsWith("src/adapters/dsh/") ? [
-			"@deepseek-ai/cordis",
-			"@deepseek-ai/dsh-agent",
-			"@deepseek-ai/dsh-agent-loop",
-			"@deepseek-ai/dsh-agent-loop/invariant",
-			"@deepseek-ai/dsh-agent/invariant",
-			"@deepseek-ai/dsh-invariants",
-			"@deepseek-ai/dsh-llm",
-			"@deepseek-ai/dsh-session",
-			"@deepseek-ai/dsh-session/invariant",
-			"@deepseek-ai/dsh-session-persistence-jsonl",
-			"@deepseek-ai/dsh-system-prompt",
-			"@deepseek-ai/dsh-tools",
-			"node:path",
+		] : path.startsWith("src/adapters/pi/") ? [
+			"@earendil-works/pi-ai",
+			"@earendil-works/pi-ai/api/openai-completions.lazy",
+			"@earendil-works/pi-coding-agent",
+			"node:fs/promises", "node:path",
 		] : [];
 		if (path === "src/adapters/git/project-store.ts") allowed.push("node:fs");
 		assert.ok(allowed.length > 0 && specifiers.every((specifier) => allowed.includes(specifier)), `${path}: ${specifiers.join(", ")}`);
@@ -415,16 +406,16 @@ test("isolated Check execution stays private and loads custom code only in the d
 	}
 });
 
-test("Check inference uses DSH without a parallel provider transport or agent loop", async () => {
+test("Check inference uses Pi without a parallel provider client or agent loop", async () => {
 	const {graph, external} = await sourceGraph();
-	const bridge = "src/adapters/dsh/check-model.ts", port = "src/ports/check-model.ts";
-	assert.deepEqual(external.get(bridge), ["@deepseek-ai/cordis", "@deepseek-ai/dsh-llm"]);
-	assert.ok(graph.get(bridge).every(path => path.startsWith("src/kernel/") || path === port));
+	const bridge = "src/adapters/pi/check-model.ts", port = "src/ports/check-model.ts";
+	assert.deepEqual(external.get(bridge), ["@earendil-works/pi-ai"]);
+	assert.ok(graph.get(bridge).every(path => path.startsWith("src/kernel/") || path === port || path === "src/adapters/pi/model.ts"));
 	assert.ok(graph.get(port).every(path => path.startsWith("src/kernel/")));
 	assert.equal(external.has(port), false);
 	const source = ts.createSourceFile(bridge, await readFile(join(repoRoot, bridge), "utf8"), ts.ScriptTarget.Latest, true);
 	const inspect = node => {
-		if (ts.isIdentifier(node)) assert.notEqual(node.text, "fetch", "DSH owns provider transport");
+		if (ts.isIdentifier(node)) assert.notEqual(node.text, "fetch", "Pi owns model serialization and parsing; the Check bridge must not become a client");
 		ts.forEachChild(node, inspect);
 	};
 	inspect(source);

@@ -200,7 +200,7 @@ export interface AgentRuntimeIssue {
 	readonly message: string;
 }
 
-/** Host-neutral Run boundary. DSH owns Sessions, model/tool loops, provider mechanics, and compaction. */
+/** Host-neutral Run boundary. Pi owns Sessions, model/tool loops, provider mechanics, and compaction. */
 export interface AgentRuntimePort {
 	readonly protocol: typeof AGENT_RUNTIME_PORT_PROTOCOL;
 	start(request: AgentRunStartRequest): Promise<Outcome<AgentRunHandle, AgentRuntimeIssue>>;

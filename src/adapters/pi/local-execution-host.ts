@@ -19,32 +19,32 @@ import {
 	type AgentRunQuiescence,
 	type AgentRunReceipt,
 } from "../../ports/agent-runtime.ts";
-import {DSH_EXECUTION_HOST_PROTOCOL, type DshExecutionHost} from "./agent-runtime.ts";
-import {DSH_EXECUTION_OUTPUT_HOST_PROTOCOL, type DshExecutionOutputHost} from "./agent-output.ts";
+import {PI_EXECUTION_HOST_PROTOCOL, type PiExecutionHost} from "./agent-runtime.ts";
+import {PI_EXECUTION_OUTPUT_HOST_PROTOCOL, type PiExecutionOutputHost} from "./agent-output.ts";
 import {AGENT_RUN_OUTPUT_PROTOCOL, MAXIMUM_AGENT_OUTPUT_BYTES, decodeAgentRunOutput, decodeAgentRunOutputRequest, type AgentRunOutput} from "../../ports/agent-output.ts";
-import {runDshSession, type DshProviderInstaller, type DshSessionRunResult} from "./session-runner.ts";
+import {runPiSession, type PiProviderInstaller, type PiSessionRunResult} from "./session-runner.ts";
 
-export const LOCAL_DSH_EXECUTION_HOST_PROTOCOL = Object.freeze({
-	id: "codewiki.adapter.dsh-execution-host.local",
+export const LOCAL_PI_EXECUTION_HOST_PROTOCOL = Object.freeze({
+	id: "codewiki.adapter.pi-execution-host.local",
 	version: "1.0.0",
 } as const);
 
-export type LocalDshExecutionHostSuccess = Readonly<{
+export type LocalPiExecutionHostSuccess = Readonly<{
 	ok: true;
 	value: AgentRunHandle;
 }>;
 
-export type LocalDshExecutionHostFailure = Readonly<{
+export type LocalPiExecutionHostFailure = Readonly<{
 	ok: false;
 	error: Readonly<{code: string; message: string}>;
 }>;
 
-export type LocalDshExecutionHostResponse = LocalDshExecutionHostSuccess | LocalDshExecutionHostFailure;
+export type LocalPiExecutionHostResponse = LocalPiExecutionHostSuccess | LocalPiExecutionHostFailure;
 
-export interface LocalDshExecutionHostOptions {
+export interface LocalPiExecutionHostOptions {
 	/** Absolute owner-private custody root for session logs and scratch state. */
 	readonly custodyRoot: string;
-	readonly providerInstaller: DshProviderInstaller;
+	readonly providerInstaller: PiProviderInstaller;
 	readonly maximumConcurrentRuns?: number;
 	readonly maximumTrackedRuns?: number;
 	/** Output custody is transient; eviction never authorizes automatic re-execution. */
@@ -52,7 +52,7 @@ export interface LocalDshExecutionHostOptions {
 	readonly clock?: () => string;
 }
 
-export interface LocalDshExecutionHostIssue {
+export interface LocalPiExecutionHostIssue {
 	readonly code: "invalid_options";
 	readonly message: string;
 }
@@ -69,18 +69,18 @@ interface TrackedRun {
 }
 
 /**
- * Bounded in-process Execution Host for one Project Server. DSH Sessions, the
+ * Bounded in-process Execution Host for one Project Server. Pi Sessions, the
  * provider installer, and custody paths stay host-private; responses are one
  * strict protocol envelope. A qualified deployment may replace this host with
  * the sandboxed Run Process host without touching the Agent Runtime port.
  */
-export function createLocalDshExecutionHost(
-	options: LocalDshExecutionHostOptions,
-): Outcome<DshExecutionHost & DshExecutionOutputHost, LocalDshExecutionHostIssue> {
+export function createLocalPiExecutionHost(
+	options: LocalPiExecutionHostOptions,
+): Outcome<PiExecutionHost & PiExecutionOutputHost, LocalPiExecutionHostIssue> {
 	if (typeof options !== "object" || options === null || !isAbsolute(options.custodyRoot) || typeof options.providerInstaller !== "function") {
 		return failure(Object.freeze({
 			code: "invalid_options" as const,
-			message: "Local DSH execution host requires an absolute custody root and Provider installer.",
+			message: "Local Pi execution host requires an absolute custody root and Provider installer.",
 		}));
 	}
 	const maximumConcurrentRuns = options.maximumConcurrentRuns ?? 4;
@@ -91,7 +91,7 @@ export function createLocalDshExecutionHost(
 		!Number.isSafeInteger(maximumTrackedRuns) || maximumTrackedRuns < maximumConcurrentRuns || maximumTrackedRuns > 4_096) {
 		return failure(Object.freeze({
 			code: "invalid_options" as const,
-			message: "Local DSH execution host bounds are invalid.",
+			message: "Local Pi execution host bounds are invalid.",
 		}));
 	}
 	const runs = new Map<string, TrackedRun>();
@@ -99,16 +99,16 @@ export function createLocalDshExecutionHost(
 	const context = {options, runs, clock, maximumConcurrentRuns, maximumTrackedRuns, maximumRetainedOutputBytes};
 	const execute = async (request: unknown): Promise<unknown> => executeHostRequest(request, context);
 	return success(Object.freeze({
-		protocol: DSH_EXECUTION_HOST_PROTOCOL,
-		hostProtocol: LOCAL_DSH_EXECUTION_HOST_PROTOCOL,
-		outputProtocol: DSH_EXECUTION_OUTPUT_HOST_PROTOCOL,
+		protocol: PI_EXECUTION_HOST_PROTOCOL,
+		hostProtocol: LOCAL_PI_EXECUTION_HOST_PROTOCOL,
+		outputProtocol: PI_EXECUTION_OUTPUT_HOST_PROTOCOL,
 		readOutput: async (request: unknown): Promise<unknown> => readTrackedOutput(request, context),
 		execute,
 	}));
 }
 
 interface HostContext {
-	readonly options: LocalDshExecutionHostOptions;
+	readonly options: LocalPiExecutionHostOptions;
 	readonly runs: Map<string, TrackedRun>;
 	readonly clock: () => string;
 	readonly maximumConcurrentRuns: number;
@@ -116,7 +116,7 @@ interface HostContext {
 	readonly maximumRetainedOutputBytes: number;
 }
 
-async function executeHostRequest(request: unknown, context: HostContext): Promise<LocalDshExecutionHostResponse> {
+async function executeHostRequest(request: unknown, context: HostContext): Promise<LocalPiExecutionHostResponse> {
 	const envelope = decodeHostEnvelope(request);
 	if (!envelope.ok) return errorEnvelope("invalid_request", envelope.error.message);
 	try {
@@ -129,7 +129,7 @@ async function executeHostRequest(request: unknown, context: HostContext): Promi
 	}
 }
 
-function decodeHostEnvelope(request: unknown): Outcome<Readonly<{operation: string; input: CanonicalValue}>, LocalDshExecutionHostIssue> {
+function decodeHostEnvelope(request: unknown): Outcome<Readonly<{operation: string; input: CanonicalValue}>, LocalPiExecutionHostIssue> {
 	const canonical = decodeCanonicalValue(request, {maximumDepth: 8, maximumEntriesPerContainer: 64, maximumNodes: 1_000, maximumTextBytes: 4 * 1_024 * 1_024});
 	if (!canonical.ok || typeof canonical.value !== "object" || canonical.value === null || Array.isArray(canonical.value)) {
 		return failure(hostIssue("invalid_options", "Execution host request envelope is malformed."));
@@ -144,7 +144,7 @@ function decodeHostEnvelope(request: unknown): Outcome<Readonly<{operation: stri
 		return failure(hostIssue("invalid_options", "Execution host request protocol is malformed."));
 	}
 	const protocolRecord = protocol as Readonly<Record<string, CanonicalValue>>;
-	if (protocolRecord.id !== DSH_EXECUTION_HOST_PROTOCOL.id || protocolRecord.version !== DSH_EXECUTION_HOST_PROTOCOL.version) {
+	if (protocolRecord.id !== PI_EXECUTION_HOST_PROTOCOL.id || protocolRecord.version !== PI_EXECUTION_HOST_PROTOCOL.version) {
 		return failure(hostIssue("invalid_options", "Execution host protocol identity does not match."));
 	}
 	if (typeof record.operation !== "string" || !["cancel", "inspect", "start"].includes(record.operation)) {
@@ -154,7 +154,7 @@ function decodeHostEnvelope(request: unknown): Outcome<Readonly<{operation: stri
 	return success(Object.freeze({operation: record.operation, input: record.input}));
 }
 
-async function executeStart(input: CanonicalValue, context: HostContext): Promise<LocalDshExecutionHostResponse> {
+async function executeStart(input: CanonicalValue, context: HostContext): Promise<LocalPiExecutionHostResponse> {
 	const request = decodeStartRequest(input);
 	if (!request.ok) return errorEnvelope("invalid_request", request.error.message);
 	const authorization = decodeAgentRunAuthorization(request.value.authorization);
@@ -173,7 +173,7 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 	}
 	const active = [...context.runs.values()].filter((run) => run.status !== "terminal").length;
 	if (active >= context.maximumConcurrentRuns || context.runs.size >= context.maximumTrackedRuns) {
-		return errorEnvelope("authorization_conflict", "DSH execution host is at its active or tracked Run bound; execution identities cannot be evicted to authorize retries.");
+		return errorEnvelope("authorization_conflict", "Pi execution host is at its active or tracked Run bound; execution identities cannot be evicted to authorize retries.");
 	}
 	const timeoutMs = Math.min(authorization.value.budget.timeoutMs, Date.parse(authorization.value.deadlineAt) - Date.parse(admittedAt));
 	const cutoffAt = new Date(Date.parse(admittedAt) + timeoutMs).toISOString();
@@ -197,7 +197,7 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 	// the still-running execution with a synthetic terminal response.
 	const timer = setTimeout(() => cancelTrackedRun(tracked, deadline.value), timeoutMs);
 	try {
-		const result = await runDshSession({
+		const result = await runPiSession({
 			authorization: authorization.value,
 			material: {
 				systemPrompt: request.value.material.systemPrompt,
@@ -229,7 +229,7 @@ async function executeStart(input: CanonicalValue, context: HostContext): Promis
 	return handleSnapshot(tracked);
 }
 
-function executeInspect(input: CanonicalValue, context: HostContext): LocalDshExecutionHostResponse {
+function executeInspect(input: CanonicalValue, context: HostContext): LocalPiExecutionHostResponse {
 	const request = decodeInspectRequest(input);
 	if (!request.ok) return errorEnvelope("invalid_request", request.error.message);
 	const digest = agentRunInspectRequestDigest(request.value);
@@ -242,7 +242,7 @@ function executeInspect(input: CanonicalValue, context: HostContext): LocalDshEx
 	return handleSnapshot(tracked);
 }
 
-function executeCancellation(input: CanonicalValue, context: HostContext): LocalDshExecutionHostResponse {
+function executeCancellation(input: CanonicalValue, context: HostContext): LocalPiExecutionHostResponse {
 	const request = decodeCancellationRequest(input);
 	if (!request.ok) return errorEnvelope("invalid_request", request.error.message);
 	const digest = agentRunCancellationRequestDigest(request.value);
@@ -265,7 +265,7 @@ function cancelTrackedRun(tracked: TrackedRun, cancellationDigest: Sha256Digest 
 
 async function closeRun(
 	tracked: TrackedRun,
-	result: DshSessionRunResult,
+	result: PiSessionRunResult,
 	closedAt: string,
 ): Promise<void> {
 	const quiescence = createAgentRunQuiescence({
@@ -277,7 +277,7 @@ async function closeRun(
 		previewClosed: true,
 		temporaryStateClosed: true,
 	});
-	if (!quiescence.ok) throw new Error(`DSH Run custody closure failed: ${quiescence.error.message}`);
+	if (!quiescence.ok) throw new Error(`Pi Run custody closure failed: ${quiescence.error.message}`);
 	const receipt = createAgentRunReceipt({
 		runId: tracked.runId,
 		authorizationDigest: tracked.authorizationDigest,
@@ -299,7 +299,7 @@ async function closeRun(
 		},
 		operationalGaps: [],
 	});
-	if (!receipt.ok) throw new Error(`DSH Run receipt failed: ${receipt.error.message}`);
+	if (!receipt.ok) throw new Error(`Pi Run receipt failed: ${receipt.error.message}`);
 	tracked.receipt = receipt.value;
 	tracked.quiescence = quiescence.value;
 	tracked.status = "terminal";
@@ -317,7 +317,7 @@ function readTrackedOutput(input: unknown, context: HostContext) {
 	return success(tracked.output);
 }
 
-function retainOutput(tracked: TrackedRun, result: DshSessionRunResult, maximumOutputBytes: number, context: HostContext): void {
+function retainOutput(tracked: TrackedRun, result: PiSessionRunResult, maximumOutputBytes: number, context: HostContext): void {
 	if (result.outcome !== "completed" || result.output === null || tracked.receipt === null || tracked.receipt.outcome !== "completed") return;
 	const bytes = Buffer.byteLength(result.output);
 	if (bytes > Math.min(MAXIMUM_AGENT_OUTPUT_BYTES, maximumOutputBytes, context.maximumRetainedOutputBytes)) return;
@@ -336,7 +336,7 @@ function retainOutput(tracked: TrackedRun, result: DshSessionRunResult, maximumO
 	tracked.output = output.value;
 }
 
-function decodeStartRequest(input: CanonicalValue): Outcome<Readonly<{requestDigest: Sha256Digest; authorization: CanonicalValue; material: AgentRunMaterial}>, LocalDshExecutionHostIssue> {
+function decodeStartRequest(input: CanonicalValue): Outcome<Readonly<{requestDigest: Sha256Digest; authorization: CanonicalValue; material: AgentRunMaterial}>, LocalPiExecutionHostIssue> {
 	const record = exactRecord(input, ["authorization", "material", "requestDigest"]);
 	if (!record.ok) return record;
 	const requestDigest = decodeSha256Digest(record.value.requestDigest);
@@ -350,7 +350,7 @@ function decodeStartRequest(input: CanonicalValue): Outcome<Readonly<{requestDig
 	}));
 }
 
-function decodeMaterial(value: CanonicalValue): Outcome<AgentRunMaterial, LocalDshExecutionHostIssue> {
+function decodeMaterial(value: CanonicalValue): Outcome<AgentRunMaterial, LocalPiExecutionHostIssue> {
 	const record = exactRecord(value, ["prompt", "systemPrompt"]);
 	if (!record.ok) return failure(hostIssue("invalid_options", "Agent Run material is malformed."));
 	const systemPrompt = record.value.systemPrompt;
@@ -364,7 +364,7 @@ function decodeMaterial(value: CanonicalValue): Outcome<AgentRunMaterial, LocalD
 	return success(Object.freeze({systemPrompt, prompt}));
 }
 
-function decodeInspectRequest(input: CanonicalValue): Outcome<AgentRunInspectRequest, LocalDshExecutionHostIssue> {
+function decodeInspectRequest(input: CanonicalValue): Outcome<AgentRunInspectRequest, LocalPiExecutionHostIssue> {
 	const record = exactRecord(input, ["authorizationDigest", "requestDigest", "runId"]);
 	if (!record.ok) return failure(hostIssue("invalid_options", "Agent Run inspection is malformed."));
 	const requestDigest = decodeSha256Digest(record.value.requestDigest);
@@ -380,7 +380,7 @@ function decodeInspectRequest(input: CanonicalValue): Outcome<AgentRunInspectReq
 	}));
 }
 
-function decodeCancellationRequest(input: CanonicalValue): Outcome<AgentRunCancellationRequest, LocalDshExecutionHostIssue> {
+function decodeCancellationRequest(input: CanonicalValue): Outcome<AgentRunCancellationRequest, LocalPiExecutionHostIssue> {
 	const record = exactRecord(input, ["authorizationDigest", "reason", "requestDigest", "requestedAt", "runId"]);
 	if (!record.ok) return failure(hostIssue("invalid_options", "Agent Run cancellation is malformed."));
 	const inspection = decodeInspectRequest(Object.freeze({
@@ -404,7 +404,7 @@ function decodeCancellationRequest(input: CanonicalValue): Outcome<AgentRunCance
 	}));
 }
 
-function handleSnapshot(tracked: TrackedRun): LocalDshExecutionHostSuccess {
+function handleSnapshot(tracked: TrackedRun): LocalPiExecutionHostSuccess {
 	return Object.freeze({
 		ok: true,
 		value: Object.freeze({
@@ -421,7 +421,7 @@ function sessionIdFor(runId: string): string {
 	return `cw:session:${runId.slice("cw:run:".length)}`;
 }
 
-function exactRecord(value: CanonicalValue, expected: readonly string[]): Outcome<Record<string, CanonicalValue>, LocalDshExecutionHostIssue> {
+function exactRecord(value: CanonicalValue, expected: readonly string[]): Outcome<Record<string, CanonicalValue>, LocalPiExecutionHostIssue> {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) {
 		return failure(hostIssue("invalid_options", "Execution host input is malformed."));
 	}
@@ -465,10 +465,10 @@ function compareText(left: string, right: string): number {
 	return 0;
 }
 
-function hostIssue(code: LocalDshExecutionHostIssue["code"], message: string): LocalDshExecutionHostIssue {
+function hostIssue(code: LocalPiExecutionHostIssue["code"], message: string): LocalPiExecutionHostIssue {
 	return Object.freeze({code, message});
 }
 
-function errorEnvelope(code: string, message: string): LocalDshExecutionHostFailure {
+function errorEnvelope(code: string, message: string): LocalPiExecutionHostFailure {
 	return Object.freeze({ok: false, error: Object.freeze({code, message})});
 }

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-	DSH_EXECUTION_HOST_PROTOCOL,
-	createDshAgentRuntime,
+	PI_EXECUTION_HOST_PROTOCOL,
+	createPiAgentRuntime,
 	validateCompletedAgentRun,
-} from "../../../src/adapters/dsh/agent-runtime.ts";
+} from "../../../src/adapters/pi/agent-runtime.ts";
 import {
 	agentRunCancellationRequestDigest,
 	agentRunInspectRequestDigest,
@@ -112,50 +112,50 @@ function requestFor(auth) {
 	return {...draft, requestDigest: requestDigest.value};
 }
 
-test("DSH adapter validates host protocol and forwards only strict protocol messages", async () => {
-	assert.equal(createDshAgentRuntime({protocol: {id: "wrong", version: "1.0.0"}, execute: async () => null}).ok, false);
+test("Pi adapter validates host protocol and forwards only strict protocol messages", async () => {
+	assert.equal(createPiAgentRuntime({protocol: {id: "wrong", version: "1.0.0"}, execute: async () => null}).ok, false);
 	const auth = authorization();
 	const messages = [];
 	const host = {
-		protocol: DSH_EXECUTION_HOST_PROTOCOL,
+		protocol: PI_EXECUTION_HOST_PROTOCOL,
 		async execute(message) {
 			messages.push(message);
 			return {ok: true, value: {runId: auth.runId, authorizationDigest: auth.authorizationDigest, status: "accepted", receipt: null, quiescence: null}};
 		},
 	};
-	const adapter = createDshAgentRuntime(host);
+	const adapter = createPiAgentRuntime(host);
 	assert.equal(adapter.ok, true);
 	const started = await adapter.value.start(requestFor(auth));
 	assert.equal(started.ok, true);
 	assert.equal(started.value.status, "accepted");
 	assert.equal(messages.length, 1);
 	assert.equal(messages[0].operation, "start");
-	assert.deepEqual(messages[0].protocol, DSH_EXECUTION_HOST_PROTOCOL);
+	assert.deepEqual(messages[0].protocol, PI_EXECUTION_HOST_PROTOCOL);
 });
 
-test("DSH adapter rejects malformed requests, stale handles, malformed evidence, and lost transport", async () => {
+test("Pi adapter rejects malformed requests, stale handles, malformed evidence, and lost transport", async () => {
 	const auth = authorization();
 	for (const response of [
 		{ok: true, value: {runId: "cw:run:other", authorizationDigest: auth.authorizationDigest, status: "accepted", receipt: null, quiescence: null}},
 		{ok: true, value: {runId: auth.runId, authorizationDigest: auth.authorizationDigest, status: "terminal", receipt: null, quiescence: null}},
 		{ok: false, error: {code: "unknown", message: "bad"}},
 	]) {
-		const adapter = createDshAgentRuntime({protocol: DSH_EXECUTION_HOST_PROTOCOL, execute: async () => response});
+		const adapter = createPiAgentRuntime({protocol: PI_EXECUTION_HOST_PROTOCOL, execute: async () => response});
 		assert.equal(adapter.ok, true);
 		assert.equal((await adapter.value.start(requestFor(auth))).ok, false);
 	}
-	const throwing = createDshAgentRuntime({protocol: DSH_EXECUTION_HOST_PROTOCOL, execute: async () => { throw new Error("lost"); }});
+	const throwing = createPiAgentRuntime({protocol: PI_EXECUTION_HOST_PROTOCOL, execute: async () => { throw new Error("lost"); }});
 	assert.equal(throwing.ok, true);
 	assert.equal((await throwing.value.start(requestFor(auth))).error.code, "transport_lost");
 	assert.equal((await throwing.value.start({...requestFor(auth), requestDigest: digest("f")})).error.code, "invalid_request");
 });
 
-test("DSH adapter validates terminal receipt, quiescence, inspect, cancellation, and completion", async () => {
+test("Pi adapter validates terminal receipt, quiescence, inspect, cancellation, and completion", async () => {
 	const auth = authorization();
 	const terminal = terminalHandle(auth);
 	const operations = [];
-	const adapter = createDshAgentRuntime({
-		protocol: DSH_EXECUTION_HOST_PROTOCOL,
+	const adapter = createPiAgentRuntime({
+		protocol: PI_EXECUTION_HOST_PROTOCOL,
 		async execute(message) {
 			operations.push(message.operation);
 			return {ok: true, value: terminal};

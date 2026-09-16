@@ -2,19 +2,17 @@ import assert from "node:assert/strict";
 import {mkdtemp, rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {fileURLToPath} from "node:url";
 import test from "node:test";
 
-import {installLlmReplay} from "@deepseek-ai/dsh-llm-replay";
+import {scriptedInstaller} from "./fixtures.mjs";
 
-import {createDshAgentRuntime, validateCompletedAgentRun, DSH_EXECUTION_HOST_PROTOCOL} from "../../../src/adapters/dsh/agent-runtime.ts";
-import {createDshAgentOutputReader} from "../../../src/adapters/dsh/agent-output.ts";
+import {createPiAgentRuntime, validateCompletedAgentRun, PI_EXECUTION_HOST_PROTOCOL} from "../../../src/adapters/pi/agent-runtime.ts";
+import {createPiAgentOutputReader} from "../../../src/adapters/pi/agent-output.ts";
 import {createAgentRunOutputRequest} from "../../../src/ports/agent-output.ts";
 import {readAuthorizedAgentRunOutput} from "../../../src/server/effects/agent-output.ts";
 import {
-	createLocalDshExecutionHost,
-	LOCAL_DSH_EXECUTION_HOST_PROTOCOL,
-} from "../../../src/adapters/dsh/local-execution-host.ts";
+	createLocalPiExecutionHost,
+} from "../../../src/adapters/pi/local-execution-host.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {semanticDigest} from "../../../src/kernel/identity/semantic-digest.ts";
 import {
@@ -25,7 +23,6 @@ import {
 } from "../../../src/ports/agent-runtime.ts";
 import {authorizeAgentRun} from "../../../src/server/effects/agent-runs.ts";
 
-const fixture = fileURLToPath(new URL("./fixtures/replay-session.jsonl", import.meta.url));
 const systemPrompt = "Return only the requested bounded assessment.";
 const prompt = "Evaluate the exact Decision subject.";
 const digest = (character) => `sha256:${character.repeat(64)}`;
@@ -41,7 +38,7 @@ const oid = (character) => {
 };
 
 function authorization(overrides = {}) {
-	const routeBody = {routeId: "cw:route:model-check", providerId: "cw:provider:replay", modelId: "cw:model:replay"};
+	const routeBody = {routeId: "cw:route:model-check", providerId: "cw:provider:scripted", modelId: "cw:model:scripted"};
 	const result = authorizeAgentRun({
 		role: "model-check",
 		stage: "decision",
@@ -84,17 +81,6 @@ function authorizationWithBudget(budgetPatch) {
 	return result.value;
 }
 
-function replayInstaller(context, auth) {
-	const replay = installLlmReplay(context, {
-		file: fixture,
-		providers: [{id: auth.route.providerId, models: [{id: auth.route.modelId}]}],
-	});
-	return {
-		providerReceiptDigest: semantic("codewiki.test-replay-provider@1.0.0", {routeDigest: auth.route.routeDigest}),
-		assertComplete: replay.assertConsumed,
-		dispose: replay.dispose,
-	};
-}
 
 function startRequest(auth, material = {systemPrompt, prompt}) {
 	const draft = {requestDigest: digest("0"), authorization: auth, material};
@@ -103,16 +89,16 @@ function startRequest(auth, material = {systemPrompt, prompt}) {
 	return {...draft, requestDigest: requestDigest.value};
 }
 
-test("local DSH Execution Host executes Run and re-returns identical handle on idempotent retry", async () => {
+test("local Pi Execution Host executes Run and re-returns identical handle on idempotent retry", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-local-host-"));
 	try {
-		const host = createLocalDshExecutionHost({
+		const host = createLocalPiExecutionHost({
 			custodyRoot: root,
 			clock: outputClock,
-			providerInstaller: replayInstaller,
+			providerInstaller: scriptedInstaller,
 		});
 		assert.equal(host.ok, true);
-		const runtime = createDshAgentRuntime(host.value);
+		const runtime = createPiAgentRuntime(host.value);
 		assert.equal(runtime.ok, true);
 
 		const auth = authorization();
@@ -143,18 +129,18 @@ test("local DSH Execution Host executes Run and re-returns identical handle on i
 	}
 });
 
-test("local DSH Execution Host enforces request digest, bounds, and unknown Run inspection", async () => {
+test("local Pi Execution Host enforces request digest, bounds, and unknown Run inspection", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-local-host-bounds-"));
 	try {
-		assert.equal(createLocalDshExecutionHost({custodyRoot: "relative", providerInstaller: replayInstaller}).ok, false);
-		assert.equal(createLocalDshExecutionHost({custodyRoot: root, providerInstaller: replayInstaller, maximumConcurrentRuns: 0}).ok, false);
+		assert.equal(createLocalPiExecutionHost({custodyRoot: "relative", providerInstaller: scriptedInstaller}).ok, false);
+		assert.equal(createLocalPiExecutionHost({custodyRoot: root, providerInstaller: scriptedInstaller, maximumConcurrentRuns: 0}).ok, false);
 
-		const host = createLocalDshExecutionHost({
+		const host = createLocalPiExecutionHost({
 			custodyRoot: root,
-			providerInstaller: replayInstaller,
+			providerInstaller: scriptedInstaller,
 		});
 		assert.equal(host.ok, true);
-		const runtime = createDshAgentRuntime(host.value);
+		const runtime = createPiAgentRuntime(host.value);
 		assert.equal(runtime.ok, true);
 
 		const auth = authorization();
@@ -181,12 +167,12 @@ test("local DSH Execution Host enforces request digest, bounds, and unknown Run 
 	}
 });
 
-test("local DSH Execution Host cancels terminal Run idempotently", async () => {
+test("local Pi Execution Host cancels terminal Run idempotently", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-local-host-cancel-"));
 	try {
-		const host = createLocalDshExecutionHost({custodyRoot: root, providerInstaller: replayInstaller, clock: outputClock});
+		const host = createLocalPiExecutionHost({custodyRoot: root, providerInstaller: scriptedInstaller, clock: outputClock});
 		assert.equal(host.ok, true);
-		const runtime = createDshAgentRuntime(host.value);
+		const runtime = createPiAgentRuntime(host.value);
 		assert.equal(runtime.ok, true);
 
 		const auth = authorization();
@@ -226,16 +212,16 @@ test("local host rejects wrong authorization before inspecting or cancelling an 
 	const ready = new Promise(resolve => {entered = resolve;});
 	let starting;
 	try {
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: outputClock,
-			providerInstaller: async (context, auth) => {entered(); await blocked; return replayInstaller(context, auth);}}).value;
-		const runtime = createDshAgentRuntime(host).value, auth = authorization();
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: outputClock,
+			providerInstaller: async (auth, signal) => {entered(); await blocked; return scriptedInstaller(auth, signal);}}).value;
+		const runtime = createPiAgentRuntime(host).value, auth = authorization();
 		starting = runtime.start(startRequest(auth));
 		await ready;
 		for (const operation of ["inspect", "cancel"]) {
 			const draft = {runId: auth.runId, authorizationDigest: digest("f"), requestDigest: digest("0"),
 				...(operation === "cancel" ? {reason: "superseded", requestedAt: outputClock()} : {})};
 			const requestDigest = (operation === "cancel" ? agentRunCancellationRequestDigest : agentRunInspectRequestDigest)(draft).value;
-			const denied = await host.execute({protocol: DSH_EXECUTION_HOST_PROTOCOL, operation, input: {...draft, requestDigest}});
+			const denied = await host.execute({protocol: PI_EXECUTION_HOST_PROTOCOL, operation, input: {...draft, requestDigest}});
 			assert.equal(denied.error.code, "stale_authorization");
 			assert.equal("value" in denied, false, "The host must not disclose a handle and rely on adapter rejection");
 		}
@@ -254,16 +240,16 @@ test("local host rejects wrong authorization before inspecting or cancelling an 
 	} finally {release(); if (starting) await starting; await rm(root, {recursive: true, force: true});}
 });
 
-test("DSH output capability returns exact completed bytes without changing historical handles", async () => {
+test("Pi output capability returns exact completed bytes without changing historical handles", async () => {
 	const root = await mkdtemp(join(tmpdir(), "codewiki-host-output-"));
 	try {
-		const host = createLocalDshExecutionHost({custodyRoot: root, providerInstaller: replayInstaller, clock: outputClock}).value;
-		const runtime = createDshAgentRuntime(host).value, reader = createDshAgentOutputReader(host).value, auth = authorization();
+		const host = createLocalPiExecutionHost({custodyRoot: root, providerInstaller: scriptedInstaller, clock: outputClock}).value;
+		const runtime = createPiAgentRuntime(host).value, reader = createPiAgentOutputReader(host).value, auth = authorization();
 		const handle = (await runtime.start(startRequest(auth))).value;
 		assert.deepEqual(Object.keys(handle).sort(), ["authorizationDigest", "quiescence", "receipt", "runId", "status"]);
 		const result = await readAuthorizedAgentRunOutput(reader, auth, handle);
 		assert.equal(result.ok, true, JSON.stringify(result.error));
-		assert.equal(result.value.text, "DSH vertical slice complete.");
+		assert.equal(result.value.text, "Pi vertical slice complete.");
 		assert.equal(result.value.outputDigest, handle.receipt.outputDigest);
 		assert.deepEqual((await readAuthorizedAgentRunOutput(reader, auth, handle)).value, result.value);
 		assert.ok(Object.isFrozen(result.value));
@@ -274,19 +260,19 @@ test("DSH output capability returns exact completed bytes without changing histo
 		const hostile = Object.defineProperty({}, "runId", {get() {accessed++; throw new Error("must not run");}});
 		assert.equal((await host.readOutput(hostile)).error.code, "invalid_request");
 		assert.equal(accessed, 0);
-		const freshHost = createLocalDshExecutionHost({custodyRoot: root, providerInstaller: replayInstaller, clock: outputClock}).value;
+		const freshHost = createLocalPiExecutionHost({custodyRoot: root, providerInstaller: scriptedInstaller, clock: outputClock}).value;
 		assert.equal((await freshHost.readOutput(outputRequest(auth, handle))).error.code, "not_found", "Session logs are not implicitly promoted into retained output evidence");
 	} finally {await rm(root, {recursive: true, force: true});}
 });
 
-test("DSH output custody bounds evict bytes without rerunning or replacing receipts", async () => {
-	for (const maximumRetainedOutputBytes of [1, Buffer.byteLength("DSH vertical slice complete.")]) {
+test("Pi output custody bounds evict bytes without rerunning or replacing receipts", async () => {
+	for (const maximumRetainedOutputBytes of [1, Buffer.byteLength("Pi vertical slice complete.")]) {
 		const root = await mkdtemp(join(tmpdir(), "codewiki-host-output-bound-"));
 		try {
 			let calls = 0;
-			const host = createLocalDshExecutionHost({custodyRoot: root, clock: outputClock, maximumRetainedOutputBytes,
-				providerInstaller: (context, auth) => {calls++; return replayInstaller(context, auth);}}).value;
-			const runtime = createDshAgentRuntime(host).value;
+			const host = createLocalPiExecutionHost({custodyRoot: root, clock: outputClock, maximumRetainedOutputBytes,
+				providerInstaller: (auth, signal) => {calls++; return scriptedInstaller(auth, signal);}}).value;
+			const runtime = createPiAgentRuntime(host).value;
 			const firstAuth = authorization(), secondAuth = authorization({actorId: "cw:actor:other"});
 			const first = (await runtime.start(startRequest(firstAuth))).value;
 			if (maximumRetainedOutputBytes > 1) assert.equal((await host.readOutput(outputRequest(firstAuth, first))).ok, true);
@@ -315,9 +301,9 @@ test("host time admission rejects future, expired and malformed clocks before pr
 	try {
 		for (const [now, code] of [["2026-09-05T04:59:59.999Z", "stale_authorization"], ["2026-09-05T05:02:00.000Z", "stale_authorization"], ["2026-09-05T05:02:00.001Z", "stale_authorization"], ["bad-clock", "environment_unavailable"]]) {
 			let calls = 0;
-			const host = createLocalDshExecutionHost({custodyRoot: root, clock: () => now,
+			const host = createLocalPiExecutionHost({custodyRoot: root, clock: () => now,
 				providerInstaller: () => {calls++; throw new Error("must not install");}}).value;
-			const runtime = createDshAgentRuntime(host).value, auth = authorization();
+			const runtime = createPiAgentRuntime(host).value, auth = authorization();
 			assert.equal((await runtime.start(startRequest(auth))).error.code, code);
 			assert.equal((await runtime.inspect(inspectRequest(auth))).error.code, "not_found");
 			assert.equal(calls, 0);
@@ -333,13 +319,13 @@ test("host timeout during provider setup preserves unknown custody and prevents 
 	try {
 		let calls = 0, now = outputClock();
 		const auth = authorizationWithBudget({timeoutMs: 1000});
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: () => now,
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: () => now,
 			providerInstaller: async () => {
 				calls++; entered.resolve(); await release.promise;
 				// No provider is installed. A model call after cancellation would fail.
 				return {providerReceiptDigest: null, dispose() {}};
 			}}).value;
-		const runtime = createDshAgentRuntime(host).value;
+		const runtime = createPiAgentRuntime(host).value;
 		starting = runtime.start(startRequest(auth));
 		await entered.promise;
 		t.mock.timers.tick(999);
@@ -369,12 +355,12 @@ for (const cause of ["timeout", "deadline", "late-observation"]) test(`host ${ca
 	try {
 		let now = outputClock();
 		const auth = cause === "deadline" ? authorization() : authorizationWithBudget({timeoutMs: 1000});
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: () => now,
-			providerInstaller: (context, actual) => {
-				const lease = replayInstaller(context, actual);
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: () => now,
+			providerInstaller: (auth, signal) => {
+				const lease = scriptedInstaller(auth, signal);
 				return {...lease, async dispose() {entered.resolve(); await release.promise; await lease.dispose();}};
 			}}).value;
-		const runtime = createDshAgentRuntime(host).value;
+		const runtime = createPiAgentRuntime(host).value;
 		starting = runtime.start(startRequest(auth));
 		await entered.promise;
 		assert.equal((await runtime.inspect(inspectRequest(auth))).value.receipt, null);
@@ -402,9 +388,9 @@ test("host retains failed custody and refuses new work instead of forgetting a p
 	const root = await mkdtemp(join(tmpdir(), "codewiki-host-uncertain-"));
 	try {
 		let calls = 0;
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: outputClock, maximumConcurrentRuns: 1, maximumTrackedRuns: 1,
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: outputClock, maximumConcurrentRuns: 1, maximumTrackedRuns: 1,
 			providerInstaller: () => {calls++; throw new Error("uncertain provider setup");}}).value;
-		const runtime = createDshAgentRuntime(host).value, auth = authorization();
+		const runtime = createPiAgentRuntime(host).value, auth = authorization();
 		assert.equal((await runtime.start(startRequest(auth))).error.code, "environment_unavailable");
 		const retry = (await runtime.start(startRequest(auth))).value;
 		assert.equal(retry.status, "cancelling");
@@ -418,9 +404,9 @@ test("host preserves completed identities at the tracking bound and replays them
 	const root = await mkdtemp(join(tmpdir(), "codewiki-host-tracked-bound-"));
 	try {
 		let calls = 0, now = "2026-09-05T05:00:00.000Z";
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: () => now, maximumConcurrentRuns: 1, maximumTrackedRuns: 1,
-			providerInstaller: (context, auth) => {calls++; return replayInstaller(context, auth);}}).value;
-		const runtime = createDshAgentRuntime(host).value, auth = authorization();
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: () => now, maximumConcurrentRuns: 1, maximumTrackedRuns: 1,
+			providerInstaller: (auth, signal) => {calls++; return scriptedInstaller(auth, signal);}}).value;
+		const runtime = createPiAgentRuntime(host).value, auth = authorization();
 		const first = await runtime.start(startRequest(auth));
 		assert.equal(first.value.receipt.outcome, "completed", "The exact issuance boundary is admissible");
 		assert.equal((await runtime.start(startRequest(authorization({actorId: "cw:actor:another"})))).error.code, "authorization_conflict");
@@ -435,9 +421,9 @@ test("timeout during harness mounting prevents provider installation", async t =
 	const root = await mkdtemp(join(tmpdir(), "codewiki-host-mount-timeout-"));
 	try {
 		let calls = 0;
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: outputClock,
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: outputClock,
 			providerInstaller: () => {calls++; throw new Error("must not install");}}).value;
-		const runtime = createDshAgentRuntime(host).value, auth = authorizationWithBudget({timeoutMs: 1000});
+		const runtime = createPiAgentRuntime(host).value, auth = authorizationWithBudget({timeoutMs: 1000});
 		const starting = runtime.start(startRequest(auth));
 		t.mock.timers.tick(1000);
 		const result = await starting;
@@ -455,12 +441,12 @@ test("deadline cancellation preserves the first explicit cancellation binding", 
 	let starting;
 	try {
 		const auth = authorizationWithBudget({timeoutMs: 1000});
-		const host = createLocalDshExecutionHost({custodyRoot: root, clock: outputClock,
-			providerInstaller: (context, actual) => {
-				const lease = replayInstaller(context, actual);
+		const host = createLocalPiExecutionHost({custodyRoot: root, clock: outputClock,
+			providerInstaller: (auth, signal) => {
+				const lease = scriptedInstaller(auth, signal);
 				return {...lease, async dispose() {entered.resolve(); await release.promise; await lease.dispose();}};
 			}}).value;
-		const runtime = createDshAgentRuntime(host).value;
+		const runtime = createPiAgentRuntime(host).value;
 		starting = runtime.start(startRequest(auth));
 		await entered.promise;
 		const body = {...inspectRequest(auth), reason: "operator", requestedAt: outputClock()};

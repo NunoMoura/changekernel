@@ -31,7 +31,7 @@ test("submitted capture preserves BOM, CRLF, non-NFC UTF-8 and separates claimed
 	assert.equal(Buffer.from(source.contentUtf8Hex, "hex").toString("utf8"), text);
 	assert.equal(source.contentDigest, rawDigest(Buffer.from(text)));
 	assert.notEqual(source.contentDigest, sourceFixture(text.normalize("NFC")).contentDigest);
-	const change = inquiryFixture("sha1", {sources: [source], intent: "What should change?", intentBasis: {kind: "interpreted", sourceDigests: [source.sourceDigest], producerRunRef: "cw:dsh-run:interpret"}});
+	const change = inquiryFixture("sha1", {sources: [source], intent: "What should change?", intentBasis: {kind: "interpreted", sourceDigests: [source.sourceDigest], producerRunRef: "cw:run:interpret"}});
 	assert.equal(change.intentBasis.kind, "interpreted"); assert.equal(change.sources[0].claimedAttribution, "Author claim");
 	const {sourceDigest, ...sourceBody} = source;
 	assert.equal(sourceDigest, admitted(semanticDigest("codewiki.change-source@1.0.0", sourceBody)));
@@ -57,7 +57,7 @@ test("inquiry digests bind every source claim, provenance, decision field and re
 		{changeType: "maintenance"}, {realization: "wiki-only"}, {acceptance: ["One criterion"]}, {questions: ["Still unknown?"]},
 		{assumptions: ["Unverified claim"]}, {relationships: [{kind: "related_to", changeId: "CHG-next"}]},
 		{wikiConsequences: {kind: "none", reason: "Only source behavior is in scope."}},
-		{intentBasis: {...body.intentBasis, kind: "interpreted", producerRunRef: "cw:dsh-run:producer"}},
+		{intentBasis: {...body.intentBasis, kind: "interpreted", producerRunRef: "cw:run:producer"}},
 	]) assert.notEqual(admitted(createInquiryChange({...body, ...patch})).changeDigest, changeDigest);
 	const submitted = original.sources[0];
 	for (const patch of [{claimedLocator: "copied file"}, {claimedAttribution: "someone"}]) {
