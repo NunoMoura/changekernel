@@ -10,8 +10,10 @@ ownership:
     - model-check
   sourcePatterns:
     - src/kernel/gates/**
+    - src/adapters/checks/**
   testPatterns:
     - tests/kernel/gates/**
+    - tests/adapters/checks/**
   traceEvents:
     - gate.recorded
 source-history:
@@ -67,9 +69,11 @@ The initial authoring language is TypeScript, compiled to JavaScript for one iso
 
 The Check library exposes bounded input access, computation, result construction and an optional model-call primitive. A developer can reject missing inputs with code, request one structured assessment, validate its response and return feedback. One Check still answers one condition, not an opaque collection of unrelated questions. Multiple operations require explicit bounded resources; a Check must not become another autonomous agent.
 
-Model calls go through the authorized execution host with declared inputs/output structure, permitted route, budgets, cancellation and retained execution identity. Models have no tools, ambient session, project writer or arbitrary provider credentials. One configurable Check model, including a supported local/private route, is sufficient initially. No silent provider fallback, reviewer fleet, repeated voting or automatic routing is required. A fixed resource envelope bounds spending, not reasoning difficulty; inadequate capability or exhausted budget cannot fabricate support.
+Model calls go through the authorized execution host with declared inputs/output structure, permitted route, budgets, cancellation and retained execution identity. The host delegates model dispatch to [DSH execution](dsh-run-execution.md); it does not introduce a separate provider transport or agent harness. Models have no tools, ambient session, project writer or arbitrary provider credentials. One configurable Check model, including a supported local/private route, is sufficient initially. No silent provider fallback, reviewer fleet, repeated voting or automatic routing is required. A fixed resource envelope bounds spending, not reasoning difficulty; inadequate capability or exhausted budget cannot fabricate support.
 
 Checks cannot modify Wiki, artifacts, sources, policy, lifecycle state or Project Server code. Custom code executes outside the Project Server process, with only supplied data or explicitly scoped read-only snapshots. The library itself is not a security boundary: enforce process, filesystem, network, credential, memory and time restrictions in the host. Inference is a mediated capability, not general network access. Missing required fresh information returns actionable feedback for authorized collection outside the Check.
+
+The initial Linux execution profile uses an external owner-private working directory, pinned runtime and library bytes, a read-only filesystem, isolated process and network namespaces, and service-level memory, swap, task and wall-time controls. The trusted worker must wait for the host to verify effective kernel limits before importing custom code. Node permissions are additional restrictions, not a replacement for operating-system containment. Missing controls must stop execution without an in-process fallback. Cancellation must close the process group; unresolved provider or process custody blocks further execution in that host. Transient attempt tracking is not durable replay protection across host restarts.
 
 Local-only execution is a deployment restriction covering supporting services and disclosure as well as model choice. No remote fallback, telemetry leak or external research is implied. A company-controlled server can be an authorized private route. Locality and small model size do not establish Check quality; qualify the declared model, runtime and input bounds.
 

@@ -9,6 +9,7 @@ ownership:
     - src/adapters/dsh/**
     - src/ports/agent-output.ts
     - src/ports/agent-runtime.ts
+    - src/ports/check-model.ts
   testPatterns:
     - tests/adapters/dsh/**
     - tests/ports/agent-runtime.test.mjs
@@ -73,6 +74,10 @@ Private run/session/custody state is distinct from portable accepted knowledge a
 Agents perform exploratory tool use, synthesis, authorized artifact changes and Evidence collection. Custom Checks are separate bounded functions: they receive prepared inputs, compute and optionally call the authorized model primitive. They cannot write Project artifacts, Wiki, sources, policy, lifecycle records or Project Server code. Models invoked by Checks have no tools or inherited producer conversation.
 
 The first Check runner supports TypeScript/JavaScript outside the Project Server process, with host-enforced input/read scopes, network and credential restrictions, memory/time/output/model-call limits and observable termination. A library declaration is not a sandbox. Local-only policy also constrains supporting services and forbids remote fallback. Python and other runners share the versioned message contract only after separate support and qualification. These are desired execution boundaries; the partial DSH custody helpers below do not establish them.
+
+DSH owns model transport and stream assembly for the Check model primitive as well as harness mechanics for producer agents. The Check execution host supplies operating-system containment and forwards only the exact authorized, tool-free request through a shared model port. A DSH-backed Check call uses a fresh model registry without producer conversation, an agent loop, tool registration, automatic retry or fallback. ChangeKernel must not grow a parallel provider client for this path. Backend installation binds the DSH provider configuration, locality, model and settings; receipt consistency alone does not prove that deployment boundary.
+
+The initial bridge requests canonical structured JSON and validates it without repair or another inference attempt. This is not provider-constrained decoding: the current provider-neutral DSH request contract has no structured-output setting. Explicit completion, bounded output and usage are required; cached input and separately reported reasoning cannot disappear from budget accounting. Cancellation covers setup, model dispatch and cleanup. Cleanup failure must remain uncertain custody and block reuse rather than masquerading as a closed ordinary error.
 
 ## Time bounds and uncertain execution
 

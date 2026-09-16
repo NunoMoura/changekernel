@@ -165,6 +165,8 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 			"node:path",
 			"node:url",
 			"node:util",
+		] : path === "src/adapters/checks/linux-host.ts" ? [
+			"node:child_process", "node:crypto", "node:fs/promises", "node:path", "node:util",
 		] : path.startsWith("src/adapters/dsh/") ? [
 			"@deepseek-ai/cordis",
 			"@deepseek-ai/dsh-agent",
@@ -399,6 +401,35 @@ test("unified Check contracts remain pure and do not activate lifecycle or read-
 	assert.ok(graph.get(check).every(path => path.startsWith("src/kernel/")));
 	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(check), false, entrypoint);
+	}
+});
+
+test("isolated Check execution stays private and loads custom code only in the disposable worker", async () => {
+	const {graph, external} = await sourceGraph();
+	const host = "src/adapters/checks/linux-host.ts", worker = "src/adapters/checks/worker-source.ts";
+	assert.ok(graph.get(host).every(path => path.startsWith("src/kernel/") || path === worker || path === "src/ports/check-model.ts"));
+	assert.ok(graph.get(worker).every(path => path.startsWith("src/kernel/")));
+	assert.equal(external.has(worker), false, "The authoring library exports worker bytes, not a host-side runtime");
+	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(host), false, entrypoint);
+	}
+});
+
+test("Check inference uses DSH without a parallel provider transport or agent loop", async () => {
+	const {graph, external} = await sourceGraph();
+	const bridge = "src/adapters/dsh/check-model.ts", port = "src/ports/check-model.ts";
+	assert.deepEqual(external.get(bridge), ["@deepseek-ai/cordis", "@deepseek-ai/dsh-llm"]);
+	assert.ok(graph.get(bridge).every(path => path.startsWith("src/kernel/") || path === port));
+	assert.ok(graph.get(port).every(path => path.startsWith("src/kernel/")));
+	assert.equal(external.has(port), false);
+	const source = ts.createSourceFile(bridge, await readFile(join(repoRoot, bridge), "utf8"), ts.ScriptTarget.Latest, true);
+	const inspect = node => {
+		if (ts.isIdentifier(node)) assert.notEqual(node.text, "fetch", "DSH owns provider transport");
+		ts.forEachChild(node, inspect);
+	};
+	inspect(source);
+	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(bridge), false, entrypoint);
 	}
 });
 
