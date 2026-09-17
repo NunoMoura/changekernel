@@ -22,6 +22,6 @@ source-history:
 
 Transfer a credible path with intermediate outcomes, dependencies, shared maintenance obligations, permitted effects, responsibility and evidence needs. Planning is retained even for small or knowledge-focused Changes; the plan's depth follows consequential uncertainty and effects.
 
-Before parallel work begins, identify shared contracts and possible interference with other tasks' preconditions. Disjoint files or individually acceptable outcomes are not evidence of independence. Require review of the actual integrated candidate at the join.
+Before parallel work begins, identify shared contracts and possible interference with other tasks' preconditions. Disjoint files or individually acceptable outcomes are not evidence of independence. Require review of the actual integrated Proposed Change at the join.
 
 Execution must be authorized for its exact context and scope. Missing tools, limits, credentials, context or enforceable custody produce explicit unavailability or a stop, not a guessed successful assignment. Workers can repair within scope and retain cheap checkpoints; path conflicts return to Planning and material intent revision to Decision.

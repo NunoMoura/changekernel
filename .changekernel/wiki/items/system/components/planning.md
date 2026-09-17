@@ -40,7 +40,7 @@ Planning is recorded through the Change's Work items, dependencies, shared oblig
 
 The Work decomposition preserves meaning. It distinguishes prerequisites that must hold before a step, consequences expected afterward, and obligations maintained throughout. Independent files or individually acceptable destinations do not prove independent execution: one worker can invalidate another's assumptions or a shared control.
 
-Parallel work identifies dependencies and shared contracts before launch, then requires validation of the actual integrated candidate. For example, UI, backend, and observability tasks share a no-secret-logging obligation even when they edit different files. A plan may be concise for small work, but its applicability and evidence boundary cannot be bypassed by labeling a Change “knowledge-only.”
+Parallel work identifies dependencies and shared contracts before launch, then requires validation of the actual integrated Proposed Change. For example, UI, backend, and observability tasks share a no-secret-logging obligation even when they edit different files. A plan may be concise for small work, but its applicability and evidence boundary cannot be bypassed by labeling a Change “knowledge-only.”
 
 Inquiry, enabling work, and risk reduction can justify detours. There is no universal distance-to-target metric every step must decrease. Consequential uncertainty can create an investigation step rather than a falsely certain schedule. An efficient plan cannot excuse a forbidden intermediate effect.
 

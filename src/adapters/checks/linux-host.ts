@@ -182,9 +182,9 @@ function prepareDomainRun(input: unknown) {
 	if (!material.ok || !Array.isArray(material.value.definitions) || !Array.isArray(material.value.inputs)) return issue("invalid-input", "Incomplete launch material.");
 	const definition = material.value.definitions.map(value => decodeCheckDefinition(value)).find(value => value.ok && value.value.checkId === entry.checkId);
 	const selectedInput = material.value.inputs.map(value => decodeCheckInput(value)).find(value => value.ok && value.value.checkId === entry.checkId);
-	const adoption = decodeCheckAdoption(material.value.adoption);
-	if (!definition?.ok || !selectedInput?.ok || !adoption.ok) return issue("invalid-input", "Incomplete exact Check binding.");
-	const adopted = adoption.value.checks.find(value => value.check.checkId === entry.checkId);
+	const checkAdoption = decodeCheckAdoption(material.value.adoption);
+	if (!definition?.ok || !selectedInput?.ok || !checkAdoption.ok) return issue("invalid-input", "Incomplete exact Check binding.");
+	const adopted = checkAdoption.value.checks.find(value => value.check.checkId === entry.checkId);
 	if (!adopted) return issue("invalid-input", "Check is not adopted.");
 	const artifact = request.value.artifact;
 	return success({entry, definition: definition.value, selectedInput: selectedInput.value, execution: adopted,

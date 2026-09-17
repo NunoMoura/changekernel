@@ -437,7 +437,7 @@ export function admitProfiledWikiFiles(
 	files: readonly ProfiledWikiFile[],
 ): Outcome<Readonly<{snapshot: GitOid; files: readonly ProfiledWikiFile[]}>, WikiIssue> {
 	const decodedSnapshot = decodeGitOid(snapshot);
-	if (!decodedSnapshot.ok) return failure(wikiIssue("invalid_type", "$", "Expected a valid snapshot."));
+	if (!decodedSnapshot.ok) return failure(wikiIssue("invalid_type", "$", "Expected a valid Project state commit reference."));
 	let inputs: readonly unknown[];
 	try {
 		inputs = snapshotFiles(files);
@@ -451,7 +451,7 @@ export function admitProfiledWikiFiles(
 		if (!file.ok) return failure(file.error);
 		if (file.value.blob.algorithm !== decodedSnapshot.value.algorithm || bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength) {
 			return failure(wikiIssue(bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength ? "limit_exceeded" : "invalid_type", file.value.path,
-				bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength ? "Type context byte limit exceeded." : "File blob algorithm differs from the snapshot."));
+				bytes > WIKI_PROFILE_LIMITS.contextBytes - file.value.byteLength ? "Type context byte limit exceeded." : "File blob algorithm differs from the Project state commit reference."));
 		}
 		bytes += file.value.byteLength;
 		admitted.push(file.value);

@@ -17,4 +17,4 @@ A Maintainer delegates bounded work to Agents or services while retaining its in
 
 Planning identifies shared obligations and safe parallel boundaries. Execution uses enforceable scope and limits, truthful observations and cheap checkpoints. A worktree or successful callback does not prove containment or realization.
 
-Defects, planning conflicts and changed intent return to their appropriate stage. Reconcile unknown effects before retrying; protect credentials, network, publication and other effects before execution. Review the actual combined candidate and preserve enough grounds for a fresh participant to continue.
+Defects, planning conflicts and changed intent return to their appropriate stage. Reconcile unknown effects before retrying; protect credentials, network, publication and other effects before execution. Review the actual combined Proposed Change and preserve enough grounds for a fresh participant to continue.

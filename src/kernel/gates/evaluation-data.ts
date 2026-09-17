@@ -72,16 +72,16 @@ export function codec<T>(protocol: string, fields: readonly string[], parse: (r:
 	return {create, decode};
 }
 
-export function snapshot(value: CanonicalValue) {
+export function projectStateReference(value: CanonicalValue) {
 	const r = record(value, ["repositoryId", "commit", "tree"]);
 	const commit = decodeGitOidValue(requiredField(CONTRACT, r, "commit"));
 	const tree = decodeGitOidValue(requiredField(CONTRACT, r, "tree"));
-	if (commit.algorithm !== tree.algorithm) fail("Snapshot object formats differ.");
+	if (commit.algorithm !== tree.algorithm) fail("Project state reference object formats differ.");
 	return Object.freeze({repositoryId: id(r, "repositoryId"), commit, tree});
 }
 export function source(value: CanonicalValue) {
 	const r = record(value, ["snapshot", "path", "blob"]);
-	const bound = snapshot(requiredField(CONTRACT, r, "snapshot"));
+	const bound = projectStateReference(requiredField(CONTRACT, r, "snapshot"));
 	const path = text(r, "path", 8192);
 	if (path.startsWith("/") || path.includes("\\") || /[\u0000-\u001f]/u.test(path) || path.split("/").some(part => !part || part === "." || part === "..")) fail("Source path must be project-relative.");
 	const blob = decodeGitOidValue(requiredField(CONTRACT, r, "blob"));
@@ -98,11 +98,17 @@ export function bounds(value: CanonicalValue) {
 	if (result.modelCalls === 0 ? result.modelInputTokens !== 0 || result.modelOutputTokens !== 0 : result.modelInputTokens === 0 || result.modelOutputTokens === 0) fail("Model token budgets must agree with the call budget.");
 	return result;
 }
+/**
+ * Current Project state and Proposed Change content references, not their diff.
+ * The backend derives the Change diff from actual bytes; these identities alone
+ * prove neither source authenticity nor Check policy or approval. Preserve stored
+ * baseline/candidate keys so terminology does not change retained record identity.
+ */
 export function subject(value: CanonicalValue) {
 	const r = record(value, ["baseline", "candidate", "subjectDigest"]);
-	const baseline = snapshot(requiredField(CONTRACT, r, "baseline")), candidate = snapshot(requiredField(CONTRACT, r, "candidate"));
-	if (baseline.repositoryId !== candidate.repositoryId || baseline.commit.algorithm !== candidate.commit.algorithm) fail("Subject snapshots must share Project and object format.");
-	return Object.freeze({baseline, candidate, subjectDigest: digest(r, "subjectDigest")});
+	const currentProjectStateReference = projectStateReference(requiredField(CONTRACT, r, "baseline")), proposedChangeContentReference = projectStateReference(requiredField(CONTRACT, r, "candidate"));
+	if (currentProjectStateReference.repositoryId !== proposedChangeContentReference.repositoryId || currentProjectStateReference.commit.algorithm !== proposedChangeContentReference.commit.algorithm) fail("Current Project state and Proposed Change content must share Project and object format.");
+	return Object.freeze({baseline: currentProjectStateReference, candidate: proposedChangeContentReference, subjectDigest: digest(r, "subjectDigest")});
 }
 export function effectKinds(r: CanonicalRecord) {
 	const effects = list(r, "effects", value => id({value}, "value")); ordered(effects); return effects;

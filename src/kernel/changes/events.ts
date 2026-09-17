@@ -103,7 +103,7 @@ export function decodeProfileChangeEventValue(value: CanonicalValue, path = "$")
 		rejectContract("invalid_field", "Profile Change event", `${path}.ownerBinding`, "Owner binding does not match profile reference grounds.");
 	}
 	if (reference.before.commit.algorithm !== expectedProjectHead.algorithm || reference.before.commit.hex !== expectedProjectHead.hex) {
-		rejectContract("invalid_field", "Profile Change event", `${path}.payload.change.reference.before`, "Profile reference before snapshot differs from expected Project head.");
+		rejectContract("invalid_field", "Profile Change event", `${path}.payload.change.reference.before`, "Proposed Change comparison state differs from expected Project head.");
 	}
 	const marker = textField("Profile Change event", record, "containingCommit", path, {maximumBytes: 32});
 	if (marker !== CONTAINING_COMMIT) rejectContract("invalid_field", "Profile Change event", `${path}.containingCommit`, `Expected ${CONTAINING_COMMIT}.`);
@@ -242,7 +242,7 @@ export function decodeInquiryChangeEventValue(value: CanonicalValue, path = "$")
 	const expectedChangeTip = nullableValue(requiredField(contract, record, "expectedChangeTip", path), (entry) => decodeGitOidValue(entry, `${path}.expectedChangeTip`));
 	const predecessorEventDigest = nullableProfileDigest(record, "predecessorEventDigest", path);
 	if (!sameGitOid(expectedProjectHead, change.baseline.commit) || (expectedChangeTip !== null && expectedChangeTip.algorithm !== expectedProjectHead.algorithm)) {
-		rejectContract("invalid_field", contract, path, "Event grounds must match the complete baseline and object format.");
+		rejectContract("invalid_field", contract, path, "Event grounds must match the recorded Current Project state and object format.");
 	}
 	if (kind === "change.proposed" ? (change.revision !== 1 || expectedChangeTip !== null || predecessorEventDigest !== null) : (change.revision < 2 || expectedChangeTip === null || predecessorEventDigest === null)) {
 		rejectContract("invalid_field", contract, path, "Proposal requires revision 1 and null tips; revision requires non-null exact tip and predecessor.");

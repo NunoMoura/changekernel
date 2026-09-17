@@ -144,7 +144,7 @@ source-history:
       "label": "Authorizes optional external inputs or supported execution; not native Git access",
       "boundary": {
         "type": "authority",
-        "failure": "No candidate self-authorization or execution of untrusted corpus instructions."
+        "failure": "No Proposed Change self-authorization or execution of untrusted corpus instructions."
       }
     },
     {

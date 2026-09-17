@@ -33,6 +33,6 @@ Incoming commits, patches or host events are observations of work, not proof of 
 
 External source retrieval is not itself work admission or knowledge adoption. Material can inform inquiry; changing accepted Wiki requires an accepted scoped Change. Git history remains native rather than imported through an optional connector.
 
-Determine whether work fits existing authorized scope or needs a proposal. Labels, branch names and PR links cannot bypass actual-effect assessment. Evaluate the true combined candidate; a host merge flag or isolated old-head result is not its acceptance receipt.
+Determine whether work fits existing authorized scope or needs a proposal. Labels, branch names and PR links cannot bypass actual-effect assessment. Evaluate the true combined Proposed Change; a host merge flag or isolated old-head result is not its acceptance receipt.
 
 Observation, acceptance, publication and deployment retain their own authority boundaries. Do not execute incoming instructions or untrusted code during discovery, especially with privileged hosting credentials. See [intake](../components/change-intake.md).

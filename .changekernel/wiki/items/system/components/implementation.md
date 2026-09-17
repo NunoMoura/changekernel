@@ -49,4 +49,4 @@ A Planning pass concerns a proposed path, not the quality of resulting work. Imp
 
 An attempt can fail operationally without refuting its intent. Preserve stopped or unknown effects and truthful partial output. A retry needs reconciled custody and effect state, not only a plausible plan or clean worktree. Worktrees are not process, credential, network, or adversarial filesystem sandboxes.
 
-Integrate only under applicable authority against the actual baseline and resulting candidate. Independently acceptable work can conflict after composition. Review evaluates the whole and remaining obligations; integration is not deployment. See [work execution](../flows/work-unit-execution.md) and [Implementation to Review](../flows/implementation-to-review.md).
+Integrate only under applicable authority against the Current Project state and resulting Proposed Change. Independently acceptable work can conflict after composition. Review evaluates the whole and remaining obligations; integration is not deployment. See [work execution](../flows/work-unit-execution.md) and [Implementation to Review](../flows/implementation-to-review.md).

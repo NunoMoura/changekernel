@@ -14,7 +14,7 @@ source-history:
 {
   "codewiki_id": "cw:diagram:synchronization",
   "id": "synchronization",
-  "purpose": "Show native Git state/history with optional remote hosting/delivery, not an optional Git data connector; combined-candidate acceptance and external effects remain distinct.",
+  "purpose": "Show native Git state/history with optional remote hosting/delivery, not an optional Git data connector; combined-Change acceptance and external effects remain distinct.",
   "components": [
     {
       "id": "service",
@@ -70,7 +70,7 @@ source-history:
       "from": "integration",
       "to": "service",
       "type": "returns",
-      "label": "Returns exact candidate/ref facts, not a semantic acceptance receipt",
+      "label": "Returns exact Proposed Change/ref facts, not a semantic acceptance receipt",
       "boundary": {
         "type": "trust",
         "failure": "Reject mismatched subjects or untrusted privileged execution."
@@ -88,7 +88,7 @@ source-history:
       "from": "intake",
       "to": "service",
       "type": "returns",
-      "label": "Supplies exact baseline and combined candidate for assessment"
+      "label": "Supplies exact Current Project state and combined Proposed Change for assessment"
     },
     {
       "id": "s-store",

@@ -87,7 +87,7 @@ export async function loadMarkdownMaterialSource(
 	if (snapshot.repositoryId !== configuration.repositoryId || snapshot.objectFormat !== configuration.objectFormat ||
 		snapshot.commit.algorithm !== configuration.objectFormat || snapshot.tree.algorithm !== configuration.objectFormat ||
 		!snapshot.complete || (source.kind === "commit" && !sameGitOid(source.commit, snapshot.commit))) {
-		return failure(materialIssue("source_stale", "read_material", "Resolved snapshot does not retain the requested binding.", {kind: "material_binding", check: "snapshot"}));
+		return failure(materialIssue("source_stale", "read_material", "Resolved Project state reference does not retain the requested binding.", {kind: "material_binding", check: "snapshot"}));
 	}
 	const tree = await store.readTree({
 		repositoryId: configuration.repositoryId,

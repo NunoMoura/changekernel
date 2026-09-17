@@ -80,7 +80,7 @@ async function loadVerifiedProfileChange(
 	const source = await resolveProjectSourceDetailed(store, configuration, input.source);
 	if (!source.ok) return failure(invalidProject(source.error.message));
 	const containing = decodeProjectSnapshot(source.value);
-	if (!containing.ok || !containing.value.complete || containing.value.repositoryId !== configuration.repositoryId || containing.value.objectFormat !== configuration.objectFormat || (input.source.kind === "commit" && !sameGitOid(input.source.commit, containing.value.commit))) return failure(invalidProject("An exact complete containing snapshot of the configured Project is required."));
+	if (!containing.ok || !containing.value.complete || containing.value.repositoryId !== configuration.repositoryId || containing.value.objectFormat !== configuration.objectFormat || (input.source.kind === "commit" && !sameGitOid(input.source.commit, containing.value.commit))) return failure(invalidProject("An exact complete containing commit reference for the configured Project is required."));
 	const trace = await readTrace(store, configuration, containing.value.commit, input.changeId);
 	if (!trace.ok) return trace;
 	const event = trace.value.trace.events[0];
@@ -158,10 +158,10 @@ export async function loadProfileDecisionGrounds(
 	const configurationDigest = semanticDigest("codewiki.profile-decision-configuration@1.0.0", configuration);
 	if (!configurationDigest.ok) return failure(invalidProject("Decision configuration cannot be bound canonically."));
 	const resolved = await resolveProjectSourceDetailed(store, configuration, {kind: "canonical"});
-	if (!resolved.ok) return failure(invalidProject("Current Project snapshot is unavailable."));
+	if (!resolved.ok) return failure(invalidProject("Current Project state is unavailable."));
 	const project = decodeProjectSnapshot(resolved.value);
 	if (!project.ok || !project.value.complete || project.value.repositoryId !== configuration.repositoryId || project.value.objectFormat !== configuration.objectFormat) {
-		return failure(invalidProject("Decision requires a complete current Project snapshot."));
+		return failure(invalidProject("Decision requires a complete Current Project state reference."));
 	}
 	if (!sameGitOid(project.value.commit, expectedProjectHead)) return failure(staleDecisionGrounds());
 	const loaded = await loadVerifiedProfileChange(store, configuration, {view: "get", changeId, source: {kind: "change", changeId}});
@@ -170,7 +170,7 @@ export async function loadProfileDecisionGrounds(
 	if (!sameGitOid(containing.commit, expectedChangeTip) || !sameGitOid(before.snapshot.commit, project.value.commit)) {
 		return failure(staleDecisionGrounds());
 	}
-	if (before.snapshot.snapshotDigest !== project.value.snapshotDigest) return failure(invalidProject("Decision baseline contradicts the observed Project snapshot."));
+	if (before.snapshot.snapshotDigest !== project.value.snapshotDigest) return failure(invalidProject("Proposed Change comparison state contradicts observed Current Project state."));
 	if (reduced.change.reference.kernelBuildDigest !== configuration.kernelBuildDigest) {
 		return failure(unavailable("Decision grounds require the current Kernel interpretation build; historical reads remain available."));
 	}
@@ -279,7 +279,7 @@ function pathHex(path: string): string {
 	return Array.from(new TextEncoder().encode(path), byte => byte.toString(16).padStart(2, "0")).join("");
 }
 function staleDecisionGrounds(): ProductError {
-	return productError("source_stale", "Decision grounds no longer match the requested Project baseline and Change tip.", "Refresh and rebuild Decision grounds before execution.", false);
+	return productError("source_stale", "Decision grounds no longer match requested Current Project state and Proposed Change revision.", "Refresh and rebuild Decision grounds before execution.", false);
 }
 
 async function readTrace(
@@ -347,8 +347,8 @@ async function verifyProposalPlacement(
 	const managed = new Set([...before.managedFiles, ...after.managedFiles].map((file) => file.path));
 	const paths = new Set([...oldTree.value.keys(), ...candidate.value.keys(), ...current.value.keys()]);
 	for (const path of paths) {
-		if (!sameEntry(oldTree.value.get(path), candidate.value.get(path)) && !managed.has(path)) return failure(invalidProject("Retained candidate changes material outside managed Wiki Markdown."));
-		if (path !== tracePath && !sameEntry(candidate.value.get(path), current.value.get(path))) return failure(invalidProject("Containing commit differs from candidate material outside its new Trace."));
+		if (!sameEntry(oldTree.value.get(path), candidate.value.get(path)) && !managed.has(path)) return failure(invalidProject("Retained Proposed Change modifies material outside managed Wiki Markdown."));
+		if (path !== tracePath && !sameEntry(candidate.value.get(path), current.value.get(path))) return failure(invalidProject("Containing commit differs from proposed content outside its new Trace."));
 	}
 	return success(null);
 }

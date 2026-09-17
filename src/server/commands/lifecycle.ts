@@ -71,9 +71,9 @@ async function proposeProfileChange(
 	const timestamp = lifecycleTimestamp(environment);
 	if (!timestamp.ok) return timestamp;
 	const before = await loadProfiledWikiSource(environment.store, environment.configuration, {kind: "commit", commit: input.expectedProjectHead}, profileSourceLimits(environment.configuration));
-	if (!before.ok) return failure(invalidRequest(`Exact before-source admission failed (${before.error.operation}: ${before.error.code}).`));
+	if (!before.ok) return failure(invalidRequest(`Exact Current Project state source admission failed (${before.error.operation}: ${before.error.code}).`));
 	const after = await loadProfiledWikiSource(environment.store, environment.configuration, {kind: "commit", commit: input.afterCommit}, profileSourceLimits(environment.configuration));
-	if (!after.ok) return failure(invalidRequest(`Exact candidate-source admission failed (${after.error.operation}: ${after.error.code}).`));
+	if (!after.ok) return failure(invalidRequest(`Exact Proposed Change source admission failed (${after.error.operation}: ${after.error.code}).`));
 	const beforeEntries = await readTreeEntries(environment, before.value.snapshot);
 	if (!beforeEntries.ok) return beforeEntries;
 	const afterEntries = await readTreeEntries(environment, after.value.snapshot);
@@ -81,10 +81,10 @@ async function proposeProfileChange(
 	const traceLocation = tracePath(input.changeId);
 	if ([...beforeEntries.value, ...afterEntries.value].some((entry) => entry.path === traceLocation)) return failure(conflict("The responsible Trace path already exists."));
 	const managedPaths = new Set([...before.value.managedFiles, ...after.value.managedFiles].map((file) => file.path));
-	const candidateDelta = diffTreeEntries(beforeEntries.value, afterEntries.value);
-	if (candidateDelta.some((entry) => !managedPaths.has(entry.path))) return failure(invalidRequest("Profile candidate may change only managed Wiki Markdown before proposal."));
+	const changeDiff = diffTreeEntries(beforeEntries.value, afterEntries.value);
+	if (changeDiff.some((entry) => !managedPaths.has(entry.path))) return failure(invalidRequest("Proposed Change may modify only managed Wiki Markdown before proposal."));
 	if (before.value.snapshot.repositoryId !== after.value.snapshot.repositoryId || after.value.snapshot.objectFormat !== before.value.snapshot.objectFormat) {
-		return failure(invalidRequest("Profile source snapshots do not share repository identity and object format."));
+		return failure(invalidRequest("Project state and proposed content references do not share repository identity and object format."));
 	}
 	const mappings = profileTransactionMappings(input.mappings);
 	if (!mappings.ok) return mappings;
@@ -198,7 +198,7 @@ async function canonicalHead(environment: LocalLifecycleEnvironment): Promise<Ou
 	});
 	if (!snapshot.ok) return failure(productError("invalid_project_state", `Canonical source observation failed (${snapshot.error.code}).`, "Inspect the Project Store before retrying.", false));
 	const admitted = decodeProjectSnapshot(snapshot.value);
-	if (!admitted.ok || !admitted.value.complete || admitted.value.repositoryId !== environment.configuration.repositoryId || admitted.value.objectFormat !== environment.configuration.objectFormat) return failure(productError("invalid_project_state", "Canonical source is not a complete snapshot of this Project.", "Inspect the Project Store before retrying.", false));
+	if (!admitted.ok || !admitted.value.complete || admitted.value.repositoryId !== environment.configuration.repositoryId || admitted.value.objectFormat !== environment.configuration.objectFormat) return failure(productError("invalid_project_state", "Canonical source is not a complete state reference for this Project.", "Inspect the Project Store before retrying.", false));
 	return success(admitted.value.commit);
 }
 

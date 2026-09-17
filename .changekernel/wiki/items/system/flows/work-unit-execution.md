@@ -26,4 +26,4 @@ A worker can be human, service or Agent. The execution adapter enforces required
 
 Record truthful partial results, failures, discoveries and checkpoints. Do not silently revise intent or exceed scope. Reconcile unknown effects before retrying; process-local tracking alone does not establish restart safety or quiescence.
 
-Judge output in its exact context and assess the integrated candidate against the actual baseline. One unit's success does not approve a conflicting join. Feedback can return to Implementation, Planning, or Decision, preserving the reasons for that route.
+Judge output in its exact context and assess the integrated Proposed Change against the Current Project state. One unit's success does not approve a conflicting join. Feedback can return to Implementation, Planning, or Decision, preserving the reasons for that route.

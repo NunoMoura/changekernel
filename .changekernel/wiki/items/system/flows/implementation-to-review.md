@@ -27,8 +27,8 @@ source-history:
 ---
 # Implementation to Review
 
-Provide the exact reconciled candidate, baseline, work/attempt history, observations, changed assumptions and remaining obligations. Review must see the whole outcome and its relevant grounds, not only isolated worker successes or a passing branch-head test.
+Provide the exact reconciled Proposed Change, Current Project state, work/attempt history, observations, changed assumptions and remaining obligations. Review must see the whole outcome and its relevant grounds, not only isolated worker successes or a passing branch-head test.
 
 Distinguish produced artifacts, adopted knowledge and observed real-world realization. Unknown effects, missing support, stale evidence, redaction and truncation remain explicit. An owned gap is not realized merely because an attempt ended.
 
-Review uses current applicable authority and semantic obligations, then routes defects, path conflicts or intent changes to their proper stage. Acceptance of this subject cannot silently cover later edits, publication, deployment or another rewritten/merged candidate.
+Review uses current applicable authority and semantic obligations, then routes defects, path conflicts or intent changes to their proper stage. Acceptance of this subject cannot silently cover later edits, publication, deployment or another rewritten/merged Proposed Change.

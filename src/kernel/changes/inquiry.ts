@@ -119,7 +119,7 @@ export function decodeInquiryChangeValue(value: CanonicalValue, path = "$"): Inq
 	const changeId = inquiryChangeId(record, path);
 	const repositoryId = namespaced(record, "repositoryId", path);
 	const baseline = completeSnapshot(requiredField(CONTRACT, record, "baseline", path), `${path}.baseline`);
-	if (baseline.repositoryId !== repositoryId) rejectContract("invalid_field", CONTRACT, `${path}.baseline`, "Baseline belongs to another repository.");
+	if (baseline.repositoryId !== repositoryId) rejectContract("invalid_field", CONTRACT, `${path}.baseline`, "Current Project state belongs to another repository.");
 	const sources = Object.freeze(arrayField(CONTRACT, record, "sources", path, INQUIRY_LIMITS.sources)
 		.map((entry, index) => decodeInquirySourceValue(entry, `${path}.sources[${index}]`)));
 	if (sources.length === 0) rejectContract("missing_field", CONTRACT, `${path}.sources`, "Inquiry requires an attributable source capture.");
@@ -182,7 +182,7 @@ function decodeInquirySourceValue(value: CanonicalValue, path = "$"): InquirySou
 	} else {
 		const snapshot = completeSnapshot(requiredField(SOURCE, record, "snapshot", path), `${path}.snapshot`);
 		const blob = decodeGitOidValue(requiredField(SOURCE, record, "blob", path), `${path}.blob`);
-		if (blob.algorithm !== snapshot.objectFormat) rejectContract("invalid_field", SOURCE, `${path}.blob`, "Source blob must use the snapshot object format.");
+		if (blob.algorithm !== snapshot.objectFormat) rejectContract("invalid_field", SOURCE, `${path}.blob`, "Source blob must use the referenced Project state's object format.");
 		const pathUtf8Hex = textField(SOURCE, record, "pathUtf8Hex", path, {maximumBytes: INQUIRY_LIMITS.pathBytes * 2});
 		const bytes = utf8Hex(pathUtf8Hex, INQUIRY_LIMITS.pathBytes, `${path}.pathUtf8Hex`);
 		const rawPath = new TextDecoder("utf-8", {fatal: true, ignoreBOM: true}).decode(bytes);
@@ -220,7 +220,7 @@ function decodeConsequences(value: CanonicalValue, path: string, changeId: strin
 	if (!reference.ok) rejectContract("invalid_field", CONTRACT, `${path}.reference`, reference.error.message);
 	const responsible = decodeProfiledPathUtf8Hex(reference.value.changePathUtf8Hex, true);
 	if (reference.value.before.snapshotDigest !== baseline.snapshotDigest || !responsible.ok || responsible.value !== `.changekernel/changes/TRACE-${changeId}.jsonl` || reference.value.mappings.length === 0) {
-		rejectContract("invalid_field", CONTRACT, path, "Attachment requires this complete baseline, responsible Change and nonempty transaction endpoints.");
+		rejectContract("invalid_field", CONTRACT, path, "Attachment requires this complete Current Project state, responsible Change and nonempty transaction endpoints.");
 	}
 	return Object.freeze({kind, reference: reference.value});
 }
@@ -231,7 +231,7 @@ function assertConsistentSources(baseline: ProjectSnapshot, sources: readonly In
 	const repositorySources = sources.filter((source): source is RepositoryInquirySourceBody & {sourceDigest: Sha256Digest} => source.kind === "repository");
 	for (const snapshot of [baseline, ...repositorySources.map((source) => source.snapshot), ...(consequences.kind === "profile" ? [consequences.reference.after] : [])]) {
 		const prior = snapshots.get(snapshot.commit.hex);
-		if (prior !== undefined && prior !== snapshot.snapshotDigest) rejectContract("invalid_field", CONTRACT, path, "One commit cannot claim different complete snapshots.");
+		if (prior !== undefined && prior !== snapshot.snapshotDigest) rejectContract("invalid_field", CONTRACT, path, "One commit cannot claim different complete Project state references.");
 		snapshots.set(snapshot.commit.hex, snapshot.snapshotDigest);
 	}
 	for (const source of repositorySources) {
@@ -246,7 +246,7 @@ function assertConsistentSources(baseline: ProjectSnapshot, sources: readonly In
 }
 function completeSnapshot(value: CanonicalValue, path: string): ProjectSnapshot {
 	const snapshot = decodeProjectSnapshotValue(value, path);
-	if (!snapshot.complete) rejectContract("invalid_field", CONTRACT, path, "Inquiry requires complete Git snapshot grounds.");
+	if (!snapshot.complete) rejectContract("invalid_field", CONTRACT, path, "Inquiry requires a complete committed Project state reference.");
 	return snapshot;
 }
 function statements(record: CanonicalRecord, field: string, path: string): readonly string[] {

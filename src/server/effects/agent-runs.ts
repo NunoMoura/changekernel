@@ -250,7 +250,11 @@ export function authorizeConfiguredDecisionModelCheckRun(
 	return route.ok ? authorizeDecisionModelCheckRun({...input, route: route.value}) : route;
 }
 
-/** Recompute execution compatibility; the historical policyDigest field alone is insufficient. */
+/**
+ * Recompute Check execution authorization compatibility, not Check adoption.
+ * The historical policyDigest field binds execution capabilities and budgets,
+ * not governing Check policy; keep its stored name and digest domain unchanged.
+ */
 export function matchesDecisionModelCheckExecution(input: unknown): boolean {
 	const decoded = decodeAgentRunAuthorization(input);
 	if (!decoded.ok) return false;
@@ -258,13 +262,13 @@ export function matchesDecisionModelCheckExecution(input: unknown): boolean {
 	if (authorization.role !== "model-check" || authorization.stage !== "decision" ||
 		authorization.subject.changeId === null || authorization.subject.changeTip === null ||
 		authorization.subject.workId !== null || authorization.subject.artifactCommit !== null || authorization.subject.artifactTree !== null) return false;
-	const policy = semanticDigest("codewiki.decision-check-run-policy@1.0.0", {
+	const checkExecutionPolicyDigest = semanticDigest("codewiki.decision-check-run-policy@1.0.0", {
 		parentPolicyDigest: AGENT_ROLE_POLICY_DIGEST, stage: authorization.stage,
 		policy: {role: authorization.role, toolIds: authorization.toolIds, capabilities: authorization.capabilities,
 			previewWork: authorization.previewSubjectDigest !== null, writable: authorization.writableScope.length !== 0,
 			budget: authorization.budget, outputSchemaDigest: authorization.outputSchemaDigest},
 	});
-	return policy.ok && policy.value === DECISION_MODEL_CHECK_EXECUTION_DIGEST && authorization.policyDigest === policy.value;
+	return checkExecutionPolicyDigest.ok && checkExecutionPolicyDigest.value === DECISION_MODEL_CHECK_EXECUTION_DIGEST && authorization.policyDigest === checkExecutionPolicyDigest.value;
 }
 
 export async function startAuthorizedAgentRun(

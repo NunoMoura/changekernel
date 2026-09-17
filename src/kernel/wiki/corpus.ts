@@ -124,7 +124,7 @@ export function readMarkdownCorpus(input: unknown): Outcome<MarkdownCorpus, Mark
 		}
 		const oid = suppliedOid(entry.oid);
 		if (!oid || oid.algorithm !== snapshot.algorithm) {
-			return issue("invalid_oid", `${location}.oid`, "Expected an exact OID using the snapshot object format.");
+			return issue("invalid_oid", `${location}.oid`, "Expected an exact object identifier using the referenced Project state's object format.");
 		}
 		// ASCII extension case only; no Unicode normalization or path case folding.
 		if (!/\.(?:md|markdown)$/i.test(entry.path)) {

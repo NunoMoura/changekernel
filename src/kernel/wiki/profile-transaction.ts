@@ -174,7 +174,7 @@ export function validateProfiledWikiTransaction(
 	if (!after.ok) return after;
 	if (before.value.snapshot.repositoryId !== after.value.snapshot.repositoryId ||
 		before.value.snapshot.objectFormat !== after.value.snapshot.objectFormat) {
-		return failure(transactionIssue("incompatible_snapshot", "$.after.snapshot", "Before and after snapshots must share repository identity and object format."));
+		return failure(transactionIssue("incompatible_snapshot", "$.after.snapshot", "Current Project state and proposed content references must share repository identity and object format."));
 	}
 	const snapshotIssue = compatibleSourceClaims(before.value, after.value);
 	if (snapshotIssue) return failure(snapshotIssue);
@@ -216,11 +216,11 @@ export function validateProfiledWikiTransaction(
 
 function admitSource(input: unknown, path: string): Outcome<AdmittedSource, ProfiledWikiTransactionIssue> {
 	const source = ownRecord(input, ["snapshot"], ["corpus", "files", "managedFiles", "typeContext"]);
-	if (!source) return failure(transactionIssue("invalid_input", path, "Source must contain own-data snapshot and managed files."));
+	if (!source) return failure(transactionIssue("invalid_input", path, "Source must contain an own-data Project state reference and managed files."));
 	const snapshot = decodeProjectSnapshot(source.snapshot);
 	if (!snapshot.ok) return failure(transactionIssue("invalid_snapshot", `${path}.snapshot`, snapshot.error.message, snapshot.error));
 	if (!snapshot.value.complete) {
-		return failure(transactionIssue("incomplete_snapshot", `${path}.snapshot.complete`, "Profile transaction admission requires complete Project snapshots."));
+		return failure(transactionIssue("incomplete_snapshot", `${path}.snapshot.complete`, "Profile transaction admission requires complete Project state references."));
 	}
 	const hasFiles = Object.hasOwn(source, "files");
 	const hasManagedFiles = Object.hasOwn(source, "managedFiles");
@@ -235,7 +235,7 @@ function admitSource(input: unknown, path: string): Outcome<AdmittedSource, Prof
 	const typeContext = bindWikiTypes(snapshot.value.commit, admitted.value.files);
 	if (!typeContext.ok) return failure(transactionIssue(typeContext.error.code, `${path}.typeContext`, typeContext.error.message, typeContext.error));
 	if (typeContext.value.profile !== WIKI_PROFILE_ID || !sameGitOid(typeContext.value.snapshot, snapshot.value.commit)) {
-		return failure(transactionIssue("invalid_files", `${path}.typeContext`, "Recomputed profile type context is not bound to the exact snapshot."));
+		return failure(transactionIssue("invalid_files", `${path}.typeContext`, "Recomputed profile type context is not bound to the exact Project state reference."));
 	}
 	return success(Object.freeze({
 		snapshot: snapshot.value,
@@ -402,7 +402,7 @@ function sourceIndexes(files: readonly ProfiledWikiFile[]): SourceIndexes {
 /** Detect contradictions between supplied identities, without proving membership. */
 function compatibleSourceClaims(before: AdmittedSource, after: AdmittedSource): ProfiledWikiTransactionIssue | null {
 	if (sameGitOid(before.snapshot.commit, after.snapshot.commit) && before.snapshot.snapshotDigest !== after.snapshot.snapshotDigest) {
-		return transactionIssue("identity_mismatch", "$.after.snapshot", "One claimed commit cannot have different snapshot facts.");
+		return transactionIssue("identity_mismatch", "$.after.snapshot", "One claimed commit cannot have different Project state reference facts.");
 	}
 	if (sameGitOid(before.snapshot.tree, after.snapshot.tree) &&
 		(before.files.length !== after.files.length || before.files.some((file, index) => {

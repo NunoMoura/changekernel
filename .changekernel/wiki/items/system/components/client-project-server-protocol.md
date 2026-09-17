@@ -41,7 +41,7 @@ Clients operate on Wiki knowledge and intent-bearing Changes through the authori
 
 ## Exact requests and disclosure
 
-State-dependent requests name a Project and exact or once-resolved source. Assessment and mutation bind baseline and candidate; branch labels alone do not identify reviewed bytes. Authenticate and enforce authorization, request identity, expiry and bounds before disclosure or effects. Replay requires the same actor, operation, content and source; lost replies need outcome reconciliation.
+State-dependent requests name a Project and exact or once-resolved source. Assessment and mutation bind Current Project state and Proposed Change; branch labels alone do not identify reviewed bytes. Authenticate and enforce authorization, request identity, expiry and bounds before disclosure or effects. Replay requires the same actor, operation, content and source; lost replies need outcome reconciliation.
 
 Results distinguish current adopted knowledge, pending work and historical/external information. Native Git history is available without an external connector. Historical results identify exact source and former disposition; retrieval is not re-adoption. Report redaction, truncation, missing context, staleness, unsupported extraction and unavailable material. Hidden obligations do not become absent obligations.
 

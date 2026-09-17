@@ -26,7 +26,7 @@ source-history:
 ---
 # Qualification and Benchmarks
 
-Qualification evaluates declared subject scope and execution configuration on exact immutable candidate bytes, including both release-owned backend validation and adopted domain Checks. Native tests, structural checks, replay and injected runners supply bounded engineering evidence, not proof of operational semantic quality, custody or continuation.
+Qualification evaluates declared subject scope and execution configuration on exact immutable release-candidate bytes, including both release-owned backend validation and adopted domain Checks. Native tests, structural checks, replay and injected runners supply bounded engineering evidence, not proof of operational semantic quality, custody or continuation.
 
 The first local dogfood qualification is the bounded lifecycle in the [release contract](package.md#minimum-local-dogfood), not completion of every benchmark scenario. Broader product evaluation should exercise software and non-software Changes, consequential contradiction/uncertainty followed by inquiry or repair, shared Planning obligations, conflicting parallel work and fresh-context recovery. Test original reasons still holding, one failed assumption with independent support, and a rejected alternative becoming appropriate.
 

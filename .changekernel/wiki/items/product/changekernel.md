@@ -29,7 +29,7 @@ Only an authorized, accepted scoped transition carried by a Change promotes info
 
 ## Native history and optional information
 
-Git is foundational: it preserves intent-bearing Change records, exact Wiki outcomes, snapshots, ancestry and transport. Retired knowledge remains accessible on demand through native history, alongside information supplied by optional external data connectors. No separate Archive or Sources knowledge system, archive database or optional Git connector is required. GitHub is an optional hosting integration and competing collaboration product, not acceptance authority.
+Git is foundational: it preserves intent-bearing Change records, exact Wiki outcomes, committed Project states, ancestry and transport. Retired knowledge remains accessible on demand through native history, alongside information supplied by optional external data connectors. No separate Archive or Sources knowledge system, archive database or optional Git connector is required. GitHub is an optional hosting integration and competing collaboration product, not acceptance authority.
 
 Hot knowledge is the current validation basis, not everything stuffed into every prompt. Cold information may be unexamined material or previously accepted knowledge; retrieval does not make it current again. The information pool is an access concept, not another authoring primitive. Users need not understand Git to work with it.
 

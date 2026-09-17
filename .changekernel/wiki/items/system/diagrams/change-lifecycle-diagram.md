@@ -91,7 +91,7 @@ source-history:
       "from": "intake",
       "to": "decision",
       "type": "produces",
-      "label": "Preserves original intent and uncertainty"
+      "label": "Preserves intent and uncertainty; backend derives Change diff from Current Project state and exact proposed bytes when available"
     },
     {
       "id": "l-plan",

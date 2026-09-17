@@ -110,7 +110,7 @@ class GitProjectStoreAdapter implements ProjectStorePort {
 		const preflight = this.#validateRepositoryBinding(request, "read_snapshot");
 		if (preflight) return failure(preflight);
 		if (typeof request.selector !== "object" || request.selector === null || !("kind" in request.selector)) {
-			return failure(this.#issue("invalid_ref", "read_snapshot", "Snapshot selector is invalid."));
+			return failure(this.#issue("invalid_ref", "read_snapshot", "Project state selector is invalid."));
 		}
 		let revision: string;
 		if (request.selector.kind === "ref") {

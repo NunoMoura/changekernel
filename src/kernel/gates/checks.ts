@@ -1,7 +1,7 @@
 import {canonicalJson, isCanonicalObject, type CanonicalValue} from "../data-contracts/canonical-json.ts";
 import type {Outcome} from "../data-contracts/outcome.ts";
 import {booleanField, decodeContract, integerField, literalField, requiredField, textField, type CanonicalRecord} from "../data-contracts/validation.ts";
-import {CONTRACT, LIMITS, RESULT_FIELDS, admit, bounds, codec, compare, digest, digests, effectKinds, equal, fail, hash, id, inputSlots, list, ordered, record, resultFields, snapshot, source, subject, text} from "./evaluation-data.ts";
+import {CONTRACT, LIMITS, RESULT_FIELDS, admit, bounds, codec, compare, digest, digests, effectKinds, equal, fail, hash, id, inputSlots, list, ordered, record, resultFields, projectStateReference, source, subject, text} from "./evaluation-data.ts";
 
 export const CHECK_PROTOCOL = "changekernel.check@1.0.0";
 export const CHECK_PACK_PROTOCOL = "changekernel.check-pack@1.0.0";
@@ -47,9 +47,14 @@ export const createCheckPack = pack.create;
 export const decodeCheckPack = pack.decode;
 export type CheckPack = ReturnType<typeof pack.create> extends Outcome<infer T, unknown> ? T : never;
 
-const adoption = codec(CHECK_ADOPTION_PROTOCOL, ["wiki", "adoptedBy", "reason", "checks"], r => {
+/**
+ * Derived Check adoption record bound to Wiki Check policy and its responsible Change.
+ * Decoding verifies supplied identities, not acceptance of that Check policy.
+ * Stored field names and protocol identities remain unchanged.
+ */
+const checkAdoptionCodec = codec(CHECK_ADOPTION_PROTOCOL, ["wiki", "adoptedBy", "reason", "checks"], r => {
 	const wiki = source(requiredField(CONTRACT, r, "wiki")), adoptedBy = source(requiredField(CONTRACT, r, "adoptedBy"));
-	if (!wiki.path.startsWith(".changekernel/wiki/") || !adoptedBy.path.startsWith(".changekernel/changes/") || wiki.snapshot.repositoryId !== adoptedBy.snapshot.repositoryId) fail("Adoption requires Wiki policy and its responsible Change in the same Project.");
+	if (!wiki.path.startsWith(".changekernel/wiki/") || !adoptedBy.path.startsWith(".changekernel/changes/") || wiki.snapshot.repositoryId !== adoptedBy.snapshot.repositoryId) fail("Check adoption requires Wiki Check policy and its responsible Change in the same Project.");
 	const checks = list(r, "checks", value => {
 		const entry = record(value, ["check", "packDigest", "parameters", "limits", "model", "permissionDigest"]);
 		const modelValue = requiredField(CONTRACT, entry, "model");
@@ -65,9 +70,9 @@ const adoption = codec(CHECK_ADOPTION_PROTOCOL, ["wiki", "adoptedBy", "reason", 
 	ordered(checks.map(entry => entry.check.checkId));
 	return {wiki, adoptedBy, reason: text(r, "reason"), checks};
 });
-export const createCheckAdoption = adoption.create;
-export const decodeCheckAdoption = adoption.decode;
-export type CheckAdoption = ReturnType<typeof adoption.create> extends Outcome<infer T, unknown> ? T : never;
+export const createCheckAdoption = checkAdoptionCodec.create;
+export const decodeCheckAdoption = checkAdoptionCodec.decode;
+export type CheckAdoption = ReturnType<typeof checkAdoptionCodec.create> extends Outcome<infer T, unknown> ? T : never;
 
 const inputContract = codec(CHECK_INPUT_PROTOCOL, ["checkId", "definitionDigest", "adoptionDigest", "subject", "stage", "effects", "effectsComplete", "kernelBuildDigest", "permissionDigest", "executionDigest", "slots"], r => {
 	const slots = inputSlots(r);
@@ -84,46 +89,49 @@ export type CheckInput = ReturnType<typeof inputContract.create> extends Outcome
 export function checkExecutionDigest(input: unknown) {
 	return decodeContract(CONTRACT, input, value => {
 		const r = record(value, ["definition", "adoption", "checkId", "kernelBuildDigest"]);
-		const d = admit(decodeCheckDefinition(r.definition)), a = admit(decodeCheckAdoption(r.adoption));
-		const selected = a.checks.find(entry => entry.check.checkId === id(r, "checkId"));
+		const d = admit(decodeCheckDefinition(r.definition)), checkAdoption = admit(decodeCheckAdoption(r.adoption));
+		const selected = checkAdoption.checks.find(entry => entry.check.checkId === id(r, "checkId"));
 		if (!selected || selected.check.definitionDigest !== d.digest || selected.check.version !== d.version || selected.check.checkId !== d.checkId) fail("Check is not adopted at this exact definition.");
-		for (const key of Object.keys(d.limits) as (keyof typeof d.limits)[]) if (selected.limits[key] > d.limits[key]) fail("Adoption exceeds declared execution limits.");
-		return hash("changekernel.check-execution@1.0.0", {definition: d.digest, adoption: a.digest, selected, kernelBuildDigest: digest(r, "kernelBuildDigest")});
+		for (const key of Object.keys(d.limits) as (keyof typeof d.limits)[]) if (selected.limits[key] > d.limits[key]) fail("Check adoption exceeds declared Check execution limits.");
+		return hash("changekernel.check-execution@1.0.0", {definition: d.digest, adoption: checkAdoption.digest, selected, kernelBuildDigest: digest(r, "kernelBuildDigest")});
 	}, LIMITS);
 }
 
 /**
- * Pure admission only. The host must authenticate current (not candidate) adoption,
- * actual effects, permissions and source bytes. Neither installed Packs nor these
- * self-consistent hashes supply that authority. All adopted entries are required.
+ * Pure Check selection admission only. The host must authenticate the governing
+ * Check policy and Check adoption, not the proposed Change's replacement policy.
+ * Current Project state, derived Change diff and effect classifications,
+ * Check execution permissions and source bytes
+ * also require host verification; self-consistent hashes supply no authority.
+ * Every adopted Check needs an entry; activation and readiness are assessed below.
  */
 export function prepareCheckSelection(input: unknown) {
 	return decodeContract(CONTRACT, input, value => {
 		const r = record(value, ["current", "adoption", "packs", "definitions", "inputs"]);
 		const current = record(requiredField(CONTRACT, r, "current"), ["snapshot", "adoptionDigest", "kernelBuildDigest", "subject", "stage", "effects", "effectsComplete", "permissionDigests"]);
-		const currentSnapshot = snapshot(requiredField(CONTRACT, current, "snapshot"));
+		const currentProjectStateReference = projectStateReference(requiredField(CONTRACT, current, "snapshot"));
 		const permissions = digests(current, "permissionDigests");
 		const currentSubject = subject(requiredField(CONTRACT, current, "subject"));
 		const currentStage = literalField(CONTRACT, current, "stage", STAGES);
 		const currentEffects = effectKinds(current), effectsComplete = booleanField(CONTRACT, current, "effectsComplete");
 		const kernelBuildDigest = digest(current, "kernelBuildDigest");
-		if (!equal(currentSubject.baseline, currentSnapshot)) fail("Current subject baseline differs from governing snapshot.");
-		const a = admit(decodeCheckAdoption(r.adoption));
-		if (a.digest !== digest(current, "adoptionDigest") || !equal(a.wiki.snapshot, currentSnapshot)) fail("Only the exact current adopted Wiki may select Checks.");
+		if (!equal(currentSubject.baseline, currentProjectStateReference)) fail("Assessed Current Project state differs from the governing Check policy state reference.");
+		const checkAdoption = admit(decodeCheckAdoption(r.adoption));
+		if (checkAdoption.digest !== digest(current, "adoptionDigest") || !equal(checkAdoption.wiki.snapshot, currentProjectStateReference)) fail("Only Check adoption bound to the exact current Wiki Check policy may select Checks.");
 		const packs = list(r, "packs", value => admit(decodeCheckPack(value)));
 		const definitions = list(r, "definitions", value => admit(decodeCheckDefinition(value)));
 		const inputs = list(r, "inputs", value => admit(decodeCheckInput(value)));
 		ordered(packs.map(p => p.digest)); ordered(definitions.map(d => d.checkId)); ordered(inputs.map(i => i.checkId));
-		if (definitions.length !== a.checks.length || inputs.length !== a.checks.length) fail("Every adopted Check needs exactly one definition and input record.");
-		const usedPacks = [...new Set(a.checks.map(entry => entry.packDigest))].sort(compare);
+		if (definitions.length !== checkAdoption.checks.length || inputs.length !== checkAdoption.checks.length) fail("Every adopted Check needs exactly one definition and input record.");
+		const usedPacks = [...new Set(checkAdoption.checks.map(entry => entry.packDigest))].sort(compare);
 		if (!equal(usedPacks, packs.map(p => p.digest))) fail("Only exactly adopted Packs belong in the selection.");
-		const entries = a.checks.map((entry, index) => {
+		const entries = checkAdoption.checks.map((entry, index) => {
 			const d = definitions[index], i = inputs[index];
 			if (!d || !i) fail("An adopted Check is missing its definition or inputs.");
 			const p = packs.find(p => p.digest === entry.packDigest);
 			if (!p || !p.checks.some(check => equal(check, entry.check)) || d.checkId !== entry.check.checkId || d.digest !== entry.check.definitionDigest || d.version !== entry.check.version) fail("Pack and definition must match the exact adopted pin.");
-			const executionDigest = admit(checkExecutionDigest({definition: d, adoption: a, checkId: d.checkId, kernelBuildDigest}));
-			if (i.checkId !== d.checkId || i.definitionDigest !== d.digest || i.adoptionDigest !== a.digest || i.executionDigest !== executionDigest || i.permissionDigest !== entry.permissionDigest || i.kernelBuildDigest !== kernelBuildDigest || !equal(i.subject, currentSubject) || !permissions.includes(i.permissionDigest) || !equal(i.subject.baseline, currentSnapshot)) fail("Input differs from current exact evaluation bindings.");
+			const executionDigest = admit(checkExecutionDigest({definition: d, adoption: checkAdoption, checkId: d.checkId, kernelBuildDigest}));
+			if (i.checkId !== d.checkId || i.definitionDigest !== d.digest || i.adoptionDigest !== checkAdoption.digest || i.executionDigest !== executionDigest || i.permissionDigest !== entry.permissionDigest || i.kernelBuildDigest !== kernelBuildDigest || !equal(i.subject, currentSubject) || !permissions.includes(i.permissionDigest) || !equal(i.subject.baseline, currentProjectStateReference)) fail("Input differs from current exact evaluation bindings.");
 			if (i.stage !== currentStage || !equal(i.effects, currentEffects) || i.effectsComplete !== effectsComplete) fail("Input activation facts differ from current host-observed facts.");
 			if (i.slots.length !== d.inputs.length) fail("Every declared input needs data or an explicit omission.");
 			const missing: string[] = [];
@@ -153,7 +161,7 @@ export function prepareCheckSelection(input: unknown) {
 			return Object.freeze({checkId: d.checkId, inputDigest: i.digest, executionDigest, applicability, readiness,
 				missing: Object.freeze(missing), evidenceDigests: Object.freeze([...new Set(i.slots.flatMap(slot => slot.evidenceDigests))].sort(compare)), outputBytes: entry.limits.outputBytes});
 		});
-		const body = {protocol: "changekernel.check-selection@1.0.0", adoptionDigest: a.digest, current, entries: Object.freeze(entries)};
+		const body = {protocol: "changekernel.check-selection@1.0.0", adoptionDigest: checkAdoption.digest, current, entries: Object.freeze(entries)};
 		return Object.freeze({...body, digest: hash(body.protocol, body)});
 	}, {...LIMITS, maximumNodes: 262144, maximumTextBytes: 4 * 1024 * 1024});
 }

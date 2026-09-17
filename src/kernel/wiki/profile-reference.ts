@@ -138,16 +138,16 @@ function decodeReferenceValue(value: CanonicalValue): ProfiledWikiReference {
 	const before = snapshotField(record, "before", "$");
 	const after = snapshotField(record, "after", "$");
 	if (!before.complete || !after.complete || before.repositoryId !== after.repositoryId || before.objectFormat !== after.objectFormat) {
-		rejectContract("invalid_field", CONTRACT, "$.after", "Reference requires complete snapshots of one repository and object format.");
+		rejectContract("invalid_field", CONTRACT, "$.after", "Reference requires complete Project state references from one repository and object format.");
 	}
 	if (before.commit.hex === after.commit.hex && before.snapshotDigest !== after.snapshotDigest) {
-		rejectContract("invalid_field", CONTRACT, "$.after", "One commit cannot claim different snapshot identities.");
+		rejectContract("invalid_field", CONTRACT, "$.after", "One commit cannot claim different Project state reference identities.");
 	}
 	const changePathUtf8Hex = pathHexField(record, "changePathUtf8Hex", "$.changePathUtf8Hex", true);
 	const mappings = decodeMappings(requiredField(CONTRACT, record, "mappings"));
 	for (const mapping of mappings) {
 		if ([...mapping.before, ...mapping.after].some((endpoint) => endpoint.blob.algorithm !== before.objectFormat)) {
-			rejectContract("invalid_field", CONTRACT, "$.mappings", "Endpoint object format differs from its snapshots.");
+			rejectContract("invalid_field", CONTRACT, "$.mappings", "Endpoint object format differs from its Project state references.");
 		}
 	}
 	const transactionDigest = digestField(record, "transactionDigest", "$");

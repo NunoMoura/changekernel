@@ -27,9 +27,9 @@ source-history:
 ---
 # Preview
 
-Preview is an optional bounded observation method for a Change, not a stage, acceptance authority, or general-purpose runtime. It can help a person or Agent inspect a candidate, but a demonstration is evidence only about its exact subject and observed conditions.
+Preview is an optional bounded observation method for a Change, not a stage, acceptance authority, or general-purpose runtime. It can help a person or Agent inspect a Proposed Change, but a demonstration is evidence only about its exact subject and observed conditions.
 
-Bind the artifact/workspace, environment, generation, allowed consumers, expiry, output and resource limits before execution. Reject stale or substituted observations. Observing a candidate's UI or procedure does not establish broader correctness, authority, deployment, or real-world adoption.
+Bind the artifact/workspace, environment, generation, allowed consumers, expiry, output and resource limits before execution. Reject stale or substituted observations. Observing a Proposed Change's UI or procedure does not establish broader correctness, authority, deployment, or real-world adoption.
 
 Preview must enforce its declared process, filesystem, credential and network scope, then observe cancellation and quiescence. A worktree or callback receipt alone does not prove containment. If required enforcement or custody cannot be established, Preview is unavailable; absence of that optional capability need not prevent unrelated knowledge work.
 

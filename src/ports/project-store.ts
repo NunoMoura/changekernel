@@ -179,7 +179,11 @@ export interface ProjectStoreIssue {
 	readonly message: string;
 }
 
-/** Sole persistence boundary for canonical Project snapshots and managed refs. */
+/**
+ * Sole persistence boundary for exact Project state references and managed refs.
+ * readSnapshot is the retained interface spelling: it resolves commit/tree identity,
+ * not source bodies, a Change diff or acceptance. Read the identified bytes separately.
+ */
 export interface ProjectStorePort {
 	readonly protocol: typeof PROJECT_STORE_PORT;
 	readSnapshot(request: ProjectStoreReadRequest): Promise<Outcome<ProjectSnapshot, ProjectStoreIssue>>;

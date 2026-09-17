@@ -25,9 +25,10 @@ export type DecisionSourceRequest = Extract<ReturnType<typeof decodeRequest>, {o
  * Private source assembly for the existing Wiki-only proposed Change format.
  * Configuration and Store are trusted backend bindings. authorize must consult
  * current access policy for this project and exact request on every call.
- * No caller-supplied bodies, effects, Check results or completeness assertions.
+ * Current Project state + Proposed Change yields the backend-derived Change diff.
+ * No caller-supplied bodies, diff summaries, Check results or completeness assertions.
  * Full bodies and exclusions remain in the returned grounds; this does not prove
- * semantic coverage, adopted domain policy, accepted Evidence or readiness.
+ * semantic coverage, governing Check policy, accepted Evidence or readiness.
  * Mutable heads are observed again before delivery, not locked: execution and
  * acceptance must independently recheck their own current authority and sources.
  */
@@ -40,7 +41,7 @@ export async function readDecisionSourceMaterial(
 	const request = decodeRequest(input);
 	if (!request.ok) return failure(productError("invalid_request", "Decision source request requires only the proposed Change and exact Project and Change heads.", "Refresh the proposed Change revision; do not supply source bodies or verdicts.", false));
 	const exactRequest = request.value;
-	// Snapshot trusted configuration before callbacks and asynchronous Store reads.
+	// Capture trusted configuration before callbacks and asynchronous Store reads.
 	const configured = Object.freeze({...configuration, limits: Object.freeze({...configuration.limits})});
 	let authorityIdentity: string | undefined;
 	function currentAuthority(): Outcome<AuthorizedProjectActor, ProductError> {
@@ -72,8 +73,8 @@ export async function readDecisionSourceMaterial(
 		] as const) {
 			const observed = await resolveProjectSourceDetailed(store, configured, source);
 			if (!observed.ok) return failure(stale());
-			const snapshot = decodeProjectSnapshot(observed.value);
-			if (!snapshot.ok || snapshot.value.snapshotDigest !== expected.snapshotDigest) return failure(stale());
+			const projectStateReference = decodeProjectSnapshot(observed.value);
+			if (!projectStateReference.ok || projectStateReference.value.snapshotDigest !== expected.snapshotDigest) return failure(stale());
 		}
 		const delivery = currentAuthority();
 		if (!delivery.ok) return delivery;
@@ -86,5 +87,5 @@ function denied(): ProductError {
 	return productError("authorization_denied", "Current authority does not permit delivery of this proposed Change's source material.", "Refresh the applicable project and Change authorization.", true);
 }
 function stale(): ProductError {
-	return productError("source_stale", "Project baseline or proposed Change revision changed during source assembly.", "Refresh both heads and rebuild the material.", false);
+	return productError("source_stale", "Current Project state or Proposed Change revision changed during source assembly.", "Refresh both heads and rebuild the material.", false);
 }
