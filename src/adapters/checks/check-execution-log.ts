@@ -8,6 +8,7 @@ import {decodeCheckResult, type CheckResult} from "../../kernel/gates/checks.ts"
 import {decodeDecisionValidationResult, type DecisionValidationResult} from "../../kernel/gates/decision-validation.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 
+// Persisted identifier is unchanged: renaming the component requires no data migration.
 const PROTOCOL = "changekernel.check-journal@1.0.0";
 const DIRECTORY = "check-state-v1";
 const MAXIMUM_ATTEMPTS = 256;
@@ -18,8 +19,8 @@ export interface CheckAttemptBinding {
 	readonly permissionDigest: Sha256Digest;
 }
 export interface RetainedCheckValue {readonly result: CheckResult | DecisionValidationResult; readonly dependenciesDigest: Sha256Digest; readonly modelCalls: number;}
-function encoded(value: unknown) {const result = canonicalJson(value); if (!result.ok) throw new Error("Invalid Check journal data."); return result.value;}
-function sha(value: unknown) {const result = decodeSha256Digest(value); if (!result.ok) throw new Error("Invalid journal identity."); return result.value;}
+function encoded(value: unknown) {const result = canonicalJson(value); if (!result.ok) throw new Error("Invalid Check execution log data."); return result.value;}
+function sha(value: unknown) {const result = decodeSha256Digest(value); if (!result.ok) throw new Error("Invalid Check execution log identity."); return result.value;}
 function binding(value: unknown): CheckAttemptBinding {
 	const decoded = decodeContract("Check attempt", value, value => exactRecord("Check attempt", value, "$", ["selectionDigest", "inputDigest", "executionDigest", "permissionDigest"]));
 	if (!decoded.ok) throw new Error("Invalid Check attempt.");
@@ -68,7 +69,7 @@ async function rootDirectory(root: string) {
 }
 
 /** One-time trusted provisioning. Never called implicitly by execution or reopening. */
-export async function initializeCheckJournal(root: string): Promise<Sha256Digest> {
+export async function initializeCheckExecutionLog(root: string): Promise<Sha256Digest> {
 	const parent = await rootDirectory(root), directory = join(parent, DIRECTORY);
 	await mkdir(directory, {mode: 0o700});
 	const identity = `sha256:${createHash("sha256").update(randomBytes(32)).digest("hex")}` as Sha256Digest;
@@ -77,15 +78,15 @@ export async function initializeCheckJournal(root: string): Promise<Sha256Digest
 }
 
 /** Bounded append-only custody, not an authority source or a general result cache. */
-export async function openCheckJournal(root: string, identity: Sha256Digest) {
+export async function openCheckExecutionLog(root: string, identity: Sha256Digest) {
 	const directory = join(await rootDirectory(root), DIRECTORY);
 	async function verify() {
 		await privateDirectory(directory);
 		if (encoded(await read(join(directory, "identity.json"))) !== encoded({protocol: PROTOCOL, identity: sha(identity)})) throw new Error("Check state identity differs from the configured identity.");
 	}
 	await verify();
-	return Object.freeze({async begin(input: CheckAttemptBinding) {
-		await verify(); const requested = binding(input);
+	async function inspect(input: CheckAttemptBinding) {
+		const requested = binding(input); await verify();
 		const names = (await readdir(directory)).filter(name => name !== "identity.json").sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
 		if (names.length > MAXIMUM_ATTEMPTS || names.some((name, i) => name !== String(i).padStart(3, "0"))) throw new Error("Check state has gaps or unexpected entries.");
 		let previous: RetainedCheckValue | null | undefined;
@@ -108,19 +109,30 @@ export async function openCheckJournal(root: string, identity: Sha256Digest) {
 				previous = terminal;
 			}
 		}
-		if (previous !== undefined) return Object.freeze({kind: "retained" as const, value: previous});
-		if (names.length === MAXIMUM_ATTEMPTS) throw new Error("Check custody is full; explicit archival is required.");
-		const path = join(directory, String(names.length).padStart(3, "0"));
-		// Exclusive creation serializes competing processes. Never skip a slot
-		// or steal an incomplete reservation based on elapsed time or a dead PID.
-		await mkdir(path, {mode: 0o700}); await syncDirectory(directory);
-		await publish(path, "claim.json", requested);
-		let finished = false;
-		return Object.freeze({kind: "claimed" as const, async finish(value: RetainedCheckValue | null) {
-			if (finished) throw new Error("Check attempt already finalized.");
-			finished = true; const checked = retained(value);
-			if (checked && (checked.result.inputDigest !== requested.inputDigest || checked.result.executionDigest !== requested.executionDigest)) throw new Error("Check completion differs from its claim.");
-			await publish(path, "terminal.json", checked);
-		}});
-	}});
+		return {requested, names, previous};
+	}
+	return Object.freeze({
+		/** Custody lookup only: never reserves missing work or authorizes delivery. */
+		async lookup(input: CheckAttemptBinding) {
+			const {previous} = await inspect(input);
+			return previous === undefined ? Object.freeze({kind: "missing" as const}) : Object.freeze({kind: "retained" as const, value: previous});
+		},
+		async begin(input: CheckAttemptBinding) {
+			const {requested, names, previous} = await inspect(input);
+			if (previous !== undefined) return Object.freeze({kind: "retained" as const, value: previous});
+			if (names.length === MAXIMUM_ATTEMPTS) throw new Error("Check custody is full; explicit archival is required.");
+			const path = join(directory, String(names.length).padStart(3, "0"));
+			// Exclusive creation serializes competing processes. Never skip a slot
+			// or steal an incomplete reservation based on elapsed time or a dead PID.
+			await mkdir(path, {mode: 0o700}); await syncDirectory(directory);
+			await publish(path, "claim.json", requested);
+			let finished = false;
+			return Object.freeze({kind: "claimed" as const, async finish(value: RetainedCheckValue | null) {
+				if (finished) throw new Error("Check attempt already finalized.");
+				finished = true; const checked = retained(value);
+				if (checked && (checked.result.inputDigest !== requested.inputDigest || checked.result.executionDigest !== requested.executionDigest)) throw new Error("Check completion differs from its claim.");
+				await publish(path, "terminal.json", checked);
+			}});
+		},
+	});
 }

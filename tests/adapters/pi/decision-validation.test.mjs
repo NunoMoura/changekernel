@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {createPiCheckBackend} from '../../../src/adapters/pi/check-backend.ts';
-import {initializeCheckJournal} from '../../../src/adapters/checks/journal.ts';
+import {initializeCheckExecutionLog} from '../../../src/adapters/checks/check-execution-log.ts';
 import {createCheckResult} from '../../../src/kernel/gates/checks.ts';
 import {canonicalJson} from '../../../src/kernel/data-contracts/canonical-json.ts';
 import {prepareDecisionValidation, reduceDecisionValidation} from '../../../src/kernel/gates/decision-validation.ts';
@@ -34,7 +34,7 @@ test('Release-owned Decision validation shares bounded Pi execution and durable 
     publicationSeen = true;
     answer(response, {text: ok(canonicalJson(value))});
   });
-  const config = {custodyRoot: root, stateIdentity: await initializeCheckJournal(root), kernelBuildDigest: digest('e'),
+  const config = {custodyRoot: root, stateIdentity: await initializeCheckExecutionLog(root), kernelBuildDigest: digest('e'),
     backendIdentityDigest: digest('a'), credentialBindingDigest: digest('b'),
     provider: {providerId: 'fixture-provider', modelId: 'fixture-model', baseUrl: server.baseUrl, apiKey: 'fixture-not-a-credential',
       maximumResponseBytes: 16384, maximumOutputTokens: 2048, contextWindow: 65536, timeoutMs: 4000, temperature: 0}};

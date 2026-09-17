@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
+import {execFile} from "node:child_process";
+import {promisify} from "node:util";
 import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
@@ -7,7 +9,7 @@ import {createServer} from "node:http";
 import test from "node:test";
 import {CHECK_MODEL_PORT_PROTOCOL} from "../../../src/ports/check-model.ts";
 import {createLinuxCheckHost} from "../../../src/adapters/checks/linux-host.ts";
-import {initializeCheckJournal} from "../../../src/adapters/checks/journal.ts";
+import {initializeCheckExecutionLog} from "../../../src/adapters/checks/check-execution-log.ts";
 import {fixture, ok, digest, limits, body} from "../../kernel/gates/check-fixtures.mjs";
 const hash = value => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 const successful = {passed: true, failureKind: null, feedback: {summary: "Condition holds.", where: "Supplied case", reason: "Exact source supports this condition.", resolution: null, preserve: ["Keep accepted intent."]}, evidenceDigests: [digest("1")], limitations: []};
@@ -34,7 +36,7 @@ test("Linux isolated Check execution in a disposable external project", {timeout
 		if (mode === "ignore-cancel") return new Promise(() => {});
 		return Promise.resolve({value: mode === "malformed" ? {confidence: 1} : {supported: true, reason: "Fixture support."}, inputTokens: mode === "overspend" ? 999999 : 25, outputTokens: 10});
 	}};
-	const stateIdentity = await initializeCheckJournal(root);
+	const stateIdentity = await initializeCheckExecutionLog(root);
 	const options = {custodyRoot: root, stateIdentity, authorize: () => authorized, model: provider};
 	const created = await createLinuxCheckHost(options);
 	assert.equal(created.ok, true, JSON.stringify(created));
@@ -154,5 +156,66 @@ for (const operation of [() => fs.readFile(${JSON.stringify(secret)}), () => fs.
 			await host.dispose();
 			assert.equal((await readdir(root)).some(name => name.startsWith("check-host-")), true, "Uncertain execution material remains available for investigation");
 		});
+	} finally {await host.dispose(); await rm(root, {recursive: true, force: true});}
+});
+
+test("Retained-only domain delivery never launches missing work and rechecks current authority", {timeout: 90000}, async () => {
+	const root = await mkdtemp(join(tmpdir(), "changekernel-retained-only-"));
+	let calls = 0, authorityCalls = 0, authority = () => true;
+	const provider = {protocol: CHECK_MODEL_PORT_PROTOCOL, routeDigest: digest("2"), settingsDigest: digest("3"), locality: "local",
+		async call() {calls++; return {value: {supported: true}, inputTokens: 25, outputTokens: 10};}};
+	const options = {custodyRoot: root, stateIdentity: await initializeCheckExecutionLog(root), model: provider,
+		authorize: () => {authorityCalls++; return authority();}};
+	const host = ok(await createLinuxCheckHost(options));
+	try {
+		const source = artifact("await api.model('Assess supplied data.', {supported:'boolean'});"), input = modelRequest(host, source);
+		assert.equal((await host.readRetainedCheck(input)).error.code, "not-ready");
+		assert.equal(calls, 0);
+		assert.deepEqual(await readdir(join(root, "check-state-v1")), ["identity.json"]);
+		assert.equal((await host.readRetainedCheck({...input, result: successful})).error.code, "invalid-input", "Caller results are never accepted");
+		const completed = ok(await host.run(input)); assert.equal(calls, 1);
+		const retained = ok(await host.readRetainedCheck(input));
+		assert.deepEqual(retained.result, completed.result); assert.equal(retained.modelCalls, 0); assert.equal(retained.reused, true);
+		const reopened = ok(await createLinuxCheckHost(options));
+		try {assert.deepEqual(ok(await reopened.readRetainedCheck(input)), retained);} finally {await reopened.dispose();}
+		const missing = modelRequest(host, source + "\n/* different implementation */");
+		for (const requested of [input, missing]) {
+			authority = () => false;
+			assert.equal((await host.readRetainedCheck(requested)).error.code, "denied");
+			authorityCalls = 0; authority = () => authorityCalls === 1;
+			assert.equal((await host.readRetainedCheck(requested)).error.code, "denied", "Authority is rechecked after custody inspection");
+			authority = () => true;
+			const controller = new AbortController(); controller.abort();
+			assert.equal((await host.readRetainedCheck(requested, controller.signal)).error.code, "operational-error");
+		}
+		assert.equal((await host.readRetainedCheck(missing)).error.code, "not-ready");
+		assert.equal(calls, 1);
+		const negative = modelRequest(host, artifact("await api.model('Assess negative case.', {supported:'boolean'});", {...successful, passed: false, failureKind: "insufficient-support"}));
+		const failed = ok(await host.run(negative));
+		assert.equal(failed.result.passed, false);
+		assert.deepEqual(ok(await host.readRetainedCheck(negative)).result, failed.result);
+		assert.equal(calls, 2);
+		const module = new URL("../../../src/adapters/checks/linux-host.ts", import.meta.url).href;
+		const script = `import {createLinuxCheckHost} from ${JSON.stringify(module)};
+			let calls = 0;
+			const created = await createLinuxCheckHost({custodyRoot:${JSON.stringify(root)}, stateIdentity:${JSON.stringify(options.stateIdentity)},
+				authorize:()=>true, model:{protocol:${JSON.stringify(CHECK_MODEL_PORT_PROTOCOL)}, routeDigest:${JSON.stringify(digest("2"))}, settingsDigest:${JSON.stringify(digest("3"))}, locality:'local',
+				call(){calls++; throw Error('Lookup must never infer');}}});
+			if (!created.ok) throw Error(JSON.stringify(created));
+			try {const values=[]; for(const input of ${JSON.stringify([input, negative, missing])}) values.push(await created.value.readRetainedCheck(input));
+				console.log(JSON.stringify({values,calls}));} finally {await created.value.dispose();}`;
+		const fresh = JSON.parse((await promisify(execFile)(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", script], {timeout: 15000})).stdout);
+		assert.equal(fresh.calls, 0);
+		assert.deepEqual(ok(fresh.values[0]), retained);
+		assert.deepEqual(ok(fresh.values[1]).result, failed.result);
+		assert.equal(fresh.values[2].error.code, "not-ready");
+		const stopped = request(host, artifact("throw Error('stopped');"));
+		assert.equal((await host.run(stopped)).error.code, "operational-error");
+		assert.equal((await host.readRetainedCheck(stopped)).error.code, "already-attempted");
+		assert.deepEqual((await readdir(join(root, "check-state-v1"))).sort(), ["000", "001", "002", "identity.json"]);
+		await writeFile(join(root, "check-state-v1/000/terminal.json"), "{", {mode: 0o600});
+		assert.equal((await host.readRetainedCheck(input)).error.code, "operational-error");
+		assert.equal((await host.run(missing)).error.code, "unsupported", "Uncertain custody also blocks later execution");
+		assert.equal(calls, 2);
 	} finally {await host.dispose(); await rm(root, {recursive: true, force: true});}
 });

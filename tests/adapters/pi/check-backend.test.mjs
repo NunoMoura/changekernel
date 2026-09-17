@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {createPiCheckBackend} from '../../../src/adapters/pi/check-backend.ts';
-import {initializeCheckJournal} from '../../../src/adapters/checks/journal.ts';
+import {initializeCheckExecutionLog} from '../../../src/adapters/checks/check-execution-log.ts';
 import {fixture, ok, digest, limits} from '../../kernel/gates/check-fixtures.mjs';
 import {localServer, answer} from './http-fixtures.mjs';
 
@@ -35,7 +35,7 @@ function request(host, label, patch = {}) {
 async function directory(t) {
   const root = await mkdtemp(join(tmpdir(), 'changekernel-pi-backend-'));
   t.after(() => rm(root, {recursive: true, force: true}));
-  return {custodyRoot: root, stateIdentity: await initializeCheckJournal(root)};
+  return {custodyRoot: root, stateIdentity: await initializeCheckExecutionLog(root)};
 }
 async function backend(t, config) {
   const host = ok(await createPiCheckBackend(config));

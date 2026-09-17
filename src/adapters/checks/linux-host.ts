@@ -14,7 +14,7 @@ import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {CHECK_MODEL_PORT_PROTOCOL, UncertainCheckModelCustody, decodeCheckModelStructure, decodeCheckModelValue, type CheckModelPort} from "../../ports/check-model.ts";
 import {CHECK_WORKER_PROTOCOL, CHECK_WORKER_SOURCE} from "./worker-source.ts";
-import {openCheckJournal, type RetainedCheckValue} from "./journal.ts";
+import {openCheckExecutionLog, type RetainedCheckValue} from "./check-execution-log.ts";
 
 const execute = promisify(execFile);
 const LIBRARIES = ["libdl.so.2", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libpthread.so.0", "libc.so.6", "ld-linux-x86-64.so.2"];
@@ -22,7 +22,7 @@ const PROFILE = "changekernel.check-host.linux-systemd-bwrap@3.0.0";
 export interface LinuxCheckHostOptions {
 	/** Owner-private persistent directory outside the project checkout. Never rotate it to retry. */
 	readonly custodyRoot: string;
-	/** Identity returned by explicit one-time journal provisioning. */
+	/** Identity returned by explicit one-time execution log provisioning. */
 	readonly stateIdentity: Sha256Digest;
 	/** Authenticated backend decision, never supplied by a Check or candidate. */
 	readonly authorize: (binding: Readonly<{selectionDigest: Sha256Digest; inputDigest: Sha256Digest; executionDigest: Sha256Digest; permissionDigest: Sha256Digest}>) => boolean;
@@ -44,7 +44,7 @@ function json(value: unknown): string {
  * memory, swap, task and wall-time bounds. Bubblewrap supplies a read-only root,
  * isolated network/process namespaces and no project, home, sockets or credentials.
  * Node permissions are additional restrictions, not the containment boundary.
- * The durable journal retains exact completions and blocks unresolved attempts.
+ * The durable execution log retains exact completions and blocks unresolved attempts.
  * Unknown custody is never reclaimed automatically on restart.
  */
 export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
@@ -58,7 +58,7 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 		const cwd = await realpath(process.cwd()), root = await realpath(options.custodyRoot);
 		const location = relative(cwd, root);
 		if (!location || (!location.startsWith(`..${sep}`) && location !== ".." && !isAbsolute(location))) return issue("unsupported", "Check custody must be outside the project checkout.");
-		const journal = await openCheckJournal(root, options.stateIdentity);
+		const executionLog = await openCheckExecutionLog(root, options.stateIdentity);
 		directory = await mkdtemp(join(root, "check-host-"));
 		const runtime = join(directory, "runtime"); await mkdir(runtime, {mode: 0o700});
 		const identities: Record<string, string> = {};
@@ -77,6 +77,8 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 		return success(Object.freeze({dependenciesDigest,
 			run(input: unknown, signal?: AbortSignal) {return dispatch("domain", input, signal);},
 			runDecision(input: unknown, signal?: AbortSignal) {return dispatch("decision", input, signal);},
+			/** Deliver an authenticated retained domain result without reserving or executing work. */
+			readRetainedCheck(input: unknown, signal?: AbortSignal) {return dispatch("domain", input, signal, true);},
 			async dispose() {
 				disposed = true;
 				await Promise.allSettled([...active]);
@@ -84,12 +86,12 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			},
 		}));
 
-		async function dispatch(kind: "domain" | "decision", input: unknown, signal?: AbortSignal) {
+		async function dispatch(kind: "domain" | "decision", input: unknown, signal?: AbortSignal, retainedOnly = false) {
 			if (disposed || custodyUncertain || active.size) return issue("unsupported", "Execution host is closed, busy or has unresolved execution custody.");
-			const task = run(kind, input, signal); active.add(task);
+			const task = run(kind, input, signal, retainedOnly); active.add(task);
 			try {return await task;} catch {return issue("operational-error", "Host admission or cleanup failed; no semantic result is available.");} finally {active.delete(task);}
 		}
-		async function run(kind: "domain" | "decision", input: unknown, signal?: AbortSignal) {
+		async function run(kind: "domain" | "decision", input: unknown, signal?: AbortSignal, retainedOnly = false) {
 			const prepared = kind === "domain" ? prepareDomainRun(input) : prepareDecisionRun(input, kernelBuildDigest);
 			if (!prepared.ok) return prepared;
 			const {entry, definition, selectedInput, execution, selectionDigest, artifact, origin} = prepared.value;
@@ -102,9 +104,14 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			const binding = Object.freeze({selectionDigest, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest, permissionDigest: execution.permissionDigest});
 			if (authorize(binding) !== true) return issue("denied", "Current authority does not permit this exact execution.");
 			let attempt;
-			try {attempt = await journal.begin(binding);} catch {
+			try {attempt = retainedOnly ? await executionLog.lookup(binding) : await executionLog.begin(binding);} catch {
 				custodyUncertain = true;
 				return issue("operational-error", "Check state is unavailable, conflicting or unresolved; no execution or automatic retry is permitted.");
+			}
+			if (attempt.kind === "missing") {
+				if (signal?.aborted) return issue("operational-error", "Retained result lookup was cancelled.");
+				if (authorize(binding) !== true) return issue("denied", "Current authority does not permit retained result delivery.");
+				return issue("not-ready", "No retained Check result exists; lookup cannot reserve or execute work.");
 			}
 			if (attempt.kind === "retained") {
 				const value = attempt.value;
