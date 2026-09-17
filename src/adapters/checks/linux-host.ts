@@ -7,15 +7,18 @@ import {canonicalJson, parseCanonicalJson, type CanonicalValue} from "../../kern
 import {failure, success} from "../../kernel/data-contracts/outcome.ts";
 import {decodeContract, exactRecord, requiredField} from "../../kernel/data-contracts/validation.ts";
 import {createCheckResult, decodeCheckAdoption, decodeCheckDefinition, decodeCheckInput, prepareCheckSelection} from "../../kernel/gates/checks.ts";
+import {createDecisionValidationResult, prepareDecisionValidation} from "../../kernel/gates/decision-validation.ts";
+import {decisionValidatorArtifact} from "../../kernel/gates/decision-validators.ts";
+import {CHANGEKERNEL_VERSION} from "../../kernel/identity/version.ts";
 import {semanticDigest} from "../../kernel/identity/semantic-digest.ts";
-import type {Sha256Digest} from "../../kernel/identity/sha256.ts";
+import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 import {CHECK_MODEL_PORT_PROTOCOL, UncertainCheckModelCustody, decodeCheckModelStructure, decodeCheckModelValue, type CheckModelPort} from "../../ports/check-model.ts";
 import {CHECK_WORKER_PROTOCOL, CHECK_WORKER_SOURCE} from "./worker-source.ts";
 import {openCheckJournal, type RetainedCheckValue} from "./journal.ts";
 
 const execute = promisify(execFile);
 const LIBRARIES = ["libdl.so.2", "libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libpthread.so.0", "libc.so.6", "ld-linux-x86-64.so.2"];
-const PROFILE = "changekernel.check-host.linux-systemd-bwrap@2.0.0";
+const PROFILE = "changekernel.check-host.linux-systemd-bwrap@3.0.0";
 export interface LinuxCheckHostOptions {
 	/** Owner-private persistent directory outside the project checkout. Never rotate it to retry. */
 	readonly custodyRoot: string;
@@ -24,6 +27,8 @@ export interface LinuxCheckHostOptions {
 	/** Authenticated backend decision, never supplied by a Check or candidate. */
 	readonly authorize: (binding: Readonly<{selectionDigest: Sha256Digest; inputDigest: Sha256Digest; executionDigest: Sha256Digest; permissionDigest: Sha256Digest}>) => boolean;
 	readonly model?: CheckModelPort;
+	/** Exact verified running Kernel Build. Omission disables backend Decision execution. */
+	readonly kernelBuildDigest?: Sha256Digest;
 }
 interface RunFailure {readonly code: "invalid-input" | "not-ready" | "denied" | "unsupported" | "already-attempted" | "operational-error"; readonly message: string;}
 function issue(code: RunFailure["code"], message: string) {return failure(Object.freeze({code, message}));}
@@ -44,7 +49,8 @@ function json(value: unknown): string {
  */
 export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 	if (process.platform !== "linux" || process.arch !== "x64" || !isAbsolute(options.custodyRoot) || typeof options.authorize !== "function") return issue("unsupported", "Linux x64, an external custody root and an authenticated authorizer are required.");
-	const authorize = options.authorize;
+	const authorize = options.authorize, kernelBuildDigest = options.kernelBuildDigest;
+	if (kernelBuildDigest !== undefined && !decodeSha256Digest(kernelBuildDigest).ok) return issue("unsupported", "Backend validation requires an exact verified Kernel Build.");
 	const model = options.model ? Object.freeze({...options.model, call: options.model.call.bind(options.model)}) : undefined;
 	if (model && (model.protocol !== CHECK_MODEL_PORT_PROTOCOL || !["local", "private"].includes(model.locality))) return issue("unsupported", "Only explicitly configured local or private model routes are supported.");
 	let directory: string | undefined;
@@ -69,11 +75,8 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 		let disposed = false, custodyUncertain = false, retainCustody = false;
 		const custody = directory;
 		return success(Object.freeze({dependenciesDigest,
-			async run(input: unknown, signal?: AbortSignal) {
-				if (disposed || custodyUncertain || active.size) return issue("unsupported", "Execution host is closed, busy or has unresolved execution custody.");
-				const task = run(input, signal); active.add(task);
-				try {return await task;} catch {return issue("operational-error", "Host admission or cleanup failed; no semantic result is available.");} finally {active.delete(task);}
-			},
+			run(input: unknown, signal?: AbortSignal) {return dispatch("domain", input, signal);},
+			runDecision(input: unknown, signal?: AbortSignal) {return dispatch("decision", input, signal);},
 			async dispose() {
 				disposed = true;
 				await Promise.allSettled([...active]);
@@ -81,32 +84,22 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			},
 		}));
 
-		async function run(input: unknown, signal?: AbortSignal) {
-			const request = decodeContract("Check launch", input, value => exactRecord("Check launch", value, "$", ["selection", "checkId", "artifact"]), {maximumDepth: 40, maximumEntriesPerContainer: 256, maximumNodes: 262144, maximumTextBytes: 4 * 1024 * 1024});
-			if (!request.ok) return issue("invalid-input", request.error.message);
-			const selection = prepareCheckSelection(request.value.selection);
-			if (!selection.ok) return issue("invalid-input", selection.error.message);
-			const entry = selection.value.entries.find(entry => entry.checkId === request.value.checkId);
-			if (!entry || entry.readiness !== "ready") return issue("not-ready", "Only an explicitly adopted, active, ready Check can execute.");
-			const material = decodeContract("Check launch material", request.value.selection, value => {
-				const r = exactRecord("Check launch material", value, "$", ["current", "adoption", "packs", "definitions", "inputs"]);
-				return {adoption: r.adoption, definitions: r.definitions, inputs: r.inputs};
-			}, {maximumDepth: 40, maximumEntriesPerContainer: 256, maximumNodes: 262144, maximumTextBytes: 4 * 1024 * 1024});
-			if (!material.ok || !Array.isArray(material.value.definitions) || !Array.isArray(material.value.inputs)) return issue("invalid-input", "Incomplete launch material.");
-			const definition = material.value.definitions.map(value => decodeCheckDefinition(value)).find(value => value.ok && value.value.checkId === entry.checkId);
-			const selectedInput = material.value.inputs.map(value => decodeCheckInput(value)).find(value => value.ok && value.value.checkId === entry.checkId);
-			const adoption = decodeCheckAdoption(material.value.adoption);
-			if (!definition?.ok || !selectedInput?.ok || !adoption.ok) return issue("invalid-input", "Incomplete exact Check binding.");
-			const adopted = adoption.value.checks.find(value => value.check.checkId === entry.checkId);
-			if (!adopted) return issue("invalid-input", "Check is not adopted.");
-			const artifact = request.value.artifact;
-			if (typeof artifact !== "string" || Buffer.byteLength(artifact) > 128 * 1024 || bytesDigest(artifact) !== definition.value.implementation.artifactDigest || definition.value.implementation.dependenciesDigest !== dependenciesDigest) return issue("invalid-input", "Artifact or runtime bytes differ from the adopted implementation.");
-			if (adopted.model && (!model || model.routeDigest !== adopted.model.routeDigest || model.settingsDigest !== adopted.model.settingsDigest)) return issue("denied", "The exact adopted model route and settings are unavailable; no fallback.");
-			if (adopted.limits.memoryBytes < 64 * 1024 * 1024) return issue("unsupported", "This Node execution profile requires at least 64 MiB, including containment overhead.");
-			const inputText = json({input: selectedInput.value, parameters: adopted.parameters});
-			if (Buffer.byteLength(inputText) > adopted.limits.inputBytes) return issue("invalid-input", "Selected inputs and adopted parameters exceed the execution input budget.");
+		async function dispatch(kind: "domain" | "decision", input: unknown, signal?: AbortSignal) {
+			if (disposed || custodyUncertain || active.size) return issue("unsupported", "Execution host is closed, busy or has unresolved execution custody.");
+			const task = run(kind, input, signal); active.add(task);
+			try {return await task;} catch {return issue("operational-error", "Host admission or cleanup failed; no semantic result is available.");} finally {active.delete(task);}
+		}
+		async function run(kind: "domain" | "decision", input: unknown, signal?: AbortSignal) {
+			const prepared = kind === "domain" ? prepareDomainRun(input) : prepareDecisionRun(input, kernelBuildDigest);
+			if (!prepared.ok) return prepared;
+			const {entry, definition, selectedInput, execution, selectionDigest, artifact, origin} = prepared.value;
+			if (typeof artifact !== "string" || Buffer.byteLength(artifact) > 128 * 1024 || bytesDigest(artifact) !== definition.implementation.artifactDigest || definition.implementation.dependenciesDigest !== dependenciesDigest) return issue("invalid-input", "Artifact or runtime bytes differ from the bound implementation.");
+			if (execution.model && (!model || model.routeDigest !== execution.model.routeDigest || model.settingsDigest !== execution.model.settingsDigest)) return issue("denied", "The exact authorized model route and settings are unavailable; no fallback.");
+			if (execution.limits.memoryBytes < 64 * 1024 * 1024) return issue("unsupported", "This Node execution profile requires at least 64 MiB, including containment overhead.");
+			const inputText = json({input: selectedInput, parameters: execution.parameters});
+			if (Buffer.byteLength(inputText) > execution.limits.inputBytes) return issue("invalid-input", "Selected inputs and parameters exceed the execution input budget.");
 			if (signal?.aborted) return issue("operational-error", "Execution was cancelled before launch.");
-			const binding = Object.freeze({selectionDigest: selection.value.digest, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest, permissionDigest: adopted.permissionDigest});
+			const binding = Object.freeze({selectionDigest, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest, permissionDigest: execution.permissionDigest});
 			if (authorize(binding) !== true) return issue("denied", "Current authority does not permit this exact execution.");
 			let attempt;
 			try {attempt = await journal.begin(binding);} catch {
@@ -115,7 +108,9 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 			}
 			if (attempt.kind === "retained") {
 				const value = attempt.value;
-				if (value && (value.dependenciesDigest !== dependenciesDigest || value.result.checkId !== entry.checkId || value.result.producerId !== "changekernel:producer:linux-check-host" || value.modelCalls > adopted.limits.modelCalls || Buffer.byteLength(json(value.result)) > adopted.limits.outputBytes || value.result.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest)))) {
+				const wrongOwner = value && (origin ? !("owner" in value.result) || value.result.kernelBuildDigest !== origin.kernelBuildDigest ||
+					value.result.kernelVersion !== origin.kernelVersion || value.result.definitionDigest !== origin.definitionDigest : "owner" in value.result);
+				if (value && (wrongOwner || value.dependenciesDigest !== dependenciesDigest || value.result.checkId !== entry.checkId || value.result.producerId !== "changekernel:producer:linux-check-host" || value.modelCalls > execution.limits.modelCalls || Buffer.byteLength(json(value.result)) > execution.limits.outputBytes || value.result.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest)))) {
 					custodyUncertain = true; return issue("operational-error", "Retained Check violates its current binding or result bounds.");
 				}
 				if (signal?.aborted) return issue("operational-error", "Retained result delivery was cancelled.");
@@ -135,12 +130,13 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 				]);
 				if (writes.some(write => write.status === "rejected")) throw new Error("Execution material could not be prepared.");
 				if (signal?.aborted || authorize(binding) !== true) throw new Error("Authority or cancellation changed before dispatch.");
-				const output = await executeIsolated(runtime, scratch, adopted.limits, adopted.model ? model : undefined, signal);
+				const output = await executeIsolated(runtime, scratch, execution.limits, execution.model ? model : undefined, signal);
 				const decoded = decodeContract("Check return", output.value, value => exactRecord("Check return", value, "$", ["passed", "failureKind", "feedback", "evidenceDigests", "limitations"]));
 				if (!decoded.ok) throw new Error("Check returned a malformed semantic result.");
-				const result = createCheckResult({...decoded.value, checkId: entry.checkId, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest,
-					producerId: "changekernel:producer:linux-check-host", status: "completed"});
-				if (!result.ok || Buffer.byteLength(json(result.value)) > adopted.limits.outputBytes || result.value.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest))) throw new Error("Check result violates its exact result or Evidence bounds.");
+				const envelope = {...decoded.value, checkId: entry.checkId, inputDigest: entry.inputDigest, executionDigest: entry.executionDigest,
+					producerId: "changekernel:producer:linux-check-host", status: "completed"};
+				const result = origin ? createDecisionValidationResult({...envelope, ...origin}) : createCheckResult(envelope);
+				if (!result.ok || Buffer.byteLength(json(result.value)) > execution.limits.outputBytes || result.value.evidenceDigests.some(digest => !entry.evidenceDigests.includes(digest))) throw new Error("Check result violates its exact result or Evidence bounds.");
 				completed = Object.freeze({result: result.value, dependenciesDigest, modelCalls: output.modelCalls});
 			} catch (error) {
 				if (error instanceof UncertainCustody) custodyUncertain = true;
@@ -165,7 +161,46 @@ export async function createLinuxCheckHost(options: LinuxCheckHostOptions) {
 	}
 }
 
-// The executed budgets are the narrower adopted envelope, not the Pack's maximum.
+function prepareDomainRun(input: unknown) {
+	const request = decodeContract("Check launch", input, value => exactRecord("Check launch", value, "$", ["selection", "checkId", "artifact"]), {maximumDepth: 40, maximumEntriesPerContainer: 256, maximumNodes: 262144, maximumTextBytes: 4 * 1024 * 1024});
+	if (!request.ok) return issue("invalid-input", request.error.message);
+	const selection = prepareCheckSelection(request.value.selection);
+	if (!selection.ok) return issue("invalid-input", selection.error.message);
+	const entry = selection.value.entries.find(entry => entry.checkId === request.value.checkId);
+	if (!entry || entry.readiness !== "ready") return issue("not-ready", "Only an explicitly adopted, active, ready Check can execute.");
+	const material = decodeContract("Check launch material", request.value.selection, value => {
+		const r = exactRecord("Check launch material", value, "$", ["current", "adoption", "packs", "definitions", "inputs"]);
+		return {adoption: r.adoption, definitions: r.definitions, inputs: r.inputs};
+	}, {maximumDepth: 40, maximumEntriesPerContainer: 256, maximumNodes: 262144, maximumTextBytes: 4 * 1024 * 1024});
+	if (!material.ok || !Array.isArray(material.value.definitions) || !Array.isArray(material.value.inputs)) return issue("invalid-input", "Incomplete launch material.");
+	const definition = material.value.definitions.map(value => decodeCheckDefinition(value)).find(value => value.ok && value.value.checkId === entry.checkId);
+	const selectedInput = material.value.inputs.map(value => decodeCheckInput(value)).find(value => value.ok && value.value.checkId === entry.checkId);
+	const adoption = decodeCheckAdoption(material.value.adoption);
+	if (!definition?.ok || !selectedInput?.ok || !adoption.ok) return issue("invalid-input", "Incomplete exact Check binding.");
+	const adopted = adoption.value.checks.find(value => value.check.checkId === entry.checkId);
+	if (!adopted) return issue("invalid-input", "Check is not adopted.");
+	const artifact = request.value.artifact;
+	return success({entry, definition: definition.value, selectedInput: selectedInput.value, execution: adopted,
+		selectionDigest: selection.value.digest, artifact, origin: null});
+}
+
+function prepareDecisionRun(input: unknown, kernelBuildDigest: Sha256Digest | undefined) {
+	if (!kernelBuildDigest) return issue("unsupported", "Backend Decision validation is not bound to a verified Kernel Build.");
+	const request = decodeContract("Decision launch", input, value => exactRecord("Decision launch", value, "$", ["selection", "validatorId"]), {maximumDepth: 44, maximumEntriesPerContainer: 256, maximumNodes: 524288, maximumTextBytes: 8 * 1024 * 1024});
+	if (!request.ok) return issue("invalid-input", request.error.message);
+	const selection = prepareDecisionValidation(request.value.selection);
+	if (!selection.ok) return issue("invalid-input", selection.error.message);
+	if (selection.value.current.kernelBuildDigest !== kernelBuildDigest) return issue("denied", "Decision validation differs from the verified running Kernel Build.");
+	const entry = selection.value.entries.find(value => value.checkId === request.value.validatorId);
+	if (!entry || entry.readiness !== "ready") return issue("not-ready", "Only a ready release-owned Decision condition can execute.");
+	const definition = selection.value.definitions.find(value => value.checkId === entry.checkId), selectedInput = selection.value.inputs.find(value => value.checkId === entry.checkId);
+	if (!definition || !selectedInput) return issue("invalid-input", "Incomplete release-owned Decision material.");
+	return success({entry, definition, selectedInput, execution: {...selection.value.configuration, parameters: {}}, selectionDigest: selection.value.digest,
+		artifact: decisionValidatorArtifact(entry.checkId), origin: {owner: "backend", stage: "decision", kernelVersion: CHANGEKERNEL_VERSION,
+			kernelBuildDigest, definitionDigest: definition.digest}});
+}
+
+// Executed budgets are the narrower authorized envelope, not an evaluator maximum.
 type ExecutionLimits = {readonly milliseconds: number; readonly memoryBytes: number; readonly inputBytes: number; readonly outputBytes: number; readonly modelCalls: number; readonly modelInputTokens: number; readonly modelOutputTokens: number};
 
 async function executeIsolated(runtime: string, scratch: string, limits: ExecutionLimits, model: CheckModelPort | undefined, signal?: AbortSignal): Promise<{value: CanonicalValue; modelCalls: number}> {

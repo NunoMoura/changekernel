@@ -388,13 +388,26 @@ test("native Wiki ownership assigns every production and test path exactly once"
 
 test("unified Check contracts remain pure and do not activate lifecycle or read-only entrypoints", async () => {
 	const {graph, external} = await sourceGraph(), check = "src/kernel/gates/checks.ts";
-	assert.equal(graph.has("src/server/effects/decision-intent-fit.ts"), false, "Internal judges must not bypass explicit adoption");
+	assert.equal(graph.has("src/server/effects/decision-intent-fit.ts"), false, "The superseded optional judge must not return outside release-owned Decision validation");
 	assert.equal(graph.has("src/kernel/gates/semantic.ts"), false, "Superseded Gate scaffolding must not return");
 	assert.equal(external.has(check), false);
 	assert.ok(graph.get(check).every(path => path.startsWith("src/kernel/")));
 	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
 		assert.equal(reachable(graph, entrypoint).includes(check), false, entrypoint);
 	}
+});
+
+test("release-owned Decision contracts stay pure and private until lifecycle admission is integrated", async () => {
+	const {graph, external} = await sourceGraph();
+	for (const module of ["src/kernel/gates/decision-validation.ts", "src/kernel/gates/decision-validators.ts", "src/kernel/gates/evaluation-data.ts"]) {
+		assert.equal(external.has(module), false);
+		assert.ok(graph.get(module).every(path => path.startsWith("src/kernel/")));
+		for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
+			assert.equal(reachable(graph, entrypoint).includes(module), false, entrypoint);
+		}
+	}
+	assert.ok(graph.get("src/adapters/checks/linux-host.ts").includes("src/kernel/gates/decision-validation.ts"));
+	assert.ok(graph.get("src/adapters/checks/linux-host.ts").includes("src/adapters/checks/worker-source.ts"));
 });
 
 test("isolated Check execution stays private and loads custom code only in the disposable worker", async () => {

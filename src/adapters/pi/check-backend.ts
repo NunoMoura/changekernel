@@ -48,7 +48,7 @@ export async function createPiCheckBackend(input: PiCheckBackendOptions) {
 		providerConfigurationDigest, temperature: provider.temperature, reasoningEffort: null}, binding =>
 		Object.freeze({...createPiOpenAIProvider(provider), routeDigest: binding.routeDigest, settingsDigest: binding.settingsDigest}));
 	if (!model.ok) return model;
-	const host = await createLinuxCheckHost({custodyRoot: options.custodyRoot, stateIdentity: options.stateIdentity, authorize: options.authorize, model: model.value});
+	const host = await createLinuxCheckHost({custodyRoot: options.custodyRoot, stateIdentity: options.stateIdentity, authorize: options.authorize, model: model.value, kernelBuildDigest: options.kernelBuildDigest});
 	if (!host.ok) return host;
 	return success(Object.freeze({...host.value, modelBinding: Object.freeze({routeDigest: model.value.routeDigest, settingsDigest: model.value.settingsDigest})}));
 }

@@ -5,6 +5,7 @@ import {isAbsolute, join, relative, sep} from "node:path";
 import {canonicalJson, parseCanonicalJson} from "../../kernel/data-contracts/canonical-json.ts";
 import {decodeContract, exactRecord} from "../../kernel/data-contracts/validation.ts";
 import {decodeCheckResult, type CheckResult} from "../../kernel/gates/checks.ts";
+import {decodeDecisionValidationResult, type DecisionValidationResult} from "../../kernel/gates/decision-validation.ts";
 import {decodeSha256Digest, type Sha256Digest} from "../../kernel/identity/sha256.ts";
 
 const PROTOCOL = "changekernel.check-journal@1.0.0";
@@ -16,7 +17,7 @@ export interface CheckAttemptBinding {
 	readonly executionDigest: Sha256Digest;
 	readonly permissionDigest: Sha256Digest;
 }
-export interface RetainedCheckValue {readonly result: CheckResult; readonly dependenciesDigest: Sha256Digest; readonly modelCalls: number;}
+export interface RetainedCheckValue {readonly result: CheckResult | DecisionValidationResult; readonly dependenciesDigest: Sha256Digest; readonly modelCalls: number;}
 function encoded(value: unknown) {const result = canonicalJson(value); if (!result.ok) throw new Error("Invalid Check journal data."); return result.value;}
 function sha(value: unknown) {const result = decodeSha256Digest(value); if (!result.ok) throw new Error("Invalid journal identity."); return result.value;}
 function binding(value: unknown): CheckAttemptBinding {
@@ -29,7 +30,8 @@ function retained(value: unknown): RetainedCheckValue | null {
 	if (value === null) return null; // Known stopped failure, never a Boolean verdict.
 	const decoded = decodeContract("Retained Check", value, value => exactRecord("Retained Check", value, "$", ["result", "dependenciesDigest", "modelCalls"]));
 	if (!decoded.ok) throw new Error("Invalid retained Check.");
-	const r = decoded.value, result = decodeCheckResult(r.result);
+	const r = decoded.value, domain = decodeCheckResult(r.result);
+	const result = domain.ok ? domain : decodeDecisionValidationResult(r.result);
 	if (!result.ok || result.value.status !== "completed" || typeof r.modelCalls !== "number" || !Number.isSafeInteger(r.modelCalls) || r.modelCalls < 0 || r.modelCalls > 32) throw new Error("Invalid retained Check.");
 	return Object.freeze({result: result.value, dependenciesDigest: sha(r.dependenciesDigest), modelCalls: r.modelCalls});
 }
