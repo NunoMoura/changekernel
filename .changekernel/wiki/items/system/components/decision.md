@@ -34,7 +34,7 @@ source-history:
 ---
 # Decision
 
-Decision develops an attributable proposal into a scoped acceptance decision. The [ChangeKernel backend](changekernel.md#backend-validation-across-four-loops) owns the transversal validation that pursuing the exact proposed effects is justified by stated purposes, retained grounds, credible feasibility and explicitly handled consequences. Adopted [domain Checks](checks.md) assess the field-specific premises, methods, thresholds and policy conditions needed for that decision. Neither replaces the other, and neither supplies approval.
+Decision develops an attributable proposal into a scoped acceptance decision. The [ChangeKernel backend](changekernel.md#backend-validation-across-four-stages) owns the transversal validation that pursuing the exact proposed effects is justified by stated purposes, retained grounds, credible feasibility and explicitly handled consequences. Adopted [domain Checks](checks.md) assess the field-specific premises, methods, thresholds and policy conditions needed for that decision. Neither replaces the other, and neither supplies approval.
 
 Justified pursuit is stronger than consistency with current Wiki and weaker than guaranteed future improvement or a completed implementation plan. Compare relevant alternatives, normally including doing nothing and its costs. Preferences may legitimately define value; do not invent numerical benefits. Tests and models cannot prove universal optimality. An uncertain full deployment may be unjustified while a genuinely bounded experiment is justified by useful information and limited consequences.
 

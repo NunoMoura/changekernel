@@ -35,7 +35,7 @@ The ChangeKernel core gives [Change](change-trace.md) and [Wiki](wiki.md) stable
 
 The ChangeKernel product is a **semantic workflow layer on Git**, not a modification of Git or a hosted service prerequisite. Its usable local distribution includes the pure Kernel, native Git persistence, the [Project Server runtime](project-server.md), backend Gate execution and an agent-facing interface. The pure Kernel alone is not an operational product: it intentionally performs none of that I/O.
 
-The [Hub](../../product/changekernel.md) adds shared hosting, team access and collaboration interfaces. It uses these same contracts rather than redefining Change acceptance or replacing native history. Product separation does not require premature repository, package or process separation. The local product's [minimum dogfood loop](package.md#minimum-local-dogfood) can be qualified independently.
+The [Hub](../../product/changekernel.md) adds shared hosting, team access and collaboration interfaces. It uses these same contracts rather than redefining Change acceptance or replacing native history. Product separation does not require premature repository, package or process separation. The local product's [minimum dogfood lifecycle](package.md#minimum-local-dogfood) can be qualified independently.
 
 ## Versioning and document contract
 
@@ -49,13 +49,13 @@ ChangeKernel has one public `x.y.z` release version. The managed Wiki representa
 
 A Wiki edit creates a new Wiki revision, not a new Kernel version. This includes changes to type definitions: their effect on particular Items is governed knowledge evolution under the existing Kernel rules. Changing how the Kernel represents, resolves or interprets those definitions is a Kernel contract change. Prerelease identifiers label development candidates; they do not grant qualification or weaken historical protections. Updating this source does not publish a release.
 
-The same release version owns the transversal validation contract for all four loops. A project cannot select a separate lifecycle profile or disable that contract through a Pack. Supported subject scope and execution configuration describe qualification limits, not another version schedule. Exact domain Check/Pack versions identify adopted extensions, not alternative Kernel semantics.
+The same release version owns the transversal validation contract for all four stages. A project cannot select a separate lifecycle profile or disable that contract through a Pack. Supported subject scope and execution configuration describe qualification limits, not another version schedule. Exact domain Check/Pack versions identify adopted extensions, not alternative Kernel semantics.
 
 A release version is not a complete execution identity. Retain the exact Kernel Build, Wiki subject and type-definition snapshot. Kernel Build already binds Product Build and its package version. Corrections may justify a new check against current grounds, but upgrading never rewrites a recorded interpretation, Check result or accepted outcome. Historical decoding uses retained format/protocol markers and declared reader support, never a mutable latest definition or guessed compatibility from a version range.
 
 Current code maps its exact Kernel version to `KERNEL_WIKI_CONTRACT`. The internal `codewiki.wiki-profile@1.0.0` format marker is not an independently selected release. Server compositions default to the running Kernel's contract; an explicit `kernelVersion` must match it exactly. The `wikiProfile` selector and legacy mode are removed. Unknown versions and obsolete configuration fields fail before source access; omission never enables another lifecycle or representation.
 
-Before the first qualified release, preserve desired Wiki intent, relevant provenance and genuine recorded history, not every experimental implementation. Unused formats, bootstrap defaults, policy digests and test fingerprints are not permanent compatibility promises. Remove obsolete code and its tests rather than maintaining a second lifecycle. Tests must protect current behavior, necessary safety properties or components needed for the minimum complete loop, not obsolete bytes, unused exports or frozen file inventories. Test discovery is direct and recursive; shared fixtures do not register other suites. Any compatibility obligation must identify an actual supported deployment and its declared support boundary. This does not authorize rewriting retained records, inventing adoption or changing an installed immutable controller.
+Before the first qualified release, preserve desired Wiki intent, relevant provenance and genuine recorded history, not every experimental implementation. Unused formats, bootstrap defaults, policy digests and test fingerprints are not permanent compatibility promises. Remove obsolete code and its tests rather than maintaining a second lifecycle. Tests must protect current behavior, necessary safety properties or components needed for the minimum complete lifecycle, not obsolete bytes, unused exports or frozen file inventories. Test discovery is direct and recursive; shared fixtures do not register other suites. Any compatibility obligation must identify an actual supported deployment and its declared support boundary. This does not authorize rewriting retained records, inventing adoption or changing an installed immutable controller.
 
 ## Check execution configuration
 
@@ -77,13 +77,19 @@ The service applies authorization and performs effects. Deterministic kernel mec
 
 Change Trace events have common Kernel-defined meanings across Projects; they are not project-specific Change types. Broad Change classifications and the actual intent, context and commitments can condition Work and scrutiny without redefining event kinds or waiving obligations. Managed-document events bind their wire protocol to the exact Kernel Build, recorded document-format marker and source grounds, rather than requiring a project-declared Wiki owner for each event kind. This is semantic provenance, not Actor authorization or proof that an effect was permitted. Historical event schemas and their recorded grounds remain attributable without rewriting their identities.
 
-## Backend validation across four loops
+## Stages, gates and feedback loops
+
+The pipeline has four stages: Decision, Planning, Implementation and Review. A stage identifies the purpose of the work and the questions to assess. A gate controls progression using the applicable backend validation, adopted domain Checks, current source bindings and separate transition authority. A feedback loop is the agent preparing or revising work, receiving gate feedback and responding for reassessment; it is not a stage or an additional lifecycle primitive.
+
+Shared execution, retained results and authorization mechanisms support all stages. Their source requirements, backend conditions, domain selection and passing conditions remain stage-specific. A Decision implementation does not establish that the other stages are implemented, and shared machinery never permits substituting one stage's verdict for another. See the [lifecycle flow](../flows/change-lifecycle.md) for feedback and repair routing.
+
+## Backend validation across four stages
 
 The backend validates every supported lifecycle transition, including revisions, pauses, rejection and withdrawal. Successful progression requires the applicable backend validations and required adopted domain Checks to have current valid passing results, plus separate authority for the exact transition. Recording a failed assessment, repairing a candidate or stopping inquiry does not require turning a failure into a pass. Unsupported validation or unresolved custody blocks unsafe progression; it never silently removes a requirement.
 
 Backend validation is explicit, inspectable and owned by the ChangeKernel release, not a hidden optional Pack. Each evaluation names its stage, question, passing condition, required grounds, implementation and execution identity, result, feedback and limitations. Backend semantic assessment may use bounded inference outside the pure Kernel. Record and transition reduction remain deterministic over supplied validated results; inference does not become proof of truth or authority to act.
 
-| Loop | Transversal backend validation | Domain-specific assessment supplied by adopted Checks |
+| Stage | Transversal backend validation | Domain-specific assessment supplied by adopted Checks |
 | --- | --- | --- |
 | Decision | Assess clear intent and scope, actual proposed effects, grounds and alternatives, retained versus revised commitments, credible pursuit, consequential uncertainty and later outcome assessability. Validate exact proposal, current baseline, required assessments and approval. | Assess field-specific premises, compatibility, scientific methods, benefits, risks and applicable professional or organizational criteria. |
 | Planning | Assess coverage of accepted intent, credible work decomposition, prerequisites and dependencies, maintained intermediate obligations, responsibility, permitted effects and Evidence needs. Bind Work to the accepted Decision. | Assess engineering/test strategy, study protocols, domain procedures and their specific adequacy conditions. |

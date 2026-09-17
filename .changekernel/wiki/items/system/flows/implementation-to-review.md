@@ -31,4 +31,4 @@ Provide the exact reconciled candidate, baseline, work/attempt history, observat
 
 Distinguish produced artifacts, adopted knowledge and observed real-world realization. Unknown effects, missing support, stale evidence, redaction and truncation remain explicit. An owned gap is not realized merely because an attempt ended.
 
-Review uses current applicable authority and semantic obligations, then routes defects, path conflicts or intent changes to their proper loop. Acceptance of this subject cannot silently cover later edits, publication, deployment or another rewritten/merged candidate.
+Review uses current applicable authority and semantic obligations, then routes defects, path conflicts or intent changes to their proper stage. Acceptance of this subject cannot silently cover later edits, publication, deployment or another rewritten/merged candidate.

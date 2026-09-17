@@ -13,8 +13,8 @@ source-history:
 ---
 # Automate Project Work
 
-A Maintainer delegates bounded work to Agents or services while retaining its intent, authority, dependencies and evidence requirements. The same loop supports research, procedures, operations and software; automation is not the definition of a Change.
+A Maintainer delegates bounded work to Agents or services while retaining its intent, authority, dependencies and evidence requirements. The same lifecycle supports research, procedures, operations and software; automation is not the definition of a Change.
 
 Planning identifies shared obligations and safe parallel boundaries. Execution uses enforceable scope and limits, truthful observations and cheap checkpoints. A worktree or successful callback does not prove containment or realization.
 
-Defects, planning conflicts and changed intent return to their appropriate loop. Reconcile unknown effects before retrying; protect credentials, network, publication and other effects before execution. Review the actual combined candidate and preserve enough grounds for a fresh participant to continue.
+Defects, planning conflicts and changed intent return to their appropriate stage. Reconcile unknown effects before retrying; protect credentials, network, publication and other effects before execution. Review the actual combined candidate and preserve enough grounds for a fresh participant to continue.

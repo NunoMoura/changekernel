@@ -12,6 +12,30 @@ const changedInput = (f, patch) => {
 	return {...f, input, selection: {...f.selection, current: {...f.selection.current, stage: input.stage, effects: input.effects, effectsComplete: input.effectsComplete}, inputs: [input]}};
 };
 
+test("shared Check machinery supports four stages without cross-stage verdict substitution", () => {
+	const stages = ["decision", "planning", "implementation", "review"];
+	const f = fixture({definition: {activation: {stages: [...stages].sort(), effectKinds: ["cw:effect:wiki"]}}});
+	const cases = stages.map(stage => changedInput(f, {stage}));
+	assert.equal(new Set(cases.map(c => c.input.digest)).size, stages.length);
+	for (const current of cases) {
+		assert.equal(current.input.executionDigest, f.input.executionDigest);
+		assert.equal(prepare(current).entries[0].readiness, "ready");
+		assert.equal(reduce(current).passed, true);
+		assert.equal(reduce(current, []).passed, false);
+		for (const other of cases) {
+			if (other.input.stage === current.input.stage) continue;
+			assert.equal(reduceCheckResults({selection: current.selection, results: [result(other)]}).ok, false);
+		}
+		const restricted = fixture({definition: {activation: {stages: [current.input.stage], effectKinds: ["cw:effect:wiki"]}}, input: {stage: current.input.stage}});
+		assert.equal(prepare(restricted).entries[0].readiness, "ready");
+		for (const stage of stages.filter(stage => stage !== current.input.stage)) {
+			const inactive = changedInput(restricted, {stage});
+			assert.equal(prepare(inactive).entries[0].applicability, "inactive");
+			assert.deepEqual(reduce(inactive, []).blockers, ["no-validation"]);
+		}
+	}
+});
+
 for (const algorithm of ["sha1", "sha256"]) test(`unified Check ${algorithm}: exact adoption, frozen records, deterministic replay`, () => {
 	const f = fixture({algorithm});
 	const records = [[decodeCheckDefinition, f.definition], [decodeCheckPack, f.pack], [decodeCheckAdoption, f.adoption], [decodeCheckInput, f.input], [decodeCheckResult, result(f)]];

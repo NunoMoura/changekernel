@@ -76,7 +76,7 @@ Backend-enforced adopted Checks and acceptance still bind the actual candidate a
 
 ## Evolving inquiry
 
-The [four loops](../flows/change-lifecycle.md) preserve the original intent while developing credible paths and evidence. Material changes to intent, scope or authority explicitly revisit Decision. Repairs within accepted scope need not create a new Change for every command or checkpoint.
+The [four stages](../flows/change-lifecycle.md) preserve the original intent while developing credible paths and evidence. Material changes to intent, scope or authority explicitly revisit Decision. Repairs within accepted scope need not create a new Change for every command or checkpoint.
 
 Classification follows actual semantic effects, which may combine knowledge correction, investigation, commitment revision and realization. Author-selected labels cannot remove applicable obligations. Shared and rejected alternatives remain attributable rather than being overwritten to fit produced work.
 

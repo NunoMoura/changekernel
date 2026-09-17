@@ -27,11 +27,13 @@ source-history:
 ---
 # Change Lifecycle
 
-A Change carries intentional evolution through exactly four loops: Decision, Planning, Implementation and Review. Each stage is a loop between an agent preparing or repairing a scoped candidate and the backend evaluating its [release-owned stage contract](../components/changekernel.md#backend-validation-across-four-loops) together with adopted [domain Checks](../components/checks.md). Validation common to all domains belongs to ChangeKernel; field-specific conditions belong to adopted project policy and Checks. Either may use computation or bounded semantic assessment. Shared execution and result mechanisms do not detach questions from stages or make their verdicts interchangeable.
+A Change carries intentional evolution through four stages: Decision, Planning, Implementation and Review. Gates control progression between stages. A feedback loop is the interaction between an agent preparing or revising work and the gate returning assessment feedback; it is not another name for a stage. The backend evaluates its [release-owned stage contract](../components/changekernel.md#backend-validation-across-four-stages) together with adopted [domain Checks](../components/checks.md). Validation common to all domains belongs to ChangeKernel; field-specific conditions belong to adopted project policy and Checks. Either may use computation or bounded semantic assessment. Shared execution and result mechanisms do not detach questions from stages or make their verdicts interchangeable.
+
+The normal feedback loop is: the agent prepares work → the gate assesses exact submitted versions → the agent responds to actionable feedback → the gate reassesses eligible revised inputs or reuses exact retained results. A stage may pass its first assessment or require several repair rounds. Feedback may return work to an earlier stage when the cause lies there. Operational uncertainty stops for investigation rather than triggering an automatic retry. Passing assessments remain separate from approval and permission to perform the transition.
 
 Common [intake](../components/change-intake.md) admits attributed proposals from conversation, documents, discoveries, external signals or other Changes. Unfinished inquiry may be retained before concrete effects are known. Evaluation requires a fixed structured candidate and selected inputs; missing inputs make Checks unready, not inactive. A derived proposal preserves exact source relationships and needs its own current evaluation and authority.
 
-| Loop | Purpose and assessment boundary |
+| Stage | Purpose and assessment boundary |
 | --- | --- |
 | Decision | Backend validates justified pursuit of exact intent and effects; domain Checks assess the required field-specific grounds. Do not claim a completed plan or realized benefit. |
 | Planning | Backend validates a credible decomposition with dependencies, intermediate obligations and Evidence needs; domain Checks assess the chosen methods and procedures. |

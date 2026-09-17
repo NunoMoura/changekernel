@@ -14,8 +14,14 @@ source-history:
 {
   "codewiki_id": "cw:diagram:lifecycle",
   "id": "lifecycle",
-  "purpose": "Show four inquiry loops and accepted scoped adoption, revision, retirement and re-adoption; Git preserves exact outcomes and native cold history while reads do not change authority.",
+  "purpose": "Show four gated stages, agent–gate feedback loops and accepted scoped adoption, revision, retirement and re-adoption; Git preserves exact outcomes and native cold history while reads do not change authority.",
   "components": [
+    {
+      "id": "agent",
+      "concept": "cw:component:agent-execution",
+      "label": "Agent prepares and revises stage work",
+      "zone": "execution"
+    },
     {
       "id": "intake",
       "concept": "cw:component:change-intake",
@@ -49,13 +55,13 @@ source-history:
     {
       "id": "validation",
       "concept": "cw:component:checks",
-      "label": "Adopted custom Checks with fixed inputs, Boolean results and Evidence",
+      "label": "Backend validation and adopted domain Checks with exact inputs, results and Evidence",
       "zone": "execution"
     },
     {
       "id": "service",
       "concept": "cw:component:project-server",
-      "label": "Scoped authority and acceptance",
+      "label": "Stage gates, scoped authority and acceptance",
       "zone": "core"
     },
     {
@@ -66,6 +72,20 @@ source-history:
     }
   ],
   "connections": [
+    {
+      "id": "l-submit",
+      "from": "agent",
+      "to": "service",
+      "type": "invokes",
+      "label": "Submits exact stage work for gate assessment; submission grants no authority"
+    },
+    {
+      "id": "l-feedback",
+      "from": "service",
+      "to": "agent",
+      "type": "returns",
+      "label": "Returns assessment feedback and permitted next action; route repair to its cause and stop on unresolved custody"
+    },
     {
       "id": "l-propose",
       "from": "intake",
@@ -78,14 +98,14 @@ source-history:
       "from": "decision",
       "to": "planning",
       "type": "produces",
-      "label": "Supplies accepted report, Evidence, scope and gaps to fresh Planning session"
+      "label": "After the Decision gate and required approval, supplies accepted report, Evidence, scope and gaps to fresh Planning session"
     },
     {
       "id": "l-attempt",
       "from": "planning",
       "to": "implementation",
       "type": "produces",
-      "label": "Binds dependencies, shared obligations and permitted effects",
+      "label": "After the Planning gate and required authority, binds dependencies, shared obligations and permitted effects",
       "boundary": {
         "type": "authority",
         "failure": "Stop when required scope, context or custody is unavailable."
@@ -96,7 +116,7 @@ source-history:
       "from": "implementation",
       "to": "review",
       "type": "produces",
-      "label": "Supplies actual combined candidate, observations and gaps"
+      "label": "After the Implementation gate, supplies actual combined outcome, observations and gaps"
     },
     {
       "id": "l-defect",
@@ -156,6 +176,12 @@ source-history:
     {
       "concept": "cw:flow:change-lifecycle",
       "paths": [
+        {
+          "connections": [
+            "l-submit",
+            "l-feedback"
+          ]
+        },
         {
           "connections": [
             "l-propose",
