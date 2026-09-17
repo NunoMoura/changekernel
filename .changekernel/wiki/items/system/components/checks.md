@@ -45,13 +45,30 @@ A Check is a small executable function that evaluates a domain-specific conditio
 
 The [ChangeKernel backend](changekernel.md#backend-validation-across-four-stages) owns validation common to all domains. Domain Checks and Packs are explicitly adopted project extensions; first-party Packs use the same contract as company-authored Packs. Ownership is not a split between mechanical and semantic evaluation: either owner may use both. Common intent, plan, contribution and outcome validation cannot be disabled, substituted or weakened by a Pack. Shared execution mechanisms do not make a domain result interchangeable with a backend result.
 
+## Check terminology and activation
+
+Use subject-specific names rather than unqualified “adoption record”, “policy” or “baseline policy” when discussing Checks:
+
+| Term | Meaning |
+| --- | --- |
+| Check adoption record | Attributable record that the Project explicitly accepted exact Check definitions or Pack versions, with Check parameters, scope and reasons. It is neither installation nor a Check result. Validating its structure and hashes does not authenticate acceptance. |
+| Check policy | Accepted rules determining which domain Checks are required and under what conditions they apply. |
+| Governing Check policy | The accepted Check policy applicable to this Change and stage; it is not another policy category or a caller-selected override. |
+| Change baseline | The exact accepted Project state against which the proposed Change is assessed, not itself a Check policy. Say “Check policy in the Change baseline” when referring to those rules at that version. |
+| Check result | The retained assessment outcome, feedback, exact evaluation identity and limitations. |
+| Check execution log | The durable record of Check execution reservations and outcomes, including incomplete or uncertain attempts. It is not a second Check policy store or a separate “Check history log”. |
+
+Check adoption establishes accepted requirements and evaluation methods; Check activation determines which apply to a particular assessment. Activation depends on the stage, Change type, affected scope, actual effects and conditions in the governing Check policy and Check definitions. Project Server resolves and enforces these conditions rather than arbitrarily choosing a subset. Change classification matters, but a producer's label cannot override contradictory observed effects. Unknown applicability remains unresolved, not inactive. Proposed Check policy changes cannot activate their own weaker requirements before authorized acceptance. Current authorization and source freshness remain separate requirements.
+
+These terms do not rename stored identifiers or define a new persisted Check policy format. Release-owned backend stage validation remains mandatory and separate from project-adopted domain Checks.
+
 ## Policy, evaluation and distribution
 
 [Wiki](wiki.md) defines accepted meaning, purposes, scope, conditions and exceptions. A Check implements how one condition is evaluated. A Pack distributes versioned Check definitions, implementations and execution requirements. Installation, a marketplace listing or an axis label does not adopt policy, authorize execution or establish evaluator quality.
 
 Prefer accepted policy supplying parameters and Checks supplying evaluation methods. An inherently executable policy can instead be explicitly adopted by reference to its exact definition; do not maintain conflicting prose and executable copies. Source documents are data, not executable plugins. Accepted Pack selection and execution configuration remain attributable to Wiki and Change, not a competing policy ledger.
 
-Current adopted state governs selection and the authorization of policy/Check changes. A candidate cannot activate its own weaker evaluator, omit a required Check or grant itself a waiver. Legitimate policy revision remains possible through an explicit authorized transition; it is not a requirement to preserve every old policy forever. Pack updates are pinned, assessed changes rather than mutable latest-version lookups.
+The governing Check policy determines Check selection and the assessment of proposed Check policy changes; permission to accept those changes remains separate. A proposed Change cannot activate its own weaker evaluator, omit a required Check or grant itself a waiver. Legitimate policy revision remains possible through an explicit authorized transition; it is not a requirement to preserve every old policy forever. Pack updates are pinned, assessed changes rather than mutable latest-version lookups.
 
 ChangeKernel reports backend validation and domain Check coverage separately. A structurally valid Check can still be inadequate or dishonest; no universal justification follows from running arbitrary extensions. No configured domain Checks means no domain assurance, not an automatic domain pass or permission to skip backend validation. If a required domain assessment has no applicable adopted evaluator or sufficient inputs, progression is unready. A supported case with no additional domain requirement must retain that explicit scope limitation. The first dogfood lifecycle requires meaningful backend validation and adopted software-domain Checks.
 
@@ -67,7 +84,7 @@ Each Check definition declares its identity/version, lifecycle stage and evaluat
 
 Checks execute as JavaScript in one isolated runner; authors can also use TypeScript compiled ahead of execution. Python is a later supported runner over the same versioned, language-neutral message contract, not a requirement for locally hosted inference. Avoid two initial runtime ecosystems or a provider-specific library in each Pack.
 
-Backend-owned validators and domain Checks may share bounded input access, computation, result construction, model dispatch, isolation and durable execution machinery. This does not introduce a second Check language, model engine or project adoption record for the backend's own requirements. Backend-owned implementation identity comes from the immutable release; domain implementation identity comes from exact authorized adoption. Origin must be verified by the backend, not accepted from a caller's label or a Pack claiming to be built in.
+Backend-owned validators and domain Checks may share bounded input access, computation, result construction, model dispatch, isolation and durable execution machinery. This does not introduce a second Check language, model engine or project Check adoption record for the backend's own requirements. Backend-owned implementation identity comes from the immutable release; domain implementation identity comes from exact authorized adoption. Origin must be verified by the backend, not accepted from a caller's label or a Pack claiming to be built in.
 
 The Check library exposes bounded input access, computation, result construction and an optional model-call primitive. A developer can reject missing inputs with code, request one structured assessment, validate its response and return feedback. Authors own the evaluation logic; the runtime owns containment, exact input/result binding and reuse integrity. One Check still answers one condition, not an opaque collection of unrelated questions. Multiple operations require explicit bounded resources; a Check must not become another autonomous agent.
 
