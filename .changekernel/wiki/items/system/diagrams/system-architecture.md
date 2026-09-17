@@ -25,13 +25,13 @@ source-history:
     {
       "id": "service",
       "concept": "cw:component:project-server",
-      "label": "Authorized local runtime / shared Hub service",
+      "label": "Authorized runtime: transversal stage validation and domain Check orchestration",
       "zone": "core"
     },
     {
       "id": "kernel",
       "concept": "cw:component:semantic-kernel",
-      "label": "Pure record, identity and transition contracts; no hidden semantic judge",
+      "label": "Pure record, identity and release-owned stage-transition contracts",
       "zone": "core"
     },
     {
@@ -55,7 +55,7 @@ source-history:
     {
       "id": "validation",
       "concept": "cw:component:checks",
-      "label": "Adopted custom Checks/Packs: read-only code with optional bounded inference",
+      "label": "Shared bounded execution: backend validators and adopted stage-specific domain Checks",
       "zone": "execution"
     },
     {
@@ -102,14 +102,14 @@ source-history:
       "from": "service",
       "to": "validation",
       "type": "invokes",
-      "label": "Runs adopted definitions with fixed selected inputs and enforced limits"
+      "label": "Runs release-owned validators and adopted domain definitions with stage-bound inputs and limits"
     },
     {
       "id": "a-judgment",
       "from": "validation",
       "to": "service",
       "type": "returns",
-      "label": "Returns Boolean results, actionable feedback and Evidence; grants no authority"
+      "label": "Returns owner- and stage-bound results, feedback and Evidence; grants no authority"
     },
     {
       "id": "a-store",
@@ -191,6 +191,8 @@ source-history:
             "a-contract-result",
             "a-validation",
             "a-judgment",
+            "a-evaluate",
+            "a-contract-result",
             "a-store",
             "a-wiki"
           ]

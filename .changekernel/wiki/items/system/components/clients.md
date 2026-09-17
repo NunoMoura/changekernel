@@ -47,7 +47,7 @@ Clients present knowledge and Change collaboration to humans and Agents through 
 
 Present current knowledge with concise grounds and uncertainty, pending intent, and on-demand native history or external information without conflating their roles. A retrieved obsolete rule is not current policy. Proposed promotion, revision or retirement must be explicit; a summary, folder move or cache eviction cannot perform it.
 
-Present the simple model: Wiki holds what is agreed; agents propose and produce changes; adopted Checks evaluate them using Evidence; ChangeKernel controls acceptance and remembers why. Packs are reusable validations, not another agent or automatic policy adoption. Show desired outcomes, observed realization and related work separately, with selected Checks, actionable failures, reuse/unready status and next permitted action.
+Present the simple model: Wiki holds what is agreed; agents propose and produce changes; ChangeKernel validates the four loops; adopted domain Checks assess project-specific requirements; ChangeKernel controls acceptance and remembers why. Packs distribute domain evaluators, not another agent, automatic policy adoption or a replacement for backend validation. Show stage-specific backend requirements and adopted domain coverage distinctly, alongside desired outcomes, observed realization, related work, actionable failures, reuse/unready status and next permitted action.
 
 Expose in-flight work, missing/redacted/truncated context and next permitted action. A checkpoint is not acceptance, a committed procedure is not real-world realization, and a lost response is not permission to retry an effect.
 
