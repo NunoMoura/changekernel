@@ -80,6 +80,14 @@ Each explicitly requested, ready condition uses the same isolated JavaScript wor
 
 Combined result admission requires every current backend condition and required domain Check to pass. Operational inability is not a false semantic judgment. Admission returns assessment status, not approval or a lifecycle mutation; authentic retained Evidence, current transition authority and durable publication remain separate prerequisites. Synthetic execution fixtures establish these bindings and failure paths, not judgment quality or suitability of a model for operational use.
 
+## Stored source assembly
+
+Backend Decision source assembly identifies the proposed Change and the exact versions being assessed: its retained revision, the governing Project baseline and the proposed effects recorded by that revision. Requests supply identifiers and expected heads, not substitute source bodies, effect summaries, domain verdicts or completeness assertions. Within the supported Wiki-change scope, the backend reconstructs the retained proposal and transaction from the Project Store and preserves full source bodies, source identities and explicit exclusions. This does not turn an inventory of files into proof of relevant grounds or commitment coverage.
+
+Read access must come from current backend-owned authorization, scoped to the Project, Decision operation and proposed Change. Recheck that authority after assembly and immediately before delivery; changed authority must not silently inherit the earlier read. Observe the Project and Change heads again before delivery and reject unavailable or changed bindings without returning partial material. These observations do not lock references or prove continuous freshness. Execution and acceptance must independently enforce their current authority and exact-source requirements at their own boundaries.
+
+Source assembly remains distinct from resolving accepted domain policy, reading the Check execution log and preparing a ready backend assessment. Authentic source origin does not establish truth, semantic sufficiency, adopted requirements or approval. Do not label source material assessment-ready until those separate requirements have been satisfied.
+
 ## Inquiry, feedback and acceptance
 
 Admission into `proposed` starts inquiry before a conversation or Wiki candidate is complete. Agents perform research, tool use, synthesis and repairs, then submit fixed structured candidates for bounded evaluation. Do not execute expensive Checks on every fragment. Missing consequential inputs leave the relevant backend validation or domain Check unready and return specific feedback rather than fabricating Evidence or hiding activation.

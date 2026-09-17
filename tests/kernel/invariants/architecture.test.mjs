@@ -406,6 +406,12 @@ test("release-owned Decision contracts stay pure and private until lifecycle adm
 			assert.equal(reachable(graph, entrypoint).includes(module), false, entrypoint);
 		}
 	}
+	const material = "src/server/lifecycle/decision/source-material.ts";
+	assert.equal(external.has(material), false);
+	for (const entrypoint of ["src/index.ts", "src/server/commands/lifecycle.ts", "src/adapters/git/local-server.ts", "src/adapters/git/project-store.ts"]) {
+		assert.equal(reachable(graph, entrypoint).includes(material), false, entrypoint);
+	}
+	assert.equal(reachable(graph, material).some(path => path.startsWith("src/adapters/pi/") || path.startsWith("src/adapters/checks/")), false);
 	assert.ok(graph.get("src/adapters/checks/linux-host.ts").includes("src/kernel/gates/decision-validation.ts"));
 	assert.ok(graph.get("src/adapters/checks/linux-host.ts").includes("src/adapters/checks/worker-source.ts"));
 });
