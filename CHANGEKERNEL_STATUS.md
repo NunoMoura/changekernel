@@ -4,11 +4,13 @@
 
 ## Kickoff baseline
 
-**Responsible:** project manager. **Assignments:** R0-A and R0-B may run in parallel; neither has started or been accepted.
+**Responsible:** project manager. **Assignments:** R0-B is accepted on the integration branch below; R0-A remains unreviewed.
 
 **Source checkpoint:** `9706fda00c31169cec07761cb679ea84e069337d` (`bootstrap/rust-kickoff-01`). This preserves the current source and design without moving the original branch or changing its staging area. Both worker branches start at the same documentation-only child containing these assignments; record that initial `HEAD` before editing.
 
 **Verification:** baseline code passed `npm test`: type checking, build, and 654 tests with no skips. After the bootstrap design addition, the source-design, architecture, and package suites passed all 26 tests; `git diff --check` passed. No Rust toolchain was found on the session command path. This is engineering evidence, not release qualification.
+
+**Integration:** `integration/rust-kickoff-01` at `/home/canina7/Projects/changekernel-workers/integration` contains the reviewed R0-B implementation, `89bb3a03ff35a4d463bd59a686535609a8286bee`, and this consolidated handoff. The original checkout's branch and staging area are unchanged; neither worker branch was modified. R0-A is not integrated, and the combined R0-A/R0-B result remains unverified.
 
 ## R0-A — Rust build and native launcher
 
@@ -50,7 +52,15 @@
 
 **Excluded:** production-code changes, Rust interfaces or storage schemas, historical protocol changes, new intake features, and weakened checks.
 
-**Return:** pending.
+**Return:** Worker B submitted implementation `89bb3a03ff35a4d463bd59a686535609a8286bee` and return `b2a5be5f80a69e7740d3523290459a2122a67230`, from startup `0cddf5144e2a51b5cf640508e35127f9aa6db378`.
+
+**Review (project manager): accepted.** No blocking findings in `tests/adapters/sqlite/intake-conformance.json` or `tests/adapters/sqlite/container-intake.test.mjs`. Required safeguards remain exercised; the two process scenarios were combined without dropping their checks. No production or dependency changes, prototype hashes, table layouts, or error prose were added to the shared JSON expectations.
+
+**Independent checks:** Node `v24.14.0`, npm `11.9.0`, separate dependencies installed with `npm ci --no-audit --no-fund`. Focused intake tests passed 5/5; `node --check` passed. All seven expected-result fields were individually changed to wrong values; each caused an assertion failure, and exact original bytes were restored. `npm test` passed type checking, build, and 653/653 tests without skips both at the exact submitted implementation and after integration. `git diff --check` passed.
+
+**Gaps:** This accepts only the TypeScript reference-case slice, not Rust conformance or release qualification. Physical crash/power-loss durability and broader recovery are not established. Active language-server probes of the two changed files returned no diagnostics but could not confirm clean files.
+
+**Next:** Worker B waits for another assignment; no fixes requested. Review R0-A separately and verify the combined result after integration before advancing the Rust implementation.
 
 ## Return and review
 
