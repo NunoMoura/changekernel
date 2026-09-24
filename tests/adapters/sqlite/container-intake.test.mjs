@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
 import {execFileSync, spawn} from "node:child_process";
-import {mkdtemp, rm} from "node:fs/promises";
+import {readFile, mkdtemp, rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {DatabaseSync} from "node:sqlite";
 import test from "node:test";
 import {createContainerIntakeClient, openSqliteContainerIntake} from "../../../src/index.ts";
 
-const container = {containerId: "app:container:alpha"};
-const proposal = {...container, requestId: "app:request:one", what: "Replace value — exact text", why: "Existing value is wrong."};
+// Portable inputs and semantic expectations live in JSON. Actor values below are
+// trusted host context passed separately to the client, never proposal fields.
+const {fixtures: {container, otherContainer, proposal, conflictingProposal, owner, outsider}, cases} =
+	JSON.parse(await readFile(new URL("./intake-conformance.json", import.meta.url), "utf8"));
 
 async function withDatabase(run) {
 	const root = await mkdtemp(join(tmpdir(), "ck-intake-"));
@@ -17,120 +19,131 @@ async function withDatabase(run) {
 }
 function ok(result) { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; }
 function error(result, code) { assert.equal(result.ok, false); assert.equal(result.error.code, code); }
+function client(store) { return createContainerIntakeClient(store); }
+function assertIntent(receipt, expected) {
+	assert.equal(receipt.state, expected.state);
+	assert.equal(receipt.what, expected.what);
+	assert.equal(receipt.why, expected.why);
+	assert.equal(receipt.containerId, proposal.containerId);
+	assert.equal(receipt.requestId, proposal.requestId);
+}
 
-test("intake: create/open never resets owner or history; restart and lost-response retry", async () => withDatabase(path => {
-	let store = openSqliteContainerIntake(path), client = createContainerIntakeClient(store);
-	ok(client.create(container, "owner"));
-	const first = ok(client.propose(proposal, "owner"));
-	assert.equal(first.state, "awaiting-assessment");
-	store.close();
-	store = openSqliteContainerIntake(path); client = createContainerIntakeClient(store);
-	try {
-		assert.deepEqual(ok(client.open(container, "owner")), container);
-		assert.deepEqual(ok(client.create(container, "owner")), container);
-		assert.deepEqual(ok(client.read(container, first.changeId, "owner")), first);
-		assert.deepEqual(ok(client.propose(proposal, "owner")), first);
-		error(client.propose({...proposal, why: "Different cause"}, "owner"), "conflict");
-		assert.deepEqual(ok(client.read(container, first.changeId, "owner")), first);
-	} finally { store.close(); }
-}));
-
-test("intake: owner isolation and denied cross-container reads, writes, and create", async () => withDatabase(path => {
-	const store = openSqliteContainerIntake(path), client = createContainerIntakeClient(store);
-	try {
-		ok(client.create(container, "owner"));
-		const receipt = ok(client.propose(proposal, "owner"));
-		for (const actor of ["other", null, {id: "owner"}]) {
-			error(client.open(container, actor), "denied");
-			error(client.create(container, actor), "denied");
-			error(client.propose(proposal, actor), "denied");
-			error(client.read(container, receipt.changeId, actor), "denied");
-		}
-		const another = {containerId: "app:container:beta"};
-		ok(client.create(another, "other"));
-		error(client.read(another, receipt.changeId, "other"), "denied");
-		error(client.read({containerId: "app:container:missing"}, receipt.changeId, "owner"), "denied");
-		assert.deepEqual(ok(client.read(container, receipt.changeId, "owner")), receipt);
-	} finally { store.close(); }
-}));
-
-test("intake: two connections and a fresh process reconcile a request without duplicates", async () => withDatabase(path => {
-	const one = openSqliteContainerIntake(path), two = openSqliteContainerIntake(path);
-	try {
-		const first = createContainerIntakeClient(one), second = createContainerIntakeClient(two);
-		ok(first.create(container, "owner"));
-		const receipt = ok(first.propose(proposal, "owner"));
-		assert.deepEqual(ok(second.propose(proposal, "owner")), receipt);
-		const source = `import {openSqliteContainerIntake,createContainerIntakeClient} from './src/index.ts';
-			const s=openSqliteContainerIntake(process.argv[1]); const c=createContainerIntakeClient(s);
-			const result=c.propose(JSON.parse(process.argv[2]), 'owner'); s.close();
-			console.log(JSON.stringify(result));`;
-		const processResult = JSON.parse(execFileSync(process.execPath,
-			["--experimental-strip-types", "--input-type=module", "-e", source, path, JSON.stringify(proposal)],
-			{cwd: process.cwd(), encoding: "utf8"}));
-		assert.deepEqual(ok(processResult), receipt);
-		const db = new DatabaseSync(path, {readOnly: true});
-		try { assert.equal(db.prepare("SELECT count(*) AS n FROM ck_intake_changes").get().n, 1); }
-		finally { db.close(); }
-	} finally { one.close(); two.close(); }
-}));
-
-test("intake: concurrent processes submit one receipt and reject conflicting content", async () => withDatabase(async path => {
-	const store = openSqliteContainerIntake(path);
-	try { ok(createContainerIntakeClient(store).create(container, "owner")); }
-	finally { store.close(); }
-	const code = `import {openSqliteContainerIntake,createContainerIntakeClient} from './src/index.ts';
-		const s=openSqliteContainerIntake(process.argv[1]);
-		const result=createContainerIntakeClient(s).propose(JSON.parse(process.argv[2]),'owner');
-		s.close(); console.log(JSON.stringify(result));`;
-	function submit(value) {
-		return new Promise((resolve, reject) => {
-			const child = spawn(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", code, path, JSON.stringify(value)],
-				{cwd: process.cwd()});
-			let output = "", diagnostic = "";
-			child.stdout.setEncoding("utf8").on("data", chunk => { output += chunk; });
-			child.stderr.setEncoding("utf8").on("data", chunk => { diagnostic += chunk; });
-			child.on("error", reject);
-			child.on("close", status => status === 0 ? resolve(JSON.parse(output)) : reject(new Error(diagnostic)));
-		});
-	}
-	const [first, second] = await Promise.all([submit(proposal), submit(proposal)]);
-	assert.deepEqual(ok(first), ok(second));
-	const [retained, conflict] = await Promise.all([submit(proposal), submit({...proposal, why: "Another intent"})]);
-	assert.deepEqual(ok(retained), first.value);
-	error(conflict, "conflict");
+// SQLite-specific inspection: semantic equality alone cannot rule out extra rows.
+function assertSingleRow(path) {
 	const db = new DatabaseSync(path, {readOnly: true});
 	try { assert.equal(db.prepare("SELECT count(*) AS n FROM ck_intake_changes").get().n, 1); }
 	finally { db.close(); }
-}));
+}
 
-test("intake: failed insertion retains no receipt; retry after repair succeeds", async () => withDatabase(path => {
-	const store = openSqliteContainerIntake(path), client = createContainerIntakeClient(store);
-	const db = new DatabaseSync(path);
-	try {
-		ok(client.create(container, "owner"));
-		db.exec("CREATE TRIGGER refuse_intake BEFORE INSERT ON ck_intake_changes BEGIN SELECT RAISE(ABORT, 'test failure'); END");
-		error(client.propose(proposal, "owner"), "unavailable");
-		assert.equal(db.prepare("SELECT count(*) AS n FROM ck_intake_changes").get().n, 0);
-		db.exec("DROP TRIGGER refuse_intake");
-		const receipt = ok(client.propose(proposal, "owner"));
-		assert.deepEqual(ok(client.read(container, receipt.changeId, "owner")), receipt);
-	} finally { db.close(); store.close(); }
-}));
+// Separate process: no shared in-memory client or store. Result is still checked
+// against the same semantic case; process setup is reference-adapter plumbing.
+const childCode = `import {openSqliteContainerIntake,createContainerIntakeClient} from './src/index.ts';
+	const s=openSqliteContainerIntake(process.argv[1]);
+	const result=createContainerIntakeClient(s).propose(JSON.parse(process.argv[2]),process.argv[3]);
+	s.close(); console.log(JSON.stringify(result));`;
+const childArgs = (path, input) => ["--experimental-strip-types", "--input-type=module", "-e", childCode, path, JSON.stringify(input), owner];
+function submit(path, input) {
+	return new Promise((resolve, reject) => {
+		const child = spawn(process.execPath, childArgs(path, input), {cwd: process.cwd()});
+		let output = "", diagnostic = "";
+		child.stdout.setEncoding("utf8").on("data", chunk => { output += chunk; });
+		child.stderr.setEncoding("utf8").on("data", chunk => { diagnostic += chunk; });
+		child.on("error", reject);
+		child.on("close", status => status === 0 ? resolve(JSON.parse(output)) : reject(new Error(diagnostic)));
+	});
+}
+
+const referenceCases = {
+	"reopen-and-retry": async (path, {expect}) => {
+		let store = openSqliteContainerIntake(path), intake = client(store);
+		let first;
+		try {
+			ok(intake.create(container, owner));
+			first = ok(intake.propose(proposal, owner));
+			assertIntent(first, expect);
+		} finally { store.close(); }
+		store = openSqliteContainerIntake(path); intake = client(store);
+		try {
+			assert.deepEqual(ok(intake.open(container, owner)), container);
+			assert.deepEqual(ok(intake.create(container, owner)), container);
+			assert.deepEqual(ok(intake.read(container, first.changeId, owner)), first);
+			assert.deepEqual(ok(intake.propose(proposal, owner)), first);
+			error(intake.propose(conflictingProposal, owner), expect.conflictingRetry);
+			assert.deepEqual(ok(intake.read(container, first.changeId, owner)), first);
+			assertSingleRow(path);
+		} finally { store.close(); }
+	},
+	"trusted-actor-and-container-isolation": async (path, {expect}) => {
+		const store = openSqliteContainerIntake(path), intake = client(store);
+		try {
+			ok(intake.create(container, owner));
+			const receipt = ok(intake.propose(proposal, owner));
+			for (const actor of [outsider, null, {id: owner}]) {
+				error(intake.open(container, actor), expect.unauthorized);
+				error(intake.create(container, actor), expect.unauthorized);
+				error(intake.propose(proposal, actor), expect.unauthorized);
+				error(intake.read(container, receipt.changeId, actor), expect.unauthorized);
+			}
+			ok(intake.create(otherContainer, outsider));
+			error(intake.read(otherContainer, receipt.changeId, outsider), expect.unauthorized);
+			error(intake.read({containerId: "app:container:missing"}, receipt.changeId, owner), expect.unauthorized);
+			assert.deepEqual(ok(intake.read(container, receipt.changeId, owner)), receipt);
+		} finally { store.close(); }
+	},
+	"fresh-process-and-concurrent-retry": async (path, {expect}) => {
+		const setup = openSqliteContainerIntake(path);
+		try { ok(client(setup).create(container, owner)); }
+		finally { setup.close(); }
+		// Compete on first insertion, not only on already-retained retries.
+		const [first, second] = await Promise.all([submit(path, proposal), submit(path, proposal)]);
+		const receipt = ok(first);
+		assert.deepEqual(ok(second), receipt);
+		const one = openSqliteContainerIntake(path), two = openSqliteContainerIntake(path);
+		try {
+			assert.deepEqual(ok(client(one).propose(proposal, owner)), receipt);
+			assert.deepEqual(ok(client(two).propose(proposal, owner)), receipt);
+			const fresh = JSON.parse(execFileSync(process.execPath, childArgs(path, proposal), {cwd: process.cwd(), encoding: "utf8"}));
+			assert.deepEqual(ok(fresh), receipt);
+		} finally { one.close(); two.close(); }
+		const [retained, conflict] = await Promise.all([submit(path, proposal), submit(path, conflictingProposal)]);
+		assert.deepEqual(ok(retained), receipt);
+		error(conflict, expect.conflictingRetry);
+		assertSingleRow(path);
+	},
+	"failed-insertion-and-repair": async (path, {expect}) => {
+		const store = openSqliteContainerIntake(path), intake = client(store);
+		const db = new DatabaseSync(path);
+		try {
+			ok(intake.create(container, owner));
+			// Reference-only fault injection; not a portable schema or failure mechanism.
+			db.exec("CREATE TRIGGER refuse_intake BEFORE INSERT ON ck_intake_changes BEGIN SELECT RAISE(ABORT, 'test failure'); END");
+			error(intake.propose(proposal, owner), expect.failedInsertion);
+			assert.equal(db.prepare("SELECT count(*) AS n FROM ck_intake_changes").get().n, 0);
+			db.exec("DROP TRIGGER refuse_intake");
+			const receipt = ok(intake.propose(proposal, owner));
+			assert.deepEqual(ok(intake.read(container, receipt.changeId, owner)), receipt);
+			assertSingleRow(path);
+		} finally { db.close(); store.close(); }
+	},
+};
+
+for (const scenario of cases) {
+	test(`intake conformance: ${scenario.id}`, async () => withDatabase(path => referenceCases[scenario.id](path, scenario)));
+}
 
 test("intake: invalid input, retained corruption, and unsupported schema fail closed", async () => withDatabase(path => {
-	const store = openSqliteContainerIntake(path), client = createContainerIntakeClient(store);
+	const store = openSqliteContainerIntake(path), intake = client(store);
 	try {
-		ok(client.create(container, "owner"));
-		for (const input of [{...proposal, owner: "owner"}, {...proposal, what: "e\u0301"}, {...proposal, why: ""}, {...proposal, requestId: "bad"}]) {
-			error(client.propose(input, "owner"), "invalid_input");
+		ok(intake.create(container, owner));
+		for (const input of [{...proposal, owner}, {...proposal, what: "e\u0301"}, {...proposal, why: ""}, {...proposal, requestId: "bad"}]) {
+			error(intake.propose(input, owner), "invalid_input");
 		}
-		const receipt = ok(client.propose(proposal, "owner"));
+		const receipt = ok(intake.propose(proposal, owner));
 		const db = new DatabaseSync(path);
 		try {
 			db.prepare("UPDATE ck_intake_changes SET what_text = ? WHERE change_id = ?").run("tampered", receipt.changeId);
-			error(client.read(container, receipt.changeId, "owner"), "unavailable");
-			error(client.propose(proposal, "owner"), "unavailable");
+			error(intake.read(container, receipt.changeId, owner), "unavailable");
+			error(intake.propose(proposal, owner), "unavailable");
 			db.prepare("UPDATE ck_intake_schema SET version = ? WHERE id = 1").run("unsupported");
 		} finally { db.close(); }
 	} finally { store.close(); }
