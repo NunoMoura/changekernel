@@ -29,25 +29,30 @@ The retained `wiki/` path stores source design; it does not require a runtime Wi
 
 ## Executable foundation
 
-The private package is `@nunomoura/changekernel`; the executable is `changekernel`. [Source exports](src/index.ts), [package metadata](package.json) and tests define what exists. Current foundations include deterministic identities/contracts, managed Wiki transactions, Git-backed proposals, private Decision Check execution/retention and an authenticated limited [Project Server](src/server/index.ts).
+The private supporting package is `@nunomoura/changekernel`; the native executable is `changekernel`. Historical TypeScript scaffolding includes deterministic identities/contracts, managed Wiki transactions, Git-backed proposals, private Decision execution/retention and a limited [Project Server](src/server/index.ts). These are not a supported parallel engine or a feature-parity target. Their retired tests remain in Git history; only the narrow Pi integrations retain TypeScript-side tests.
 
 The historical Project Server supports discovery/capabilities, managed-document proposal and Changes get. Its other operations report unavailable; the console remains read-only. Those Git/Wiki protocol meanings are unchanged.
 
-Separate library interfaces now support owned intake and Change-owned multi-entity candidate batches in application-supplied SQLite storage. `createContainerIntakeClient` retains What/Why; `createContainerCandidateClient` installs draft definitions, describes generic coverage, prepares batches and reads them by candidate identity. A batch retains exact proposed values, relationships and version-bound source observations without writing managed values. Repeated requests reconcile across restart; a Change can retain multiple immutable batches. See the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates) and [executable examples](tests/adapters/sqlite/container-candidate.test.mjs). Node's built-in SQLite interface is experimental; hosts authenticate callers and protect database access.
+Separate library interfaces now support owned intake and Change-owned multi-entity candidate batches in application-supplied SQLite storage. `createContainerIntakeClient` retains What/Why; `createContainerCandidateClient` installs draft definitions, describes generic coverage, prepares batches and reads them by candidate identity. A batch retains exact proposed values, relationships and version-bound source observations without writing managed values. Repeated requests reconcile across restart; a Change can retain multiple immutable batches. See the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates). This historical TypeScript candidate implementation is not native candidate acceptance. Node's built-in SQLite interface is experimental; hosts authenticate callers and protect database access.
 
 The Rust library separately exposes `Intake`, `SqliteIntake`, `Proposal`, `Receipt`, and `Issue` for the [bounded native intake contract](.changekernel/wiki/items/system/components/state.md#native-rust-intake). A host must authenticate the actor, protect storage, and explicitly initialize or reopen an absolute persistent SQLite path; the launcher remains non-operational. Native intake preserves exact What and optional Why, and reconciles retries without application effects. It is not the TypeScript reference interface or a generalized container lifecycle. Full lifecycle progression, Checks on these candidates, publication, generalized storage/discovery, native Jev operations, durable factory/recovery, frontend feedback and cross-container dependencies remain unfinished. Draft persistence and passing source tests do not establish qualified adoption.
 
 ## Development and repository truth
 
-Native builds require Rust 1.88.0 and a C compiler for bundled SQLite, but neither Node nor Pi. Native source checks: `cargo build --locked`, `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, and `cargo test --locked --all-targets`. Supporting TypeScript development requires Node.js 22.19.0 or newer. Within approved source-development scope:
+Native builds require Rust 1.88.0 and a C compiler for bundled SQLite, but neither Node nor Pi. Use the standard Rust harness:
 
 ```bash
-npm ci --ignore-scripts
-npm test
-npm run build
+cargo test --locked
+# Before native acceptance:
+cargo fmt --check
+cargo clippy --locked --all-targets -- -D warnings
 ```
 
-Use [AGENTS.md](AGENTS.md), native coding tools, diagnostics and tests. Architecture guards evolve deliberately; passing tests/builds are not operational qualification. Pack/test candidates only in disposable external projects with isolated Pi settings.
+`cargo test` compiles and runs unit, integration and documentation tests. Compilation owns type/borrow/exhaustiveness checks; tests cover runtime behavior and consequential failures, not compiler guarantees. No extra testing framework is required. Use `cargo build --locked` when checking a native build artifact.
+
+For changes to retained Pi adapters or their dependencies, use Node.js 22.19.0 or newer and `npm ci --ignore-scripts`, then `npm test`. This checks the narrow TypeScript adapter closure and runs its model/provider/session/protocol tests with controlled fixtures. It does not build the historical TypeScript engine or run Rust tests. Rust-only work does not require npm checks. `npm run build` remains an explicit historical package build, not a native acceptance gate.
+
+Use [AGENTS.md](AGENTS.md) and the researched [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy). Passing tests/builds are not operational qualification. Pack/test candidates only in disposable external projects with isolated Pi settings.
 
 **Never load this mutable checkout as its own controller.** Do not call ChangeKernel `wiki_*` tools or `/wiki-*` commands here, install it under repository `.pi/`, or create local package links, duplicate skills or controller pins. Later governed Changes/Work require a qualified immutable external release, activation and explicit handoff; an unavailable designated controller never falls back to source.
 

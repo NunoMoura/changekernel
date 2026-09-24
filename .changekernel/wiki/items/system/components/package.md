@@ -64,6 +64,34 @@ Current source includes a private partial Git/Wiki foundation and separate bound
 
 Decision + Execution is the approved public lifecycle direction. It does not erase proposal, pre-effect and observed-outcome assessment responsibilities or automatically migrate stored stage fields. First validate a two-phase interface against those responsibilities, current authority and actionable operator visibility. Preserve meaningful architecture guards and historical evidence; fewer labels alone establish neither simpler implementation nor lower cost. Any necessary persisted-contract change requires an explicit versioned mapping and interruption/recovery proof, not renamed old results.
 
+## Testing policy
+
+Test the implementation that the product will retain: the Rust engine and a small TypeScript boundary to external systems such as Pi. The retired TypeScript engine is historical reference material, not a second implementation to maintain or a parity target. Its Git/Wiki, lifecycle, storage, CLI and engine-composition suites may be removed without claiming that their capabilities have been implemented or qualified in Rust. Git preserves useful incidents and prior cases; recover an applicable case when implementing the corresponding native behavior instead of porting the whole suite.
+
+The default native harness is `#[test]` plus `cargo test --locked`, including unit, integration and documentation tests. Use `#[cfg(test)]` for colocated unit tests and Cargo integration tests for real storage, filesystem, process and cross-module behavior. `--all-targets` is not the default test command: it selects additional build targets but does not include documentation tests. Formatting and clippy are inexpensive pre-acceptance checks; a separate build proves an artifact claim rather than adding another mandatory step to every test loop.
+
+Rust's type, ownership and borrowing checks eliminate classes of invalid state and memory misuse; do not duplicate these guarantees with runtime tests. They do not prove application authorization, hash-to-byte identity, transaction/retry correctness, cancellation, cleanup or desired outcomes. Keep a small set of representative success, important boundary/failure and known-regression cases for those risks. A table of cases inside one test is sufficient when failures identify the case. Test counts and coverage percentages are not quality goals. Routine independent review does not require a parallel permanent suite, custom runner, negative-control mutation or full qualification campaign.
+
+| Active test scope | Retention rule |
+| --- | --- |
+| Rust engine | Native behavior and consequential failures, using the standard harness. Keep the bounded intake/recovery case data already consumed by Rust; its former JavaScript runner is unnecessary. |
+| TypeScript integrations | Test the retained Pi model/provider/session/protocol bridges: exact inputs, response/error decoding, usage, resource isolation and cancellation/cleanup. Use controlled providers and loopback fixtures, not live inference. Test incoming host contracts without executing retired engine authorization policy. |
+| Retired prototype | Remove its tests and orphan helpers, including Pi-named compositions that actually exercise TypeScript orchestration, Decision or persistence. This removes unsupported scope, not required native guarantees. Transitional wire/codec dependencies remain explicit until a separately agreed native boundary replaces them. |
+| Structural ceremony | Remove source-file inventories, exact import-list snapshots, manifest-text/version duplication and documentation-wording tests. Compilation, lockfiles, review and exact-release qualification own those concerns. A future architectural check must enforce a concrete maintained boundary, not freeze a file layout. |
+
+`npm test` typechecks only the retained adapter import closure and runs its TypeScript-implementation tests with Node's built-in runner. It does not build or test the legacy engine. Native-only slices do not require Node or npm; run adapter checks when changing adapters, their dependencies or the integration boundary. Existing private TypeScript sources and packaging are not made supported by their presence and are removed or replaced in separate coherent implementation changes. The supporting package is not the Rust product.
+
+Add ecosystem tools only when a measured problem calls for them: property testing for difficult input invariants, fuzzing for untrusted parsers, Miri for relevant unsafe/undefined-behavior risks, or nextest for demonstrated scheduling/isolation needs. None is a baseline dependency or a replacement for assertions about application behavior. There is no need to invent a test framework for this project.
+
+The first delivery remains the smallest complete, enforced self-development path. Once an exact immutable external release is qualified, activated and explicitly handed controller authority, use that pipeline to improve later candidates incrementally. The engine's promised quality controls cannot prove their own initial correctness or authorize the mutable checkout to govern itself. Keep routine source checks small while preserving the separate, bounded qualification obligations below.
+
+### Research basis
+
+- The [Rust Book's test organization](https://doc.rust-lang.org/book/ch11-03-test-organization.html) describes both unit and integration tests and explicitly distinguishes compile-time protections from logic correctness. The [Cargo test reference](https://doc.rust-lang.org/cargo/commands/cargo-test.html) defines the default harness, documentation tests and target selection.
+- The [Rust Book on shared-state concurrency](https://doc.rust-lang.org/book/ch16-03-shared-state.html) notes that mutexes can still deadlock; language safety does not establish all concurrency behavior.
+- [Proptest](https://proptest-rs.github.io/proptest/intro.html) complements example tests with generated inputs and shrinking; [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) drives a fuzzer. Use either for a specific input-space risk, not by default.
+- [Miri](https://github.com/rust-lang/miri/blob/master/README.md) detects supported undefined behavior in executions, not general correctness. [Nextest](https://nexte.st/docs/design/how-it-works/) changes execution scheduling and process isolation; it does not supply missing test cases. These are options, not an adopted toolchain expansion.
+
 ## Qualification
 
 Qualify exact immutable bytes for declared subjects, bindings, models, configuration and deployment conditions. Structural tests, replay and injected workers provide bounded engineering evidence, not proof of semantic quality, physical containment or durable continuation.
@@ -150,7 +178,7 @@ The first separately reviewed library capability is [native Rust intake](state.m
 
 The [native committed-source observer](state.md#native-committed-source-observations) additionally requires an explicitly configured, trusted Git executable when that capability is used. It uses the existing approved Rust dependencies; it does not add a Git framework, a worker runtime or a build/launcher dependency on Git. Record the tested Git version and supported repository forms; this is not cross-version qualification.
 
-Keep the existing JavaScript launcher and reference implementation unchanged until deliberate replacement. Native launcher, intake persistence and source-observation tests run in disposable external directories. Build and test success proves only the exercised bootstrap/intake behavior, not the first self-development delivery or controller adoption.
+Existing JavaScript launcher and reference sources remain private historical scaffolding until deliberate removal or replacement; retaining them does not require their retired test suites. The testing policy above owns the active test scope. Native launcher, intake persistence and source-observation fixtures run in disposable external directories. Build and test success proves only the exercised behavior, not the first self-development delivery or controller adoption.
 
 ## Source-development boundary
 

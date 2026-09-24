@@ -22,10 +22,9 @@
 		"clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
 		"build": "npm run clean && tsc -p tsconfig.build.json",
 		"prepack": "npm run build",
-		"typecheck": "tsc --noEmit",
-		"test:smoke": "node --experimental-strip-types --test \"tests/**/*.test.mjs\"",
+		"typecheck": "tsc --noEmit -p tsconfig.adapters.json",
 		"test:pack": "npm pack --dry-run",
-		"test": "npm run typecheck && npm run build && npm run test:smoke",
+		"test": "npm run typecheck && node --experimental-strip-types --test \"tests/adapters/pi/*.test.mjs\"",
 		"audit:changekernel": "npm test && npm run build && npm run test:pack && npm audit --omit=dev && git diff --check"
 	},
 	"license": "MIT",

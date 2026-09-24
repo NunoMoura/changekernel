@@ -9,7 +9,7 @@ import {events, message, scriptedInstaller, scriptedPiLease} from "./fixtures.mj
 import {runPiSession} from "../../../src/adapters/pi/session-runner.ts";
 import {gitOid} from "../../../src/kernel/identity/git.ts";
 import {semanticDigest} from "../../../src/kernel/identity/semantic-digest.ts";
-import {authorizeAgentRun} from "../../../src/server/effects/agent-runs.ts";
+import {agentRunContextMaterialDigest, createAgentRunAuthorization} from "../../../src/ports/agent-runtime.ts";
 
 const systemPrompt = "Return only the requested bounded assessment.";
 const prompt = "Evaluate the exact Decision subject.";
@@ -27,11 +27,14 @@ const oid = (character) => {
 
 function authorization() {
 	const routeBody = {routeId: "cw:route:model-check", providerId: "cw:provider:scripted", modelId: "cw:model:scripted"};
-	const result = authorizeAgentRun({
+	// Supply an incoming host contract; this adapter test does not run engine policy.
+	const contextDigest = agentRunContextMaterialDigest({systemPrompt, prompt}, ["cw:item:one"]);
+	assert.equal(contextDigest.ok, true);
+	const result = createAgentRunAuthorization({
 		role: "model-check",
 		stage: "decision",
 		actorId: "cw:actor:model-check",
-		authorizationId: "cw:authorization:model-check",
+		authorityDigest: digest("2"),
 		subject: {
 			subjectId: "cw:subject:decision-check",
 			subjectDigest: digest("1"),
@@ -45,10 +48,15 @@ function authorization() {
 			artifactTree: null,
 		},
 		route: {...routeBody, routeDigest: semantic("codewiki.agent-route@1.0.0", routeBody)},
-		wikiCommit: oid("3"),
-		itemIds: ["cw:item:one"],
-		feedbackDigest: null,
-		material: {systemPrompt, prompt},
+		context: {wikiCommit: oid("3"), itemIds: ["cw:item:one"], contextDigest: contextDigest.value,
+			queryPolicyDigest: digest("3"), feedbackDigest: null},
+		toolIds: [],
+		toolSetDigest: semantic("codewiki.agent-tool-set@1.0.0", {toolIds: []}),
+		capabilities: [],
+		budget: {timeoutMs: 120_000, maximumModelRequests: 2, maximumToolCalls: 0,
+			maximumInputTokens: 180_000, maximumOutputTokens: 12_000, maximumOutputBytes: 1_000_000},
+		outputSchemaDigest: digest("4"),
+		policyDigest: digest("5"),
 		writableScope: [],
 		previewSubjectDigest: null,
 		attempt: 1,
