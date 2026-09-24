@@ -2,44 +2,58 @@
 
 This is the temporary handoff before qualified adoption. [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design, [AGENTS.md](AGENTS.md) owns source procedure, and Git preserves completed reviews. Change and Work own execution state after adoption.
 
-## Current accepted source checkpoint
+## Accepted checkpoint
 
 - **Manager:** `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`.
-- **Accepted native code:** `c1c0e54ad0d29a77e7910cf36fcf1edc3a3fc29a` integrates corrected committed-source observations with intake previously accepted at `853fcf65e7ebfee85b87225e4f01d95cbc676e5f`. No release qualification or controller authority is implied.
-- **Testing policy:** `114a099bd` removed 72 obsolete JS suite/helper files; only 70 Pi adapter cases remain. Rust behavior uses ordinary Cargo tests; the compiler owns type/borrow/exhaustiveness guarantees. No blanket JS gate for Rust-only work, extra framework, duplicate permanent review suite, coverage quota or mandatory mutation ritual. See [policy](.changekernel/wiki/items/system/components/package.md#testing-policy).
-- **Supporting package:** `416c79d8211580fec5e5ec1b8cb425ba58f76d21` freezes the adapter-only entrypoint/build closure and removes the Node launcher and historical engine exports. Its 70 adapter tests, adapter artifact build and active LSP checks passed. Remaining unsupported TS sources are assigned for deletion below; historical capabilities are not a native parity backlog.
+- **Native code:** `c1c0e54ad0d29a77e7910cf36fcf1edc3a3fc29a`: accepted corrected intake plus committed-source observation. R2-A was accepted only with the manager's object-identity, process-cleanup and error-classification repairs; R2-B was accepted at `853fcf65e`. Detailed verdicts/checks are preserved at `4250a9c36:CHANGEKERNEL_STATUS.md`.
+- **Actual source checks:** 20 native tests, fmt, clippy and active LSP checks passed; independent corruption, lock, descendant and blocked-stdin probes passed. Evidence: `/tmp/changekernel-r4-manager-probes.I0J4eI/`. This is bounded local Git/Linux source evidence, not operational qualification.
+- **Supporting package:** `416c79d8211580fec5e5ec1b8cb425ba58f76d21` freezes the adapter-only entrypoint/build and removes the Node launcher/historical engine exports. Its 70 adapter tests, artifact build and active LSP checks passed. Test retirement is `114a099bd`; [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy) requires no JS campaign for Rust-only work or tests of compiler guarantees.
 
-## Source-observation repair verdict: accepted with correction
+## Active worker assignments: R4
 
-The original R2-A revision `28c02e65c12da3c8e0c792e9832cd1177e01ef61` was not accepted as submitted. The manager composed only its native observation files with corrected intake and repaired F1–F3 in `c1c0e54ad`; old intake code, retired Node tests, the trivial enum/constructor test and the duplicate fingerprint mutation test were not restored. The full prior R2 findings remain at `ba0129c7f:CHANGEKERNEL_STATUS.md`.
+The user confirms both worker sessions are running. Their branches still had only the assignment commits when preparation of the next slices began; no submitted implementation has been reviewed or accepted. Do not redirect them to R5 or edit their owned paths while they finish R4.
 
-| Finding | Correction and evidence |
-| --- | --- |
-| F1: readable, hash-mismatched Git objects accepted | Verify exact captured commit/tree/blob bytes using read-only Git hashing; derive path/absence lookups from those same verified tree bytes. Regressions cover commit, root/nested tree and blob substitution, read-only behavior and a packed-object positive case. |
-| F2: exited leader leaves closed-stream descendant running | Every exit settles the owned process group and I/O workers within bounded cleanup grace. Success requires confirmed cleanup; timeout, cancellation, overflow and unconfirmed cleanup remain unavailable. Focused regression covers leader exit 0 and 1. |
-| F3: store outage converted into permission denial | Preserve unavailable, denied and invalid-input distinctions at the application boundary. Exclusive-lock regression verifies the outage and real denial separately. |
-
-- **Checks:** all three focused regressions failed on the original code and pass after repair. `cargo test --locked` passes all 20 native tests, including 10 source-observation cases; documentation tests are enabled, currently none. `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, active LSP diagnostics on all seven native/config paths, active Markdown links and `git diff --check` pass. No native dependency or Cargo lockfile change.
-- **Independent probes:** original corruption, lock and descendant repros pass against the corrected library in a disposable external Cargo project. An additional 1 MiB blocked-stdin cancellation probe returns unavailable in about 62 ms with the child gone. Evidence: `/tmp/changekernel-r4-manager-probes.I0J4eI/`; regression logs: `/tmp/changekernel-r4-repair-before.log` and `/tmp/changekernel-r4-source-repair-tests.log`.
-- **Limits:** evidence covers the declared ordinary local Git/Linux profile, not hostile process containment, every repository/OS form, live workspace freshness, retained grounds or publication. No live inference, packaging, activation or controller operation occurred.
-- R3-A was reassigned to the manager; R3-B's duplicate suite remains withdrawn. Old worker trees were clean before reassignment, with stop/redirect notices at `50e9f7d5e` and `e3fa9a521`. Do not resume repairs there.
-
-## Ready worker assignments: R4
-
-Both worktrees were created from exact base `416c79d8211580fec5e5ec1b8cb425ba58f76d21`, independently of the Rust fixes. No worker session was launched by this handoff; these are committed ready assignments, not submitted or accepted implementations.
+Both worktrees use exact base `416c79d8211580fec5e5ec1b8cb425ba58f76d21`, independently of the Rust fixes.
 
 | Worker | Branch and worktree | Assignment-only revision | Exclusive outcome |
 | --- | --- | --- | --- |
 | A / R4-A | `work/retire-ts-host`, `/home/canina7/Projects/changekernel-workers/retire-ts-host` | `e17b4a24992802b3b1913f128435ee6e0d5d839e` | Remove historical TS server/API, non-Pi adapters, product policy and four unused host/storage ports. |
 | B / R4-B | `work/retire-ts-kernel`, `/home/canina7/Projects/changekernel-workers/retire-ts-kernel` | `2a6de5c0d93bc60faa8635f28d93650f4637c0c8` | Remove obsolete TS kernel/identity machinery, three Pi-named engine compositions and the agent-output port. |
 
-Their own `CHANGEKERNEL_STATUS.md` files enumerate exact owned paths and the frozen 14-file adapter dependency closure plus entrypoint. All Rust files, retained adapters/ports/codecs, tests, manifests, lockfiles and documentation are read-only to workers. Never delete a mixed-language directory. Stop on any retained import of a proposed removal; do not widen scope or change wire semantics. Retired cross-slice callers disappear when both disjoint slices are combined.
+Their own `CHANGEKERNEL_STATUS.md` files own the exact write scopes, frozen adapter closure and requirement references. Checks remain retained import-closure review, `npm test`, `npm run build` and `git diff --check`. All Rust, retained adapters/ports/codecs, tests, shared metadata and documentation are read-only to workers. Stop on retained callers of a proposed removal; never delete a mixed-language directory. Return exact revisions, actual checks and gaps; no self-approval or automatic next slice.
 
-Requirements: [historical retirement](.changekernel/wiki/items/system/components/package.md#versioning-and-historical-interpretation), [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy), [supporting package boundary](.changekernel/wiki/items/system/components/package.md#native-rust-bootstrap). Checks: retained import-closure review, `npm test`, `npm run build`, `git diff --check`; no native campaign for unchanged Rust or new inventory tests. Return exact revisions, actual checks and gaps; no self-approval.
+The manager independently reviews each return and the combined result, reconciles unused dependencies/active references, and owns integration, manifests, lockfiles, exports and consolidated status. Do not merge worker handoff files wholesale. Old R3 worktrees remain stopped; their repairs are complete and the duplicate suite remains withdrawn.
 
-## Next manager actions and remaining gates
+## Prepared next slices: R5 — blocked pending contract approval and shared baseline
 
-- Independently review each R4 return and the combined result. The manager alone owns shared contracts, composition, manifests, lockfiles, test registration and consolidated status; do not merge worker handoff files wholesale. Remove unused package dependencies and stale active references as part of that combined review.
-- Source-observation acceptance is complete. Native candidate custody still needs an agreed ownership/retention/current-authority contract before dispatch; passing read-only observation tests does not supply it.
-- Native intent revision/Decision/Work still needs an explicit versioned two-phase contract and authorization/delegation policy. Resolve ambiguous product intent with the user rather than porting historical stage policy silently.
-- Prioritize the [smallest complete bounded self-development path](.changekernel/wiki/items/system/components/package.md#first-self-development-delivery-focus), not a broad catalogue or general framework. Qualification, activation and explicit controller handoff remain separate exact-subject gates. Never govern this checkout with mutable checkout bytes.
+The [proposed native private-continuation profile](.changekernel/wiki/items/system/components/state.md#native-private-continuation-profile-proposed) narrows the next increment to durable exact intent and file-candidate custody. This is a design proposal, not adopted policy, implementation, dispatch or acceptance. Planning uses the accepted native checkpoint above; **no R5 branch/worktree has been created and no dispatch base is pinned yet**. The manager will create them from the agreed post-R4/shared-contract checkpoint, recording its exact hash before dispatch.
+
+### R5-A — native file-candidate custody
+
+- **Reserved branch/worktree:** `work/native-file-candidates`, `/home/canina7/Projects/changekernel-workers/native-file-candidates` (not created).
+- **Outcome:** prepare and inspect immutable multi-file candidates with exact verified prior grounds, binary proposed bytes/modes or deletion, an exact intent revision and a stable retry binding. No Git/source writes, freshness/approval claim, inference or publication.
+- **Planned owned writes:** `src/kernel/state/file_candidate.rs`, `src/application/file_candidate.rs`, `src/adapters/sqlite/file_candidate.rs`, associated focused native tests and its own handoff. Test placement/registration will be pinned with the shared baseline; no separate challenge suite. Shared types, ports, schema, composition and metadata remain manager-owned/frozen.
+- **Dependencies:** accepted source observer; approved retention/delivery policy; frozen intent-reference/head transaction guard, source-binding/grant semantics and richer native store profile. The candidate implementation must not depend on Worker B inventing an interface during execution.
+- **Acceptance:** multi-file create/replace/delete and binary round-trip; exact grounds survive restart and live-object loss; exact retry reconciles before recapture, conflicting retry rejects; missing/corrupt grounds and current denial/unavailability fail closed; no partial batch on failure; new preparation cannot commit against a changed intent head. Use a small set of ordinary Rust runtime cases, not a port of the old TS suite.
+
+### R5-B — native attributable intent revisions
+
+- **Reserved branch/worktree:** `work/native-intent-revisions`, `/home/canina7/Projects/changekernel-workers/native-intent-revisions` (not created).
+- **Outcome:** preserve original intake and append exact attributable What/Why revisions with atomic expected-head comparison, history and retry reconciliation. This is private refinement custody, not Decision admission, a new public phase or a mutable copy of accepted intent.
+- **Planned owned writes:** `src/kernel/changes/intent.rs`, `src/application/intent.rs`, `src/adapters/sqlite/intent.rs`, associated focused native tests and its own handoff. Shared intent-reference types, storage guards/schema and metadata remain manager-owned/frozen; Worker A consumes those agreed contracts, not unreviewed changes here.
+- **Dependencies:** approved owner-only private-refinement scope and retention policy; frozen initial-revision identity, retry domain, exact encoding and shared store profile. No candidate implementation dependency after those boundaries are fixed.
+- **Acceptance:** unchanged original receipt; exact text and absent/present-empty Why preserved through restart; competing revisions have one current-head winner; exact lost-reply retry returns the original result after later revisions; changed request input conflicts; corrupt/missing head/history/retry grounds remain unavailable and cross-container/actor access is denied. Revisions never silently retarget existing candidates.
+
+### Manager pre-dispatch work
+
+1. Obtain confirmation of the proposed scope: one authenticated owner, private intent/candidate custody only, explicit host source-retention/delivery grants (standing scoped grants allowed), protected retention without automatic expiry/eviction, no admission/delegation/execution authority. Unsupported retention obligations must block custody, not be waived. Do not turn this into a mandatory human prompt per operation.
+2. Freeze the minimal Rust operation/port/type shapes, versioned identities/encodings, retry domains, result meanings and source-binding/current-grant contract. Keep the existing source-observation API and native intake meanings intact. No new framework, transport, dependency or placeholder success path.
+3. Implement/review the shared SQLite initialization/schema and transaction guards once, under manager ownership. **Current `SqliteIntake::open_existing` rejects extra tables**, so the two workers cannot independently add tables or relax validation. Opening must remain non-mutating; foreign/partial schemas and unknown triggers/indexes still fail without journal changes. A deliberately initialized richer profile is distinct from existing intake-only stores; there is no implicit upgrade/import.
+4. Establish the revision-zero/head and candidate expected-head checks in the same database transaction boundary. Git capture stays outside transactions. Freeze the required interfaces before parallel implementation; if dependencies remain, serialize rather than dispatch a worker against missing behavior.
+5. Review R4, pin the combined/shared-contract base, create both external worktrees and their exact handoffs. Routine native acceptance is `cargo test --locked`, fmt, clippy and `git diff --check`, with active diagnostics and honest gaps. No npm gate for these Rust-only slices. The manager additionally checks the combined candidate-preparation/intent-revision race and unchanged intake regressions.
+
+## Later gates
+
+Decision/Work still needs an explicit versioned admission, assessment and authorization/delegation contract. Operator transport/toolkit, producer/Check execution, publication/recovery and research/memory adoption remain separate supported capabilities, not fields silently added to private custody. Prioritize the [smallest complete self-development path](.changekernel/wiki/items/system/components/package.md#first-self-development-delivery-focus), not prototype parity or disconnected scaffolding.
+
+Qualification, activation and explicit controller handoff remain separate exact-subject gates. No live inference, packaging, activation or controller operation is authorized by these task plans. Never govern this checkout with mutable checkout bytes.
