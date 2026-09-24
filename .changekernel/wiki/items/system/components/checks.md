@@ -6,17 +6,10 @@ aliases:
 source-id: cw:component:checks
 ownership:
   sourcePatterns:
-    - src/kernel/gates/**
-    - src/adapters/checks/**
-    - src/server/lifecycle/decision/**
-    - src/server/lifecycle/implementation/**
-    - src/server/lifecycle/review/**
+    - src/adapters/pi/check-model.ts
+    - src/ports/check-model.ts
   testPatterns:
-    - tests/kernel/gates/**
-    - tests/adapters/checks/**
-    - tests/server/lifecycle/decision/**
-    - tests/server/lifecycle/implementation/**
-    - tests/server/lifecycle/review/**
+    - tests/adapters/pi/check-model.test.mjs
   roles:
     - model-check
     - decision

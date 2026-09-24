@@ -12,12 +12,9 @@ ownership:
     - package-lock.json
     - package.json
     - src/index.ts
-    - src/product.ts
     - tsconfig*.json
-    - benchmarks/**
   testPatterns:
     - tests/package/**
-    - tests/benchmarks/**
 source-history:
   provenance:
     - attributes:
@@ -60,7 +57,7 @@ Supported operational upgrades require explicit scope, exact mapping, backup, co
 
 Historical `ProjectSnapshot`, `codewiki.*` protocols, managed-document fields and Planning-stage records retain their original meanings until an explicit versioned transition. They do not gain generalized State/recovery guarantees through terminology changes. Committed versions of retired design pages remain historical evidence in Git; retained source metadata is not managed adoption. Changes, existing archives and changelog entries are not rewritten to claim new capabilities.
 
-Current source includes a private partial Git/Wiki foundation and separate bounded SQLite intake/candidate storage, not the complete container engine. Private Decision execution/retention, limited historical proposal/read operations and durable drafts do not establish operational qualification, candidate Check success or State publication. Bootstrap's empty Wiki/Changes roots and current private Pi/loopback path are existing implementation details, not generalized `createContainer` or native Jev contracts.
+The retired TypeScript Git/Wiki foundation, private Decision execution, console and SQLite candidate implementation remain in Git history, not the supporting package. Their historical tests and records do not establish native capabilities, operational qualification, candidate Check success or State publication. Native intake and committed-source profiles are bounded contracts; retained Pi bridges do not supply the missing lifecycle, generalized creation or native Jev operations.
 
 Decision + Execution is the approved public lifecycle direction. It does not erase proposal, pre-effect and observed-outcome assessment responsibilities or automatically migrate stored stage fields. First validate a two-phase interface against those responsibilities, current authority and actionable operator visibility. Preserve meaningful architecture guards and historical evidence; fewer labels alone establish neither simpler implementation nor lower cost. Any necessary persisted-contract change requires an explicit versioned mapping and interruption/recovery proof, not renamed old results.
 
@@ -79,7 +76,7 @@ Rust's type, ownership and borrowing checks eliminate classes of invalid state a
 | Retired prototype | Remove its tests and orphan helpers, including Pi-named compositions that actually exercise TypeScript orchestration, Decision or persistence. This removes unsupported scope, not required native guarantees. Transitional wire/codec dependencies remain explicit until a separately agreed native boundary replaces them. |
 | Structural ceremony | Remove source-file inventories, exact import-list snapshots, manifest-text/version duplication and documentation-wording tests. Compilation, lockfiles, review and exact-release qualification own those concerns. A future architectural check must enforce a concrete maintained boundary, not freeze a file layout. |
 
-`npm test` typechecks only the retained adapter import closure and runs its TypeScript-implementation tests with Node's built-in runner. It does not build or test the legacy engine. Native-only slices do not require Node or npm; run adapter checks when changing adapters, their dependencies or the integration boundary. Existing private TypeScript sources and packaging are not made supported by their presence and are removed or replaced in separate coherent implementation changes. The supporting package is not the Rust product.
+`npm test` typechecks only the retained adapter import closure and runs its TypeScript-implementation tests with Node's built-in runner. It does not build or test the legacy engine. Native-only slices do not require Node or npm; run adapter checks when changing adapters, their dependencies or the integration boundary. The retained TypeScript sources are Pi bridges and their required protocol/codec dependencies, not a parallel engine. The supporting package is not the Rust product.
 
 Add ecosystem tools only when a measured problem calls for them: property testing for difficult input invariants, fuzzing for untrusted parsers, Miri for relevant unsafe/undefined-behavior risks, or nextest for demonstrated scheduling/isolation needs. None is a baseline dependency or a replacement for assertions about application behavior. There is no need to invent a test framework for this project.
 

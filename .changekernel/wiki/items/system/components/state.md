@@ -7,21 +7,16 @@ ownership:
     - .changekernel/config.json
     - src/adapters/git/**
     - src/adapters/sqlite/**
-    - src/ports/project-store.ts
-    - src/ports/container-intake-store.ts
     - src/ports/container_intake.rs
+    - src/ports/source_observer.rs
     - src/application/intake.rs
-    - src/ports/container-candidate-store.ts
+    - src/application/source_observation.rs
     - src/kernel/containers/**
-    - src/kernel/evidence/**
-    - src/kernel/wiki/**
+    - src/kernel/state/**
   testPatterns:
     - tests/adapters/git/**
     - tests/adapters/sqlite/**
-    - tests/ports/project-store.test.mjs
     - tests/kernel/containers/**
-    - tests/kernel/evidence/**
-    - tests/kernel/wiki/**
   generatedViews:
     - alignment
     - dictionary
@@ -231,4 +226,4 @@ Initial adoption of an existing source records an honest baseline, not fictional
 
 Retain exact Evidence subject, source/version/passage, method, observation time, assumptions and limits. Trace references need durable authorized custody; export cannot copy private execution storage indiscriminately. Authorized redaction/deletion can limit later verification and must be reported honestly. Rebuildable indexes or embeddings cannot recreate missing source bytes. Assessment reuse follows the [Check contract](checks.md#efficient-evaluation-and-reuse), not merely byte equality or the presence of a favorable citation.
 
-The richer source, intent-revision and memory contracts above describe desired behavior, not capabilities silently added to the current adapters. The existing TypeScript reference intake uses an application-supplied SQLite file, separately from the candidate-batch interface described above. `changekernel.container-intake@1.0.0` retains an explicit owner, exact What/Why text and one retry-bound proposal per request. Its `awaiting-assessment` state is not Decision approval, a managed value or a publication receipt. Transactions bind intake and its retry identity in one row; reopening never clears it. The host authenticates the actor for each call and protects the file; no self-asserted actor or inferred membership grants access. This is not a generalized native-source adapter, qualified physical crash guarantee, complete retention policy or engine-wide store selection. Other storage interfaces, upgrades and broader transaction integration remain unselected and unqualified. This document does not generalize existing Git-shaped ports by name alone. The [primary design](../../product/changekernel.md) owns the overall model; [execution](agent-execution.md) owns worker custody and [release qualification](package.md#qualification) owns the required proof.
+The richer source, intent-revision and memory contracts above describe desired behavior, not capabilities silently added to the current adapters. The retired TypeScript reference intake used an application-supplied SQLite file, separately from its candidate-batch interface. Its implementation and tests remain in Git history, not the current package. `changekernel.container-intake@1.0.0` retains an explicit owner, exact What/Why text and one retry-bound proposal per request. Its `awaiting-assessment` state is not Decision approval, a managed value or a publication receipt. Transactions bind intake and its retry identity in one row; reopening never clears it. The host authenticates the actor for each call and protects the file; no self-asserted actor or inferred membership grants access. This is not a generalized native-source adapter, qualified physical crash guarantee, complete retention policy or engine-wide store selection. Other storage interfaces, upgrades and broader transaction integration remain unselected and unqualified. This document does not generalize existing Git-shaped ports by name alone. The [primary design](../../product/changekernel.md) owns the overall model; [execution](agent-execution.md) owns worker custody and [release qualification](package.md#qualification) owns the required proof.

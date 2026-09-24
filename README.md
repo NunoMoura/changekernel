@@ -6,7 +6,7 @@ Developers provide structures and native abilities. Users choose goals. Agents a
 
 The same State and Change primitives connect software development, agent-mediated product use after launch, and ongoing integration and improvement. External tools use supported bindings and the shared authoritative boundary; no particular browser-tool framework is required. User goals can lead to authorized development without automatically granting permission to change software, deploy releases or alter policy.
 
-**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the current prototype. Bounded native intake and committed-source observations are implemented; generalized containers and the complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
+**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the historical prototype. Bounded native intake and committed-source observations are implemented; generalized containers and the complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
 
 ## Design
 
@@ -31,7 +31,7 @@ The retained `wiki/` path stores source design; it does not require a runtime Wi
 
 The private supporting package is `@nunomoura/changekernel`; the native executable is `changekernel`. The npm entrypoint exports only Pi model/provider/session/runtime bridges and their required protocol/codec dependencies. It does not export an engine, Project Server, intake/candidate client or launcher.
 
-Historical TypeScript lifecycle, Git/Wiki and SQLite scaffolding is not a supported parallel engine or a feature-parity target. Git preserves its implementation and retired tests. Native candidate custody is not implemented; the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates) describes desired behavior, not a capability granted by retaining old source files.
+Historical TypeScript lifecycle, Git/Wiki, console and SQLite scaffolding has been removed. Git preserves its implementation and retired tests; neither is a native feature-parity target. Native candidate custody is not implemented; the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates) describes desired behavior, not an exported native capability.
 
 The Rust library separately exposes `Intake`, `SqliteIntake`, `Proposal`, `Receipt`, and `Issue` for the [bounded native intake contract](.changekernel/wiki/items/system/components/state.md#native-rust-intake). A host must authenticate the actor, protect storage, and explicitly initialize or reopen an absolute persistent SQLite path; the launcher remains non-operational. Native intake preserves exact What and optional Why, and reconciles retries without application effects. It is not the TypeScript reference interface or a generalized container lifecycle.
 

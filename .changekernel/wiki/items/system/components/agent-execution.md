@@ -7,16 +7,10 @@ source-id: cw:component:runtime
 ownership:
   sourcePatterns:
     - src/adapters/pi/**
-    - src/ports/agent-output.ts
     - src/ports/agent-runtime.ts
     - src/ports/check-model.ts
-    - src/adapters/preview/**
-    - src/ports/preview.ts
   testPatterns:
     - tests/adapters/pi/**
-    - tests/ports/agent-runtime.test.mjs
-    - tests/adapters/preview/**
-    - tests/ports/preview.test.mjs
 source-history:
   provenance:
     - attributes:

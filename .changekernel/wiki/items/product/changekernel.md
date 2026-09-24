@@ -6,37 +6,10 @@ aliases:
 source-id: cw:design:product
 ownership:
   sourcePatterns:
-    - src/server/intake/**
-    - src/kernel/changes/**
-    - src/api/contracts/**
-    - src/api/transport/**
-    - bin/changekernel.mjs
-    - src/api/client/**
-    - src/server/lifecycle/planning/**
-    - src/server/authorization/**
-    - src/server/commands/**
-    - src/server/effects/**
-    - src/server/index.ts
-    - src/server/queries/**
-    - src/server/recovery/**
+    - src/application/**
     - src/kernel/data-contracts/**
     - src/kernel/identity/**
-  testPatterns:
-    - tests/server/intake/**
-    - tests/kernel/changes/**
-    - tests/api/contracts/**
-    - tests/api/transport/**
-    - tests/api/client/**
-    - tests/server/lifecycle/planning/**
-    - tests/server/authorization/**
-    - tests/server/commands/**
-    - tests/server/effects/**
-    - tests/server/index.test.mjs
-    - tests/server/queries/**
-    - tests/server/recovery/**
-    - tests/kernel/data-contracts/**
-    - tests/kernel/identity/**
-    - tests/kernel/invariants/**
+  testPatterns: []
   traceEvents:
     - change.proposed
     - change.revised
@@ -408,7 +381,7 @@ One engine supports a library interface and standard launcher; applications bund
 
 The internal core remains pure and deterministic; the host performs storage, inference and effects through qualified bindings. Placement, ownership, authority and enforcement are separate. Installing a library, service, skill or operating-system package governs nothing until scoped resources and write routes are enforced. A local host cannot prevent remote-source bypass with a client filter alone.
 
-Build the first useful self-development product in Rust: the authoritative kernel, application coordination, host and terminal client share one engine implementation. Retain TypeScript only for application bindings, controlled Pi integration and JavaScript/compiled-TypeScript Check execution where needed. JavaScript runtimes and workers remain explicit capabilities, not dependencies of pure kernel use. Existing TypeScript code supplies reference behavior and useful safeguards; reproducing every prototype feature or interface is not a release requirement. Preserve historical records and meanings without automatically importing them into the new runtime.
+Build the first useful self-development product in Rust: the authoritative kernel, application coordination, host and terminal client share one engine implementation. Retain TypeScript only for application bindings, controlled Pi integration and JavaScript/compiled-TypeScript Check execution where needed. JavaScript runtimes and workers remain explicit capabilities, not dependencies of pure kernel use. Git history preserves retired TypeScript behavior and useful safeguards; reproducing every prototype feature or interface is not a release requirement. Preserve historical records and meanings without automatically importing them into the new runtime.
 
 Bandwagon and Omarchy test generality, not the product boundary. Linux-first qualification is acceptable without positioning ChangeKernel as Linux-only. Machine integration starts with bounded supported resources and independent recovery access, not whole-machine guarantees. Friendly Check authoring, team administration and a Packs marketplace remain deferred Hub work; ordinary collaborative containers do not require Hub.
 
@@ -416,7 +389,7 @@ One immutable release owns common interpretation and transitions. Definitions, s
 
 ## Repository representation
 
-Source structure must make ownership and dependency boundaries visible. The review retained the useful pure-kernel/ports/adapters split and its executable guards, while identifying misplaced host composition in `src/adapters/git/local-server.ts`, terminal rendering in `src/api/client/console.ts`, mixed coordination/server concerns in `src/server/`, and Git/Wiki-specific concepts that must not define universal State. The historical console and new container draft interfaces are not yet one operator path.
+Source structure must make ownership and dependency boundaries visible. Retain the pure-kernel/ports/adapters split and meaningful boundary checks. The retired TypeScript prototype mixed Git-specific host composition, terminal rendering and server coordination; Git preserves that implementation and its review evidence. Its removal does not establish the native operator path, and Git/Wiki-specific concepts must not define universal State.
 
 The following depth-three target is approved design, not a claim that Rust implementation or relocation has occurred. Directory names alone establish no boundary: ownership mappings, import direction, package reachability and tests must agree. Tests follow source responsibilities; Rust unit tests may live beside their modules, with broader suites under `tests/`.
 
@@ -493,9 +466,9 @@ Design remains in these canonical documents, governed lifecycle history in its e
 
 ## Current implementation and historical meanings
 
-Current source includes the partial Git/Wiki foundation, private Decision execution/retention and limited historical proposal/read operations, plus separate owned SQLite intake and immutable multi-entity candidate batches with retained observations and freshness. The historical console is read-only; container candidates establish neither Check success nor publication. Decision + Execution is approved desired lifecycle, not an implemented replacement for stored stage protocols. Full progression, generalized discovery, source publication, native Jev operations, durable factory/recovery, memory adoption, operator controls and cross-container dependencies remain unfinished. Examples above are not current exports.
+Current source implements bounded native SQLite intake and verified committed-source observations, plus narrow TypeScript Pi bridges and their required protocol/codec dependencies. The historical TypeScript engine, console, Git/Wiki orchestration and SQLite candidate implementation have been removed; their capabilities are not native exports. Native candidate custody and intent revision remain proposed work, not implemented behavior. Decision + Execution is approved desired lifecycle, not an implemented replacement for stored stage protocols. Full progression, generalized discovery, source publication, native Jev operations, durable factory/recovery, memory adoption, operator controls and cross-container dependencies remain unfinished. Examples above are not current exports.
 
-`ProjectSnapshot`, `readSnapshot`, `snapshotDigest`, existing `codewiki.*` protocols, managed-document fields and historical Planning operations retain their original meanings until explicit versioned implementation. They are not generalized snapshots, acceptance certificates or new-stage results. Source/tests and Git history retain the old Git/Wiki representation; its document/type hierarchy is not part of this new universal model. Markdown knowledge may be ordinary source-backed State through a suitable binding, not a separate required Wiki subsystem.
+`ProjectSnapshot`, `readSnapshot`, `snapshotDigest`, existing `codewiki.*` protocols, managed-document fields and historical Planning operations retain their original meanings until explicit versioned implementation. They are not generalized snapshots, acceptance certificates or new-stage results. Git history retains the old Git/Wiki implementation and tests; its document/type hierarchy is not part of this new universal model. Markdown knowledge may be ordinary source-backed State through a suitable binding, not a separate required Wiki subsystem.
 
 Source design metadata is not managed adoption. Consolidated `ownership` mappings preserve source/test coverage and existing implementation role/event names; they neither activate those roles nor define extra Check stages. Retained `source-history` is historical provenance, including references to retired pages; it is not an active relationship graph or an acceptance receipt. Existing `.changekernel/changes/` records and archives are not rewritten. This mutable checkout must never govern itself; qualification, activation and explicit external-controller handoff are separate from documentation approval.
 
@@ -503,7 +476,7 @@ Source design metadata is not managed adoption. Consolidated `ownership` mapping
 
 Before implementation, specify:
 
-- Generalized creation/opening, Decision/Execution, intent-revision, inspection, feedback and retry contracts beyond the bounded intake/candidate exports; membership and shared-resource relationships.
+- Generalized creation/opening, Decision/Execution, intent-revision, candidate custody, inspection, feedback and retry contracts beyond bounded native intake and committed-source reads; membership and shared-resource relationships.
 - First database/execution bindings, transaction integration, history/retention, backup and declared recovery guarantees.
 - Supported discovery languages/frameworks, validation of derived definitions, incremental invalidation and unresolved coverage.
 - Typed mutations, native capabilities and any restricted generated programs; their execution isolation and limits.
