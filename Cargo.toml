@@ -27,6 +27,10 @@ path = "tests/kernel/containers/native_intake.rs"
 name = "native_intake_sqlite"
 path = "tests/adapters/sqlite/native_intake.rs"
 
+[[test]]
+name = "native_continuation"
+path = "tests/adapters/sqlite/native_continuation.rs"
+
 [dependencies]
 rusqlite = { version = "=0.37.0", features = ["bundled"] }
 sha2 = "=0.10.9"

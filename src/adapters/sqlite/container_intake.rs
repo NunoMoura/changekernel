@@ -1,4 +1,5 @@
 //! Explicit-file SQLite custody. Opening never creates or migrates storage.
+use super::continuation;
 use crate::kernel::containers::intake::{self, Issue, Proposal, Receipt, Result};
 use crate::ports::container_intake::ContainerIntakeStore;
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension, TransactionBehavior};
@@ -13,7 +14,8 @@ const SCHEMA: [(&str, &str); 4] = [
 const VERSION: &str = "changekernel.native-intake.sqlite@1";
 
 pub struct SqliteIntake {
-    db: Connection,
+    pub(super) db: Connection,
+    continuation: bool,
 }
 impl SqliteIntake {
     fn connect(path: &Path, initialize: bool) -> Result<Self> {
@@ -34,7 +36,10 @@ impl SqliteIntake {
             .map_err(|_| Issue::Unavailable)?;
         db.execute_batch("PRAGMA foreign_keys = ON;")
             .map_err(|_| Issue::Unavailable)?;
-        Ok(Self { db })
+        Ok(Self {
+            db,
+            continuation: false,
+        })
     }
     fn configure(&self) -> Result<()> {
         self.db
@@ -43,7 +48,22 @@ impl SqliteIntake {
     }
     /// Host-authorized creation. Only empty SQLite files (or missing files) are accepted.
     pub fn initialize(path: impl AsRef<Path>) -> Result<Self> {
-        let mut store = Self::connect(path.as_ref(), true)?;
+        Self::initialize_profile(path.as_ref(), false)
+    }
+    /// Explicit richer profile; never upgrades an existing intake-only store.
+    pub fn initialize_continuation(path: impl AsRef<Path>) -> Result<Self> {
+        Self::initialize_profile(path.as_ref(), true)
+    }
+    pub(super) fn require_continuation(&self) -> Result<()> {
+        if self.continuation {
+            Ok(())
+        } else {
+            Err(Issue::Unavailable)
+        }
+    }
+    fn initialize_profile(path: &Path, continuation: bool) -> Result<Self> {
+        let mut store = Self::connect(path, true)?;
+        store.continuation = continuation;
         let initial_count: i64 = store
             .db
             .query_row(
@@ -73,13 +93,23 @@ impl SqliteIntake {
         for (_, sql) in SCHEMA {
             tx.execute(sql, []).map_err(|_| Issue::Unavailable)?;
         }
-        tx.execute("INSERT INTO ck_native_intake_schema VALUES (?1)", [VERSION])
+        if continuation {
+            for (_, sql) in continuation::extra_schema() {
+                tx.execute(sql, []).map_err(|_| Issue::Unavailable)?;
+            }
+        }
+        let version = if continuation {
+            continuation::VERSION
+        } else {
+            VERSION
+        };
+        tx.execute("INSERT INTO ck_native_intake_schema VALUES (?1)", [version])
             .map_err(|_| Issue::Unavailable)?;
         tx.commit().map_err(|_| Issue::Unavailable)?;
         Ok(store)
     }
     pub fn open_existing(path: impl AsRef<Path>) -> Result<Self> {
-        let store = Self::connect(path.as_ref(), false)?;
+        let mut store = Self::connect(path.as_ref(), false)?;
         let mut stmt = store.db.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
             .map_err(|_| Issue::Unavailable)?;
         let rows: Vec<(String, String)> = stmt
@@ -92,9 +122,19 @@ impl SqliteIntake {
             .map(|(n, s)| (n.to_string(), s.to_string()))
             .collect();
         expected.sort();
-        if rows != expected {
-            return Err(Issue::Unavailable);
-        }
+        // Establish a known table layout before querying version data. A foreign view must
+        // never be executed merely because it occupies the metadata table's name.
+        let richer = if rows == expected {
+            false
+        } else {
+            expected
+                .extend(continuation::extra_schema().map(|(n, s)| (n.to_owned(), s.to_owned())));
+            expected.sort();
+            if rows != expected {
+                return Err(Issue::Unavailable);
+            }
+            true
+        };
         let other: i64 = store.db.query_row("SELECT count(*) FROM sqlite_master WHERE type NOT IN ('table', 'index') AND name NOT LIKE 'sqlite_%'", [], |r| r.get(0)).map_err(|_| Issue::Unavailable)?;
         if other != 0 {
             return Err(Issue::Unavailable);
@@ -103,22 +143,33 @@ impl SqliteIntake {
         if indices != 0 {
             return Err(Issue::Unavailable);
         }
+        let n: i64 = store
+            .db
+            .query_row(
+                "SELECT count(*) FROM (SELECT 1 FROM ck_native_intake_schema LIMIT 2)",
+                [],
+                |r| r.get(0),
+            )
+            .map_err(|_| Issue::Unavailable)?;
+        if n != 1 {
+            return Err(Issue::Unavailable);
+        }
         let version: String = store
             .db
             .query_row("SELECT version FROM ck_native_intake_schema", [], |r| {
                 r.get(0)
             })
             .map_err(|_| Issue::Unavailable)?;
-        let n: i64 = store
-            .db
-            .query_row("SELECT count(*) FROM ck_native_intake_schema", [], |r| {
-                r.get(0)
-            })
-            .map_err(|_| Issue::Unavailable)?;
-        if version != VERSION || n != 1 {
+        let expected_version = if richer {
+            continuation::VERSION
+        } else {
+            VERSION
+        };
+        if version != expected_version {
             return Err(Issue::Unavailable);
         }
         drop(stmt);
+        store.continuation = richer;
         store.configure()?;
         Ok(store)
     }
@@ -219,6 +270,15 @@ impl ContainerIntakeStore for SqliteIntake {
             if record.actor != actor {
                 return Err(Issue::Unavailable);
             }
+            if self.continuation {
+                continuation::load_intent(
+                    &tx,
+                    &record.container_id,
+                    &record.change_id,
+                    None,
+                    actor,
+                )?;
+            }
             return if record.what == proposal.what && record.why == proposal.why {
                 Ok(record)
             } else {
@@ -269,28 +329,47 @@ impl ContainerIntakeStore for SqliteIntake {
             ],
         )
         .map_err(|_| Issue::Unavailable)?;
+        if self.continuation {
+            continuation::seed(&tx, &record)?;
+        }
         tx.commit().map_err(|_| Issue::Unavailable)?;
         Ok(record)
     }
     fn read(&self, container: &str, change: &str, actor: &str) -> Result<Receipt> {
-        owner(&self.db, container, actor)?;
-        let binding: Option<(String, String)> = self.db.query_row("SELECT actor, request_id FROM ck_native_retries WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| Ok((r.get(0)?, r.get(1)?))).optional().map_err(|_| Issue::Unavailable)?;
-        let Some((bound_actor, request)) = binding else {
-            // Missing retry grounds for a retained Change are corruption, not denial.
-            let exists: i64 = self.db.query_row("SELECT count(*) FROM ck_native_changes WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| r.get(0)).map_err(|_| Issue::Unavailable)?;
-            return if exists != 0 {
-                Err(Issue::Unavailable)
-            } else {
-                Err(Issue::Denied)
-            };
-        };
-        if bound_actor != actor {
-            return Err(Issue::Denied);
-        }
-        let record = retained(&self.db, container, change)?;
-        if record.actor != actor || record.request_id != request {
-            return Err(Issue::Unavailable);
-        }
-        Ok(record)
+        authorized_receipt(&self.db, container, change, actor)
     }
+}
+
+/// Shared owner/original-receipt check; does not select or synthesize an intent head.
+pub(super) fn authorized_receipt(
+    db: &Connection,
+    container: &str,
+    change: &str,
+    actor: &str,
+) -> Result<Receipt> {
+    owner(db, container, actor)?;
+    let binding: Option<(String, String)> = db.query_row("SELECT actor, request_id FROM ck_native_retries WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| Ok((r.get(0)?, r.get(1)?))).optional().map_err(|_| Issue::Unavailable)?;
+    let Some((bound_actor, request)) = binding else {
+        // Missing retry grounds for a retained Change are corruption, not denial.
+        let exists: i64 = db
+            .query_row(
+                "SELECT count(*) FROM ck_native_changes WHERE container_id = ?1 AND change_id = ?2",
+                params![container, change],
+                |r| r.get(0),
+            )
+            .map_err(|_| Issue::Unavailable)?;
+        return if exists != 0 {
+            Err(Issue::Unavailable)
+        } else {
+            Err(Issue::Denied)
+        };
+    };
+    if bound_actor != actor {
+        return Err(Issue::Denied);
+    }
+    let record = retained(db, container, change)?;
+    if record.actor != actor || record.request_id != request {
+        return Err(Issue::Unavailable);
+    }
+    Ok(record)
 }

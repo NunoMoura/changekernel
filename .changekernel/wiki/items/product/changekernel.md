@@ -7,6 +7,7 @@ source-id: cw:design:product
 ownership:
   sourcePatterns:
     - src/application/**
+    - src/kernel/changes/**
     - src/kernel/data-contracts/**
     - src/kernel/identity/**
   testPatterns: []
@@ -466,7 +467,7 @@ Design remains in these canonical documents, governed lifecycle history in its e
 
 ## Current implementation and historical meanings
 
-Current source implements bounded native SQLite intake and verified committed-source observations, plus narrow TypeScript Pi bridges and their required protocol/codec dependencies. The historical TypeScript engine, console, Git/Wiki orchestration and SQLite candidate implementation have been removed; their capabilities are not native exports. Native candidate custody and intent revision remain proposed work, not implemented behavior. Decision + Execution is approved desired lifecycle, not an implemented replacement for stored stage protocols. Full progression, generalized discovery, source publication, native Jev operations, durable factory/recovery, memory adoption, operator controls and cross-container dependencies remain unfinished. Examples above are not current exports.
+Current source implements bounded native SQLite intake and verified committed-source observations, plus narrow TypeScript Pi bridges and their required protocol/codec dependencies. The historical TypeScript engine, console, Git/Wiki orchestration and SQLite candidate implementation have been removed; their capabilities are not native exports. The native private-continuation contract is approved, with explicit schema initialization, revision-zero custody and verified intent reads in the shared baseline. Concrete SQLite candidate retention and intent appends remain unfinished; generic ports and data types are not completed write capabilities. Decision + Execution is approved desired lifecycle, not an implemented replacement for stored stage protocols. Full progression, generalized discovery, source publication, native Jev operations, durable factory/recovery, memory adoption, operator controls and cross-container dependencies remain unfinished. Examples above are not current exports.
 
 `ProjectSnapshot`, `readSnapshot`, `snapshotDigest`, existing `codewiki.*` protocols, managed-document fields and historical Planning operations retain their original meanings until explicit versioned implementation. They are not generalized snapshots, acceptance certificates or new-stage results. Git history retains the old Git/Wiki implementation and tests; its document/type hierarchy is not part of this new universal model. Markdown knowledge may be ordinary source-backed State through a suitable binding, not a separate required Wiki subsystem.
 

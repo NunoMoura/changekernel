@@ -3,7 +3,7 @@ use crate::ports::container_intake::ContainerIntakeStore;
 
 /// Actor must come from trusted host authentication, not from submitted content.
 pub struct Intake<S: ContainerIntakeStore> {
-    store: S,
+    pub(crate) store: S,
 }
 impl<S: ContainerIntakeStore> Intake<S> {
     pub fn new(store: S) -> Self {

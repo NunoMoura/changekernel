@@ -1,0 +1,7 @@
+//! Frozen intent schema used by explicit continuation initialization.
+//! R5-B adds the IntentRevisionStore implementation here; schema changes require the manager.
+pub(super) const SCHEMA: [(&str, &str); 3] = [
+    ("ck_native_intent_revisions", "CREATE TABLE ck_native_intent_revisions (container_id TEXT NOT NULL, change_id TEXT NOT NULL, revision_id TEXT NOT NULL, previous_revision TEXT, request_id TEXT, actor TEXT NOT NULL, what_text TEXT NOT NULL, why_text TEXT, PRIMARY KEY (container_id, change_id, revision_id), UNIQUE (container_id, actor, request_id), FOREIGN KEY (container_id, change_id) REFERENCES ck_native_changes(container_id, change_id), FOREIGN KEY (container_id, change_id, previous_revision) REFERENCES ck_native_intent_revisions(container_id, change_id, revision_id))"),
+    ("ck_native_intent_heads", "CREATE TABLE ck_native_intent_heads (container_id TEXT NOT NULL, change_id TEXT NOT NULL, revision_id TEXT NOT NULL, PRIMARY KEY (container_id, change_id), FOREIGN KEY (container_id, change_id, revision_id) REFERENCES ck_native_intent_revisions(container_id, change_id, revision_id))"),
+    ("ck_native_intent_retries", "CREATE TABLE ck_native_intent_retries (container_id TEXT NOT NULL, actor TEXT NOT NULL, request_id TEXT NOT NULL, change_id TEXT NOT NULL, revision_id TEXT NOT NULL, PRIMARY KEY (container_id, actor, request_id), UNIQUE (container_id, change_id, revision_id), FOREIGN KEY (container_id, change_id, revision_id) REFERENCES ck_native_intent_revisions(container_id, change_id, revision_id))"),
+];
