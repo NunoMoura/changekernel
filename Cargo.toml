@@ -15,4 +15,17 @@ path = "src/main.rs"
 name = "native_bootstrap"
 path = "tests/package/native_bootstrap.rs"
 
+[[test]]
+name = "native_intake"
+path = "tests/kernel/containers/native_intake.rs"
+
+[[test]]
+name = "native_intake_sqlite"
+path = "tests/adapters/sqlite/native_intake.rs"
+
 [dependencies]
+rusqlite = { version = "=0.37.0", features = ["bundled"] }
+sha2 = "=0.10.9"
+
+[dev-dependencies]
+serde_json = "=1.0.145"

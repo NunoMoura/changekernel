@@ -138,12 +138,32 @@ async function productionOwnershipPaths() {
 	return [...SOURCE_TREE_FILES, ...BIN_FILES, "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json"].sort();
 }
 
-test("TypeScript graph remains TypeScript-only; Rust bootstrap has explicit bounded coverage", () => {
-	assert.deepEqual(RUST_SOURCE_FILES, ["src/lib.rs", "src/main.rs"]);
+test("TypeScript graph remains TypeScript-only; native intake has explicit bounded coverage", () => {
+	assert.deepEqual(RUST_SOURCE_FILES, [
+		"src/adapters/sqlite/container_intake.rs", "src/application/intake.rs", "src/kernel/containers/intake.rs",
+		"src/lib.rs", "src/main.rs", "src/ports/container_intake.rs",
+	]);
 	assert.deepEqual(SOURCE_TREE_FILES, [...SOURCE_FILES, ...RUST_SOURCE_FILES].sort(), "Unknown source languages require an explicit guard");
 	assert.ok(TEST_FILES.includes("tests/package/native_bootstrap.rs"), "Native launcher must have its Cargo integration test");
 	assert.ok(TEST_FILES.includes("tests/package/native-bootstrap.test.mjs"), "Bootstrap metadata must have a Node test");
-	assert.ok(TEST_FILES.filter(path => path.endsWith(".rs")).every(path => path === "tests/package/native_bootstrap.rs"), "Unknown Rust tests require an explicit Cargo target");
+	assert.deepEqual(TEST_FILES.filter(path => path.endsWith(".rs")), [
+		"tests/adapters/sqlite/native_intake.rs", "tests/kernel/containers/native_intake.rs", "tests/package/native_bootstrap.rs",
+	], "Unknown Rust tests require an explicit Cargo target");
+});
+
+test("native intake modules keep bounded import direction and dependency reach", async () => {
+	const source = path => readFile(join(repoRoot, path), "utf8");
+	const kernel = await source("src/kernel/containers/intake.rs");
+	const port = await source("src/ports/container_intake.rs");
+	const app = await source("src/application/intake.rs");
+	const adapter = await source("src/adapters/sqlite/container_intake.rs");
+	const library = await source("src/lib.rs");
+	assert.match(kernel, /use sha2::/u);
+	assert.doesNotMatch(kernel, /rusqlite|crate::(application|ports|adapters)/u);
+	assert.doesNotMatch(port, /rusqlite|sha2|crate::(application|adapters)/u);
+	assert.doesNotMatch(app, /rusqlite|sha2|crate::adapters/u);
+	assert.doesNotMatch(adapter, /crate::application/u);
+	assert.doesNotMatch(library, /mod host|mod workers|mod clients/u);
 });
 
 test("shipped executables bind only Node utilities and the curated runtime entrypoint", async () => {

@@ -9,6 +9,8 @@ ownership:
     - src/adapters/sqlite/**
     - src/ports/project-store.ts
     - src/ports/container-intake-store.ts
+    - src/ports/container_intake.rs
+    - src/application/intake.rs
     - src/ports/container-candidate-store.ts
     - src/kernel/containers/**
     - src/kernel/evidence/**

@@ -6,7 +6,7 @@ Developers provide structures and native abilities. Users choose goals. Agents a
 
 The same State and Change primitives connect software development, agent-mediated product use after launch, and ongoing integration and improvement. External tools use supported bindings and the shared authoritative boundary; no particular browser-tool framework is required. User goals can lead to authorized development without automatically granting permission to change software, deploy releases or alter policy.
 
-**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the current prototype. Rust implementation, generalized containers and the complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
+**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the current prototype. Only bounded native intake is implemented; generalized containers and the complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
 
 ## Design
 
@@ -35,11 +35,11 @@ The historical Project Server supports discovery/capabilities, managed-document 
 
 Separate library interfaces now support owned intake and Change-owned multi-entity candidate batches in application-supplied SQLite storage. `createContainerIntakeClient` retains What/Why; `createContainerCandidateClient` installs draft definitions, describes generic coverage, prepares batches and reads them by candidate identity. A batch retains exact proposed values, relationships and version-bound source observations without writing managed values. Repeated requests reconcile across restart; a Change can retain multiple immutable batches. See the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates) and [executable examples](tests/adapters/sqlite/container-candidate.test.mjs). Node's built-in SQLite interface is experimental; hosts authenticate callers and protect database access.
 
-Full lifecycle progression, Checks on these candidates, publication, generalized storage/discovery, native Jev operations, durable factory/recovery, frontend feedback and cross-container dependencies remain unfinished. Draft persistence and passing source tests do not establish qualified adoption.
+The Rust library separately exposes `Intake`, `SqliteIntake`, `Proposal`, `Receipt`, and `Issue` for the [bounded native intake contract](.changekernel/wiki/items/system/components/state.md#native-rust-intake). A host must authenticate the actor, protect storage, and explicitly initialize or reopen an absolute persistent SQLite path; the launcher remains non-operational. Native intake preserves exact What and optional Why, and reconciles retries without application effects. It is not the TypeScript reference interface or a generalized container lifecycle. Full lifecycle progression, Checks on these candidates, publication, generalized storage/discovery, native Jev operations, durable factory/recovery, frontend feedback and cross-container dependencies remain unfinished. Draft persistence and passing source tests do not establish qualified adoption.
 
 ## Development and repository truth
 
-Requires Node.js 22.19.0 or newer. Within approved source-development scope:
+Native builds require Rust 1.88.0 and a C compiler for bundled SQLite, but neither Node nor Pi. Native source checks: `cargo build --locked`, `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, and `cargo test --locked --all-targets`. Supporting TypeScript development requires Node.js 22.19.0 or newer. Within approved source-development scope:
 
 ```bash
 npm ci --ignore-scripts
