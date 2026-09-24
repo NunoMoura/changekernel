@@ -7,7 +7,9 @@ import ts from "typescript";
 import {parse} from "yaml";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const SOURCE_FILES = (await walk(join(repoRoot, "src"))).sort();
+const SOURCE_TREE_FILES = (await walk(join(repoRoot, "src"))).sort();
+const SOURCE_FILES = SOURCE_TREE_FILES.filter(path => path.endsWith(".ts"));
+const RUST_SOURCE_FILES = SOURCE_TREE_FILES.filter(path => path.endsWith(".rs"));
 const TEST_FILES = (await walk(join(repoRoot, "tests"))).sort();
 const BIN_FILES = (await walk(join(repoRoot, "bin"))).sort();
 
@@ -133,8 +135,16 @@ async function wikiOwnership() {
 }
 
 async function productionOwnershipPaths() {
-	return [...SOURCE_FILES, ...BIN_FILES, "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json"].sort();
+	return [...SOURCE_TREE_FILES, ...BIN_FILES, "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json"].sort();
 }
+
+test("TypeScript graph remains TypeScript-only; Rust bootstrap has explicit bounded coverage", () => {
+	assert.deepEqual(RUST_SOURCE_FILES, ["src/lib.rs", "src/main.rs"]);
+	assert.deepEqual(SOURCE_TREE_FILES, [...SOURCE_FILES, ...RUST_SOURCE_FILES].sort(), "Unknown source languages require an explicit guard");
+	assert.ok(TEST_FILES.includes("tests/package/native_bootstrap.rs"), "Native launcher must have its Cargo integration test");
+	assert.ok(TEST_FILES.includes("tests/package/native-bootstrap.test.mjs"), "Bootstrap metadata must have a Node test");
+	assert.ok(TEST_FILES.filter(path => path.endsWith(".rs")).every(path => path === "tests/package/native_bootstrap.rs"), "Unknown Rust tests require an explicit Cargo target");
+});
 
 test("shipped executables bind only Node utilities and the curated runtime entrypoint", async () => {
 	const pkg = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));

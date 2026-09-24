@@ -1,0 +1,18 @@
+[package]
+name = "changekernel"
+version = "0.4.0-sk3g.1"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "changekernel"
+path = "src/main.rs"
+
+[[test]]
+name = "native_bootstrap"
+path = "tests/package/native_bootstrap.rs"
+
+[dependencies]

@@ -4,6 +4,11 @@ aliases: []
 source-id: cw:component:package
 ownership:
   sourcePatterns:
+    - Cargo.toml
+    - Cargo.lock
+    - rust-toolchain.toml
+    - src/lib.rs
+    - src/main.rs
     - package-lock.json
     - package.json
     - src/index.ts
