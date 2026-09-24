@@ -1,0 +1,32 @@
+{
+  "fixtures": {
+    "owner": "owner",
+    "otherOwner": "other",
+    "container": {"containerId": "app:container:alpha"},
+    "otherContainer": {"containerId": "app:container:beta"},
+    "proposal": {
+      "containerId": "app:container:alpha",
+      "requestId": "app:request:recovery",
+      "what": "Preserve exact intent — one",
+      "why": "First reason"
+    },
+    "competitor": {
+      "containerId": "app:container:alpha",
+      "requestId": "app:request:recovery",
+      "what": "Preserve exact intent — one",
+      "why": "Competing reason"
+    },
+    "otherProposal": {
+      "containerId": "app:container:beta",
+      "requestId": "app:request:recovery",
+      "what": "Independent intent — two",
+      "why": "Other owner reason"
+    }
+  },
+  "cases": [
+    {"id": "lost-reply-after-commit", "expect": {"state": "awaiting-assessment", "what": "Preserve exact intent — one", "why": "First reason", "rows": 1}},
+    {"id": "competing-first-proposals", "expect": {"state": "awaiting-assessment", "what": "Preserve exact intent — one", "allowedWhy": ["First reason", "Competing reason"], "loser": "conflict", "rows": 1}},
+    {"id": "lock-timeout-and-retry", "expect": {"first": "unavailable", "state": "awaiting-assessment", "what": "Preserve exact intent — one", "why": "First reason", "rows": 1}},
+    {"id": "independent-containers", "expect": {"state": "awaiting-assessment", "firstWhat": "Preserve exact intent — one", "firstWhy": "First reason", "secondWhat": "Independent intent — two", "secondWhy": "Other owner reason", "denied": "denied", "rows": 2}}
+  ]
+}
