@@ -2,50 +2,57 @@
 
 This is the temporary handoff before qualified adoption. [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design, [AGENTS.md](AGENTS.md) owns procedure, and Git preserves completed reviews. Never govern this checkout with mutable checkout bytes.
 
-## R5 assignments released — awaiting worker execution
+## R5 independent review — no source integrated
 
-**Manager verdict: shared baseline accepted; R5-A and R5-B released for implementation, not accepted.** Both external worktrees are prepared with committed assignments. No worker process was launched by the manager; the next action is to start the two worker sessions in their assigned worktrees.
+Manager worktree: `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`. Shared source base remains `552cab992b5efdd8fffebeaea97d42042bc95957`. Both implementations were reviewed exactly and composed only in a disposable external directory. Passing tests do not override the findings below.
 
-- Manager: `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`.
-- Exact shared source base for both workers: **`552cab992b5efdd8fffebeaea97d42042bc95957`**.
-- Policy and frozen interfaces: [native private continuation profile](.changekernel/wiki/items/system/components/state.md#native-private-continuation-profile), [v1 API/storage contract](.changekernel/wiki/items/system/components/state.md#native-continuation-api-and-storage-v1).
-
-| Slice | Branch / external worktree | Initial assignment commit |
+| Slice | Exact code / submitted handoff | Verdict / latest manager handoff |
 | --- | --- | --- |
-| R5-A: file-candidate custody | `work/native-file-candidates` — `/home/canina7/Projects/changekernel-workers/native-file-candidates` | `b41b375833f9aea917345076465d691793c7603c` |
-| R5-B: intent-revision appends | `work/native-intent-revisions` — `/home/canina7/Projects/changekernel-workers/native-intent-revisions` | `644b2aa5cf359790a31209a6c0717cf3989c43cc` |
+| R5-A: file-candidate custody | `460fdb198ff6fc137506f72188e0f0063c134620` / `f74f1a614868b51eb9f98298f125c80c7ae360e1` | **changes requested**, incremental aggregate budgets; shared policy also blocks acceptance; `f609713d382bafc9517ba5677d319876c2389c2c` |
+| R5-B: intent append | `386af3d0e1d34950ad84fab600f2b6abe4c3adf2` / `fc19cc3085eb2918e26929d0fcc98e857893b232` | **changes requested**, bounded retry-reference decoding; `f1b817cd888d022676a973739cc0269226fab465` |
 
-Each assignment commit changes only its own `CHANGEKERNEL_STATUS.md` from the exact shared base. Read the full assignment there. Source bytes are identical at release, and neither slice depends on the other's unreviewed implementation.
+Worker branches/worktrees remain `work/native-file-candidates` at `/home/canina7/Projects/changekernel-workers/native-file-candidates` and `work/native-intent-revisions` at `/home/canina7/Projects/changekernel-workers/native-intent-revisions`. Their local status files contain the full review and next action. No rebase, branch switch, merge, push, self-approval or new slice is authorized.
 
-## Shared review and evidence
+## Finding A1 — aggregate allocation before validation
 
-The paused checkpoint was `8e8621a19b114238e57e1b03ee348dafbff7ce71`. Review found a shared-store defect: surviving intent rows could allow recreation of a lost original intake with different text. The new regression reproduced an incorrect successful receipt. Commit `552cab992` repairs it: genesis refuses surviving Change-bound continuation artifacts, and authorized reads classify surviving custody with missing original/retry rows as unavailable. Other actors remain denied. No schema, public API or identity encoding changed; the private `authorized_receipt` helper now takes the known profile flag.
+`load` in `src/adapters/sqlite/file_candidate.rs` collects proposed/prior byte vectors before aggregate validation. Its per-cell/path limits permit a damaged 64-path record to allocate approximately 128 MiB, even though valid custody has separate 8 MiB proposed/prior budgets. An independent read probe aborted under an 80 MiB address-space limit (exit 134, `memory allocation of 1048576 bytes failed`). An isolated running-budget check returned unavailable under the same limit; all eight candidate tests still passed.
 
-- `cargo test --locked`: **25 passed** (prior 20 plus five shared continuation tests); doctests included, currently none.
-- `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `git diff --check`: passed.
-- Active LSP checks on the changed Rust paths and handoff: clean. No cached-only cleanliness claim.
-- Before-fix reproduction: `/tmp/changekernel-r5-genesis-before.log`; final checks: `/tmp/changekernel-r5-dispatch-checks.log`.
-- Worker requirement links resolve. Assignment commits and source equality were checked. Manifests/dependencies/lockfiles, existing intake corpora and TypeScript were unchanged by the repair. No npm campaign was required.
+A is authorized to enforce both budgets incrementally while reconstructing the record and add ordinary proposed/prior aggregate-overflow regressions. No public/schema/encoding change, permanent OOM harness or extra framework is needed. Evidence: `/tmp/changekernel-r5-review/candidate-bounds-before.log`, `candidate-bounds-after.log`, `bounded-aggregate-candidate-tests.log`; probe at `combined/examples/candidate_bounds.rs`. The manager will repeat the resource probe on the exact resubmission. This owned-path fix is independent of B1 and need not wait for the orphan-policy decision.
 
-The baseline implements explicit continuation initialization, atomic revision-zero custody, bounded verified intent-history/head reads, transaction-local guards, versioned native types/ports and generic application coordination. `FileCandidateStore for SqliteIntake` and `IntentRevisionStore for SqliteIntake` are intentionally not implemented yet; there are no placeholder success paths. Full concrete feature behavior remains unverified until worker submissions and combined review.
+## Finding shared — path-only orphan custody
 
-## Ownership and acceptance boundary
+`src/adapters/sqlite/continuation.rs:41-50` can recognize Change-bound evidence but cannot associate orphan candidate paths after their header/retry bindings are lost. Independent reproduction erased original intake/retry, intent and candidate header/retry rows while retaining candidate path rows. Candidate read and direct retry lookup correctly returned unavailable without capture; public preparation stopped earlier with denial. However, original intake could be recreated under the same request identity with changed What. This is a manager-owned shared policy boundary, not permission for A to change schema/intake or infer lost bindings.
 
-- **R5-A writes:** `src/adapters/sqlite/file_candidate.rs` (except frozen `SCHEMA`), internal implementation in `src/application/file_candidate.rs` and `src/kernel/state/file_candidate.rs`, `tests/native_file_candidate.rs`, and its own handoff. Public signatures/types, encodings, bounds and policy/retry semantics remain frozen.
-- **R5-B writes:** `src/adapters/sqlite/intent.rs` (except frozen `SCHEMA`), internal implementation in `src/application/intent.rs`, `tests/native_intent_revision.rs`, and its own handoff. Kernel intent types/helpers are read-only.
-- **Manager owns:** shared schema/constants, `src/adapters/sqlite/continuation.rs`, existing intake, all ports, composition/exports, manifests/lockfiles, existing tests/corpora and Wiki. Any shared defect/interface change must return to the manager before affected work continues.
-- New worker integration tests use ordinary Cargo root auto-discovery. No shared manifest edits, extra frameworks, custom runners, parity suites or compiler-invariant tests. No npm gate for these Rust-only slices.
-- Both workers must return exact code revisions, actual results and gaps, with status-only reports kept separate. They must not merge, rebase, switch branches, push, self-approve or start another slice.
+**User decision requested, not adopted:** when a container has candidate path rows with no header, conservatively refuse new intake creation and classify missing Change lookups as unavailable in that container. Leave intact custody usable, preserve all bytes, and do not infer ownership, reconstruct history, delete rows or perform recovery. This contains the unprovable association without adding a new schema. Broader quarantine or another recovery policy requires explicit agreement. Shared-boundary work and combined acceptance are held pending that decision; A1/B1 repairs may proceed independently.
 
-## Manager next actions
+Evidence: `/tmp/changekernel-r5-review/orphan-path-probe.log`; the assertion expecting unavailable reproduced an incorrect successful replacement receipt. Probe source: `combined/tests/manager_r5_probe.rs` within that evidence directory. The worker's report was confirmed, not dismissed as a hypothetical.
 
-1. Start the two worker sessions in the paths above; each reads its local `AGENTS.md` and `CHANGEKERNEL_STATUS.md` and verifies branch/worktree before editing. Do not resume implementation on the completed R4 branches.
-2. Independently review exact submissions, check owned-path/schema/interface boundaries, and run relevant native gates and active diagnostics. Return defects to the worker with paths and explicit findings; do not merge handoffs wholesale.
-3. After source integration, verify the combined candidate-preparation versus intent-revision race using both actual writers, historical candidate custody after head advancement, current policy on retry/delivery, and unchanged intake behavior. A's controlled head-change fixture is not evidence for the combined real-writer race. No duplicate permanent challenge suite is required.
-4. Record separate and combined verdicts. Dispatch, source acceptance and passing tests are not exact-release qualification, activation or explicit external-controller handoff.
+## Finding B1 — unbounded persisted retry references
 
-## Preserved history and gaps
+`src/adapters/sqlite/intent.rs:31-38` decodes retry `change_id` and `revision_id` directly into Rust strings. The requested Change's preflight does not protect a reused request bound to another Change. A damaged 48 MiB text reference caused process abort (exit 134; `memory allocation of 50331648 bytes failed`) under an 80 MiB address-space limit, rather than unavailable.
 
-R4-A/B are accepted and finished. Prior accepted integration: `034141eea193eb155a9ffba5582df89cfea00dfc`; detailed verdicts/evidence remain at `9abfac4b2:CHANGEKERNEL_STATUS.md`. The unexplained initial R4-A test summary did not recur in three manager runs or combined checks; its cause remains unknown. Investigate only if new actionable evidence appears.
+B must bound both cells before Rust allocation while preserving existing-row versus no-row semantics. Malformed data must not become a cache miss, stale-head conflict or new append. A disposable SQL CASE projection retained row presence and returned unavailable under the same limit; the seven intent tests still passed. This illustrative modification is not integrated or accepted. B is authorized to repair its own implementation and add a small ordinary cross-Change malformed-reference regression, including surviving retry/missing revision grounds. No permanent OOM harness, large fixture, dependency or framework is required.
 
-The first continuation profile permits owner-only private intent/candidate custody under current host retention/delivery grants, protected retention without automatic expiry, and no admission/delegation/execution authority. Decision/Work, operator transport, producer/Check execution, publication/recovery, physical power-loss qualification and controller adoption remain separate capabilities. Do not turn retired TypeScript features into an implicit porting backlog or govern this checkout with its mutable code.
+Evidence: `/tmp/changekernel-r5-review/retry-bounds-before.log`, `retry-bounds-after.log`, `bounded-query-intent-tests.log`; resource probe at `combined/examples/retry_bounds.rs`. The disposable composition now contains illustrative A and B modifications and manager probes; it is no longer an exact unmodified A+B source tree and must not be merged wholesale.
+
+## Independent checks actually run
+
+- Exact code commits modify only their two assigned source/test files. Frozen schema arrays are byte-identical to the shared base. No public API, manifest, dependency, lockfile or shared-code change was submitted.
+- Exact A: **33 tests passed**, fmt/clippy and diff checks passed. Exact B: **32 tests passed**, fmt/clippy and diff checks passed.
+- Exact A+B composition, before diagnostic probe modifications: **40 tests passed**, fmt/clippy passed.
+- Replacing A's raw head fixture in a disposable probe with B's actual `revise_intent` passed historical retry after head advancement/source loss and head advancement during capture. These verify real writer interaction, not only SQL fixtures.
+- Compiler: system Rust/Cargo **1.88.0**, matching the intended version. The old `/tmp/changekernel-r0a-review-tools.5VMgXF/env.sh` is absent; no claim that it was used.
+- Active LSP: B's changed paths clean. A and unchanged baseline report rusqlite E0605 / let-else findings; cross-worktree test probes additionally report trait-resolution failures inconsistent with exact Cargo compilation. This remains a tooling/context gap; do not claim globally clean LSP or rewrite valid baseline macros just to silence it.
+- Logs: `/tmp/changekernel-r5-review/{native-file-candidates,native-intent-revisions,combined}.log`, `combined-history-probe.log`, `combined-race-probe.log`.
+- A's original test-fixture assertion failure was explained and corrected in its submission. B's missing environment script and formatting failures were disclosed. Neither is being hidden by passing reruns. No npm checks were needed for Rust-only changes.
+
+## Next actions
+
+1. Obtain the user decision on shared orphan handling. Do not silently adopt quarantine or weaken the no-reconstruction contract. Once agreed, the manager owns its Wiki clarification, shared implementation and focused regression.
+2. Send both workers their local manager-review handoffs for the independent A1/B1 repairs and resubmissions on their same assigned branches. Neither worker may change shared custody policy or schema; no worker source has been accepted.
+3. Review both exact new revisions and repeat the relevant bounded-resource probes against those exact bytes. Recheck any approved shared repair and the real combined writer boundaries before integration/acceptance. Do not merge status files wholesale.
+4. After integrating reviewed code, run the combined native gates, update current-capability documentation, record explicit verdicts and preserve analyzer/qualification gaps. Source acceptance does not grant release qualification, activation or controller authority.
+
+The [private continuation profile](.changekernel/wiki/items/system/components/state.md#native-private-continuation-profile) and [v1 API/storage contract](.changekernel/wiki/items/system/components/state.md#native-continuation-api-and-storage-v1) remain the governing design references. Shared schema, intake, continuation guards, ports, manifests and Wiki remain manager-owned. Decision/Work, execution, publication/recovery and exact external-controller handoff remain separate capabilities.
+
+R4-A/B remain accepted and finished. Historical R4 verdicts and the still-unexplained initial A test summary are preserved at `9abfac4b2:CHANGEKERNEL_STATUS.md`; do not reopen that investigation without new actionable evidence.
