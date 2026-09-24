@@ -3,14 +3,15 @@ use rusqlite::Connection;
 use serde_json::Value;
 use std::{
     fs,
+    io::{BufRead, BufReader, Write},
     path::PathBuf,
-    process::Command,
+    process::{Child, Command, Stdio},
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Barrier,
+        mpsc, Arc, Barrier,
     },
     thread,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
@@ -37,6 +38,9 @@ impl Drop for Fixture {
 }
 fn client(path: &PathBuf) -> Intake<SqliteIntake> {
     Intake::new(SqliteIntake::open_existing(path).unwrap())
+}
+fn recovery() -> Value {
+    serde_json::from_str(include_str!("intake-recovery-conformance.json")).unwrap()
 }
 fn fixtures() -> Value {
     serde_json::from_str(include_str!("intake-conformance.json")).unwrap()
@@ -78,6 +82,54 @@ fn subprocess_entry() {
     let Ok(path) = std::env::var("CK_INTAKE_CHILD_PATH") else {
         return;
     };
+    if let Ok(mode) = std::env::var("CK_INTAKE_RECOVERY_MODE") {
+        let file = PathBuf::from(path);
+        let input: Value =
+            serde_json::from_str(&std::env::var("CK_INTAKE_RECOVERY_INPUT").unwrap()).unwrap();
+        let actor = std::env::var("CK_INTAKE_RECOVERY_ACTOR").unwrap();
+        let mut command = String::new();
+        let mut stdin = BufReader::new(std::io::stdin());
+        let send = |message: &str| {
+            println!("{message}");
+            std::io::stdout().flush().unwrap();
+        };
+        if mode == "lock" {
+            let db = Connection::open(&file).unwrap();
+            db.execute_batch("BEGIN IMMEDIATE").unwrap();
+            send("ready");
+            stdin.read_line(&mut command).unwrap();
+            assert_eq!(command.trim(), "release");
+            db.execute_batch("ROLLBACK").unwrap();
+            send("released");
+        } else {
+            let mut c = client(&file);
+            send("ready");
+            stdin.read_line(&mut command).unwrap();
+            assert_eq!(command.trim(), "go");
+            let outcome = c.propose(&proposal(&input), &actor);
+            let result = match outcome {
+                Ok(r) => {
+                    serde_json::json!({"ok": true, "change": r.change_id, "container": r.container_id, "request": r.request_id, "actor": r.actor, "what": r.what, "why": r.why, "state": r.state})
+                }
+                Err(e) => {
+                    serde_json::json!({"ok": false, "issue": format!("{e:?}").to_lowercase()})
+                }
+            };
+            send(&format!(
+                "{}:{}",
+                if mode == "lost" {
+                    "committed"
+                } else {
+                    "result"
+                },
+                result
+            ));
+            if mode == "lost" {
+                stdin.read_line(&mut String::new()).unwrap();
+            }
+        }
+        return;
+    }
     let f = fixtures();
     let input = proposal(&f["fixtures"]["proposal"]);
     let mut c = client(&PathBuf::from(path));
@@ -85,6 +137,82 @@ fn subprocess_entry() {
         .propose(&input, f["fixtures"]["owner"].as_str().unwrap())
         .unwrap();
     println!("CHILD_CHANGE={}", r.change_id);
+}
+const WAIT: Duration = Duration::from_secs(10);
+struct RecoveryChild {
+    process: Child,
+    messages: mpsc::Receiver<String>,
+}
+impl RecoveryChild {
+    fn start(path: &PathBuf, mode: &str, actor: &str, input: &Value) -> Self {
+        let mut process = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "subprocess_entry", "--nocapture"])
+            .env("CK_INTAKE_CHILD_PATH", path)
+            .env("CK_INTAKE_RECOVERY_MODE", mode)
+            .env("CK_INTAKE_RECOVERY_INPUT", input.to_string())
+            .env("CK_INTAKE_RECOVERY_ACTOR", actor)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let (tx, messages) = mpsc::channel();
+        let stdout = process.stdout.take().unwrap();
+        thread::spawn(move || {
+            for line in BufReader::new(stdout).lines() {
+                if tx.send(line.unwrap()).is_err() {
+                    break;
+                }
+            }
+        });
+        let child = Self { process, messages };
+        child.next("ready");
+        child
+    }
+    fn next(&self, event: &str) -> Option<Value> {
+        let deadline = Instant::now() + WAIT;
+        loop {
+            let line = self
+                .messages
+                .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .unwrap_or_else(|e| panic!("child {event} wait failed: {e}"));
+            if let Some((name, data)) = line.split_once(':') {
+                if name == event {
+                    return Some(serde_json::from_str(data).unwrap());
+                }
+            } else if line == event {
+                return None;
+            }
+        }
+    }
+    fn command(&mut self, command: &str) {
+        writeln!(self.process.stdin.as_mut().unwrap(), "{command}").unwrap();
+    }
+}
+impl Drop for RecoveryChild {
+    fn drop(&mut self) {
+        let _ = self.process.kill();
+        let deadline = Instant::now() + WAIT;
+        while self.process.try_wait().unwrap().is_none() {
+            assert!(Instant::now() < deadline, "child failed to exit after kill");
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+fn fresh(path: &PathBuf, actor: &str, input: &Value) -> Value {
+    let mut child = RecoveryChild::start(path, "propose", actor, input);
+    child.command("go");
+    child.next("result").unwrap()
+}
+fn result_receipt(value: &Value, input: &Value, expect: &Value) {
+    assert_eq!(value["ok"], true);
+    assert_eq!(value["container"], input["containerId"]);
+    assert_eq!(value["request"], input["requestId"]);
+    assert_eq!(value["state"], expect["state"]);
+    assert_eq!(value["what"], expect["what"]);
+    assert_eq!(value["why"], expect["why"]);
+    assert!(value["actor"].as_str().is_some());
+    assert_eq!(value["change"].as_str().unwrap().len(), 64);
 }
 fn child(path: &PathBuf) -> String {
     let output = Command::new(std::env::current_exe().unwrap())
@@ -217,6 +345,264 @@ fn shared_semantic_cases() {
         }
     }
     assert_eq!(seen.len(), 4);
+}
+#[test]
+fn recovery_cases_across_processes() {
+    let corpus = recovery();
+    let f = &corpus["fixtures"];
+    let owner = f["owner"].as_str().unwrap();
+    let other_owner = f["otherOwner"].as_str().unwrap();
+    let container = f["container"]["containerId"].as_str().unwrap();
+    let other = f["otherContainer"]["containerId"].as_str().unwrap();
+    let input = &f["proposal"];
+    let competitor = &f["competitor"];
+    let other_input = &f["otherProposal"];
+    let mut seen = Vec::new();
+    for case in corpus["cases"].as_array().unwrap() {
+        let id = id_for_case(case);
+        seen.push(id);
+        let mut expect = case["expect"].clone();
+        if std::env::var_os("CK_MUTATE_RECOVERY_EXPECTATION").is_some()
+            && id == "lost-reply-after-commit"
+        {
+            expect["what"] = Value::String("wrong expected intent".into());
+        }
+        let file = Fixture::new();
+        let mut c = Intake::new(SqliteIntake::initialize(&file.0).unwrap());
+        c.create(container, owner).unwrap();
+        match id {
+            "lost-reply-after-commit" => {
+                let mut worker = RecoveryChild::start(&file.0, "lost", owner, input);
+                worker.command("go");
+                let committed = worker.next("committed").unwrap();
+                assert_eq!(committed["ok"], true);
+                drop(worker); // Committed; reply not delivered to caller.
+                let retry = fresh(&file.0, owner, input);
+                result_receipt(&retry, input, &expect);
+                assert_eq!(committed, retry);
+                assert_eq!(fresh(&file.0, owner, input), retry);
+                assert_eq!(
+                    c.read(container, retry["change"].as_str().unwrap(), owner)
+                        .unwrap()
+                        .what,
+                    retry["what"]
+                );
+            }
+            "competing-first-proposals" => {
+                let mut first = RecoveryChild::start(&file.0, "propose", owner, input);
+                let mut second = RecoveryChild::start(&file.0, "propose", owner, competitor);
+                first.command("go");
+                second.command("go");
+                let outcomes = [
+                    first.next("result").unwrap(),
+                    second.next("result").unwrap(),
+                ];
+                assert_eq!(outcomes.iter().filter(|v| v["ok"] == true).count(), 1);
+                let winner = if outcomes[0]["ok"] == true { 0 } else { 1 };
+                let inputs = [input, competitor];
+                let receipt = &outcomes[winner];
+                assert!(expect["allowedWhy"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&receipt["why"]));
+                let mut expected = expect.clone();
+                expected["why"] = inputs[winner]["why"].clone();
+                result_receipt(receipt, inputs[winner], &expected);
+                assert_eq!(outcomes[1 - winner]["issue"], expect["loser"]);
+                assert_eq!(fresh(&file.0, owner, inputs[winner]), *receipt);
+                assert_eq!(
+                    fresh(&file.0, owner, inputs[1 - winner])["issue"],
+                    expect["loser"]
+                );
+                assert_eq!(
+                    c.read(container, receipt["change"].as_str().unwrap(), owner)
+                        .unwrap()
+                        .why
+                        .as_deref(),
+                    receipt["why"].as_str()
+                );
+            }
+            "lock-timeout-and-retry" => {
+                let mut lock = RecoveryChild::start(&file.0, "lock", owner, input);
+                let started = Instant::now();
+                assert_eq!(
+                    c.propose(&proposal(input), owner),
+                    Err(code(expect["first"].as_str().unwrap()))
+                );
+                assert!(
+                    started.elapsed() < WAIT,
+                    "lock wait exceeded bounded deadline"
+                );
+                lock.command("release");
+                lock.next("released");
+                drop(lock);
+                let receipt = fresh(&file.0, owner, input);
+                result_receipt(&receipt, input, &expect);
+                assert_eq!(fresh(&file.0, owner, input), receipt);
+                assert_eq!(
+                    c.read(container, receipt["change"].as_str().unwrap(), owner)
+                        .unwrap()
+                        .what,
+                    receipt["what"]
+                );
+            }
+            "independent-containers" => {
+                c.create(other, other_owner).unwrap();
+                let first = fresh(&file.0, owner, input);
+                let second = fresh(&file.0, other_owner, other_input);
+                let one = serde_json::json!({"state": expect["state"], "what": expect["firstWhat"], "why": expect["firstWhy"]});
+                let two = serde_json::json!({"state": expect["state"], "what": expect["secondWhat"], "why": expect["secondWhy"]});
+                result_receipt(&first, input, &one);
+                result_receipt(&second, other_input, &two);
+                assert_ne!(first["change"], second["change"]);
+                assert_eq!(first["actor"], owner);
+                assert_eq!(second["actor"], other_owner);
+                assert_eq!(
+                    c.read(container, first["change"].as_str().unwrap(), owner)
+                        .unwrap()
+                        .what,
+                    first["what"]
+                );
+                assert_eq!(
+                    c.read(other, second["change"].as_str().unwrap(), other_owner)
+                        .unwrap()
+                        .what,
+                    second["what"]
+                );
+                for (scope, change, actor) in [
+                    (container, &first["change"], other_owner),
+                    (other, &second["change"], owner),
+                ] {
+                    assert_eq!(
+                        c.read(scope, change.as_str().unwrap(), actor),
+                        Err(code(expect["denied"].as_str().unwrap()))
+                    );
+                }
+                assert_eq!(
+                    c.propose(&proposal(other_input), owner),
+                    Err(code(expect["denied"].as_str().unwrap()))
+                );
+                assert_eq!(
+                    c.propose(&proposal(input), other_owner),
+                    Err(code(expect["denied"].as_str().unwrap()))
+                );
+                assert_eq!(fresh(&file.0, owner, input), first);
+                assert_eq!(fresh(&file.0, other_owner, other_input), second);
+            }
+            _ => panic!("unknown recovery case {id}"),
+        }
+        assert_eq!(count(&file.0), expect["rows"].as_i64().unwrap());
+    }
+    assert_eq!(
+        seen,
+        [
+            "lost-reply-after-commit",
+            "competing-first-proposals",
+            "lock-timeout-and-retry",
+            "independent-containers"
+        ]
+    );
+}
+#[test]
+fn missing_retry_binding_is_unavailable_not_denied() {
+    let f = fixtures();
+    let p = proposal(&f["fixtures"]["proposal"]);
+    let owner = f["fixtures"]["owner"].as_str().unwrap();
+    let file = Fixture::new();
+    let mut c = Intake::new(SqliteIntake::initialize(&file.0).unwrap());
+    c.create(&p.container_id, owner).unwrap();
+    let r = c.propose(&p, owner).unwrap();
+    Connection::open(&file.0)
+        .unwrap()
+        .execute("DELETE FROM ck_native_retries", [])
+        .unwrap();
+    assert_eq!(
+        c.read(&p.container_id, &r.change_id, owner),
+        Err(Issue::Unavailable)
+    );
+    assert_eq!(c.propose(&p, owner), Err(Issue::Unavailable));
+    assert_eq!(count(&file.0), 1);
+}
+#[test]
+fn rejected_store_preserves_persistent_journal_setting() {
+    for existing in [false, true] {
+        let file = Fixture::new();
+        let db = Connection::open(&file.0).unwrap();
+        db.execute_batch("PRAGMA journal_mode=WAL; CREATE TABLE foreign_data (value TEXT); INSERT INTO foreign_data VALUES ('keep');").unwrap();
+        drop(db);
+        if existing {
+            assert_eq!(
+                SqliteIntake::open_existing(&file.0).err(),
+                Some(Issue::Unavailable)
+            );
+        } else {
+            assert_eq!(
+                SqliteIntake::initialize(&file.0).err(),
+                Some(Issue::Unavailable)
+            );
+        }
+        let mode: String = Connection::open(&file.0)
+            .unwrap()
+            .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(mode, "wal");
+        let value: String = Connection::open(&file.0)
+            .unwrap()
+            .query_row("SELECT value FROM foreign_data", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(value, "keep");
+    }
+    let file = Fixture::new();
+    SqliteIntake::initialize(&file.0).unwrap();
+    let db = Connection::open(&file.0).unwrap();
+    db.execute_batch(
+        "UPDATE ck_native_intake_schema SET version = 'future'; PRAGMA journal_mode=WAL;",
+    )
+    .unwrap();
+    drop(db);
+    assert_eq!(
+        SqliteIntake::open_existing(&file.0).err(),
+        Some(Issue::Unavailable)
+    );
+    assert_eq!(
+        SqliteIntake::initialize(&file.0).err(),
+        Some(Issue::Unavailable)
+    );
+    let db = Connection::open(&file.0).unwrap();
+    let mode: String = db
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    let version: String = db
+        .query_row("SELECT version FROM ck_native_intake_schema", [], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    assert_eq!(mode, "wal");
+    assert_eq!(version, "future");
+}
+#[test]
+fn failed_retry_insert_rolls_back_change() {
+    let f = fixtures();
+    let p = proposal(&f["fixtures"]["proposal"]);
+    let owner = f["fixtures"]["owner"].as_str().unwrap();
+    let file = Fixture::new();
+    let mut c = Intake::new(SqliteIntake::initialize(&file.0).unwrap());
+    c.create(&p.container_id, owner).unwrap();
+    let db = Connection::open(&file.0).unwrap();
+    db.execute_batch("CREATE TRIGGER refuse_retry BEFORE INSERT ON ck_native_retries BEGIN SELECT RAISE(ABORT, 'fault'); END").unwrap();
+    assert_eq!(c.propose(&p, owner), Err(Issue::Unavailable));
+    assert_eq!(count(&file.0), 0);
+    let retries: i64 = db
+        .query_row("SELECT count(*) FROM ck_native_retries", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(retries, 0);
+    db.execute_batch("DROP TRIGGER refuse_retry").unwrap();
+    let receipt = c.propose(&p, owner).unwrap();
+    assert_eq!(
+        c.read(&p.container_id, &receipt.change_id, owner),
+        Ok(receipt)
+    );
+    assert_eq!(count(&file.0), 1);
 }
 #[test]
 fn bounded_lock_wait_then_same_identity_retry() {

@@ -32,15 +32,30 @@ impl SqliteIntake {
         let db = Connection::open_with_flags(path, flags).map_err(|_| Issue::Unavailable)?;
         db.busy_timeout(Duration::from_millis(500))
             .map_err(|_| Issue::Unavailable)?;
-        db.execute_batch(
-            "PRAGMA foreign_keys = ON; PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL;",
-        )
-        .map_err(|_| Issue::Unavailable)?;
+        db.execute_batch("PRAGMA foreign_keys = ON;")
+            .map_err(|_| Issue::Unavailable)?;
         Ok(Self { db })
+    }
+    fn configure(&self) -> Result<()> {
+        self.db
+            .execute_batch("PRAGMA journal_mode = DELETE; PRAGMA synchronous = FULL;")
+            .map_err(|_| Issue::Unavailable)
     }
     /// Host-authorized creation. Only empty SQLite files (or missing files) are accepted.
     pub fn initialize(path: impl AsRef<Path>) -> Result<Self> {
         let mut store = Self::connect(path.as_ref(), true)?;
+        let initial_count: i64 = store
+            .db
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'",
+                [],
+                |r| r.get(0),
+            )
+            .map_err(|_| Issue::Unavailable)?;
+        if initial_count != 0 {
+            return Err(Issue::Unavailable);
+        }
+        store.configure()?;
         let tx = store
             .db
             .transaction_with_behavior(TransactionBehavior::Immediate)
@@ -104,6 +119,7 @@ impl SqliteIntake {
             return Err(Issue::Unavailable);
         }
         drop(stmt);
+        store.configure()?;
         Ok(store)
     }
 }
@@ -260,7 +276,13 @@ impl ContainerIntakeStore for SqliteIntake {
         owner(&self.db, container, actor)?;
         let binding: Option<(String, String)> = self.db.query_row("SELECT actor, request_id FROM ck_native_retries WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| Ok((r.get(0)?, r.get(1)?))).optional().map_err(|_| Issue::Unavailable)?;
         let Some((bound_actor, request)) = binding else {
-            return Err(Issue::Denied);
+            // Missing retry grounds for a retained Change are corruption, not denial.
+            let exists: i64 = self.db.query_row("SELECT count(*) FROM ck_native_changes WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| r.get(0)).map_err(|_| Issue::Unavailable)?;
+            return if exists != 0 {
+                Err(Issue::Unavailable)
+            } else {
+                Err(Issue::Denied)
+            };
         };
         if bound_actor != actor {
             return Err(Issue::Denied);

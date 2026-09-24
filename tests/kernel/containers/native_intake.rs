@@ -58,10 +58,54 @@ fn exact_optional_unicode_bounds_and_trusted_actor() {
         invalid.request_id = id.into();
         assert_eq!(intake.propose(&invalid, "owner"), Err(Issue::InvalidInput));
     }
+    // Exact UTF-8 byte limits, including optional Why and all three identities.
+    for field in ["container", "request", "actor"] {
+        let exact = "é".repeat(128); // 256 UTF-8 bytes.
+        let too_long = format!("{exact}x");
+        let mut attempt = p.clone();
+        let mut actor = "owner";
+        match field {
+            "container" => {
+                intake.create(&exact, "owner").unwrap();
+                attempt.container_id = exact.clone();
+            }
+            "request" => attempt.request_id = exact.clone(),
+            "actor" => actor = &exact,
+            _ => unreachable!(),
+        }
+        if field == "actor" {
+            intake.create("actor-scope", actor).unwrap();
+            attempt.container_id = "actor-scope".into();
+        }
+        assert!(intake.propose(&attempt, actor).is_ok());
+        match field {
+            "container" => attempt.container_id = too_long,
+            "request" => attempt.request_id = too_long,
+            "actor" => actor = &too_long,
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            intake.propose(&attempt, actor),
+            Err(if field == "actor" {
+                Issue::Denied
+            } else {
+                Issue::InvalidInput
+            })
+        );
+    }
     p.request_id = "third".into();
-    p.what = "x".repeat(65_536);
-    assert!(intake.propose(&p, "owner").is_ok());
+    p.what = "é".repeat(32_768);
+    p.why = Some("é".repeat(32_768));
+    let max = intake.propose(&p, "owner").unwrap();
+    assert_eq!(max.what, p.what);
+    assert_eq!(max.why, p.why);
+    p.request_id = "fourth".into();
     p.what.push('x');
     assert_eq!(intake.propose(&p, "owner"), Err(Issue::InvalidInput));
+    p.what.pop();
+    p.why.as_mut().unwrap().push('x');
+    assert_eq!(intake.propose(&p, "owner"), Err(Issue::InvalidInput));
+    p.why = Some(" ".repeat(65_536));
+    assert!(intake.propose(&p, "owner").is_ok());
     fs::remove_dir_all(file.parent().unwrap()).unwrap();
 }
