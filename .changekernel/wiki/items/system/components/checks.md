@@ -1,21 +1,39 @@
 ---
-title: Gate Checks
+title: Checks
 aliases:
-  - Checks
-  - Semantic Validation
-  - Validation
+  - Check
+  - Gate Checks
 source-id: cw:component:checks
 ownership:
-  roles:
-    - model-check
   sourcePatterns:
     - src/kernel/gates/**
     - src/adapters/checks/**
+    - src/server/lifecycle/decision/**
+    - src/server/lifecycle/implementation/**
+    - src/server/lifecycle/review/**
   testPatterns:
     - tests/kernel/gates/**
     - tests/adapters/checks/**
+    - tests/server/lifecycle/decision/**
+    - tests/server/lifecycle/implementation/**
+    - tests/server/lifecycle/review/**
+  roles:
+    - model-check
+    - decision
+    - worker
+    - review
   traceEvents:
     - gate.recorded
+    - change.committed
+    - change.deferred
+    - change.rejected
+    - change.resumed
+    - change.withdrawn
+    - work.assigned
+    - work.attempt.recorded
+    - work.claimed
+    - work.integrated
+    - review.reconciled
 source-history:
   provenance:
     - attributes:
@@ -39,107 +57,123 @@ source-history:
       predicate: codewiki.legacy:realizes
       targetItemId: cw:story:check-author.author-composable-checks
 ---
-# Gate Checks
+# Checks
 
-A Check is a small executable function that evaluates a domain-specific condition at a declared lifecycle stage, with explicit inputs, one independently reportable question, a defined passing condition, and a Boolean result with actionable feedback and [Evidence](evidence.md) references. It may combine deterministic computation and bounded model inference. Code and model use are operations inside the same Check, not separate Check types. A Gate controls stage progression using backend-owned validation and applicable adopted domain Checks; passing never supplies approval or protected-effect authority.
+A Check is a bounded, read-only assessment with explicit inputs, one reportable question, a passing condition and a Boolean completed result with actionable feedback and Evidence references. It can combine computation and authorized semantic operations. **Decision + Execution are the public lifecycle phases.** Proposal admission, prepared-effect/contribution assessment and observed-outcome assessment remain distinct internal responsibilities, called Decision, Implementation and Review here.
 
-The [ChangeKernel backend](changekernel.md#backend-validation-across-four-stages) owns validation common to all domains. Domain Checks and Packs are explicitly adopted project extensions; first-party Packs use the same contract as company-authored Packs. Ownership is not a split between mechanical and semantic evaluation: either owner may use both. Common intent, plan, contribution and outcome validation cannot be disabled, substituted or weakened by a Pack. Shared execution mechanisms do not make a domain result interchangeable with a backend result.
+A gate controls progression or a protected effect using applicable requirements, current inputs and separate authority. Assessment scope identifies the subject, question and required timing, not a mandatory public screen, model call, transaction or commit. Planning and review coordination are engine machinery; deployment performs effects through a binding and is never a Check side effect. Typed edits can satisfy suitable responsibilities directly in code. Existing stage fields/results retain their original interpretation until an explicit qualified transition.
 
-## Check terminology and activation
+## Common assessment requirements
 
-Use subject-specific names rather than unqualified “adoption record”, “policy” or “baseline policy” when discussing Checks:
+The release owns these requirements; they are not optional Packs. Applicability follows actual supported subjects, not caller labels. Exact computation and eligible retained results may satisfy suitable conditions without mandatory inference on every small edit.
+
+Decision assesses:
+
+| Condition | Required conclusion |
+| --- | --- |
+| Intent clarity | The outcome and scope are clear enough for bounded pursuit. |
+| Assessment coverage | Consequential visible effects, premises and commitments are accounted for; omissions remain explicit. |
+| Claim support | Claims do not exceed attributable grounds or required domain assurance. |
+| Intent fit | Action credibly serves the purpose rather than substituting an easier objective. |
+| Comparative justification | Pursuit is defensible against material alternatives, including doing nothing. |
+| Commitment preservation | Intermediate and resulting states preserve obligations or explicitly pursue authorized revision. |
+| Credible feasibility | A plausible permitted path exists; unknown prerequisites are investigated. |
+| Uncertainty handling | Consequential uncertainty has inquiry, containment or appropriate limits. |
+| Outcome assessability | Later observations can distinguish success, failure and incomplete realization. |
+| Justification coherence | Grounds use compatible premises, scope and conditions. |
+
+Decision admission establishes readiness for bounded planning/pursuit, not blanket readiness to execute. Recording a proposal is not admission; conversation or an automated origin supplies neither permission nor a requirement for manual approval by itself. Valid retained discussion, findings and exact-subject approval may satisfy applicable requirements without another interview. Common judgments that depend on domain findings must use those exact retained findings and limitations. Material intent, scope or authority changes reopen Decision.
+
+Implementation assesses relevant methods, dependency and parent-outcome coverage, exact prepared effects, authorized execution custody, actual contributions, deviations and truthful partial outcomes. Former Planning-stage method scrutiny belongs here and in factory preparation, not a fourth gate. Checks inspect collected observations; authorized workers gather them and repair defects.
+
+Review assesses the reconciled combined outcome within Execution, consistency with prior grounds, commitments, supported realization, remaining obligations and lawful completion. Child passes, a closed task or a successful write do not prove the whole outcome. Missing required results cannot be hidden as optional follow-ups. Pre-delivery candidate assessment is not evidence that delivery succeeded. Desired-target adoption, realized behavior, publication and deployment remain distinct; later effects require their own current authority and observations. A Change promising only a reviewed artifact can end before a separately governed deployment; one promising deployed behavior cannot.
+
+## Internal intake feedback and classification
+
+Intake is capture/refinement machinery supporting Decision, not a third public phase or independently customizable gate. Code validates shape, identity, scope, permissions and durable retry consistency. Bounded semantic judgments can help assess coherent intent, missing consequential grounds and suitable decomposition, but cannot invent authority or silently change intended outcomes. Domain-specific admission criteria remain available through the shared Check contract; internal coordination does not make all criteria release-owned.
+
+Feedback binds the exact proposal revision, condition, affected location/scope, grounds, uncertainty and correction or collection need. Separate a mandatory blocker from a suggested improvement. Identify next permitted actions and commitments that must survive refinement. A rough or large proposal can be retained without being admitted. Missing information may permit bounded inquiry; missing authority requires permission or a stop. Preserve original/rejected input and attributable revisions. Changed input needs a new retry identity, not another attempt under a conflicting binding.
+
+The loop is bounded: retain still-valid results, reassess affected conditions after material changes, account for total cost, and support clarification, deferral, rejection, cancellation or escalation. An unchanged failure is not resampled until it passes. An agent can produce corrections but cannot mark its own proposal compliant or reduce its intent to satisfy a validator. Both terminal and agent clients receive the same authoritative findings with appropriate visibility.
+
+Classification is an input to applicability and routing, not permission to select a weaker pipeline. Use a small versioned profile of purpose, affected meaning, scope/consequences, recovery support, knowledge readiness and established-procedure fit. Purpose examples include learning, creation, adjustment, repair and retirement with mixed/unresolved cases; the initial exact vocabulary remains to be specified. Domain labels may extend the profile, not replace common requirements. Code supplies exact operations, identities, permissions and qualified binding capabilities. Jev supplies focused semantic judgments where needed; exact typed operations do not require a redundant classification call.
+
+Jev's per-question 255-option capacity is not a target universal taxonomy. Preserve uncertainty, exact input and definition/model/settings identity; confidence is not correctness. Derive actual effects and aggregate coverage through supported bindings instead of classifying an unverified prose summary of unbounded work. Material candidate changes, new relationships or revised observations require reassessment. A single permission edit can be consequential; a large bounded batch need not require a separate semantic judgment for every record. Splitting Changes cannot evade common commitments, aggregate limits or required approval.
+
+## Ownership, policy and activation
+
+ChangeKernel owns common [assessment requirements](../../product/changekernel.md#assessment-responsibilities). Existing authoritative schemas, constraints, validators and handlers retain their force. Container-adopted domain Checks and procedures supply additional scoped requirements for proposal admission, exact effects and observed outcomes—not only pre-effect execution. Discovery should reuse supported rules instead of asking developers to restate them. Either owner can use code and bounded judgment. Packs distribute evaluators, not orchestration or authority over engine invariants.
 
 | Term | Meaning |
 | --- | --- |
-| Check adoption record | Attributable record that the Project explicitly accepted exact Check definitions or Pack versions, with Check parameters, scope and reasons. It is neither installation nor a Check result. Validating its structure and hashes does not authenticate acceptance. |
-| Check policy | Accepted rules determining which domain Checks are required and under what conditions they apply. |
-| Governing Check policy | The accepted Check policy applicable to this Change and stage; it is not another policy category or a caller-selected override. |
-| Current Project state | The exact committed Project bytes used for comparison, not itself a Check policy or proof of acceptance. Say “Check policy in Current Project state” when referring to those rules at that version. See [Project terminology](project.md#current-project-state-proposed-change-and-change-diff). |
-| Check result | The retained assessment outcome, feedback, exact evaluation identity and limitations. |
-| Check execution log | The durable record of Check execution reservations and outcomes, including incomplete or uncertain attempts. It is not a second Check policy store or a separate “Check history log”. |
+| Check adoption record | Attributable adoption of exact definitions/settings, scope and reasons. Structure and hashes alone do not authenticate adoption. |
+| Check policy | Current accepted rules determining required domain assessments and applicability. |
+| Governing Check policy | The accepted policy applicable to this subject and assessment responsibility, not a caller-selected override. |
+| Check result | Exact retained outcome, feedback, inputs/evaluator identity and limitations. |
+| Check execution log | Protected durable reservations and outcomes, including incomplete attempts; not a second policy store. |
 
-Check adoption establishes accepted requirements and evaluation methods; Check activation determines which apply to a particular assessment. Activation depends on the stage, Change type, affected scope, backend-derived Change diff and its effect classifications, and conditions in the governing Check policy and Check definitions. Project Server resolves and enforces these conditions rather than arbitrarily choosing a subset. Change classification matters, but a producer's label cannot override contradictory observed effects. Unknown applicability remains unresolved, not inactive. Proposed Check policy changes cannot activate their own weaker requirements before authorized acceptance. Current authorization and source freshness remain separate requirements.
+Adoption and activation differ. The backend determines applicability from actual subject, affected scope, prepared differences/effects and governing rules. A producer label cannot hide contrary effects; unknown applicability remains unresolved. A candidate cannot activate its own weaker evaluator or omission rule. Legitimate policy revision follows current authorized transition rules rather than freezing every old rule forever.
 
-These terms do not rename stored identifiers or define a new persisted Check policy format. Release-owned backend stage validation remains mandatory and separate from project-adopted domain Checks.
-
-## Policy, evaluation and distribution
-
-[Wiki](wiki.md) defines accepted meaning, purposes, scope, conditions and exceptions. A Check implements how one condition is evaluated. A Pack distributes versioned Check definitions, implementations and execution requirements. Installation, a marketplace listing or an axis label does not adopt policy, authorize execution or establish evaluator quality.
-
-Prefer accepted policy supplying parameters and Checks supplying evaluation methods. An inherently executable policy can instead be explicitly adopted by reference to its exact definition; do not maintain conflicting prose and executable copies. Source documents are data, not executable plugins. Accepted Pack selection and execution configuration remain attributable to Wiki and Change, not a competing policy ledger.
-
-The governing Check policy determines Check selection and the assessment of proposed Check policy changes; permission to accept those changes remains separate. A proposed Change cannot activate its own weaker evaluator, omit a required Check or grant itself a waiver. Legitimate policy revision remains possible through an explicit authorized transition; it is not a requirement to preserve every old policy forever. Pack updates are pinned, assessed changes rather than mutable latest-version lookups.
-
-ChangeKernel reports backend validation and domain Check coverage separately. A structurally valid Check can still be inadequate or dishonest; no universal justification follows from running arbitrary extensions. No configured domain Checks means no domain assurance, not an automatic domain pass or permission to skip backend validation. If a required domain assessment has no applicable adopted evaluator or sufficient inputs, progression is unready. A supported case with no additional domain requirement must retain that explicit scope limitation. The first dogfood lifecycle requires meaningful backend validation and adopted software-domain Checks.
+Adopt executable policies by exact reference where appropriate, avoiding competing prose copies. Policy lives in versioned container State; source-backed Markdown is one possible representation, not a required Wiki subsystem. Installation, marketplace listing, skill text or repeated behavior does not adopt a rule. Shared definition updates and local policy revisions need their respective authority.
 
 ## Evaluation boundary
 
-Conversation and [early intake](change-intake.md) remain free-form. Before evaluation, the agent submits a structured Proposed Change bound to exact Current Project state and proposed bytes, with intent/scope, consequential claims and assumptions, source/Evidence references, affected commitments and proposed revisions, relevant alternatives and outcome conditions. The backend derives and verifies the Change diff rather than trusting a submitted summary. Missing information remains explicit; representation is not proof of completeness. Required fields and actual selection follow the backend stage contract, adopted domain Check definitions and supported subject, not an author's convenient label.
+Before assessment, resolve authorized exact inputs, source roles, current candidate/observations, relevant commitments, policy and omissions. Derive actual differences through supported bindings rather than trust an agent summary. A digest authenticates neither source custody nor truth. Checks receive bounded captures, not ambient producer conversations, unrestricted databases or private credentials.
 
-The backend resolves authorized sources, actual changed artifacts and current adopted rules into an immutable bounded evaluation input capture. Each selected Check receives only its required inputs and declared omissions. Model input contains no producer's private conversation. Agent-supplied quotations, reports and classifications do not authenticate themselves; binding their bytes does not prove their relevance or truth. Agents perform research, tool use, experiments, synthesis and repairs. Checks evaluate the submitted case without performing those producer activities.
+Each definition declares identity/version, owner, assessment responsibility, subject, question, passing condition, input/output shapes, applicability/input-selection rules, dependencies and execution limits. Expose requirements early so people and workers can supply missing material. Presence, authenticity, relevance, adequacy and substantive judgment are distinct; preflight must not pretend to prove all of them.
 
-Each Check definition declares its identity/version, lifecycle stage and evaluated subject, question and passing condition, input/output structures, activation and input-selection rules, implementation/dependency identity, and execution requirements/limits. Different stage questions need distinct attributable evaluations even when they share implementation helpers; grouping definitions in one Pack does not detach them from stages. Expose the applicable adopted definitions' input requirements before expensive execution so the agent can prepare explicit bindings or report missing material. A binding can select an exact Wiki passage, artifact or retained observation; no universal typed Wiki parameter catalogue is required. The backend verifies source roles, actual scope and exact identities rather than accepting the producer's selection as proof of coverage. Activation and readiness differ: demonstrably inapplicable Checks are recorded as such; missing required input makes an applicable Check unready. Unknown applicability must not be treated as exclusion. A Pack cannot turn missing Evidence into a reason not to run its Check.
+An applicable Check with missing input is unready, not inactive. A missing required evaluator is a coverage gap. No additional domain requirement can be a valid explicitly bounded case; no selected Checks cannot be presented as universal domain assurance. Built-in and existing authoritative constraints still apply.
 
 ## Check library and execution
 
-Checks execute as JavaScript in one isolated runner; authors can also use TypeScript compiled ahead of execution. Python is a later supported runner over the same versioned, language-neutral message contract, not a requirement for locally hosted inference. Avoid two initial runtime ecosystems or a provider-specific library in each Pack.
+Use small JavaScript functions, with TypeScript compiled ahead of execution. Python and other runners remain later qualified support. Ordinary helpers are enough; no separate composition language, nested autonomous scheduler or provider client per Pack is required.
 
-Backend-owned validators and domain Checks may share bounded input access, computation, result construction, model dispatch, isolation and durable execution machinery. This does not introduce a second Check language, model engine or project Check adoption record for the backend's own requirements. Backend-owned implementation identity comes from the immutable release; domain implementation identity comes from exact authorized adoption. Origin must be verified by the backend, not accepted from a caller's label or a Pack claiming to be built in.
+The library supplies bounded input access, computation, result construction and ChangeKernel-owned [semantic operations](../../product/changekernel.md#semantic-operations-and-jev). The host owns routing, exact input/result identity, budget enforcement and retention. Jev can provide suitable judgments; producers generate missing content elsewhere. Model judgments do not grant effects or replace exact facts. No mandatory stronger-model verification of every answer or silent provider fallback is required.
 
-The Check library exposes bounded input access, computation, result construction and an optional model-call primitive. A developer can reject missing inputs with code, request one structured assessment, validate its response and return feedback. Authors own the evaluation logic; the runtime owns containment, exact input/result binding and reuse integrity. One Check still answers one condition, not an opaque collection of unrelated questions. Multiple operations require explicit bounded resources; a Check must not become another autonomous agent.
+Custom evaluators run outside the authoritative host process under qualified filesystem, network, credential, process, memory, time, output and model-call controls. The library, Node permissions or a receipt alone is not containment. Models called by Checks have no tools or inherited producer session. Missing fresh observations return collection needs; authorized Work gathers them separately. Local-only policy covers supporting services and disclosure, not just a loopback URL.
 
-A completed result's `passed` field is an ordinary Boolean that callers can use without losing the retained feedback, Evidence and evaluation identity. Prefer small functions and ordinary JavaScript helpers; compose only where an actual shared condition justifies it. No separate composition language, nested Check scheduler or additional Check kind is required. Existing Gate aggregation combines independently attributable required results. Parallelism is an execution choice for independent ready Checks within host limits, not a reason to combine unrelated questions or a promise that every Check runs concurrently.
-
-Model calls go through the authorized execution host with declared inputs/output structure, permitted route, budgets, cancellation and retained execution identity. The host delegates model dispatch directly to `pi-ai` through [Agent execution](agent-execution.md); it does not create a producer session, separate provider client or agent harness. Models have no tools, ambient session, project writer or arbitrary provider credentials. One configurable Check model, including a supported local/private route, is sufficient initially. No silent provider fallback, reviewer fleet, repeated voting or automatic routing is required. A fixed resource envelope bounds spending, not reasoning difficulty; inadequate capability or exhausted budget cannot fabricate support.
-
-Checks cannot modify Wiki, artifacts, sources, policy, lifecycle state or Project Server code. Custom code executes outside the Project Server process, with only supplied data or explicitly scoped read-only source captures. The library itself is not a security boundary: enforce process, filesystem, network, credential, memory and time restrictions in the host. Inference is a mediated capability, not general network access. Missing required fresh information returns actionable feedback for authorized collection outside the Check.
-
-The initial Linux execution profile uses an external owner-private working directory, pinned runtime and library bytes, a read-only filesystem, isolated process and network namespaces, and service-level memory, swap, task and wall-time controls. The trusted worker must wait for the host to verify effective kernel limits before importing custom code. Node permissions are additional restrictions, not a replacement for operating-system containment. Missing controls must stop execution without an in-process fallback. Cancellation must close the process group; unresolved provider or process custody blocks further execution in that host. Transient attempt tracking is not durable replay protection across host restarts.
-
-Local-only execution is a deployment restriction covering supporting services and disclosure as well as model choice. No remote fallback, telemetry leak or external research is implied. A company-controlled server can be an authorized private route. Locality and small model size do not establish Check quality; qualify the declared model, runtime and input bounds.
+Backend and domain evaluators share execution machinery while retaining distinct authority origin, assessment scope and implementation/configuration identity. Backend definitions come from immutable release bytes; domain definitions from current authorized adoption. A Pack cannot label itself built-in. [Execution](agent-execution.md) defines custody and containment obligations; the existing narrower Linux/Pi implementation and its recorded identities are not silently replaced by this desired provider-independent surface.
 
 ## Results, feedback and progression
 
-Every completed Check returns `passed: true | false`, natural-language feedback, and the relevant Evidence references and limitations. `false` must distinguish contradiction from insufficient support. An execution error, missing input, stale source or malformed output prevents progression but is recorded as operational inability, not a fabricated completed semantic refutation. There is no separate Finding or Obligation authoring object: the required condition belongs in the Check; support and limits belong in Evidence and feedback.
+Completed results contain `passed: true | false`, feedback, Evidence references and limits. False distinguishes contradiction from insufficient support. Missing input, stale sources, malformed output and operational failures block relevant progression but are not fabricated completed semantic refutations.
 
-Failure feedback identifies what condition failed, where it applies, why it failed, what correction/clarification/Evidence could resolve it, and what accepted intent or constraints must not be silently weakened. Do not promise a repair when none is known. Successful feedback can be concise and source-linked. A human clarification is new input; humans are not required to manually execute routine Checks.
+Feedback identifies the condition, location/scope, grounds, uncertainty, possible correction or collection need and intent/constraints that must not be weakened. Successful feedback can be concise and source-linked. Source-provided next steps are data, not permissions. Humans clarify or approve where needed; they need not manually execute routine Checks.
 
-Successful progression requires current valid passing backend validations for the stage and all applicable required domain Checks under the adopted selection, with necessary input/Evidence coverage, plus separate authority for the exact transition. A domain-only result aggregate is not a lifecycle verdict. Neither a backend pass nor an approval can compensate for a failed required domain assessment, and all domain Checks passing cannot compensate for missing or failed backend validation. Missing execution cannot disappear from aggregation. No weighted average, model confidence or user approval rewrites a false result. Same retained results produce the same Boolean progression decision; this does not make model inference deterministic or prove arbitrary claims true.
+Successful progression requires current valid passing required results from every applicable owner, adequate coverage and separate transition/effect authority. A score average, model confidence or human approval cannot rewrite a failed requirement. Missing execution cannot disappear from aggregation. The system can repair, pause, reject, defer or withdraw; it must not retry until every proposal passes.
 
-A stage may continue with targeted repair, pause for missing input or budget, or terminate by rejection/withdrawal. Only successful progression requires the passing condition; the system must not force every proposal to eventually pass. Returned feedback goes to the cause rather than encouraging cosmetic retries. Material revisions of approved intent or scope return for the applicable decision.
+Advisory procedures are not required Checks merely because they appear in the same feedback. [Frontend guidance](../../product/changekernel.md#frontend-guidance-and-responsiveness) distinguishes advice, blockers and approval/evidence needs. Frontend evaluation improves feedback; final backend validation and authorization remain authoritative.
 
 ## Efficient evaluation and reuse
 
-Select backend validations from the release-owned stage contract and domain Checks from actual effects and adopted policy; check cheap structure, freshness and required inputs before expensive work. Run independent ready Checks concurrently within shared limits. Stop launching dependent or expensive work after a blocker while retaining completed results and useful cheap independent feedback. Do not evaluate every conversational fragment. Optimize cost and time through repair rounds, not just one attempt.
+Resolve applicability, cheap structure, current authority and input readiness before expensive work. Schedule independent ready judgments within shared bounds and sequence dependent ones. Questions in one Jev request cannot consume each other's answers. Share exact Evidence without counting it as independent corroboration. A failed prerequisite should explain waiting dependents rather than create a wall of duplicate failures.
 
-Share collected Evidence and bounded context across applicable Checks without duplicating corroboration. Preserve decisive source passages and declared omissions; do not truncate away constraints. Provider prefix caching and optional batching of related questions are execution optimizations, not evidence of independence or correctness. Batching must retain separate Check results and needs quality evaluation before use.
+Distinguish source caches, still-valid Evidence and reusable complete evaluations. Conservative reuse binds the entire declared supplied input capture, source roles, selection/membership, omissions, assessment question/scope, ownership, evaluator/dependencies, relevant policy/model/settings, permissions and freshness. Unchanged favorable citations are not the full dependency set; new applicable sources or changed external reality can invalidate reuse despite unchanged bytes.
 
-Distinguish caches of exact source bytes, Evidence whose scope/freshness still applies, and Check evaluations whose complete bound inputs and execution conditions match. The initial result-reuse boundary is the entire declared, supplied input capture, including the evaluated subject, relevant desired Wiki and artifacts, source roles, scope, input-selection rules and membership, and declared omissions. Supporting citations returned by a passing Check are not a complete dependency declaration. A newly applicable source can invalidate reuse without editing previously supplied files.
+Qualified source identities and retained captures support comparison. Git commit/tree/blob identities serve that binding, not every source. Unrelated changes need not invalidate proven equivalent inputs; missing trustworthy dependencies require conservative invalidation. Undeclared time, randomness, network or filesystem dependence prevents assuming purity.
 
-Resolve inputs and validate readiness and reuse eligibility before scheduling expensive execution. Git commit/tree/blob and passage identities provide cheap, deterministic comparisons of retained Wiki and other Project artifacts. The enclosing commit alone is not the reuse key: unrelated commits need not force reevaluation when the full relevant binding is demonstrably equivalent. Conversely, an unchanged report cannot justify reuse when its evaluated implementation changed. Bind evaluator ownership, stage question, implementation/dependencies, governing release or adopted configuration and relevant model/execution settings alongside the complete inputs. A new Proposed Change still needs verified equivalence and a new attributable binding, not relabeling an old stage verdict. Permission, source-role, freshness or availability changes can invalidate reuse despite unchanged bytes. Material outside Git requires an exact authorized retained capture or other verified immutable custody; merely residing on a Project Server is not enough.
+Retain false results as well as passes, including feedback and exact grounds. Do not resample an unchanged failure or reconstruct historical results with inference. A retained-result lookup launches no missing execution. Operational retries are separately bounded and require reconciled custody. Changing evaluator wording/settings can change identity; old results stay historical, not valid under revised criteria.
 
-Retain the Boolean, feedback, Evidence references, limitations and evaluation identity together. Reuse is a backend decision over those records, not a Check's authority to cache its own unsupported success or set a permanent Wiki truth flag. Preserve semantic failures as well as passes; an unchanged unsupported argument must not get repeated chances for a lucky model answer. Execution errors and other operational inability are not completed false judgments. Operational retries remain separately bounded. Recovery reads retained results and does not resample models.
-
-Start with conservative reuse over all supplied inputs rather than model-inferred dependencies, automatic paragraph-level read tracking or a general dependency engine. Undeclared clock, randomness, filesystem or network dependencies prevent assuming a function is pure; changing external reality requires explicit observations and validity conditions. Reusing a recorded model judgment does not claim deterministic inference or continuing factual truth. Finer-grained cross-revision reuse is optional later work and requires trustworthy dependencies; otherwise invalidate conservatively.
-
-Measure time to actionable feedback, total cost through acceptance/repair, reuse, unnecessary activation, false acceptance/rejection and fresh-session reconstruction. Budget exhaustion pauses with progress preserved. The [minimum release](package.md#minimum-local-dogfood) requires bounded activation, fail-fast behavior and exact-input replay, not an advanced scheduler or generalized dependency engine.
+No per-Save repository discovery, unnecessary semantic rebinding or generation is required. Measure first actionable feedback, ordinary-save latency, slow-tail latency, total cost through repair, incorrect acceptance/rejection and reuse. These are design targets, not current measurements. Automatic fine-grained dependency tracking is not required for an initial conservative implementation.
 
 ## First-party software-development Pack
 
-The first Pack supplies software-domain assessment, not optional replacements for [backend Decision validation](decision.md#backend-decision-validation) or the other common stage contracts. Begin with a bounded local behavior correction using an existing toolchain, explicit compatibility requirements and regression Evidence. Broader feature work, dependency/platform changes, deployment, data migration and authority changes require corresponding additional coverage and qualification; a small Pack is not general software assurance. This supported scope is not a separately selectable lifecycle profile.
+The software Pack remains a domain example and source-development qualification aid, not the universal foundation or a requirement for every application. It uses the same adoption and execution contracts as other Packs.
 
-| Stage | Domain Check question | Required grounds and failure examples |
-| --- | --- | --- |
-| Decision | Is the proposed behavioral or interface change compatible with adopted software contracts, or is its break explicitly addressed under current policy? | Exact affected code/interfaces, requirements and consumers; fail for a hidden incompatible interface or unsupported impact claim. Generic intent clarity and comparative justification remain backend responsibilities. |
-| Planning | Does the engineering and regression-test approach distinguish the required behavior from the relevant failure cases? | Accepted behavior, affected components, concrete test approach and available tools; fail for tests that cannot detect the stated bug or missing affected consumers. Generic Work coverage and dependency validity remain backend responsibilities. |
-| Implementation | Do required build, type, test and analysis observations satisfy the project's engineering rules for this Proposed Change? | Retained, attributable execution records and the actual source/configuration/test subject; missing records are unready, not a pass. Check functions inspect observations rather than launching builds or repairs. |
-| Implementation | Do changed code, tests and dependencies satisfy applicable architecture and maintenance rules? | Actual changes and adopted project rules; report forbidden dependency direction, undeclared compatibility effects or ineffective assertions rather than judging file names alone. |
-| Review | Does regression and integration Evidence establish the software behavior and compatibility claimed for the exact combined Proposed Change? | Joined source and tests, required observations and known limits; individual task passes cannot cover a different join. Generic realization and gap accounting remain backend responsibilities. |
+| Internal responsibility | Domain assessment |
+| --- | --- |
+| Decision | Proposed behavior/interfaces respect adopted compatibility rules or explicitly address a permitted break. |
+| Implementation | Engineering and test methods can distinguish intended behavior from relevant failures; dependencies and affected consumers are covered. |
+| Implementation | Actual build, type, test and analysis observations meet the rules for this exact subject; evaluators inspect authorized observations rather than run tools. |
+| Implementation | Changed code, tests and dependencies meet applicable architecture and maintenance requirements. |
+| Review | Integration/regression Evidence establishes the claimed combined behavior and compatibility, within explicit limits. |
 
-These rows define stage-bound coverage, not a fixed number of Check definitions or model calls, nor a requirement for separate packages per stage. Split independently reportable policy conditions into focused definitions instead of bundling unrelated architecture, test and compatibility judgments under one Boolean. Use ordinary functions and shared helpers, independently attributable results and bounded inputs. Exact activation comes from the accepted software policy and actual effects; omitted inputs or a producer's “documentation-only” label cannot suppress relevant coverage. Installation does not adopt the Pack. Project-specific thresholds and methods remain in adopted policy, not hard-coded universal lifecycle rules.
+Split independently reportable conditions rather than hide unrelated judgments under one Boolean. Domain thresholds belong to adopted policy. A “documentation-only” label cannot suppress actual relevant effects; neither does every small edit require the same expensive catalogue. Former Planning-stage method assessment belongs in Implementation/factory preparation, not a fourth gate or a lost requirement.
 
-## Qualification
+## Qualification and compatibility
 
-Question families organize definitions, not compensating scores or assurance supplied by a label. Test backend validators and domain Checks against independently reviewed acceptable, defective, ambiguous and adversarial cases. Include unsupported persuasive claims, omitted effects, counterevidence, legitimate policy revisions, source instructions and cosmetic rewrites. Challenge attempted backend waivers, forged ownership and cross-stage verdict substitution as well as domain-specific quality failures. Exact receipts and schema conformance prove neither containment nor assessment quality. [Qualification](benchmarks.md) measures false acceptance and unnecessary rejection for declared subject and execution bounds; a marketplace signature proves artifact identity, not semantic adequacy.
+Qualify good, defective, ambiguous and adversarial cases for each supported question family, including omitted effects, counterevidence, source instructions, legitimate policy revision and forged evaluator ownership. Classification tests must measure missed obligations and unsafe omissions, not only label agreement. Challenge misleading repair/documentation labels, mixed intent, changed batch scope and attempts to obtain a lower-ceremony route through decomposition. Structural conformance and signatures prove neither judgment quality nor containment.
 
-These are desired contracts, not implemented release claims. Existing private Check selection, execution and retention foundations do not implement the combined backend/domain stage gate or publish a first-party Pack. Experimental Gate/findings and Decision helpers are migration inputs, not a second permanent validation engine. Replace obsolete prerelease code and tests deliberately, preserving genuine historical bytes and meanings. Implement the revised ownership and stage contracts explicitly; do not relabel old records, fabricate adoption for backend validators or restore the deleted historical engine.
+Before changing persisted contracts for the two-phase lifecycle, prove the mapping preserves proposal, pre-effect and outcome requirements and current authority. Include domain admission constraints, simple typed updates, passing candidates with failed deployment, successful units with incomplete combined results, self-weakening memory proposals and interrupted effects with unknown outcomes. A simpler display is not evidence of cheaper execution; measure operator comprehension and duplicated work without silently relabeling old results. See [qualification](package.md#qualification).
+
+This is desired architecture. Private selection/execution/retention exists for narrower Git/Wiki contracts; complete public progression and a general Pack service do not. Decision + Execution is not a migration of historical stage fields. Historical Planning results and `planning.evaluate` / `planning.admit` names must not be relabeled as new assessment results. Explicit versioned implementation will replace superseded code and tests without restoring a parallel historical engine or inventing adoption.

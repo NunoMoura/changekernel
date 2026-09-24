@@ -165,6 +165,8 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 			"node:path",
 			"node:url",
 			"node:util",
+		] : path.startsWith("src/adapters/sqlite/") ? [
+			"node:sqlite",
 		] : path === "src/adapters/checks/check-execution-log.ts" ? [
 			"node:fs", "node:crypto", "node:fs/promises", "node:path",
 		] : path === "src/adapters/checks/linux-host.ts" ? [
@@ -177,6 +179,25 @@ test("source graph is closed, acyclic, and contains no dynamic loader", async ()
 		] : [];
 		if (path === "src/adapters/git/project-store.ts") allowed.push("node:fs");
 		assert.ok(allowed.length > 0 && specifiers.every((specifier) => allowed.includes(specifier)), `${path}: ${specifiers.join(", ")}`);
+	}
+});
+
+test("container intake stays separate from historical Git/Wiki and execution authority", async () => {
+	const {graph, external} = await sourceGraph();
+	const kernel = "src/kernel/containers/intake.ts", adapter = "src/adapters/sqlite/container-intake.ts";
+	for (const module of [kernel, "src/kernel/containers/candidate.ts"]) {
+		assert.ok(graph.get(module).every(path => path.startsWith("src/kernel/")));
+		assert.equal(external.has(module), false);
+	}
+	for (const module of [adapter, "src/adapters/sqlite/container-candidate.ts"]) assert.deepEqual(external.get(module), ["node:sqlite"]);
+	for (const path of [kernel, adapter, "src/ports/container-intake-store.ts", "src/server/intake/container.ts",
+		"src/kernel/containers/candidate.ts", "src/adapters/sqlite/container-candidate.ts", "src/ports/container-candidate-store.ts", "src/server/intake/candidate.ts"]) {
+		const closure = reachable(graph, path);
+		assert.equal(closure.some(target => target.startsWith("src/adapters/git/") || target.startsWith("src/adapters/pi/") || target.startsWith("src/kernel/wiki/") || target.startsWith("src/kernel/gates/")), false, path);
+	}
+	for (const path of ["src/product.ts", "src/server/index.ts", "src/adapters/git/local-server.ts"]) {
+		assert.equal(reachable(graph, path).includes(adapter), false, path);
+		assert.equal(reachable(graph, path).includes("src/adapters/sqlite/container-candidate.ts"), false, path);
 	}
 });
 

@@ -1,12 +1,12 @@
 {
 	"name": "@nunomoura/changekernel",
 	"version": "0.4.0-sk3g.1",
-	"description": "The semantic foundation for project change: a shared project layer for people, agents, harnesses and applications across any domain.",
+	"description": "A redistributable State-and-Change engine for applications; currently a private source-development foundation.",
 	"keywords": [
 		"changekernel",
 		"semantic-change",
-		"project-knowledge",
-		"git",
+		"state-containers",
+		"procedural-memory",
 		"governance"
 	],
 	"type": "module",

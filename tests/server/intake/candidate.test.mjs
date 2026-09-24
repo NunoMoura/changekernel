@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {createContainerCandidateClient} from "../../../src/server/intake/candidate.ts";
+import {definitionIdentity} from "../../../src/kernel/containers/candidate.ts";
+import {container, types, request} from "../../adapters/sqlite/candidate-fixtures.mjs";
+
+test("candidate boundary decodes full batches and denies malformed authority before store effects", () => {
+	assert.throws(() => createContainerCandidateClient({protocol: "changekernel.container-candidate-store@1.0.0"}), /Unsupported/);
+	const calls = [];
+	const store = {protocol: "changekernel.container-candidate-batch-store@1.0.0"};
+	for (const method of ["install", "describe", "prepare", "read"]) store[method] = (...args) => { calls.push([method, ...args]); return {ok: true, value: args[0]}; };
+	const client = createContainerCandidateClient(store);
+	const definition = definitionIdentity({...container, types, expectedDigest: null}, 1);
+	const input = request({changeId: "sha256:" + "1".repeat(64)}, definition);
+	assert.equal(client.describe(container, undefined).error.code, "denied");
+	assert.equal(client.prepare(input, {id: "owner"}).error.code, "denied");
+	assert.equal(client.install({...container, types, expectedDigest: null}, null).error.code, "denied");
+	assert.equal(client.read(container, input.changeId, null).error.code, "denied");
+	assert.equal(client.install({...container, types, expectedDigest: null, approval: true}, "owner").error.code, "invalid_input");
+	assert.equal(client.prepare({...input, actor: "owner"}, "owner").error.code, "invalid_input");
+	assert.equal(client.read(container, "bad candidate id", "owner").error.code, "invalid_input");
+	assert.equal(client.describe({...container, nativeEmpty: true}, "owner").error.code, "invalid_input");
+	assert.deepEqual(calls, []);
+	assert.equal(client.prepare(input, "owner").ok, true);
+	assert.equal(calls[0][0], "prepare");
+	assert.equal(calls[0][2], "owner");
+	assert.equal(calls[0][1].effects.length, 3);
+	assert.ok(Object.isFrozen(calls[0][1].effects));
+	assert.equal("publish" in client, false);
+});

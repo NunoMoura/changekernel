@@ -144,7 +144,7 @@ test("local composition is idempotent and denies a well-formed lifecycle mutatio
 		// A contract-valid proposal reusing the existing lifecycle fixture
 		// shape: refusal must come from authorization, not from request shape.
 		const projectHead = await headOid(root);
-		const path = ".changekernel/wiki/items/system/components/project-server.md";
+		const path = ".changekernel/wiki/items/system/components/checks.md";
 		const content = await readFile(join(root, path), "utf8");
 		const client = clientFor(first.value);
 		const denied = await client.proposeChanges({
@@ -159,7 +159,7 @@ test("local composition is idempotent and denies a well-formed lifecycle mutatio
 				intent: "Probe that the local read-only composition refuses lifecycle mutations.",
 				rationale: "Authorization must deny this well-formed proposal; request-shape rejection is not authorization.",
 				acceptance: ["The proposal is denied without changing Project state."],
-				targets: [{itemId: "cw:component:project-server", facets: ["body"]}],
+				targets: [{itemId: "cw:component:checks", facets: ["body"]}],
 				relationships: [],
 				contributorRefs: ["cw:actor:local-console"],
 				producerRunRefs: ["cw:run:local-readonly-probe"],

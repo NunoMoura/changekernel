@@ -1,4 +1,16 @@
 export {bootstrapChangeKernelProject} from "./adapters/git/bootstrap.ts";
+export {openSqliteContainerIntake} from "./adapters/sqlite/container-intake.ts";
+export {openSqliteContainerCandidates} from "./adapters/sqlite/container-candidate.ts";
+export {createContainerIntakeClient} from "./server/intake/container.ts";
+export {createContainerCandidateClient} from "./server/intake/candidate.ts";
+export {CONTAINER_INTAKE_PROTOCOL} from "./kernel/containers/intake.ts";
+export {CONTAINER_CANDIDATE_PROTOCOL} from "./kernel/containers/candidate.ts";
+export type {ContainerIdentity, ProposedIntake, IntakeReceipt, IntakeIssue} from "./kernel/containers/intake.ts";
+export type {ContainerIntakeStore} from "./ports/container-intake-store.ts";
+export type {LocalContainerIntakeStore} from "./adapters/sqlite/container-intake.ts";
+export type {ContainerCandidateStore, CandidateObservationSource} from "./ports/container-candidate-store.ts";
+export type {LocalContainerCandidateStore} from "./adapters/sqlite/container-candidate.ts";
+export type {RecordDefinition, DefinitionRequest, CandidateRequest, ChangeCandidate, CandidateIssue, ContainerDescription, EntityRef, EntityValue, EntityEffect, EntityDependency, EntityObservation} from "./kernel/containers/candidate.ts";
 export {createLocalProjectServer, LOCAL_PROJECT_SERVER_PROTOCOL} from "./adapters/git/local-server.ts";
 export type {LocalProjectServer, LocalProjectServerIssue} from "./adapters/git/local-server.ts";
 export {createChangeKernelClient} from "./api/client/index.ts";

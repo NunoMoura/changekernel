@@ -1,44 +1,45 @@
 # ChangeKernel
 
-**The semantic foundation for project change.**
+**A redistributable State-and-Change engine for applications.**
 
-ChangeKernel is a shared project layer for people, agents, harnesses and applications across any domain. Change is its organizing primitive; Wiki retains accepted project knowledge. ChangeKernel is not an agent, a harness or an operating-system kernel.
+Developers provide structures and native abilities. Users choose goals. Agents and other workers compose paths. ChangeKernel is designed to govern State evolution, support recovery within declared limits and retain useful learning for people and agents.
 
-The local product combines a pure semantic core, Project Server runtime, Wiki, semantic Git management and the Decision, Planning, Implementation and Review lifecycle. It works without a Hub. The optional **Hub** adds shared hosting, team access and collaboration using the same semantic foundation; a GitHub alternative is a longer-term ambition, not an initial feature-parity claim.
+The same State and Change primitives connect software development, agent-mediated product use after launch, and ongoing integration and improvement. External tools use supported bindings and the shared authoritative boundary; no particular browser-tool framework is required. User goals can lead to authorized development without automatically granting permission to change software, deploy releases or alter policy.
 
-**This is source development, not an operationally qualified dogfood release.** Wiki defines desired behavior; source/tests define what exists. The [temporary status](CHANGEKERNEL_STATUS.md) preserves unfinished work, not a separate architectural roadmap.
+**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the current prototype. Rust implementation, generalized containers and the complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
 
-## Core model
+## Design
 
-- **Change** is the primary mechanism of evolution, carrying intent, reasons, alternatives, inquiry and outcomes. Accepted scoped transitions govern adoption, revision, retirement and re-adoption.
-- **Wiki** is current accepted knowledge in tracked Project Markdown, wherever it lives—not a special authoring folder or disposable model output. It retains concise grounds, conditions and uncertainty.
-- **Git is foundational**, preserving exact Wiki outcomes, intent-bearing Change records and native history. It is not an optional data connector. GitHub is an optional hosting integration and competing collaboration product.
+Start with the [primary architecture](.changekernel/wiki/items/product/changekernel.md): the complete agreed model, developer examples, responsibilities, boundaries and unresolved decisions.
 
-**Current Project state + Proposed Change → Change diff.** Current state and proposed content bind exact committed bytes; the backend derives the diff rather than trusting a description. Neither committing proposed bytes nor computing a diff grants acceptance. Internal state-reference and historical format names do not add lifecycle concepts. See [Project terminology](.changekernel/wiki/items/system/components/project.md#current-project-state-proposed-change-and-change-diff).
+**Container definition → Container → Changes to State.** A container is a durable ownership and collaboration scope, not one entity, database or Docker container. Existing application data remains authoritative; the application's supported database is the default ChangeKernel store. Discovery reuses schemas and native handlers.
 
-Hot Wiki is the current validation basis, not every page loaded into every prompt. Retired knowledge remains available as cold information through native Git history. Optional external connectors extend available material from users' databases and services. No separate Archive/Sources knowledge system or duplicate history database is required; the core works without external data connectors. Retrieval and context eviction do not change adoption status.
+**Decision + Execution** are the approved public lifecycle phases. Intake captures and refines proposals internally; Decision admits bounded planning and pursuit. Execution includes planning, guarded effects, observation, recovery and outcome review. Proposal, pre-effect and observed-outcome assessments remain distinct; domain Checks can apply to all of them. Deployment is a supported activity where needed, not a universal final stage.
 
-Desired design: **Wiki holds what we agree; agents propose and produce changes; ChangeKernel validates the four stages; adopted domain Checks assess project-specific requirements; ChangeKernel controls acceptance and remembers why.** Validation common to all domains belongs to the backend's versioned stage contracts. Domain-specific policy belongs to explicitly adopted Checks and Packs. Either may use computation or bounded semantic assessment; this is an ownership boundary, not a code-versus-model split.
+Changes retain exact intent, revisions and experience; State retains current adopted knowledge and procedures with uncertainty and provenance. Sources are consumed on demand, and required research/assessment grounds are retained rather than replaced by competing `intent.md` files or a current-state mirror. Memory adoption uses the same Change controls. The [approved repository layout](.changekernel/wiki/items/product/changekernel.md#repository-representation) and [first self-development release criteria](.changekernel/wiki/items/system/components/package.md#first-self-development-delivery-focus) prioritize one qualified external controller with practical terminal visibility and controls. Neither source relocation nor lifecycle migration is implied by these design decisions.
 
-Checks are custom read-only functions; Packs distribute reusable domain evaluators, not a second policy authority or replacements for backend validation. Shared execution machinery preserves distinct ownership, stage, exact inputs and results. The pure core remains deterministic; effectful inference runs outside it under enforced limits. TypeScript/JavaScript comes first; Python and marketplace distribution come later.
+Four focused contracts carry substantial detail:
 
-Desired/current-state and related-Change views connect accepted outcomes, scoped Evidence and ongoing work. An observation is one way to obtain Evidence, not another product object. Git retains exact Project sources and history; large or sensitive Evidence may use authorized immutable external custody. Neither a commit nor a model assessment proves truth or realization. These revised contracts are desired state, not completed executable capabilities.
+- [State, persistence and recovery](.changekernel/wiki/items/system/components/state.md)
+- [Checks and assessment reuse](.changekernel/wiki/items/system/components/checks.md)
+- [Execution and custody](.changekernel/wiki/items/system/components/agent-execution.md)
+- [Release qualification and controller boundaries](.changekernel/wiki/items/system/components/package.md)
 
-See [product](.changekernel/wiki/items/product/changekernel.md), [Wiki](.changekernel/wiki/items/system/components/wiki.md), [Change](.changekernel/wiki/items/system/components/change-trace.md), [validation](.changekernel/wiki/items/system/components/checks.md), and [information/evidence](.changekernel/wiki/items/system/components/evidence.md).
+The retained `wiki/` path stores source design; it does not require a runtime Wiki subsystem or Markdown State. Prior committed pages remain in Git history; uncommitted draft material is folded into the consolidated design, not a parallel active specification. Examples are illustrative, not exported interfaces or measured performance claims.
 
 ## Executable foundation
 
-The private package is `@nunomoura/changekernel`; its executable is `changekernel`. Source includes bounded deterministic contracts/identities, managed Wiki transactions, Change reduction and Work dependencies, semantic Checks, a [Git Project Store](src/adapters/git/project-store.ts), authenticated [Project Server](src/server/index.ts), [Client SDK](src/api/client/index.ts), and partial execution/recovery adapters. [src/index.ts](src/index.ts), [package.json](package.json) and tests define actual exports.
+The private package is `@nunomoura/changekernel`; the executable is `changekernel`. [Source exports](src/index.ts), [package metadata](package.json) and tests define what exists. Current foundations include deterministic identities/contracts, managed Wiki transactions, Git-backed proposals, private Decision Check execution/retention and an authenticated limited [Project Server](src/server/index.ts).
 
-Concrete profile-native proposals and recovery are checkpointed; the early-inquiry Kernel work is not accepted as complete. The full new-path gated Change lifecycle and external qualification remain unfinished. Structural validation, process-local facts and injected/replay tests do not establish consequential judgment or durable operational continuation.
+The historical Project Server supports discovery/capabilities, managed-document proposal and Changes get. Its other operations report unavailable; the console remains read-only. Those Git/Wiki protocol meanings are unchanged.
 
-One [Kernel release version](.changekernel/wiki/items/system/components/changekernel.md#versioning-and-document-contract) owns managed document rules and common stage-validation contracts; there is no separately selectable Wiki or lifecycle profile. `createProjectServer` uses the running `CHANGEKERNEL_VERSION` by default; an explicit `project.kernelVersion` must match it. The `wikiProfile` selector, legacy lifecycle engine, old Wiki envelopes/projections, binary Gate/Work engines, Check Runner port and memory-only Gate store are removed. Obsolete tests and the unused Kernel export file are removed with them; remaining suites run directly through recursive discovery. Available operations are Project discovery/capabilities, managed-document proposal and Changes get. Other operations, including Console status/list projections, report unavailable rather than falling back to old behavior.
+Separate library interfaces now support owned intake and Change-owned multi-entity candidate batches in application-supplied SQLite storage. `createContainerIntakeClient` retains What/Why; `createContainerCandidateClient` installs draft definitions, describes generic coverage, prepares batches and reads them by candidate identity. A batch retains exact proposed values, relationships and version-bound source observations without writing managed values. Repeated requests reconcile across restart; a Change can retain multiple immutable batches. See the [candidate contract](.changekernel/wiki/items/system/components/state.md#change-owned-multi-entity-candidates) and [executable examples](tests/adapters/sqlite/container-candidate.test.mjs). Node's built-in SQLite interface is experimental; hosts authenticate callers and protect database access.
 
-Bootstrap creates empty `.changekernel/wiki/` and `.changekernel/changes/` roots plus minimal identity configuration. It seeds no Check Pack, Check policy defaults or Check adoption records. This source repository's Wiki uses readable source metadata while preserving desired intent and relevant historical information; it is not automatically an adopted Wiki conforming to the new Kernel. Genuine Change traces and Git history remain unchanged. Pre-release implementations can be replaced without permanent compatibility promises; an actual supported deployment requires an explicitly scoped transition.
+Full lifecycle progression, Checks on these candidates, publication, generalized storage/discovery, native Jev operations, durable factory/recovery, frontend feedback and cross-container dependencies remain unfinished. Draft persistence and passing source tests do not establish qualified adoption.
 
-## Development
+## Development and repository truth
 
-Requires Node.js 22.19.0 or newer. Within an approved native scope:
+Requires Node.js 22.19.0 or newer. Within approved source-development scope:
 
 ```bash
 npm ci --ignore-scripts
@@ -46,20 +47,17 @@ npm test
 npm run build
 ```
 
-Use proactive diagnostics and actual exit status. Native tests prove their asserted conditions, not release readiness. Architecture guards and imported suites must evolve deliberately rather than be weakened to hide changes.
+Use [AGENTS.md](AGENTS.md), native coding tools, diagnostics and tests. Architecture guards evolve deliberately; passing tests/builds are not operational qualification. Pack/test candidates only in disposable external projects with isolated Pi settings.
 
-Pack/test release candidates only in disposable external projects with isolated Pi settings. This mutable checkout never governs itself: do not load ChangeKernel from it or its `.pi/`, invoke `wiki_*` tools or `/wiki-*` commands here, or add local package links, duplicate skills or controller pins. Protected effects and release/controller transitions need applicable explicit authority. A build or documentation checkpoint does not grant them. [Minimum local dogfood](.changekernel/wiki/items/system/components/package.md#minimum-local-dogfood) requires a pinned external controller, explicit adoption/authority, one complete governed lifecycle, durable recovery and qualification of the same release bytes. A short agent instruction points to that controller; it cannot replace enforcement.
+**Never load this mutable checkout as its own controller.** Do not call ChangeKernel `wiki_*` tools or `/wiki-*` commands here, install it under repository `.pi/`, or create local package links, duplicate skills or controller pins. Later governed Changes/Work require a qualified immutable external release, activation and explicit handoff; an unavailable designated controller never falls back to source.
 
-Work directly in the main session, using [AGENTS.md](AGENTS.md). Product Planning belongs in Change/Work, not standalone plan documents.
+- [`.changekernel/wiki/`](.changekernel/wiki/) owns desired design, not fabricated managed adoption.
+- [`.changekernel/changes/`](.changekernel/changes/) owns governed lifecycle history; existing records remain unchanged.
+- [`src/`](src/) and [`tests/`](tests/) own executable truth; Git preserves history/checkpoints.
+- [`CHANGEKERNEL_STATUS.md`](CHANGEKERNEL_STATUS.md) is a short temporary gap note, not a roadmap. Change/Work replaces it after qualified adoption.
+- [Archives](docs/archive/README.md) are historical evidence, not active plans.
 
-## Repository truth
-
-- [`.changekernel/wiki/`](.changekernel/wiki/): stable desired behavior; readable source metadata and historical provenance do not fabricate qualified adoption.
-- [`.changekernel/changes/`](.changekernel/changes/): governed lifecycle history.
-- [`CHANGEKERNEL_STATUS.md`](CHANGEKERNEL_STATUS.md): short temporary pre-dogfood gap note. Change/Work replaces it after qualified adoption.
-- [`src/`](src/) and [`tests/`](tests/): executable truth. Git preserves exact history; [existing archives](docs/archive/README.md) are historical evidence, not active queues.
-
-Private runtime state, generated views, caches, credentials and package artifacts are not source truth. Future implicit Markdown discovery does not reclassify every file in this source checkout as governing policy.
+Generated views, private runtime state, credentials, caches, sockets, worktrees and package artifacts are not source truth. Documentation approval is not implementation, release activation or controller handoff.
 
 ## License
 
