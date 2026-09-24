@@ -336,7 +336,7 @@ impl ContainerIntakeStore for SqliteIntake {
         Ok(record)
     }
     fn read(&self, container: &str, change: &str, actor: &str) -> Result<Receipt> {
-        authorized_receipt(&self.db, container, change, actor)
+        authorized_receipt(&self.db, container, change, actor, self.continuation)
     }
 }
 
@@ -346,6 +346,7 @@ pub(super) fn authorized_receipt(
     container: &str,
     change: &str,
     actor: &str,
+    continuation: bool,
 ) -> Result<Receipt> {
     owner(db, container, actor)?;
     let binding: Option<(String, String)> = db.query_row("SELECT actor, request_id FROM ck_native_retries WHERE container_id = ?1 AND change_id = ?2", params![container, change], |r| Ok((r.get(0)?, r.get(1)?))).optional().map_err(|_| Issue::Unavailable)?;
@@ -358,7 +359,9 @@ pub(super) fn authorized_receipt(
                 |r| r.get(0),
             )
             .map_err(|_| Issue::Unavailable)?;
-        return if exists != 0 {
+        return if exists != 0
+            || (continuation && continuation::has_artifacts(db, container, change)?)
+        {
             Err(Issue::Unavailable)
         } else {
             Err(Issue::Denied)

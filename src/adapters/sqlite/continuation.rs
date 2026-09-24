@@ -38,12 +38,15 @@ pub(super) fn insert_revision(db: &Connection, revision: &IntentRevision) -> Res
     Ok(())
 }
 
+pub(super) fn has_artifacts(db: &Connection, container: &str, change: &str) -> Result<bool> {
+    db.query_row(
+        "SELECT EXISTS (SELECT 1 FROM ck_native_intent_revisions WHERE container_id = ?1 AND change_id = ?2 UNION ALL SELECT 1 FROM ck_native_intent_heads WHERE container_id = ?1 AND change_id = ?2 UNION ALL SELECT 1 FROM ck_native_intent_retries WHERE container_id = ?1 AND change_id = ?2 UNION ALL SELECT 1 FROM ck_native_file_candidates WHERE container_id = ?1 AND change_id = ?2 UNION ALL SELECT 1 FROM ck_native_file_candidate_retries WHERE container_id = ?1 AND change_id = ?2)",
+        params![container, change], |row| row.get(0),
+    ).map_err(|_| Issue::Unavailable)
+}
+
 pub(super) fn seed(db: &Connection, receipt: &Receipt) -> Result<()> {
-    let artifacts: i64 = db.query_row(
-        "SELECT (SELECT count(*) FROM ck_native_file_candidates WHERE container_id = ?1 AND change_id = ?2) + (SELECT count(*) FROM ck_native_file_candidate_retries WHERE container_id = ?1 AND change_id = ?2)",
-        params![receipt.container_id, receipt.change_id], |row| row.get(0),
-    ).map_err(|_| Issue::Unavailable)?;
-    if artifacts != 0 {
+    if has_artifacts(db, &receipt.container_id, &receipt.change_id)? {
         return Err(Issue::Unavailable);
     }
     let revision = intent::origin(receipt);
@@ -87,7 +90,7 @@ pub(super) fn load_intent(
     selected: Option<&str>,
     actor: &str,
 ) -> Result<IntentRevision> {
-    let original = authorized_receipt(db, container, change, actor)?;
+    let original = authorized_receipt(db, container, change, actor, true)?;
     let origin = intent::origin(&original);
     let head: String = db.query_row("SELECT revision_id FROM ck_native_intent_heads WHERE container_id = ?1 AND change_id = ?2 AND length(CAST(revision_id AS BLOB)) = 64", params![container, change], |r| r.get(0))
         .map_err(|_| Issue::Unavailable)?;

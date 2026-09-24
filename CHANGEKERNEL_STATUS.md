@@ -2,9 +2,11 @@
 
 This is the temporary handoff before qualified adoption. [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design, [AGENTS.md](AGENTS.md) owns procedure, and Git preserves completed reviews. Never govern this checkout with mutable checkout bytes.
 
-## Stop boundary — shared R5 baseline, before dispatch
+## Shared R5 baseline — reviewed, preparing dispatch
 
-The user requested a clean stopping point because the conversation context was growing. **Checkpoint this shared baseline and stop. No R5 worker branches/worktrees or final worker handoffs have been created.** Resume with a fresh-context review of the shared boundary, then create and dispatch exact assignments. Do not mistake this checkpoint for acceptance of either complete R5 feature or release qualification.
+**Manager verdict: accepted for the shared baseline only, after the repair in this revision.** The user authorized resumption from checkpoint `8e8621a19b114238e57e1b03ee348dafbff7ce71`. Review found that surviving intent custody could allow recreation of a lost original intake with different text. The regression reproduced an incorrect successful receipt before the repair. Shared initialization now refuses all surviving Change-bound continuation artifacts; an authorized read classifies surviving custody with missing original/retry rows as unavailable, while another actor remains denied. No schema, public API or identity encoding changed. The private `authorized_receipt` helper now takes the known profile flag.
+
+The repaired baseline passed **25 native tests**, fmt/clippy and active LSP checks. Evidence: `/tmp/changekernel-r5-genesis-before.log` and `/tmp/changekernel-r5-dispatch-checks.log`. No R5 worker branches/worktrees or final worker handoffs exist yet; create them from this reviewed revision next. This verdict does not accept either complete R5 feature or qualify a release.
 
 - **Manager worktree/branch:** `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`.
 - **Prior accepted integration:** `034141eea193eb155a9ffba5582df89cfea00dfc`; full R4 verdicts and evidence are preserved at `9abfac4b2:CHANGEKERNEL_STATUS.md`. R4-A/B are accepted and finished. The unexplained first R4-A test summary did not reproduce in three manager runs or the combined run; its cause remains unknown. Do not reopen that investigation without new evidence.
@@ -29,7 +31,7 @@ The user requested a clean stopping point because the conversation context was g
 - `src/application/{intent,file_candidate}.rs`: generic coordination exists; public signatures, policy ordering and retry semantics are frozen. `src/application/intake.rs` exposes its store only within the crate.
 - `src/lib.rs` and `Cargo.toml` already register source modules, exports and the shared baseline test target. No dependency/lockfile or TypeScript changes were made.
 
-## Actual checks and remaining verification
+## Prior checkpoint checks and remaining feature verification
 
 - `cargo test --locked`: **24 passed** (the prior 20 plus four shared continuation tests); doctests enabled, currently none.
 - `cargo fmt --check` and `cargo clippy --locked --all-targets -- -D warnings`: pass. No warning suppression was added; initial unused-function findings were resolved through public data helpers used by the intended contract.
@@ -38,9 +40,9 @@ The user requested a clean stopping point because the conversation context was g
 - Active LSP probes reported no errors on the changed Rust/config paths; perform a fresh probe after any resume edits. Source checks are not physical crash, malicious-host containment or exact-release qualification evidence.
 - Still required after worker returns: independent exact reviews, concrete end-to-end authorization/custody/retry tests and a combined candidate-preparation versus intent-revision race using the actual writers. Do not add a duplicate permanent challenge suite or compiler-invariant tests.
 
-## Next session — prepare and release the workers
+## Next action — prepare and release the workers
 
-1. Verify integration branch/clean status and review the shared contracts/implementation above with fresh context. Preserve the accepted observer and intake behavior. Correct any shared defect before dispatch rather than letting workers invent incompatible fixes.
+1. The fresh-context shared review and repair are complete. Preserve the accepted observer/intake behavior; any later shared defect must return to the manager rather than prompting incompatible worker fixes.
 2. Pin the exact reviewed base, then create external branches/worktrees. Reserved names are `work/native-file-candidates` at `/home/canina7/Projects/changekernel-workers/native-file-candidates`, and `work/native-intent-revisions` at `/home/canina7/Projects/changekernel-workers/native-intent-revisions`. They do not exist yet.
 3. **R5-A:** implement concrete SQLite file-candidate custody in `src/adapters/sqlite/file_candidate.rs`; allow internal work in `src/application/file_candidate.rs` and `src/kernel/state/file_candidate.rs` without changing frozen public types, digests, scope, policy or schema. New integration tests: `tests/native_file_candidate.rs` (ordinary Cargo root test auto-discovery; no manifest edit/custom runner). Own handoff only otherwise. Cover exact binary multi-file custody/restart/object loss, current policy on retry/read, conflicting request identity, missing/corrupt grounds, transaction rollback and intent-head changes during capture.
 4. **R5-B:** implement `IntentRevisionStore for SqliteIntake` in `src/adapters/sqlite/intent.rs`, with internal coordination work in `src/application/intent.rs`; shared kernel intent types/helpers are read-only. New integration tests: `tests/native_intent_revision.rs` (Cargo auto-discovery). Own handoff only otherwise. Reconcile exact retries before head/capacity conditions; retain revision/retry/head atomically; preserve the original; enforce single-winner concurrency, complete history and the declared bound. No candidate implementation dependency is required.

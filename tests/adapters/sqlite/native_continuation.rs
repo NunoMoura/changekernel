@@ -143,6 +143,54 @@ fn original_retry_and_revision_zero_are_one_atomic_write() {
 }
 
 #[test]
+fn surviving_continuation_custody_blocks_original_recreation() {
+    for retain_origin in [true, false] {
+        let f = Fixture::new();
+        let (mut intake, receipt) = f.setup();
+        let zero = read_intent(&intake, "c", &receipt.change_id, None, "owner").unwrap();
+        let db = Connection::open(&f.0).unwrap();
+        // Deliberately damage custody outside the adapter; either kind of surviving evidence
+        // must block recreation, even if the caller supplies different text for the intake key.
+        db.execute_batch("PRAGMA foreign_keys = OFF; DELETE FROM ck_native_changes; DELETE FROM ck_native_retries; DELETE FROM ck_native_intent_heads;").unwrap();
+        if !retain_origin {
+            db.execute(
+                "INSERT INTO ck_native_intent_retries VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![
+                    "c",
+                    "owner",
+                    "lost-revision",
+                    receipt.change_id,
+                    zero.revision_id
+                ],
+            )
+            .unwrap();
+            db.execute_batch("DELETE FROM ck_native_intent_revisions")
+                .unwrap();
+        }
+        let before = fs::read(&f.0).unwrap();
+        let mut replacement = proposal();
+        replacement.what = "Must not replace lost original custody".into();
+        assert_eq!(
+            intake.propose(&replacement, "owner"),
+            Err(Issue::Unavailable)
+        );
+        assert_eq!(
+            intake.propose(&proposal(), "owner"),
+            Err(Issue::Unavailable)
+        );
+        assert_eq!(
+            intake.read("c", &receipt.change_id, "owner"),
+            Err(Issue::Unavailable)
+        );
+        assert_eq!(
+            intake.read("c", &receipt.change_id, "other"),
+            Err(Issue::Denied)
+        );
+        assert_eq!(fs::read(&f.0).unwrap(), before);
+    }
+}
+
+#[test]
 fn shared_head_guard_verifies_lineage_and_retry_grounds() {
     let f = Fixture::new();
     let (intake, receipt) = f.setup();
