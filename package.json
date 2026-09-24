@@ -1,7 +1,7 @@
 {
 	"name": "@nunomoura/changekernel",
 	"version": "0.4.0-sk3g.1",
-	"description": "A redistributable State-and-Change engine for applications; currently a private source-development foundation.",
+	"description": "Private TypeScript Pi bridges supporting the native ChangeKernel engine.",
 	"keywords": [
 		"changekernel",
 		"semantic-change",
@@ -42,8 +42,7 @@
 		"README.md",
 		"CHANGELOG.md",
 		"LICENSE",
-		"package.json",
-		"bin"
+		"package.json"
 	],
 	"devDependencies": {
 		"@types/node": "25.6.0",
@@ -70,8 +69,5 @@
 		"@earendil-works/pi-coding-agent": "0.85.1",
 		"mdast-util-from-markdown": "2.0.3",
 		"yaml": "2.9.0"
-	},
-	"bin": {
-		"changekernel": "./bin/changekernel.mjs"
 	}
 }

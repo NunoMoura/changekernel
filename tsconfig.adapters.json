@@ -1,9 +1,4 @@
 {
 	"extends": "./tsconfig.json",
-	"include": [
-		"src/adapters/pi/agent-runtime.ts",
-		"src/adapters/pi/check-model.ts",
-		"src/adapters/pi/provider.ts",
-		"src/adapters/pi/session-runner.ts"
-	]
+	"include": ["src/index.ts"]
 }

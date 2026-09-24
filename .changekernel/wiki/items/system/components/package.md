@@ -178,7 +178,7 @@ The first separately reviewed library capability is [native Rust intake](state.m
 
 The [native committed-source observer](state.md#native-committed-source-observations) additionally requires an explicitly configured, trusted Git executable when that capability is used. It uses the existing approved Rust dependencies; it does not add a Git framework, a worker runtime or a build/launcher dependency on Git. Record the tested Git version and supported repository forms; this is not cross-version qualification.
 
-Existing JavaScript launcher and reference sources remain private historical scaffolding until deliberate removal or replacement; retaining them does not require their retired test suites. The testing policy above owns the active test scope. Native launcher, intake persistence and source-observation fixtures run in disposable external directories. Build and test success proves only the exercised behavior, not the first self-development delivery or controller adoption.
+The supporting npm package exposes only the retained Pi bridges and their transitive wire/codec dependencies. It does not install a launcher or expose historical engine APIs; the Cargo binary is the native launcher. Historical TypeScript engine sources may be deliberately removed without migrating their unsupported behavior or retaining their retired test suites. Removing scaffolding does not implement replacement native capabilities. The testing policy above owns the active test scope. Native launcher, intake persistence and source-observation fixtures run in disposable external directories. Build and test success proves only the exercised behavior, not the first self-development delivery or controller adoption.
 
 ## Source-development boundary
 
