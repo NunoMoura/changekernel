@@ -1,42 +1,69 @@
 # ChangeKernel source-development status
 
-**Target:** the smallest qualified Rust product for external self-development, not TypeScript feature parity. [Primary design](.changekernel/wiki/items/product/changekernel.md) owns intent; [first-release acceptance](.changekernel/wiki/items/system/components/package.md#first-self-development-delivery-focus) owns delivery criteria. Existing Changes and archives remain historical evidence.
+**Target:** the smallest qualified Rust product for external self-development, not TypeScript feature parity. [Primary design](.changekernel/wiki/items/product/changekernel.md) and [first-release acceptance](.changekernel/wiki/items/system/components/package.md#first-self-development-delivery-focus) own requirements. This note owns current source-development handoffs only.
 
-## Current handoff
+## Shared checkpoint and coordination
 
-**Status:** R0-A and R0-B are accepted. Their combined implementation passed independent checks at `53b2567f10b8a984007415963ff42a9bfce8256b`.
+**Responsible:** project manager. **Assignments:** R1-A and R1-B may run in parallel; neither is accepted or authorized to advance itself.
 
-**Integration:** branch `integration/rust-kickoff-01`, worktree `/home/canina7/Projects/changekernel-workers/integration`. The original `audit/clean-baseline` checkout remains at `de55797fc2e565639a635f345124407f42da73e1`; its existing source changes and staging area were preserved. The project manager did not modify either worker branch or merge worker handoff files wholesale.
+**Reviewed base:** `5f71878da3a68cc8492b8c0b3973c4a6dbdf0d18` on `integration/rust-kickoff-01`. R0-A/R0-B acceptance, exact submitted revisions and checks are retained in that commit's status note. Both new worker branches start at the same documentation-only child containing these requirements and assignments. The launch prompts identify that exact startup revision; record it before editing.
 
-**Next:** the project manager must define the first bounded durable Rust intake contract and its storage/retry responsibilities in Wiki, then assign work from the integrated checkpoint. Agree on shared interfaces and ownership before parallel implementation. Both workers wait for new assignments; neither may advance itself. No engine implementation is assigned yet.
+**Preparation checks:** Rust build, formatting, clippy and the existing native test passed; `npm test` passed type checking, build and 655/655 tests without skips. The three edited Markdown files passed active diagnostics. These are baseline checks, not implementation or conformance evidence for R1.
 
-Worker locations remain:
+**Integration worktree:** `/home/canina7/Projects/changekernel-workers/integration`. Preserve the original checkout and the completed R0 worker branches/worktrees. Use only your newly assigned branch and directory below.
 
-| Worker | Branch | Worktree |
-| --- | --- | --- |
-| A | `work/rust-bootstrap` | `/home/canina7/Projects/changekernel-workers/rust-bootstrap` |
-| B | `work/intake-conformance` | `/home/canina7/Projects/changekernel-workers/intake-conformance` |
+**Frozen shared inputs:** `tests/adapters/sqlite/intake-conformance.json` and `tests/adapters/sqlite/container-intake.test.mjs`. Neither worker changes them. R1-A consumes the four existing semantic cases. R1-B adds a separate recovery corpus against the existing TypeScript reference; its new cases are not automatically Rust-conformant or an input dependency of R1-A. Porting them to Rust requires a later assignment against the reviewed native interface, not an unreviewed branch dependency.
 
-## Accepted reviews
+R1-A alone owns Rust module composition, persistence interfaces, manifests, lockfile and Rust coverage guards. R1-B owns only its new test files. No shared production interface is being implemented independently by both workers. Report any newly discovered overlap or requirement ambiguity before affected work continues.
 
-| Slice | Implementation | Worker return | Project-manager verdict |
-| --- | --- | --- | --- |
-| R0-A: native bootstrap | `c259c87128f9288478afa121450ccac1aeb6905b` | `eccca9fd9e5fbb92f6e4a9e51c63fc8017e83ec9` | accepted |
-| R0-B: intake reference cases | `89bb3a03ff35a4d463bd59a686535609a8286bee` | `b2a5be5f80a69e7740d3523290459a2122a67230` | accepted |
+## R1-A — First durable native intake
 
-**Findings:** no blocking findings. R0-A's `Cargo.toml`, lockfile, toolchain pin, `src/lib.rs`, `src/main.rs`, native tests and `tests/kernel/invariants/architecture.test.mjs` satisfy the bounded bootstrap assignment. Wiki changes only add ownership mappings. R0-B's `tests/adapters/sqlite/intake-conformance.json` and reference runner retain the required intake safeguards. Both implementations remain byte-identical to their reviewed revisions in the combined result; no fixes are requested.
+**Worker:** A. **Branch:** `work/rust-intake`. **Worktree:** `/home/canina7/Projects/changekernel-workers/rust-intake`. **Depends on:** the shared checkpoint and frozen cases, not R1-B.
 
-Original assignments are retained in `0cddf5144e2a51b5cf640508e35127f9aa6db378:CHANGEKERNEL_STATUS.md`. The earlier R0-B review is retained in `383495d1d75af49c54bfa6b807b1a483d3861a84:CHANGEKERNEL_STATUS.md`.
+**Outcome:** a bounded Rust library capability that creates/opens owned containers and retains/reads exact retry-bound intent in persistent SQLite, while the native launcher remains non-operational.
 
-## Independent verification
+**Requirements:** [native Rust intake](.changekernel/wiki/items/system/components/state.md#native-rust-intake), [package/dependency boundary](.changekernel/wiki/items/system/components/package.md#native-rust-bootstrap), and [source layout](.changekernel/wiki/items/product/changekernel.md#repository-representation). The linked contract deliberately permits absent Why and exact Unicode rather than imposing all prototype validation restrictions.
 
-- At the exact R0-A implementation and again after integration: `cargo build --locked`, `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, and `cargo test --locked --all-targets` passed. There is one native integration test; library and executable unit-test targets contain no tests.
-- `npm test` passed type checking, build and all 656 tests at R0-A, then all 655 tests in the combined result, without skips. R0-B combines two previous process tests, explaining the count difference. JavaScript syntax and `git diff --check` checks passed.
-- A separate native-only external project built and tested offline without JavaScript assets or Node/Pi on its command path. Fourteen launcher probes with an empty command path passed, including invalid Unicode arguments; external application source/storage fixture bytes and entries remained unchanged.
-- Four deliberate guard violations were rejected: an unlisted Rust source, an unknown source language, an unlisted Rust test, and a TypeScript kernel import of Node filesystem functionality. All temporary files were removed.
-- The earlier independent R0-B review passed 5/5 focused tests and 653/653 full-suite tests. All seven altered expected-result fields caused assertion failures; exact original bytes were restored. Those reviewed files were preserved during integration.
-- Active language-server probes reported no diagnostics for the five changed code files but could not confirm they were clean. Compiler, linter and executable checks provide the confirmed results above.
+**Owned paths:** `Cargo.toml`, `Cargo.lock`, `README.md`, `src/lib.rs`, `src/kernel/containers/intake.rs`, `src/application/intake.rs`, `src/ports/container_intake.rs`, `src/adapters/sqlite/container_intake.rs`, `tests/kernel/containers/native_intake.rs`, `tests/adapters/sqlite/native_intake.rs`, optional `tests/adapters/sqlite/native_intake_process.rs`, `tests/kernel/invariants/architecture.test.mjs`, and `tests/package/native-bootstrap.test.mjs`. Also own additions to State's ownership frontmatter for actual new paths, not requirement changes, and your return section below. Do not add module shells or another production executable.
 
-**Review environment:** Linux; rustup `1.29.1`, rustc `1.88.0` (`6b00bc388`), cargo `1.88.0` (`873a06493`), clippy `0.1.88`, rustfmt `1.8.0-stable`; Node `v24.14.0`, npm `11.9.0`. Review dependencies were installed separately with `npm ci --no-audit --no-fund`. The manager installed the pinned Rust toolchain outside the repository without administrator access or global-default changes; the temporary environment setup is `/tmp/changekernel-r0a-review-tools.5VMgXF/env.sh`. Recreate an isolated installation if that temporary setup is unavailable.
+**Acceptance:**
 
-**Limits:** this accepts a non-operational native bootstrap and TypeScript reference cases, not Rust intake conformance, an engine lifecycle, physical crash/power-loss recovery, cross-platform support or release qualification. No release packaging, activation, live inference or controller handoff occurred. Never load this mutable checkout as its controller. Qualification, activation and explicit external-controller handoff remain separate decisions.
+- Implement the linked operation, authority, validation, retention, retry and schema-refusal semantics. Keep Kernel effects separate from the persistence adapter; use the smallest typed boundary and curated library exports needed for these operations.
+- Exercise the existing four JSON cases through a thin native runner, consuming their input/expected data rather than copying fixture values. Demonstrate that a deliberately wrong expectation fails, using a disposable copy or in-memory mutation without changing the frozen files. Keep SQLite schema inspections and fault mechanisms separate from portable expectations. Cover fresh-process and concurrent identical retries and failed insertion followed by repair/retry.
+- Add native-specific tests for absent versus present-empty Why, exact whitespace/non-normalized Unicode, bounds, malformed input, denied access, retained corruption, incompatible/partial/native-versus-prototype schema refusal, existing-store reopen without recreation, and no silent overwrite or repair. A stored digest is not a tamper-proofing claim.
+- Select and lock compatible versions of only the direct dependencies allowed by the package contract. Keep Rust `1.88.0`, the package version and JavaScript dependencies unchanged. Preserve TypeScript architecture checks and add explicit ownership/bounded coverage for every new Rust source and test; do not replace guards with blanket Rust exclusions or add a generalized analyzer.
+- Update only README capability/build notes for the delivered native intake, preserving the unqualified boundary and TypeScript reference distinctions; link requirements rather than duplicating Wiki.
+- Pass `cargo build --locked`, `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets`, `npm test`, and `git diff --check`. Verify that native build/run need no Node or Pi, and that launcher behavior and absence of application effects remain unchanged. Report tool/dependency versions and actual test coverage.
+
+**Excluded:** operational launcher/transport, terminal client, ownership transfer, intent revisions, candidate/Check/Work lifecycle, Pi execution, source publication, historical import/migration, TypeScript production changes, release packaging and controller operations.
+
+**Return R1-A:** pending.
+
+## R1-B — Interrupted and competing intake challenges
+
+**Worker:** B. **Branch:** `work/intake-recovery`. **Worktree:** `/home/canina7/Projects/changekernel-workers/intake-recovery`. **Depends on:** the shared checkpoint and existing TypeScript reference, not R1-A or a Rust toolchain.
+
+**Outcome:** a small portable recovery case set with a thin TypeScript SQLite reference runner, targeting gaps beyond the four frozen cases rather than duplicating them.
+
+**Requirements:** the retry/recovery semantics in [native Rust intake](.changekernel/wiki/items/system/components/state.md#native-rust-intake), [continuation obligations](.changekernel/wiki/items/system/components/state.md#recovery-and-continuation-obligations), and [qualification limits](.changekernel/wiki/items/system/components/package.md#qualification). Prototype-specific validation and schema details are not new Rust requirements.
+
+**Owned paths:** `tests/adapters/sqlite/intake-recovery-conformance.json`, `tests/adapters/sqlite/intake-recovery.test.mjs`, optional `tests/adapters/sqlite/intake-recovery-process.mjs`, and your return section below.
+
+**Acceptance:**
+
+- Cover four concrete scenarios: a committed proposal whose caller reply is lost after child-process termination; concurrent first proposals with one retry identity but different Why, yielding one winner and one conflict; a write-lock timeout followed by release and same-identity retry; and the same request identifier in independently owned containers, with independent retained intent and denied cross-owner access.
+- Reopen in a fresh process where relevant. Check stable scoped references, exact retained intent, no duplicates and no loser overwrite. Do not require a particular race winner, globally distinct bare Change identifiers, prototype hashes/table layouts, or exact diagnostic prose in portable JSON.
+- Keep trusted actor context separate from submitted content. Use explicit child readiness/release handshakes, bounded waits and reliable child cleanup, not sleeps as proof of ordering. Control storage locks/faults only in the reference runner and only in disposable external directories. Do not claim mid-transaction or physical power-loss coverage from an after-commit termination.
+- Exercise every declared case without silent skips. Mutate an expected result to demonstrate a failing assertion, then restore it. Run the focused old/new intake suites, `npm test`, and `git diff --check`; report actual results and coverage gaps. Reference success is not Rust conformance.
+
+**Excluded:** production changes, changes to the frozen cases/runner, Rust code or interfaces, manifests/dependencies, new testing frameworks/workflow languages, native schema design, broadened intake features, and weakened checks. If a reference defect blocks a case, report it with evidence instead of fixing production or weakening the expectation.
+
+**Return R1-B:** pending.
+
+## Return and review
+
+Each worktree uses its own dependencies, generated files and temporary resources; do not link or modify another checkout's generated files. Use an existing external Rust `1.88.0` toolchain or an isolated installation outside the repository without administrator access/global-default changes. R1-B needs no Rust setup. Preserve pinned JavaScript dependencies, including Pi `0.85.1`.
+
+Commit implementation first, then commit only your return section naming the implementation revision, startup revision, actual checks/results and gaps. Stop for project-manager review; do not merge, rebase, push, change branches or start another slice. The project manager consolidates returns, reviews exact revisions and verifies the combined result before acceptance.
+
+These are unqualified source-development assignments. No mutable-checkout controller, live inference, deployment, activation or authority handoff is authorized. Durable requirements belong in Wiki; completed handoffs remain in Git. Changes and Work replace this temporary note only after qualified external-controller handoff.

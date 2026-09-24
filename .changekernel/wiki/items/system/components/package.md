@@ -126,11 +126,13 @@ This is a delivery criterion, not controller adoption or permission for live inf
 
 ## Native Rust bootstrap
 
-The initial native build is one private Cargo package named `changekernel`, with `src/lib.rs` and a thin `src/main.rs`. Its development version matches the supporting JavaScript package; matching versions do not establish release identity or qualification. Pin the exact tested Rust toolchain and retain `Cargo.lock`. The bootstrap needs only the Rust standard library and does not require Node or Pi to build or run.
+The initial native build is one private Cargo package named `changekernel`, with `src/lib.rs` and a thin `src/main.rs`. Its development version matches the supporting JavaScript package; matching versions do not establish release identity or qualification. Pin the exact tested Rust toolchain and retain `Cargo.lock`. The metadata-only bootstrap uses only the Rust standard library. Native builds and execution do not require Node or Pi.
 
 During bootstrap, no arguments or `--help` prints usage, identifies the build as unqualified, and exits successfully. `--version` prints `changekernel <package-version>` followed by a newline and exits successfully. Other arguments, including unsupported combinations, produce a diagnostic on standard error and a nonzero exit. No invocation starts a host or worker, opens application storage, modifies application sources, or transfers authority. Library exports are limited to build metadata until a separately reviewed engine capability exists.
 
-Keep the existing JavaScript launcher and reference implementation unchanged until deliberate replacement. Native launcher tests run in disposable external directories. Build and test success proves this bounded bootstrap behavior, not the first self-development delivery or controller adoption.
+The first separately reviewed library capability is [native Rust intake](state.md#native-rust-intake). Its approved direct dependencies are `rusqlite` with bundled SQLite and `sha2` for retained-data integrity; `serde_json` is permitted only as a test dependency for the shared case data. Select and lock versions compatible with the existing toolchain; do not bundle unrelated upgrades. Bundled SQLite locks its database source with the crate dependency instead of relying on a separately installed SQLite library; source builds also require a compatible C compiler. This dependency allowance does not introduce a host, transport, terminal framework or worker runtime. The native launcher retains its non-operational bootstrap behavior until a later explicit capability changes that contract.
+
+Keep the existing JavaScript launcher and reference implementation unchanged until deliberate replacement. Native launcher and intake persistence tests run in disposable external directories. Build and test success proves only the exercised bootstrap/intake behavior, not the first self-development delivery or controller adoption.
 
 ## Source-development boundary
 
