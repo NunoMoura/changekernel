@@ -10,6 +10,7 @@ Use [CHANGEKERNEL_STATUS.md](CHANGEKERNEL_STATUS.md) for all inter-agent handoff
 
 ## Project manager
 
+- Start in the integration worktree and verify its branch. Prepare next handoffs while workers run. Mark provisional baselines explicitly; dispatch is not acceptance.
 - Create each worker's branch and external worktree from the agreed checkpoint. Record branch, worktree path, and base commit in its assignment.
 - Define each slice's outcome, dependencies, owned paths, requirement references, and acceptance checks. Parallelize only ready, independent slices with non-overlapping write scopes and agreed shared interfaces. Give shared contracts, manifests, and lockfiles one owner; serialize conflicting work. Resolve ambiguous product intent or safety guarantees with the user.
 - Independently review each submitted revision and run relevant checks. Verify the combined result after integration before final acceptance. Return fixes to the worker.

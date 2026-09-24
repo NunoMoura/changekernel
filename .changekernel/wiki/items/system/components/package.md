@@ -124,6 +124,22 @@ This first application proves a bounded part of the continuous development, use 
 
 This is a delivery criterion, not controller adoption or permission for live inference. Before that release exists, native source-development tools remain in use. No feature work, repository restructure or terminal client may load the mutable checkout as the governing controller. Qualification, activation and explicit handoff remain separate actions with their required authority.
 
+## First-release capability dependencies
+
+Delivery is a dependency graph, not a prototype-parity checklist. The following gates describe required capability relationships; current assignments and provisional work belong in the temporary handoff, not this design.
+
+| Capability | Prerequisites and acceptance boundary |
+| --- | --- |
+| Durable intent and continuation | Trusted scope, exact original input, atomic retry custody and explicit unavailable outcomes. Native interruption/concurrency challenges can evolve alongside an independent source binding once the intake interface is agreed. |
+| Source observations and exact candidates | Declared read scope and native versions precede protected custody of exact multi-resource proposals. Observation and preparation do not grant approval or publication authority. |
+| Decision and bounded Work | Attributable intent versions, applicable policy, assessment grounds and retained authority precede execution eligibility and delegation. Initial authorization/delegation policy must be agreed before its implementation is assigned. |
+| Producer and Check execution | Protected inputs, bounded Runs, shared supervision/cancellation and retained outputs must be agreed first. Pi production and deterministic Check adapters may then be built independently against those contracts. |
+| Guarded effects and recovery | Exact candidate custody, applicable pre-effect assessment, current authority, freshness and protected recovery grounds precede publication. Native effect receipts and outcome lookup precede safe retries after ambiguous interruption. |
+| Operator visibility and controls | Authoritative operation/query contracts precede terminal integration. Displays may evolve in parallel with their backend only when supported/unavailable states and version semantics are agreed. |
+| Qualified external self-development | The complete bounded path, meaningful Checks, custody/containment and recovery must pass exact-subject qualification in external projects. Packaging, activation and explicit controller handoff remain separate gates. |
+
+Freeze shared boundaries before parallel writes and give shared composition/metadata one owner. Provisional implementation may start from an explicitly identified submitted snapshot while earlier review continues; this does not accept that snapshot. Review failures remain integration and acceptance blockers, and affected dependent work must be revised or paused rather than silently inheriting a defect.
+
 ## Native Rust bootstrap
 
 The initial native build is one private Cargo package named `changekernel`, with `src/lib.rs` and a thin `src/main.rs`. Its development version matches the supporting JavaScript package; matching versions do not establish release identity or qualification. Pin the exact tested Rust toolchain and retain `Cargo.lock`. The metadata-only bootstrap uses only the Rust standard library. Native builds and execution do not require Node or Pi.
@@ -132,7 +148,9 @@ During bootstrap, no arguments or `--help` prints usage, identifies the build as
 
 The first separately reviewed library capability is [native Rust intake](state.md#native-rust-intake). Its approved direct dependencies are `rusqlite` with bundled SQLite and `sha2` for retained-data integrity; `serde_json` is permitted only as a test dependency for the shared case data. Select and lock versions compatible with the existing toolchain; do not bundle unrelated upgrades. Bundled SQLite locks its database source with the crate dependency instead of relying on a separately installed SQLite library; source builds also require a compatible C compiler. This dependency allowance does not introduce a host, transport, terminal framework or worker runtime. The native launcher retains its non-operational bootstrap behavior until a later explicit capability changes that contract.
 
-Keep the existing JavaScript launcher and reference implementation unchanged until deliberate replacement. Native launcher and intake persistence tests run in disposable external directories. Build and test success proves only the exercised bootstrap/intake behavior, not the first self-development delivery or controller adoption.
+The [native committed-source observer](state.md#native-committed-source-observations) additionally requires an explicitly configured, trusted Git executable when that capability is used. It uses the existing approved Rust dependencies; it does not add a Git framework, a worker runtime or a build/launcher dependency on Git. Record the tested Git version and supported repository forms; this is not cross-version qualification.
+
+Keep the existing JavaScript launcher and reference implementation unchanged until deliberate replacement. Native launcher, intake persistence and source-observation tests run in disposable external directories. Build and test success proves only the exercised bootstrap/intake behavior, not the first self-development delivery or controller adoption.
 
 ## Source-development boundary
 
