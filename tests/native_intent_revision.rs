@@ -535,6 +535,80 @@ fn lost_retry_on_another_change_does_not_create_new_identity() {
 }
 
 #[test]
+fn cross_change_retry_references_are_bounded_and_missing_grounds_unavailable() {
+    let f = Fixture::new();
+    let (mut intake, receipt, zero) = f.setup();
+    let source_request = revision(
+        &receipt.change_id,
+        "shared",
+        &zero.revision_id,
+        "Changed",
+        None,
+    );
+    let one = revise_intent(&mut intake, &source_request, "owner").unwrap();
+    let other = intake
+        .propose(&proposal("other", "Other Change", None), "owner")
+        .unwrap();
+    let other_zero = read_intent(&intake, "c", &other.change_id, None, "owner").unwrap();
+    assert_ne!(zero.revision_id, other_zero.revision_id);
+    // A missing request with a stale head conflicts; a malformed existing row must not.
+    let stale = revision(&other.change_id, "shared", &zero.revision_id, "Other", None);
+    let mut absent = stale.clone();
+    absent.request_id = "absent".into();
+    assert_eq!(
+        revise_intent(&mut intake, &absent, "owner"),
+        Err(Issue::Conflict)
+    );
+    assert_eq!(
+        revise_intent(&mut intake, &stale, "owner"),
+        Err(Issue::Conflict)
+    );
+
+    let db = f.db();
+    db.execute_batch("PRAGMA foreign_keys = OFF").unwrap();
+    db.execute(
+        "DELETE FROM ck_native_intent_revisions WHERE revision_id = ?1",
+        [&one.revision_id],
+    )
+    .unwrap();
+    let before = counts(&db);
+    // Retry survives but its referenced revision no longer exists.
+    assert_eq!(
+        revise_intent(&mut intake, &stale, "owner"),
+        Err(Issue::Unavailable)
+    );
+    for (cell, original) in [
+        ("change_id", receipt.change_id.as_str()),
+        ("revision_id", one.revision_id.as_str()),
+    ] {
+        let query = match cell {
+            "change_id" => {
+                "UPDATE ck_native_intent_retries SET change_id = ?1 WHERE request_id = 'shared'"
+            }
+            _ => "UPDATE ck_native_intent_retries SET revision_id = ?1 WHERE request_id = 'shared'",
+        };
+        for malformed in [
+            Value::Text(format!("{original}x")),
+            Value::Text(format!("{original}\0trailing")),
+            Value::Blob(original.as_bytes().to_vec()),
+        ] {
+            db.execute(query, [&malformed]).unwrap();
+            assert_eq!(
+                revise_intent(&mut intake, &stale, "owner"),
+                Err(Issue::Unavailable),
+                "{cell} was treated as an absent retry"
+            );
+            assert_eq!(counts(&db), before);
+        }
+        db.execute(query, [original]).unwrap();
+    }
+    assert_eq!(
+        read_intent(&intake, "c", &other.change_id, None, "owner"),
+        Ok(other_zero)
+    );
+}
+
+#[test]
 fn full_history_keeps_exact_retry_but_refuses_fresh_append() {
     let f = Fixture::new();
     let (intake, receipt, zero) = f.setup();

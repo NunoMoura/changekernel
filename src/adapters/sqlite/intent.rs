@@ -28,9 +28,11 @@ impl IntentRevisionStore for SqliteIntake {
             .map_err(|_| Issue::Unavailable)?;
         // Recheck owner and the entire retained chain within this write snapshot, even for retries.
         continuation::load_intent(&tx, &request.container_id, &request.change_id, None, actor)?;
+        // Byte length catches embedded NULs; NULL fails String decoding for a malformed
+        // existing row, while .optional() remains reserved for a missing row.
         let bound: Option<(String, String)> = tx
             .query_row(
-                "SELECT change_id, revision_id FROM ck_native_intent_retries WHERE container_id = ?1 AND actor = ?2 AND request_id = ?3",
+                "SELECT CASE WHEN typeof(change_id) = 'text' AND length(CAST(change_id AS BLOB)) = 64 THEN change_id END, CASE WHEN typeof(revision_id) = 'text' AND length(CAST(revision_id AS BLOB)) = 64 THEN revision_id END FROM ck_native_intent_retries WHERE container_id = ?1 AND actor = ?2 AND request_id = ?3",
                 params_from_iter([request.container_id.as_str(), actor, request.request_id.as_str()]),
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
