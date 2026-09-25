@@ -18,6 +18,7 @@ ownership:
     - tests/adapters/git/**
     - tests/adapters/sqlite/**
     - tests/kernel/containers/**
+    - tests/native_intent_revision.rs
   generatedViews:
     - alignment
     - dictionary
