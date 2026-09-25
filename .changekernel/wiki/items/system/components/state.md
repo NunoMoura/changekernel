@@ -39,6 +39,14 @@ The application's supported database is the default ChangeKernel store, using pr
 
 ChangeKernel owns the persistence contracts and machinery; existing database engines hold the bytes. Database-per-container, process-per-container and repository-per-container are not requirements. Selective isolation, export and recovery must be qualified for the chosen shared or dedicated placement.
 
+A Change has one authoritative history throughout its lifecycle, including proposed intent, revisions, Work, retained content, decisions and observed outcomes as those capabilities become supported. Approval does not move it into another live authority. Related tables and protected execution records can have distinct responsibilities within that store; they must not become competing copies of the same fact. Backups, exports, derived views and private agent transcripts do not supply a second lifecycle authority. An index is rebuildable only when its binding establishes sufficient retained grounds and a supported reconstruction contract. Historical Git-backed JSONL traces retain their original meanings; this design neither migrates them nor silently reclassifies them as nonauthoritative exports.
+
+### Multi-tenant scope and ownership
+
+Track native resource identity together with its source/system, authorized ownership or sharing scope, and observed version/time and coverage. A tenant label supplied by a client or agent is not authority. The trusted host resolves the responsible user and scope using the application's existing authorization layer; bindings must preserve its constraints, native handlers and current permission checks rather than bypass them with privileged generic database access.
+
+Tenant-owned values, explicitly shared resources and developer-owned code/schema may coexist in one physical database. Bind their differing authority explicitly without requiring separate databases or copying their current State. Queries, history, retained evidence, derived indexes and any supported synchronization must respect the relevant permissions; viewing the system does not imply visibility into every tenant. Shared learning follows the owning system's sharing and adoption rules, not automatic promotion of private experience. These are desired binding obligations, not a claim that the single-owner native profile implements delegated membership or general multi-tenant authorization.
+
 ## Sources, observations and retained research
 
 Read on demand, retain what decisions rely on, and recheck what actions depend on. Sources hold native material; adapters report attributable observations; Evidence establishes what those observations support or challenge; Change memory records their use; adopted State knowledge records the current accepted conclusion and limits. A connected source can expose governed resources, read-only evidence or both. Connection, capture, a trustworthy publisher or a matching digest alone does not adopt its assertions as governing truth.
@@ -144,7 +152,7 @@ Child execution has a finite deadline, bounded input/output and explicit cleanup
 
 ## Native private continuation profile
 
-**Approved bounded design, not operational qualification or a claim that every operation is implemented.** This continues native intake and committed-source observations for the first software-development application. It does not reinterpret `changekernel.container-candidate-batch@1.0.0`, historical TypeScript records or lifecycle stages. Decision admission, delegation, Work, Checks, publication and completion remain separate capabilities.
+**Approved bounded design, not operational qualification or a claim that every operation is implemented.** This continues native intake and committed-source observations for the first software-development application. It does not reinterpret `changekernel.container-candidate-batch@1.0.0`, historical TypeScript records or lifecycle stages. Decision admission, delegation, Work, Checks, publication and completion remain separate capabilities. Private candidates are Change-owned retained material: this low-level custody profile does not implement planning, define a separate proposal entity or fabricate a Work association before the Work contract exists.
 
 ### Authority and retention policy
 
@@ -175,6 +183,12 @@ Inspection returns exact retained material and its bound intent/source versions.
 Use one explicit protected SQLite bookkeeping profile for original intake, revision heads/history and candidate custody. The profile is initialized deliberately in an empty store; opening never performs DDL or upgrades. Existing native intake-only stores remain supported as intake-only stores, with richer operations unavailable until a separately supported transition exists. There is no automatic import of historical TypeScript storage or native intake-only data into the richer profile.
 
 The richer schema has its own exact version and full schema validation. Adding capabilities must not make foreign tables, triggers, indexes, partial schemas or unexpected journal changes acceptable. Original intake hashes and retry meanings remain unchanged. Transaction guards, schema selection and the minimum shared Rust contracts have one coordinated owner. No generalized repository framework, new runtime dependency or separate authoritative task store is implied.
+
+### Change attribution under partial custody loss
+
+Retained candidate file rows must identify their owning Change independently of candidate headers and retry bindings, with relational constraints enforcing agreement. This is a requirement for an explicit successor storage profile, not a claim that the frozen v1 layout below already provides that attribution. Do not fabricate Work ownership before its contract exists or silently upgrade a v1 store.
+
+Recognizable surviving custody for a Change must prevent recreation of its lost original intake under the same request identity with different intent. Required missing history is unavailable to its authorized owner, while intact unrelated Changes remain usable and unauthorized callers remain denied. Preserve retained bytes; do not guess erased relationships, recapture historical grounds, automatically delete remnants or adopt broad container quarantine. This guarantee concerns detectable partial loss, not recovery of completely erased history or protection against arbitrary identity rewriting; qualified backups and operator recovery remain separate concerns.
 
 ### Native continuation API and storage v1
 

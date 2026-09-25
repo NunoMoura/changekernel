@@ -75,6 +75,8 @@ Decision assesses:
 | Outcome assessability | Later observations can distinguish success, failure and incomplete realization. |
 | Justification coherence | Grounds use compatible premises, scope and conditions. |
 
+Assessment uses the accountable user's intent and the applicable system requirements; it does not choose whose preferences should prevail. Intended improvement is not a guaranteed effect or a prerequisite claim of future success. Preserve intended benefit, performed effects and observations that support success, failure or uncertainty separately. Existing authorization resolves who may decide, including in shared scopes; model judgment cannot replace it.
+
 Decision admission establishes readiness for bounded planning/pursuit, not blanket readiness to execute. Recording a proposal is not admission; conversation or an automated origin supplies neither permission nor a requirement for manual approval by itself. Valid retained discussion, findings and exact-subject approval may satisfy applicable requirements without another interview. Common judgments that depend on domain findings must use those exact retained findings and limitations. Material intent, scope or authority changes reopen Decision.
 
 Implementation assesses relevant methods, dependency and parent-outcome coverage, exact prepared effects, authorized execution custody, actual contributions, deviations and truthful partial outcomes. Former Planning-stage method scrutiny belongs here and in factory preparation, not a fourth gate. Checks inspect collected observations; authorized workers gather them and repair defects.

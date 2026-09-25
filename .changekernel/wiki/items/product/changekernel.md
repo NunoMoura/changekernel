@@ -46,7 +46,9 @@ The `wiki/` path is retained for source development; it does not make Wiki a run
 
 ## Continuous development, use and improvement
 
-ChangeKernel governs systems throughout their lives, not only while their software is being developed. The same State and Change primitives support development, integration, ordinary use after launch and ongoing improvement. Users bring goals and experience; developers provide and evolve structures and abilities; agents can both help users pursue goals and perform authorized development. These roles collaborate without acquiring one another's authority automatically.
+ChangeKernel governs systems throughout their lives, not only while their software is being developed. Its foundation is actor-neutral: the same State and Change primitives support human actions, delegated agents and automation during development, integration, ordinary use after launch and ongoing improvement. Users bring goals and experience; developers provide and evolve structures and abilities; agents can both help users pursue goals and perform authorized development. These roles collaborate without acquiring one another's authority automatically.
+
+“Better” describes an intention, not an effect that the engine guarantees. Preserve what the owner intended, what actually changed and what observations support success, failure or uncertainty. Correct execution may still fail to realize the intended benefit. ChangeKernel verifies outcomes against the applicable intent and requirements; it does not arbitrate whose goals or preferences deserve to prevail.
 
 ```text
 Develop and integrate capabilities → pursue user goals → observe actual outcomes
@@ -66,17 +68,31 @@ A **Container definition** describes permitted structure, meaning, rules and sup
 
 A band workspace contains members, songs, recordings, contacts, venues, tours, budgets, files and procedures together. It is not one container per entity, user-table identifier, database, repository or process. Independent logical ownership is required; physical separation is optional. One host/database may serve many containers. Shared resources require explicit relationships and authority, not ownership inferred from a reference.
 
+Each Change has an accountable user on whose behalf it is pursued. An agent is an executor, not the Change owner or an independent source of authority. Retain worker, configuration and delegation provenance without transferring ownership when workers change. Owning a Change does not grant rights over its targets: the existing system determines resource ownership, membership, sharing and permitted operations. Bind that authority through trusted host context, not agent-supplied identity or a parallel independently administered ChangeKernel ACL.
+
+Products and workspaces are the initial experience, not a one-product/one-container restriction. A product may serve many tenant scopes; a scope may involve several products or hosts. Shared application code and schemas can remain developer-owned while tenant data follows native tenant permissions. OS resources may participate through qualified bindings, but a machine is neither a universal ownership boundary nor an implicit grant over everything it hosts. The longer-term direction is cooperation between independently owned systems, not one controller owning them all.
+
 Definitions are inspectable and version-bound. A shared definition update must not silently migrate or reinterpret existing containers. Container-local structures and learning do not automatically rewrite other containers or developer policy. Schema analysis may be shared without sharing private State. Code supplied for discovery does not become writable customer State; developer-owned code and release configuration can belong to a separate development container.
 
 | Responsibility | Owner |
 | --- | --- |
 | Structures, meaning, native business behavior and binding configuration | Application developers, reusing existing authoritative declarations. |
 | Goals, accepted commitments and scoped delegation | Authorized users and teams. |
-| Path composition, production and observation collection | People, agents or services acting as workers. |
-| Consistent transitions, Checks, durable coordination, memory and declared recovery | ChangeKernel through qualified source/execution bindings. |
+| Accountability for a Change, including an agent's actions on the user's behalf | The responsible user, bound through trusted system identity. |
+| Native resource permissions, membership and sharing | The owning application's existing authorization rules. |
+| Path composition, production and observation collection | People, agents or services acting as workers, without replacing the Change owner. |
+| Permission enforcement at the integration boundary, consistent transitions, Checks, durable coordination, memory and declared recovery | ChangeKernel and its application host through qualified source/execution bindings. |
 | Process hosting, credentials, durable storage and enforcement support | Application-owned host and its deployment. |
 
 Kernel names the internal engine; Server names a host role, not another State owner. Product, Project and World are no longer formal public subjects. Container means a state container, not a Docker container.
+
+### Owner-directed automation
+
+Proactive pursuit and automatic continuation are configurable, not compulsory. A user may authorize their agent to act within the user's existing rights, including editing shared State, and remains accountable for those Changes. Agent origin alone does not require a second resource-owner approval. Existing system approval rules, business constraints and any explicitly adopted restrictions still apply; automation neither enlarges permissions nor removes required verification or history.
+
+An optional additional layer may later restrict AI use where traditional permissions do not express a needed distinction. It must narrow existing authority, not grant a route around it. Designing a generalized AI-restriction layer is deferred, not a prerequisite for the first enforced application integration. Existing custody, containment and exact-effect safeguards remain necessary to substantiate the capabilities that an integration actually claims.
+
+The system enforces its supported boundary independently of model cooperation. A read-only interface is not containment if an agent can write through an unrestricted shell, database credential or another route. An integration that only observes outside writes must say so; logging afterward is not equivalent to mediating them.
 
 ## Developer experience
 
@@ -251,7 +267,7 @@ Defects return to refinement within Execution, material intent/scope/authority c
 
 ### Change granularity and classification
 
-A Change is a coherent, bounded, assessable commitment, not a commit, worker session, task, record count or one transaction. Work is an execution responsibility contributing to that outcome. Exact candidates/effect batches bind the concrete effects for particular steps. A Change can retain multiple immutable multi-entity batches without knowing every future effect upfront.
+A Change is a coherent, bounded, assessable commitment, not a commit, worker session, task, record count or one transaction. A proposal is that same Change in its proposed state, not a separate entity promoted into a new Change after approval. Planning decomposes its pursuit into Work, where actual edits and other contributions are defined. Exact candidates/effect batches retain the material for particular steps, not a second proposal lifecycle. A Change can retain multiple immutable multi-entity batches without knowing every future effect upfront.
 
 A million record effects need not mean a million Changes. A bounded bulk goal can use staged Work and supported batches; an indefinite objective such as improving a product forever belongs in continuing State pursued through multiple Changes. Prefer related Changes when outcomes can independently be accepted, deferred or cancelled, need distinct intent/commitments or approval decisions, or have independent completion/recovery boundaries. Keep tightly coupled effects together where splitting hides correctness. Preserve shared constraints and dependencies: splitting creates no additional authority or aggregate budget. Large-scale execution remains a qualification target, not an implemented claim.
 
@@ -481,7 +497,7 @@ Before implementation, specify:
 - First database/execution bindings, transaction integration, history/retention, backup and declared recovery guarantees.
 - Supported discovery languages/frameworks, validation of derived definitions, incremental invalidation and unresolved coverage.
 - Typed mutations, native capabilities and any restricted generated programs; their execution isolation and limits.
-- Approval/consequence policy and adoption/delegation defaults; exact intent, memory, research-custody and procedure-input representations, retention/visibility and local versus shared evolution.
+- Concrete binding of existing system identity/permissions and owner-configured delegation; exact intent, memory, research-custody and procedure-input representations, retention/visibility and local versus shared evolution. A generalized additional AI-restriction layer remains deferred.
 - Work refinement, worker selection, budgets, fairness, cancellation, reservations and uncertain-outcome reconciliation.
 - Jev deployment, operation contracts, initial classification vocabulary and quality thresholds; terminal toolkit/transport, frontend freshness/privacy and cross-container dependency semantics.
 - Evidence that the two-phase interface preserves admission, pre-effect and outcome obligations, exposes actionable states and reduces duplicated work before any persisted-contract transition.

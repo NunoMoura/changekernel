@@ -97,7 +97,7 @@ Start with one enforced application integration and a complete bounded path: cre
 
 | Boundary | Required challenges |
 | --- | --- |
-| Ownership and definitions | Cross-container access, trusted source scope, shared resources, local learning versus shared-definition updates, honest existing-data baseline. |
+| Ownership and definitions | Accountable user retained across worker changes; native permissions enforced for supported sharing/tenant scopes and unsupported access refused; trusted source scope, shared resources, local learning versus shared-definition updates, honest existing-data baseline. |
 | Discovery | Missed resources/rules, wrong grouping, invented relationships, unresolved dynamic behavior, version invalidation and disclosure restrictions. |
 | Decision | Ambiguous purpose, unsupported premises, counterevidence, omitted effects, consequence-sensitive approval and legitimate commitment revision. |
 | Two-phase lifecycle | Rough recorded proposal versus admitted pursuit; domain admission criteria; preserved pre-effect and outcome requirements; changing scope returns to Decision without rewriting history. |
@@ -145,7 +145,7 @@ Validate the two-phase mapping before persisted-protocol changes: simple typed e
 
 The operator must be able to explain what is being pursued and why, what is running or blocked, what needs a decision, what actually changed, what remains uncertain, and what can safely happen next without raw storage inspection. Record limits and measured feedback latency, including unavailable cost information rather than presenting it as zero. The broader qualification obligations still apply to every claimed capability; additional backends, application generality, large worker fleets and visual polish are not simultaneous prerequisites for this bounded release.
 
-This first application proves a bounded part of the continuous development, use and improvement lifecycle. Preserve interfaces for external tool integration and agent-mediated product use without making a browser protocol, a broad integration catalogue or new model-serving infrastructure prerequisites. The initial surface is narrow; supported authority, assessment, custody and recovery guarantees are not weakened to reach the first release.
+This first application proves a bounded part of the actor-neutral continuous development, use and improvement lifecycle, with user-owned Changes and native authorization enforced by the system. Preserve interfaces for external tool integration and agent-mediated product use without making a browser protocol, a broad integration catalogue, cloud synchronization, machine-wide governance, a generalized AI-restriction layer or new model-serving infrastructure prerequisites. The initial surface is narrow; supported authority, assessment, custody and recovery guarantees are not weakened to reach the first release.
 
 This is a delivery criterion, not controller adoption or permission for live inference. Before that release exists, native source-development tools remain in use. No feature work, repository restructure or terminal client may load the mutable checkout as the governing controller. Qualification, activation and explicit handoff remain separate actions with their required authority.
 
