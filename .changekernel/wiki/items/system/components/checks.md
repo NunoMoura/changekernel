@@ -52,9 +52,9 @@ source-history:
 ---
 # Checks
 
-A Check is a bounded, read-only assessment with explicit inputs, one reportable question, a passing condition and a Boolean completed result with actionable feedback and Evidence references. It can combine computation and authorized semantic operations. **Decision + Execution are the public lifecycle phases.** Proposal admission, prepared-effect/contribution assessment and observed-outcome assessment remain distinct internal responsibilities, called Decision, Implementation and Review here.
+A Check is a bounded, read-only assessment with explicit inputs, one reportable question, a passing condition and a Boolean completed result with actionable feedback and Evidence references. It can combine computation and authorized semantic operations. **Decision → Planning → Execution are the three public Kernel stages**, each with customized Checks at its boundaries. Prepared-effect/contribution assessment and observed-outcome Review remain distinct responsibilities within Execution, not additional public stages.
 
-A gate controls progression or a protected effect using applicable requirements, current inputs and separate authority. Assessment scope identifies the subject, question and required timing, not a mandatory public screen, model call, transaction or commit. Planning and review coordination are engine machinery; deployment performs effects through a binding and is never a Check side effect. Typed edits can satisfy suitable responsibilities directly in code. Existing stage fields/results retain their original interpretation until an explicit qualified transition.
+A gate controls progression or a protected effect using applicable requirements, current inputs and separate authority. Assessment scope identifies the subject, question and required timing, not a mandatory screen, model call, transaction or commit. Planning Checks assess decomposition, dependencies, routes and parallelism; the engine performs authorized dispatch, custody transfer, effects and review coordination. Typed edits can satisfy suitable boundaries directly in code. Historical stage fields/results retain their original interpretation until an explicit qualified transition.
 
 ## Common assessment requirements
 
@@ -79,13 +79,27 @@ Assessment uses the accountable user's intent and the applicable system requirem
 
 Decision admission establishes readiness for bounded planning/pursuit, not blanket readiness to execute. Recording a proposal is not admission; conversation or an automated origin supplies neither permission nor a requirement for manual approval by itself. Valid retained discussion, findings and exact-subject approval may satisfy applicable requirements without another interview. Common judgments that depend on domain findings must use those exact retained findings and limitations. Material intent, scope or authority changes reopen Decision.
 
-Implementation assesses relevant methods, dependency and parent-outcome coverage, exact prepared effects, authorized execution custody, actual contributions, deviations and truthful partial outcomes. Former Planning-stage method scrutiny belongs here and in factory preparation, not a fourth gate. Checks inspect collected observations; authorized workers gather them and repair defects.
+Planning assesses:
+
+| Condition | Required conclusion |
+| --- | --- |
+| Intent and result coverage | Proposed Work and acceptance conditions cover the bounded pursuit without substituting an easier goal. |
+| Decomposition and interfaces | Contributions are coherent, dependencies and shared interfaces are explicit, and required methods can distinguish consequential failures. |
+| State and effect coverage | Relevant observations, proposed read dependencies/effects and unresolved coverage are identified, including unchanged constraints. |
+| Authority and routing | Proposed recipients and operations have appropriate authority or explicit waiting/request conditions; routing itself grants none. |
+| Parallelism and commitments | Interactions, shared budgets and competing alternatives have supported coordination rather than independent stale approvals. |
+| Dependency readiness | Blocking dependencies are acyclic and bind actual result conditions; references and fork derivation alone do not imply readiness. |
+| Bounds and uncertainty | Resources, investigation, refinement, cancellation and result/recovery needs are bounded; unknowns are not invented guarantees. |
+
+A plan can be valid while some Work is blocked or delegated. Passing Planning does not authorize every future effect or certify unknown candidates. Progressive refinement and separately governed children/forks avoid requiring a complete world model or enormous graph upfront. Jev may assess semantic interactions; code owns exact identities, arithmetic, eligibility and serialized commitment guards. Checks report missing grounds and proposed routes rather than collecting observations, sending files or launching workers themselves.
+
+Execution pre-effect/contribution assessment covers exact prepared effects, current intent/plan/dependency versions, native authority, authorized custody, actual contributions, deviations and truthful partial outcomes. New information requires explicit replanning or a new Change; material intent/authority changes reopen Decision. Checks inspect collected observations; authorized workers gather them and repair defects.
 
 Review assesses the reconciled combined outcome within Execution, consistency with prior grounds, commitments, supported realization, remaining obligations and lawful completion. Child passes, a closed task or a successful write do not prove the whole outcome. Missing required results cannot be hidden as optional follow-ups. Pre-delivery candidate assessment is not evidence that delivery succeeded. Desired-target adoption, realized behavior, publication and deployment remain distinct; later effects require their own current authority and observations. A Change promising only a reviewed artifact can end before a separately governed deployment; one promising deployed behavior cannot.
 
 ## Internal intake feedback and classification
 
-Intake is capture/refinement machinery supporting Decision, not a third public phase or independently customizable gate. Code validates shape, identity, scope, permissions and durable retry consistency. Bounded semantic judgments can help assess coherent intent, missing consequential grounds and suitable decomposition, but cannot invent authority or silently change intended outcomes. Domain-specific admission criteria remain available through the shared Check contract; internal coordination does not make all criteria release-owned.
+Intake is capture/refinement machinery within Decision, not a fourth public stage or a substitute for custom Decision Checks. Code validates shape, identity, scope, permissions and durable retry consistency. Bounded semantic judgments can help assess coherent intent, missing consequential grounds and suitable decomposition, but cannot invent authority or silently change intended outcomes. Domain-specific admission criteria remain available through the shared Check contract; internal coordination does not make all criteria release-owned.
 
 Feedback binds the exact proposal revision, condition, affected location/scope, grounds, uncertainty and correction or collection need. Separate a mandatory blocker from a suggested improvement. Identify next permitted actions and commitments that must survive refinement. A rough or large proposal can be retained without being admitted. Missing information may permit bounded inquiry; missing authority requires permission or a stop. Preserve original/rejected input and attributable revisions. Changed input needs a new retry identity, not another attempt under a conflicting binding.
 
@@ -97,7 +111,9 @@ Jev's per-question 255-option capacity is not a target universal taxonomy. Prese
 
 ## Ownership, policy and activation
 
-ChangeKernel owns common [assessment requirements](../../product/changekernel.md#assessment-responsibilities). Existing authoritative schemas, constraints, validators and handlers retain their force. Container-adopted domain Checks and procedures supply additional scoped requirements for proposal admission, exact effects and observed outcomes—not only pre-effect execution. Discovery should reuse supported rules instead of asking developers to restate them. Either owner can use code and bounded judgment. Packs distribute evaluators, not orchestration or authority over engine invariants.
+ChangeKernel owns common [assessment requirements](../../product/changekernel.md#assessment-responsibilities). Existing authoritative schemas, constraints, validators and handlers retain their force. User Kernel versions bind reusable Check versions at their stage boundaries; Workspace/resource-adopted requirements supply mandatory scoped conditions for intent, plans, exact effects and observed outcomes. Selecting a different personal Kernel cannot omit those conditions. Discovery should reuse supported rules instead of asking developers to restate them. Either owner can use code and bounded judgment. Packs distribute evaluators, not orchestration or authority over engine invariants.
+
+A user may own multiple Kernels; shared immutable versions may serve multiple users and Workspaces without transferring the author's permissions. Bind each assessment to the actual executing identity, exact Kernel/Check versions, stage, Change/intent/plan/candidate as applicable, relevant State and required policy. A default Kernel preference is not authority. Receiving a borrowed Change or creating a fork requires applicable admission under the selected Kernel; inherited evidence is not a portable Execution-ready flag. Kernel/Check updates use already-established authority and do not revise past results.
 
 | Term | Meaning |
 | --- | --- |
@@ -109,7 +125,7 @@ ChangeKernel owns common [assessment requirements](../../product/changekernel.md
 
 Adoption and activation differ. The backend determines applicability from actual subject, affected scope, prepared differences/effects and governing rules. A producer label cannot hide contrary effects; unknown applicability remains unresolved. A candidate cannot activate its own weaker evaluator or omission rule. Legitimate policy revision follows current authorized transition rules rather than freezing every old rule forever.
 
-Adopt executable policies by exact reference where appropriate, avoiding competing prose copies. Policy lives in versioned container State; source-backed Markdown is one possible representation, not a required Wiki subsystem. Installation, marketplace listing, skill text or repeated behavior does not adopt a rule. Shared definition updates and local policy revisions need their respective authority.
+Adopt executable policies by exact reference where appropriate, avoiding competing prose copies. Policy is represented in versioned Workspace State; source-backed Markdown is one possible representation, not a required Wiki subsystem. Installation, marketplace listing, skill text or repeated behavior does not adopt a rule. Shared definition updates and local policy revisions need their respective authority.
 
 ## Evaluation boundary
 
@@ -155,20 +171,20 @@ No per-Save repository discovery, unnecessary semantic rebinding or generation i
 
 The software Pack remains a domain example and source-development qualification aid, not the universal foundation or a requirement for every application. It uses the same adoption and execution contracts as other Packs.
 
-| Internal responsibility | Domain assessment |
+| Stage/responsibility | Domain assessment |
 | --- | --- |
 | Decision | Proposed behavior/interfaces respect adopted compatibility rules or explicitly address a permitted break. |
-| Implementation | Engineering and test methods can distinguish intended behavior from relevant failures; dependencies and affected consumers are covered. |
-| Implementation | Actual build, type, test and analysis observations meet the rules for this exact subject; evaluators inspect authorized observations rather than run tools. |
-| Implementation | Changed code, tests and dependencies meet applicable architecture and maintenance requirements. |
-| Review | Integration/regression Evidence establishes the claimed combined behavior and compatibility, within explicit limits. |
+| Planning | Engineering/test methods distinguish intended behavior from relevant failures; dependencies, interfaces, affected consumers, authority and parallel routes are covered. |
+| Execution: pre-effect | Actual build, type, test and analysis observations meet the rules for this exact subject; evaluators inspect observations rather than run tools. |
+| Execution: contribution | Changed code, tests and dependencies meet applicable architecture and maintenance requirements. |
+| Execution: Review | Integration/regression Evidence establishes the claimed combined behavior and compatibility, within explicit limits. |
 
-Split independently reportable conditions rather than hide unrelated judgments under one Boolean. Domain thresholds belong to adopted policy. A “documentation-only” label cannot suppress actual relevant effects; neither does every small edit require the same expensive catalogue. Former Planning-stage method assessment belongs in Implementation/factory preparation, not a fourth gate or a lost requirement.
+Split independently reportable conditions rather than hide unrelated judgments under one Boolean. Domain thresholds belong to adopted policy. A “documentation-only” label cannot suppress actual relevant effects; neither does every small edit require the same expensive catalogue. Planning method scrutiny is explicit; outcome Review and deployment do not create a fourth public stage.
 
 ## Qualification and compatibility
 
 Qualify good, defective, ambiguous and adversarial cases for each supported question family, including omitted effects, counterevidence, source instructions, legitimate policy revision and forged evaluator ownership. Classification tests must measure missed obligations and unsafe omissions, not only label agreement. Challenge misleading repair/documentation labels, mixed intent, changed batch scope and attempts to obtain a lower-ceremony route through decomposition. Structural conformance and signatures prove neither judgment quality nor containment.
 
-Before changing persisted contracts for the two-phase lifecycle, prove the mapping preserves proposal, pre-effect and outcome requirements and current authority. Include domain admission constraints, simple typed updates, passing candidates with failed deployment, successful units with incomplete combined results, self-weakening memory proposals and interrupted effects with unknown outcomes. A simpler display is not evidence of cheaper execution; measure operator comprehension and duplicated work without silently relabeling old results. See [qualification](package.md#qualification).
+Before freezing new lifecycle records/interfaces or changing persisted contracts, resolve the [Kernel/lifecycle gate](../../product/changekernel.md#dependency-gated-implementation). Prove Decision, Planning and Execution preserve proposal, plan, pre-effect and outcome requirements and current authority. Include blocked-but-valid plans, unsafe parallel routes, shared commitments, borrowed/forked inputs with stale approvals, domain admission constraints, simple typed updates, passing candidates with failed deployment, successful units with incomplete combined results, self-weakening memory proposals and interrupted effects. Measure operator comprehension and duplicated work without silently relabeling old results. See [qualification](package.md#qualification).
 
-This is desired architecture. Private selection/execution/retention exists for narrower Git/Wiki contracts; complete public progression and a general Pack service do not. Decision + Execution is not a migration of historical stage fields. Historical Planning results and `planning.evaluate` / `planning.admit` names must not be relabeled as new assessment results. Explicit versioned implementation will replace superseded code and tests without restoring a parallel historical engine or inventing adoption.
+This is desired architecture. Retained Pi bridges supply narrower model/session contracts, not complete public progression or a general Pack service. Historical Git/Wiki selection/execution/retention remains in Git with its original meanings. Decision → Planning → Execution is not an automatic migration of historical stage fields, the earlier two-phase design, or `planning.evaluate` / `planning.admit` results. Explicit versioned implementation must resolve compatibility without restoring a parallel historical engine or inventing adoption.

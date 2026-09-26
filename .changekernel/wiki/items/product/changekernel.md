@@ -37,9 +37,9 @@ This is the primary desired-state design, not a statement of implemented capabil
 
 | Contract | Detail owned there |
 | --- | --- |
-| [State and persistence](../system/components/state.md) | Source authority, research custody, intent/memory provenance, candidates, receipts, concurrency and recovery. |
-| [Checks](../system/components/checks.md) | Assessment responsibilities, admission feedback, adoption, read-only evaluation and reuse. |
-| [Execution](../system/components/agent-execution.md) | Worker containment, model transport, durable attempts and output custody. |
+| [State and persistence](../system/components/state.md) | Workspace/resource bindings, file-first Change Trace custody, research, candidates, receipts, concurrency and recovery. |
+| [Checks](../system/components/checks.md) | Kernel-bound Decision, Planning and Execution assessments, adoption, read-only evaluation and reuse. |
+| [Execution](../system/components/agent-execution.md) | Worker containment, model transport, durable attempts, Change handoff and output custody. |
 | [Release and qualification](../system/components/package.md) | Version transitions, required proof and external-controller boundaries. |
 
 The `wiki/` path is retained for source development; it does not make Wiki a runtime primitive or require application State to be Markdown. Prior committed design pages remain in Git history, not an active parallel specification. Uncommitted draft material is consolidated here and in the four contracts. Execution progress belongs in Changes and Work after qualified adoption, with only a short [temporary status note](../../../../CHANGEKERNEL_STATUS.md) beforehand.
@@ -56,35 +56,83 @@ Develop and integrate capabilities → pursue user goals → observe actual outc
     → assess, authorize and realize supported Changes → use and learn again
 ```
 
-This is an open-world approach to goals, not a requirement to enumerate a workflow for every outcome. Workers compose supported abilities, acquire needed observations and expose unresolved knowledge or capability gaps. Open-world pursuit does not imply unrestricted effects, automatic policy changes or invented capabilities. Existing abilities may satisfy a goal without software development; genuine gaps can lead to separately authorized development and deployment through [cross-container development](#cross-container-development).
+This is an open-world approach to goals, not a requirement to enumerate a workflow for every outcome. Workers compose supported abilities, acquire needed observations and expose unresolved knowledge or capability gaps. Open-world pursuit does not imply unrestricted effects, automatic policy changes or invented capabilities. Existing abilities may satisfy a goal without software development; genuine gaps can lead to separately authorized development and deployment through [cross-workspace development](#cross-workspace-development).
 
 ChangeKernel provides one authoritative boundary for governed product operations, with human interfaces, agents and other integrations as clients. A user request is not permission to modify the product's code, deploy a release or change governing policy. Shared experience can ground improvement proposals, but adoption and realization require the same controls as other Changes. Keep user and developer scopes, private data, commitments and Evidence distinct throughout the cycle.
 
 ## Ownership model and responsibilities
 
-**Container definition → Container → Changes to State.**
+**Users participate in Workspaces. Their Kernels govern Changes to those Workspaces. State represents a Workspace at particular versions and scope.**
 
-A **Container definition** describes permitted structure, meaning, rules and supported capabilities. It can be discovered, supplied explicitly or assembled from both. A **Container** is its durable identified ownership and collaboration scope. State, Changes, commitments and procedural memory belong to that scope.
+| Primitive | Meaning |
+| --- | --- |
+| Workspace | The persistent, identified subject with explicit resource boundaries and established authorities. Use `workspace_id` consistently in the desired frontend/backend contracts. |
+| State | A transitory, scoped and version-/time-bound representation of a Workspace. Retained representations remain evidence; they are not the persistent subject or necessarily a complete snapshot. |
+| Change | A user-owned pursuit of a transition between States of one Workspace, preserving intended and actual outcomes separately. A proposal is already a Change, not a second entity promoted after approval. |
+| Kernel | A user's versioned Decision → Planning → Execution pipeline definition, with customized Checks at its boundaries. It is not the engine implementation. |
 
-A band workspace contains members, songs, recordings, contacts, venues, tours, budgets, files and procedures together. It is not one container per entity, user-table identifier, database, repository or process. Independent logical ownership is required; physical separation is optional. One host/database may serve many containers. Shared resources require explicit relationships and authority, not ownership inferred from a reference.
+The engine implements governance and may execute many Kernels for many Workspaces. Server means a host role; an execution directory or worktree is not a Workspace identity. There is no new public `system_id` or `subject_id` alias for `workspace_id`, and no mandatory Container-definition creation ceremony. Historical names in existing APIs and records retain their [original meanings](#current-implementation-and-historical-meanings).
 
-Each Change has an accountable user on whose behalf it is pursued. An agent is an executor, not the Change owner or an independent source of authority. Retain worker, configuration and delegation provenance without transferring ownership when workers change. Owning a Change does not grant rights over its targets: the existing system determines resource ownership, membership, sharing and permitted operations. Bind that authority through trusted host context, not agent-supplied identity or a parallel independently administered ChangeKernel ACL.
+Each Change has one originating user owner. Agents are executors, not independent owners or sources of authority. Record each participant's authenticated contributions, configuration and delegation without transferring ownership or attributing a recipient's earlier actions to the originator. Original intent is not overwritten by a custodian's additions or retrofitted to eventual delivery. Owning or possessing a Change does not grant rights over its targets; every participant's effects require independently established native authority. Bind identities and permissions through trusted host context, not editable metadata or a competing ChangeKernel ACL.
 
-Products and workspaces are the initial experience, not a one-product/one-container restriction. A product may serve many tenant scopes; a scope may involve several products or hosts. Shared application code and schemas can remain developer-owned while tenant data follows native tenant permissions. OS resources may participate through qualified bindings, but a machine is neither a universal ownership boundary nor an implicit grant over everything it hosts. The longer-term direction is cooperation between independently owned systems, not one controller owning them all.
-
-Definitions are inspectable and version-bound. A shared definition update must not silently migrate or reinterpret existing containers. Container-local structures and learning do not automatically rewrite other containers or developer policy. Schema analysis may be shared without sharing private State. Code supplied for discovery does not become writable customer State; developer-owned code and release configuration can belong to a separate development container.
+A user's authoritative Change folder is private and strongly bound to authenticated identity. It can contain Changes for many Workspaces. Sharing or borrowing concerns an individual Change file or authorized material, never access to the whole folder. Membership in a Workspace does not reveal all members' Changes. A pathname, copied file or encrypted payload alone proves neither ownership nor active continuation authority.
 
 | Responsibility | Owner |
 | --- | --- |
-| Structures, meaning, native business behavior and binding configuration | Application developers, reusing existing authoritative declarations. |
-| Goals, accepted commitments and scoped delegation | Authorized users and teams. |
-| Accountability for a Change, including an agent's actions on the user's behalf | The responsible user, bound through trusted system identity. |
-| Native resource permissions, membership and sharing | The owning application's existing authorization rules. |
-| Path composition, production and observation collection | People, agents or services acting as workers, without replacing the Change owner. |
-| Permission enforcement at the integration boundary, consistent transitions, Checks, durable coordination, memory and declared recovery | ChangeKernel and its application host through qualified source/execution bindings. |
-| Process hosting, credentials, durable storage and enforcement support | Application-owned host and its deployment. |
+| Structures, meaning, native business behavior and resource bindings | Application developers and resource owners, reusing authoritative declarations. |
+| Original intent and accepted commitments of a Change | Its accountable user; each later participant remains attributable for their own contribution. |
+| Personal Kernel definitions and preferences | Their user owner; shared versions are usable only within the executing actor's authority. |
+| Native resource permissions, membership and sharing | Existing application, organization or operating-system authorities. |
+| Path composition, production and observation collection | Authorized people, agents or services acting as workers. |
+| Consistent transitions, required Checks, custody, coordination and declared recovery | The engine and host through qualified bindings and protected write routes. |
+| Credentials, durable storage, supervision and enforcement support | The host and its declared deployment. |
 
-Kernel names the internal engine; Server names a host role, not another State owner. Product, Project and World are no longer formal public subjects. Container means a state container, not a Docker container.
+### Relationship cardinalities
+
+Counts describe logical objects, not physical copies. `0..N` permits none or many. State rows concern representations, not a mandatory stored snapshot of the entire Workspace.
+
+| Relationship A ↔ B | B per A | A per B | Rule |
+| --- | --- | --- | --- |
+| User ↔ Kernel ownership | 0..N | 1 | One accountable owner per Kernel. |
+| User ↔ Kernel use | 0..N | 0..N | Shared versions do not share permissions. |
+| User ↔ Workspace membership | 0..N | 0..N | Membership follows established authority, not universal write access. |
+| Workspace ↔ Kernel use | 0..N | 0..N | Resource-owner requirements always apply. |
+| User ↔ Change ownership | 0..N | 1 | Borrowing does not replace the originating owner. |
+| User ↔ Change active custody | 0..N | 0..1 | At most one active custodian per Change. |
+| Workspace ↔ Change subject | 0..N | 1 | One fixed `workspace_id` per Change. |
+| Kernel ↔ Kernel version | 1..N | 1 | Version contents are immutable. |
+| Kernel version ↔ Change historical use | 0..N | 0..N | One selected version per active continuation segment; many may occur in history. |
+| Kernel version ↔ configurable Check version | 0..N | 0..N | Bind at named boundaries; common/native requirements are not optional. |
+| Workspace ↔ State representation | 0..N | 1 | Coverage, visibility and versions remain explicit. |
+| Change ↔ State representation reference | 0..N | 0..N | Reuse only where access and evidence requirements permit. |
+| Change ↔ Work | 0..N | 1 | Work has one owning Change. |
+| Work ↔ Attempt | 0..N | 1 | Attempts and outcomes remain distinct. |
+| Change ↔ Change Trace log | 1 | 1 | One authoritative logical history; copies confer no second authority. |
+| Change ↔ prerequisite Change | 0..N | 0..N | Completion-blocking dependencies must be acyclic; references need not be. |
+| Change ↔ direct fork | 0..N | 0..1 | Each fork identifies one exact source checkpoint; derivation is not dependency. |
+
+### User Kernels and version selection
+
+A user may maintain different Kernels for personal, development or production work. Published immutable versions can be reused across users and Workspaces; independent customization may fork a definition without acquiring its owner's rights. Each user–Workspace pair may have zero or one default Kernel reference, with an explicit suitable override for a particular Change. Resolve and retain the exact version when used; changing defaults never changes historical meaning.
+
+Selecting a lightweight Kernel cannot waive Workspace/resource requirements. Kernel definitions and adopted Checks may themselves be governed State; a proposed replacement cannot authorize its own adoption. A receiving custodian selects a Kernel version for the new continuation segment and establishes its applicable admission and Checks. Earlier progress and still-valid evidence remain usable, but no universal approval or Execution-ready flag travels between Kernels.
+
+## Workspaces, membership and boundaries
+
+A Workspace can encompass a band's members, songs, bookings, budgets, files and procedures, rather than one Workspace per entity, database or process. A product can expose several tenant Workspaces, and one Workspace can connect several supported resources or hosts. Logical identity, physical placement, authority and visibility are separate. Shared code/schema may remain developer-owned while user data follows native tenant permissions. OS resources participate only through supported bindings; a machine is not an implicit grant over everything it hosts.
+
+Minimal setup establishes four things:
+
+1. A stable `workspace_id` and display name, reusing suitable existing identity through a trusted binding where possible.
+2. Exposed resources and operations, including observation, modification and bounded creation of future resources.
+3. Existing authenticated authorities and required rules; registration grants no rights the configurator lacks.
+4. A local binding, existing application session or authenticated endpoint through which participants connect.
+
+Resource selection can be a directory/repository boundary, application account/tenant or supported API scope. Not every future filename must be enumerated, and not every accessible resource becomes tracked State. Discovery does not grant retention, disclosure or write access. Current permissions and source guards apply at actual effects. Scope changes require versioned, authorized adoption; copying a descriptor, changing an endpoint or finding a resource cannot silently expand the boundary.
+
+Users may join multiple Workspaces through native membership and authorized invitation/acceptance flows. Joining, following updates and being allowed to perform an operation are different relationships. The UI can show a Workspace sidebar and a cross-Workspace My Changes view without sharing the user's folder or creating another task/history authority. Invitation, authentication and membership representations remain [implementation prerequisites](#dependency-gated-implementation), not a selected competing ACL or central-account service.
+
+Names and locators may change without changing Workspace identity. Resource bindings separately identify native source, scope, resource identity and version; same-name recreation may be a different resource. Uncertain relocation requires explicit rebinding, not guessed continuity. Different Workspace IDs do not make overlapping native resources independent or bypass their owners' rules. Schema analysis may be shared without sharing private State, and discovered code does not become writable customer data.
 
 ### Owner-directed automation
 
@@ -96,77 +144,25 @@ The system enforces its supported boundary independently of model cooperation. A
 
 ## Developer experience
 
-**Connect → discover → govern → learn.** Create a real durable container rather than requiring a handwritten entity/action catalogue first. Sources and explicit overrides are optional. Opening an existing identity never resets it.
+**Connect → discover → govern → learn.** Connect an existing application/account/repository or establish a bounded new Workspace without a handwritten entity/action catalogue or separate server per Workspace. Setup happens once for the relevant integration, not on every Save. These scenarios describe desired behavior, not implemented exports or a frozen descriptor/API format.
 
-These examples are **illustrative, not implemented exports**. TypeScript illustrates the application binding, not the language of the authoritative engine. PostgreSQL demonstrates an adapter shape, not a selected or qualified first adapter. `actor` comes from trusted authentication; `team` and source scope come from authorized application policy. Setup happens once per application, not on every Save:
-
-```ts
-const ck = createChangeKernel({ storage: postgresStore(database) });
-await ck.start();
-```
+An authenticated user selects a Workspace and suitable Kernel, then supplies What and available Why. The engine retains a Change in protected user-bound custody and progresses it through Decision, Planning and Execution. A durable reference is not synchronous completion. Inspection exposes the selected Kernel version, native capabilities, scope, requirements, relevant State observations, Work and unresolved conditions.
 
 ### Nothing exists
 
-```ts
-const container = await ck.createContainer({
-  id: "band-atlas",
-  owner: team,
-  actor,
-});
-
-const change = await container.change({
-  actor,
-  what: "Create a draft Summer Tour with a €1,200 budget.",
-  why: "Start planning our summer shows.",
-});
-```
-
-Generic managed records, documents and relationships allow useful local structure without a Tour database table. Governance and procedural-memory machinery exist from creation, but useful domain content does not appear automatically. A producer can propose missing shape and values under current rules. Native schema introduction or migration is a separate authorized structural change.
+For “Create a draft Summer Tour with a €1,200 budget,” first establish what the exposed bindings can represent. A supported document or generic record capability may suffice without a Tour table; missing a predefined entity is not automatically a software-development requirement. If no suitable native or generic representation exists, retain the need and identify the capability gap rather than inventing support. The generic-State fallback contract must be settled before that capability is implemented or promised. Native schema introduction or migration remains separately authorized work.
 
 ### Structures exist without records
 
-Assume deployed `tours`, `contacts` and `venues` tables whose owned rows have `workspace_id`:
-
-```ts
-const appData = databaseSource({
-  connection: database,
-  schema: "app",
-  scopeBy: "workspace_id",
-  discovery: { repository: "./" },
-});
-
-const container = await ck.createContainer({
-  id: "band-atlas",
-  owner: team,
-  actor,
-  sources: [appData.forScope("workspace-42")],
-});
-```
-
-The same tour request prepares a native insert, such as `budget_minor: 120000` and `currency: "EUR"`, rather than a competing generic Tour copy. Trusted policy injects scope; a naming convention or generated filter is not isolation. Schema files alone prove neither deployed tables nor empty data. Authorized observation must establish emptiness; discovery does not perform migrations.
+If deployed tables or APIs already represent tours, contacts and venues, prepare their native operations rather than a competing generic copy. Trusted bindings resolve the real tenant/account scope; a field named `workspace_id` or a generated filter does not by itself provide isolation. Observe whether the selected scope is empty. Schema files alone prove neither deployed capability nor absence of records, and discovery does not perform migrations.
 
 ### Structures and records already exist
 
-Use the same source configuration and creation interface. Existing records remain authoritative in place; observe an honest scoped baseline without inventing earlier governed Changes or reasons.
-
-```ts
-const change = await container.change({
-  actor,
-  what: "Raise the Summer Tour budget to €1,200.",
-  why: "Allow for higher transport costs.",
-});
-```
-
-If the current budget is €900, prepare and assess that exact transition, recheck relevant conditions, update the authoritative row and retain its outcome/recovery grounds. Unrelated data remains unchanged. Unknown or unobserved data is not empty; outside writes are drift, not retrospective approvals.
+Observe an honest scoped baseline without inventing earlier governed Changes or reasons. For “Raise the Summer Tour budget to €1,200,” an observed €900 budget grounds the proposed transition. Planning considers relevant commitments and permissions; Execution rechecks guards, performs the native update and retains outcome/recovery evidence. Unrelated data remains unchanged. Unknown data is not empty, and outside writes are drift rather than retrospective approvals.
 
 ### Reopen and inspect
 
-```ts
-const container = await ck.openContainer({ id: "band-atlas", actor });
-const description = await container.describe({ actor });
-```
-
-`change` returns a durable reference, not necessarily synchronous completion. Inspection exposes definitions, supported capabilities, rules, source versions, observation coverage and unresolved bindings. Creation collisions/retries must not reset existing State or Work. No required empty/import mode substitutes for observing the actual situation.
+Reopening verifies identity, current authority and intact custody without resetting State, Work or history. Views can span a user's Workspaces but expose only authorized material. A borrowed Change may be represented locally by a reference or inactive retained checkpoint, never a competing writable history. Reads do not launch missing execution or repair erased grounds. Creation collisions and retries must reconcile rather than initialize a replacement under an old identity.
 
 ## Discovery and bindings
 
@@ -181,9 +177,9 @@ Reuse authoritative sources instead of duplicating their contracts:
 
 A binding declares supported observation, identity/scope, comparison, preparation, publication, concurrency guards, outcome lookup, history and recovery. Not every binding supports every ability. Expose unresolved coverage rather than bypass existing business logic with generic writes. Common State operations come from reusable bindings; native business abilities can reuse existing typed functions. Developers fill exceptions, not recreate every entity or endpoint for each goal.
 
-Developers can integrate external tools, services and agent-facing interfaces through supported bindings and the shared public boundary. Each integration declares its inputs, outputs, effects, permissions, limits and supported outcome/recovery behavior. Connecting a tool neither adopts its output as truth nor gives it a route around guarded effects. No particular browser-tool protocol or external tool framework is a kernel dependency.
+Developers can integrate external tools, services and agent-facing interfaces through supported bindings and the shared public boundary. Each integration declares its inputs, outputs, effects, permissions, limits and supported outcome/recovery behavior. Connecting a tool neither adopts its output as truth nor gives it a route around guarded effects. No particular browser-tool protocol or external tool framework is an engine dependency.
 
-Rust types constrain engine contracts; versioned runtime definitions describe application-specific entities without compiling every application's domain into the kernel. Validate model and client inputs at runtime, preserve native validators and derive typed client interfaces from public contracts rather than duplicate governing rules. Semantic interpretation proposes bindings and values; it does not confer authority.
+Rust types constrain engine contracts; versioned runtime definitions describe application-specific entities without compiling every application's domain into the engine. Validate model and client inputs at runtime, preserve native validators and derive typed client interfaces from public contracts rather than duplicate governing rules. Semantic interpretation proposes bindings and values; it does not confer authority.
 
 Repository discovery follows:
 
@@ -200,15 +196,17 @@ Use incremental analysis of changed units and affected dependencies, not reposit
 
 ## State, evidence and recovery
 
-State is the current authoritative representation of owned values, adopted obligations and supported knowledge, with relevant gaps, conflicts and unknowns explicit. It is not an assertion that every recorded claim is verified reality. Source observations, accepted requirements, desired outcomes and observed realization have different meanings. Changes progressively resolve gaps or revise unsupported knowledge; absence of knowledge is not knowledge of absence.
+State represents the persistent Workspace at a declared scope, version/time and coverage. It may express observed values, desired outcomes, adopted obligations or supported knowledge, with relevant gaps, conflicts and unknowns explicit. These roles are distinct: a desired State is not an observed after-State, and an authoritative source is not proof that every assertion is verified reality. A Change can begin before complete before/after representations exist, can reference many intermediate observations and can end with failure or uncertainty. Different authorized views do not automatically denote different Workspaces.
 
-Existing native rows/files remain authoritative in place. Generic managed State owns values only where no native source supplies that meaning; there is no competing current-state mirror. A connected source may expose writable resources, read-only evidence or both. Its connection does not adopt every assertion it contains. The application's supported database is the default protected ChangeKernel store; SQLite is optional for local/new applications or fallback, not a mandatory sidecar.
+Existing native rows, files and service resources remain authoritative in place; choosing file-first Change history does not require copying them into files. A connected source may expose writable resources, read-only dependencies or both. Unchanged budgets, policies, contracts and consumers can constrain a Change. Generic managed State must not duplicate a native owner of the same meaning; its fallback representation is an explicit open capability contract.
+
+The desired Change history is one protected, append-only JSONL **Change Trace log** per Change in user-bound custody, independent of the native storage used by its Workspace. Each line records one bounded typed operation; retain intent, assessments, Work, attempts, failures and actual outcomes with exact references. Large artifacts and private runtime transcripts may remain referenced material. There is no mandatory database service or competing lifecycle store. Git supports useful diffs, history, collaboration and transport, but its precise acceptance/durability role requires a qualified profile. Existing SQLite profiles remain [bounded executable contracts](../system/components/state.md#native-rust-intake), not the default of this new design.
 
 Read sources on demand, retain what decisions rely on, and recheck what actions depend on. Need follows intent, applicable procedures, constraints and affected dependencies, not only what an agent happens to search for. Authorized research can discover and retain new source resources, subsequently consumed through ordinary bindings with provenance, permissions and retention limits. Historical support and current execution dependencies are different links. Detailed acquisition, observation and memory rules belong in [State and persistence](../system/components/state.md#sources-observations-and-retained-research).
 
 **Observed current State + exact candidate → proposed difference.** Resource identity is distinct from value and version. Not every source offers a global snapshot. The backend derives actual differences under supported semantics rather than trust an agent's effect summary. Candidates may be patches; generated/approved content is durable until execution, reconciliation, Review and retention obligations allow disposal. Re-fetchable observations may be caches, but unique candidates and recovery grounds are not.
 
-A trace connects intent, assessments, attempts, authority and receipts through durable references rather than embedding every payload. A transaction identifier alone is not historical custody. Reuse qualified native history or retain needed previous values/differences; do not mandate a full historical mirror. Mutation and receipt can be atomic only when they actually share a supported transaction. Separate stores need trustworthy source-side outcome reconciliation before retrying a lost response.
+A Change Trace log connects intent, assessments, attempts, authority and receipts through durable references rather than embedding every payload. A transaction identifier alone is not historical custody. Reuse qualified native history or retain needed previous values/differences; do not mandate a full historical mirror. Mutation and receipt can be atomic only when they actually share a supported transaction. Separate stores need trustworthy source-side outcome reconciliation before retrying a lost response.
 
 Evidence supports or challenges a scoped claim; it is not automatic proof. Preserve subject, source/version, method, observation time, assumptions, counterevidence and limits. A pass is not approval, approval is not execution, and execution is not necessarily realization. Several summaries of one source are not independent corroboration. Historical retrieval cannot rerun a model to recreate missing grounds or re-adopt an old rule.
 
@@ -218,11 +216,11 @@ Recovery is normally a new guarded transition that preserves later valid work wh
 
 ## Intent and lifecycle
 
-**Decision + Execution** are the two public lifecycle phases. Decision determines whether to pursue an outcome within stated commitments and authority. Execution carries that pursuit through planning, preparation, guarded effects, observation, recovery and verified completion. Intake is internal capture and refinement machinery, not a third phase. Phase names do not limit the number of visible runtime states, attempts, assessments or transactions.
+**Decision → Planning → Execution** are the three public stages of each Kernel. Decision determines whether to pursue an outcome within stated commitments; Planning establishes bounded Work, dependencies, routes and permissible parallelism; Execution carries admitted Work through guarded effects, observation, recovery and outcome verification. Each stage supports custom Checks at its boundaries, alongside mandatory engine and native requirements. Intake remains capture/refinement within Decision, not another public stage. Three stages do not require three human approvals, model calls or transactions, and do not limit visible waiting, custody or recovery states.
 
 Intake accepts **What** and available **Why**, or exact structured edits. **How** develops internally. Trusted transport binds actor, scope, source references, expected versions and stable retry identity; natural language supplies no authority. Same retry identity with different input must not execute another operation. Reads and inquiries can remain reads; “yes” binds an exact proposal and “stop” identifies active work.
 
-The Change owns the immediate pursuit's original request, interpreted intent, desired outcome and success observations, scope, exclusions, commitments, consequential decisions and material alternatives. Distinguish stated, inherited, inferred-but-unconfirmed and unknown meaning. Preserve attributable revisions instead of rewriting accepted intent to match delivered output. Work inherits exact intent and relevant State versions; continuing goals, requirements and adopted procedures belong in State. No independently writable `intent.md` at each task boundary is required. A Change log means its durable record and trace, not the release `CHANGELOG.md`; current design is not replaced by its revision history.
+The Change owns the immediate pursuit's original request, interpreted intent, desired outcome and success observations, scope, exclusions, commitments, consequential decisions and material alternatives. Distinguish stated, inherited, inferred-but-unconfirmed and unknown meaning. Preserve attributable revisions instead of rewriting accepted intent to match delivered output. Work inherits exact intent and relevant State versions; continuing goals, requirements and adopted procedures belong in State. No independently writable `intent.md` at each task boundary is required. The **Change Trace log** is its durable append-only history, not the release `CHANGELOG.md`; current design is not replaced by its revision history.
 
 Missing information remains explicit rather than becoming mandatory paperwork before an idea can be retained. “Edited in frontend” is origin, not rationale. Routine steps can inherit purpose; consequential ambiguity warrants clarification, not an invented default or a reason dialog for every minor edit. Setting font size to 16 does not establish a permanent preference or prove improved readability.
 
@@ -232,30 +230,40 @@ Decision includes proposal clarification, justification, applicability assessmen
 
 The engine owns a bounded refinement loop: identify missing or contradictory material, return targeted feedback, collect authorized observations or propose a revision, then reassess affected conditions. Feedback binds the exact revision and identifies the requirement or advisory suggestion, affected scope, grounds, missing information or authority, permitted next actions and intent/constraints that correction must preserve. Large or unfamiliar proposals are not automatically invalid; suggested decomposition is not automatically a mandatory blocker. A changed proposal gets an attributable revision and new retry identity rather than reusing an old request with different content.
 
-Internal intake mechanics are not a new customizable Check stage. They reuse shared feedback and assessment machinery. Domain-specific admission and outcome criteria remain available; internal orchestration does not make every criterion universal. Missing knowledge can permit bounded investigation; missing authority requires permission or a stop. Preserve rejected input, bound refinement attempts and cost, and allow waiting, deferral or rejection rather than resampling until acceptance.
+Intake mechanics do not add a fourth public stage. They reuse shared feedback and assessment machinery; custom Checks remain available for Decision, Planning and Execution. Internal orchestration does not make every criterion universal. Missing knowledge can permit bounded investigation; missing authority requires permission or a stop. Preserve rejected input, bound refinement attempts and cost, and allow waiting, deferral or rejection rather than resampling until acceptance.
 
 Conversation can already perform Decision work. Retain and reuse applicable conclusions and exact-subject approval instead of repeating an interview. Conversation itself is not approval, and an automated origin is not a requirement for human approval. An automated proposal without suitable delegation waits for the required decision; a proposal within delegation may proceed once applicable requirements hold. Explicit user instruction still does not waive failed requirements or preapprove unknown effects.
 
+### Planning admission and refinement
+
+Planning is an explicit checked stage, not a hidden execution detail. It develops a bounded Work graph with expected contributions, declared read dependencies and effects, relevant State versions, prerequisites, shared commitments, proposed recipients and required authority, limits, observation needs and result-acceptance conditions. Custom Planning Checks assess coverage of intent, methods, interfaces, aggregate conflicts, parallel safety, routing and unresolved questions. Code owns identities, arithmetic, eligibility and commitment admission; Jev may assist suitable semantic judgments.
+
+A valid plan may contain waiting, delegated or blocked Work. It does not certify that every item is executable. Plan incrementally rather than requiring a complete graph before safe bounded work. Missing knowledge may require authorized inquiry; missing authority requires an appropriate request, routing to an independently authorized participant or a stop. Neither discovery, a route nor a model-selected owner grants rights.
+
+The planner proposes routes and graph revisions, Checks assess them, and the engine records accepted decisions and performs guarded creation, sharing, handoff and dispatch. Those control operations require their own authority and custody checks; they do not authorize application effects or require an infinite nested Change for each log append. A newly created child or fork begins its own Decision even when the parent remains in Planning. Execution-time discoveries require an explicit plan revision, new Change or return to Decision for material intent/authority changes, not silent replacement of admitted Work.
+
 ### Assessment responsibilities
 
-The two-phase model preserves these internal responsibilities. The names Decision, Implementation and Review identify assessment meaning here, not three mandatory public phases or a new interpretation of existing protocol fields.
+The stages preserve distinct assessment subjects and timing. Pre-effect/contribution assessment and observed-outcome Review remain within Execution; neither is a fourth stage. Existing protocol fields and historical Planning results are not renamed by this design.
 
-| Public phase | Internal responsibility |
+| Public stage | Responsibility |
 | --- | --- |
-| Decision | Establish justified bounded pursuit, clear intent, commitments, feasible next steps, uncertainty, assessable outcomes and approval needs. |
-| Execution: Implementation assessment | Continuously assess methods/dependencies, exact prepared effects, actual contributions, custody and truthful partial outcomes. |
-| Execution: Review assessment | Assess reconciled combined results, remaining obligations, supported realization and lawful completion. |
+| Decision | Establish justified bounded pursuit, intent, commitments, uncertainty, assessable outcomes and approval needs. |
+| Planning | Assess Work decomposition, methods, interfaces, dependencies, declared effects, aggregate commitments, authority, routes and parallelism. |
+| Execution: pre-effect/contribution assessment | Assess exact candidates, current authority and dependencies, execution custody, actual contributions and truthful partial outcomes. |
+| Execution: observed-outcome Review | Assess reconciled combined results, remaining obligations, supported realization and lawful completion. |
 
 ```text
-Internal intake → Decision: clarify, assess, admit or wait
-  → Execution: continuous planning and bounded Work
-    → exact candidate + required assessment and authority
-    → fresh publication guards → effect and receipt → observation
-    → refine, repair or continue as needed
-    → assess combined outcome → complete only when justified
+Decision: capture/refine intent → assess → admit bounded pursuit or wait
+  → Planning: decompose → assess dependencies, routes and parallelism → admit plan
+    → Execution: dispatch eligible Work
+      → exact candidate + required assessment and authority
+      → fresh publication guards → effect and receipt → observation
+      → replan, repair or continue as required
+      → assess combined outcome → complete only when justified
 ```
 
-Planning, scheduling, deployment where applicable, review coordination and recovery are engine machinery; domain Checks supply scoped judgments without owning orchestration. Customization is not restricted to pre-effect assessment: relevant domain requirements can apply to proposals, candidates and observed outcomes. Either backend or domain evaluation can use code and bounded judgment. Private drafts, requests and Work may be persisted before protected publication under their own rules. Long reasoning or approval waits stay outside short publication transactions.
+Each active continuation segment selects an exact Kernel version. Past assessment remains bound to its subjects, versions and context; it is not a portable blanket approval. Checks supply judgments, while the engine owns scheduling, handoff, effects, review coordination and recovery. Private proposals, drafts and bounded planning activities have their own permitted persistence/execution grounds before protected publication. Long reasoning and approval waits stay outside short publication steps. Simple typed operations may satisfy suitable boundaries directly in code.
 
 Publication/application of effects generalizes; a single final deployment stage does not. Software may prepare privately, assess release readiness, deploy, then observe and review results. Other Changes update records or adopt guidance directly, or perform multiple outside effects over time. A pre-delivery aggregate assessment does not establish subsequent delivery success. If the promised outcome is a reviewed release artifact, deployment may be a separate linked Change; if the promise is availability to users, deployment and its observation precede completion. Checks do not deploy or collect fresh observations themselves.
 
@@ -263,7 +271,7 @@ Built-in requirements, authoritative source constraints and adopted domain polic
 
 Consequences such as reach, sensitivity, reversibility, others' interests and uncertainty inform policy-derived approval. Policy determines who can approve and what cannot be delegated. Model-assessed severity alone does not set ceremony or override ownership. Autonomous self-improvement additionally needs scoped delegation, containment, limits, current guards, protected custody and recovery; good user Checks alone are insufficient. Controller replacement retains release qualification and required handoff.
 
-Defects return to refinement within Execution, material intent/scope/authority changes to Decision, missing observations to collection and provider failures to operational handling. Pause, reject, defer, withdraw or cancel when appropriate. Completing individual tasks, producing a booking row or delivering a feature does not establish the combined user outcome. Optional improvements must not conceal unmet required outcomes. See [Checks](../system/components/checks.md).
+Defects return to applicable refinement or Planning, material intent/scope/authority changes to Decision, missing observations to collection and provider failures to operational handling. Pause, reject, defer, withdraw or cancel when appropriate. Completing individual tasks, producing a booking row or delivering a feature does not establish the combined user outcome. Optional improvements must not conceal unmet required outcomes. See [Checks](../system/components/checks.md).
 
 ### Change granularity and classification
 
@@ -275,15 +283,49 @@ Use a small versioned classification profile, not an exhaustive universal type-t
 
 Jev's [255-option Choice limit](https://docs.typesafe.ai/primitives/choice) is per question, not a target number of Change types. Ask focused questions and compose answers in code; do not ask a model to select a supposedly safe pipeline from an unverified summary of unbounded effects. Classifications bind exact inputs, definitions, model/settings and uncertainty handling. Intake classification is provisional: material candidate effects or new observations require reassessment. Actual effects and policy determine applicable requirements, not a repair/documentation label, averaged risk or model confidence. Qualify against missed obligations and unsafe omissions, not merely label agreement.
 
-## Continuous factory and Work
+## Planning and Work coordination
 
-The factory is durable ordinary coordination code. Its routes are direct typed operations, deterministic expansion of a known procedure, or producer-generated missing plans/content/programs/Work graphs. Configuration is the main customization route for concurrency, budgets and refinement limits; domain obligations may still require executable rules.
+Factory is no longer a separate user-facing primitive. Planning owns the Work graph and routing decisions; durable runtime code owns scheduling, assignments, attempts, limits, cancellation and recovery. Work may use direct typed operations, deterministic expansion of an established procedure or producer-generated missing plans/content/programs. Configuration controls supported concurrency, budgets and refinement limits; custom Planning Checks and native requirements remain binding.
+
+Each Work item belongs to one Change and may have multiple attributable attempts. Reuse independently governed outcomes through linked Changes/results rather than sharing mutable Work ownership between histories. Different Kernels may govern child Changes in parallel while each Change retains one active continuation authority.
 
 Choose coherent Work, not the smallest possible units. Retain inherited purpose, scope, prerequisites, shared obligations, expected outcomes, observation needs, allowed tools/effects and limits. Child successes do not prove parent coverage. Missing knowledge needs information; missing authority needs permission or a stop; indivisible difficulty may need a stronger worker rather than endless splitting. Research can justify detours without a universal distance-to-goal score decreasing on every step.
 
 Persist attempts, assignments, dependencies, waiting reasons, budgets, cancellation and partial outcomes across processes. Code determines eligibility, conflicts, limits, fairness and reservations before Jev ranking or worker-fit judgment. Confidence is not worker success probability. Bound retries, decomposition, concurrency and total cost; do not starve eligible work or resample unchanged failures.
 
-Dependencies include intermediate conditions and commitments, not only final artifacts. Disjoint rows or files do not prove independence: three €400 commitments exceed €1,000, and early disclosure can violate an embargo elsewhere. Authorized reservations differ from worker leases and tentative ideas. Resolve conflicts through ordering, prerequisites, scope revision, pause, supersession or authorized choice. Long-running Changes do not hold months-long locks. Unknown effects or custody block unsafe retry even after lease expiry.
+Dependencies include intermediate conditions and commitments, not only final artifacts. Disjoint rows, files, Workspaces or fork IDs do not prove independence: three €400 commitments exceed €1,000, and early disclosure can violate an embargo elsewhere. Blocking dependencies must be acyclic; one Change may supply several independent user pursuits without merging their private history or authority.
+
+Planning-time aggregate coordination is viable when the qualified boundary controls relevant writes and serializes commitment admission. A native reservation table is not universally required, but independently approving against the same stale budget is not coordination. Uncontrolled writers require source cooperation/guards or explicitly weaker supported guarantees. Native resource identity, not only `workspace_id`, determines overlap. Authorized commitments differ from worker leases and tentative ideas. Resolve conflicts through ordering, prerequisites, scope revision, pause, supersession or authorized choice. Long-running Changes do not hold months-long locks. Unknown effects or custody block unsafe retry even after lease expiry.
+
+## Routing, borrowing and forks
+
+These relationships are complementary, not alternative product architectures. Routing chooses a destination, custody identifies who may continue, dependencies/scheduling determine readiness, and Kernel stages determine current assessment obligations. Forking records derivation. Timing never transfers stage approval or source authority implicitly.
+
+| Operation | Identity and intended use |
+| --- | --- |
+| Review copy | A read-only copy/reference to an exact Change checkpoint; feedback returns without another writer for that Change. |
+| Borrow | The same Change moves active continuation to another authenticated user/Kernel; originating owner, Workspace and history remain intact. |
+| Child Change | A new Change delivers a separately governed contribution with explicit result/dependency conditions. |
+| Fork | A normal new Change derives an alternative or independent pursuit from one exact retained checkpoint, with a new ID, creator ownership and its own Change Trace log. |
+
+Borrowing is transfer of the Change itself, not merely remote Work with a permanently privileged original coordinator. A returning file is not automatically accepted continuation. The handoff must bind exact identity/checkpoint, parties, allowed continuation and acceptance/return/cancellation conditions, preserve outstanding Work and reject stale continuation by retained copies. An interrupted transfer may leave no active continuation rather than two. The specific authenticated handoff and stale-holder rejection protocol is a prerequisite, not something file movement, signatures, encryption or a timeout supplies by itself.
+
+A recipient establishes admission under its selected Kernel before continuing. Earlier progress remains historical evidence; current requirements determine reuse and the next permitted action. Participants use their own native authority for their attributable contributions, not powers inherited from the originating owner. Sharing the whole file requires authority for every disclosed part; otherwise use authorized material/views or a separately governed request. Private brainstorming and session transcripts must not leak into a returned parent file by default.
+
+A fork retains an exact origin reference and authorized context with attribution. It does not relabel old operations as its own, inherit execution authorization, replay completed Work or assume uncertain source effects did not occur. The creator owns the fork; sending it does not transfer that ownership. The default target can remain the source Workspace, while adaptation to another Workspace selects a new fixed target at creation and requires fresh bindings, observations and authority. The original `workspace_id` is never silently rewritten.
+
+Useful forks include competing designs/implementations, independent adoption after an originator stops, and adapting a prior pursuit to another authorized Workspace. Ordinary review needs only read-only copies; ordinary decomposition needs Work or children. Fork lineage alone does not make the source wait or couple cancellation. A fork can also be a child when the parent plan explicitly depends on its result. Independent cancellation does not revoke another user's lawful pursuit, but native permission revocation and resource constraints still apply.
+
+Do not merge authoritative histories or concatenate Change Trace logs. Adopt selected results with provenance and assess the actual combined candidate against current conditions. For competing alternatives, authorize bounded proposal/candidate work first where appropriate; if only one may publish, enforce selection at the publication boundary. Forks share real budgets, resources and consequences unless a qualified binding actually isolates them.
+
+| Parent stage | Permitted routing/forking purpose and limit |
+| --- | --- |
+| Decision | Refer consideration or separate alternative intentions; no inherited effect approval. |
+| Planning | Select recipients, create children/forks and establish dependencies, commitments and parallelism through guarded control operations. |
+| Execution | Dispatch admitted Work; new findings require explicit replanning, referral or new Change without erasing running/uncertain effects. |
+
+A parent can remain in Planning while forked candidate explorations pass through their own Decision, Planning and Execution. Their success means the declared exploration result, not delivery of the parent's feature. The parent then selects or combines results, reassesses affected conditions and executes its own remaining obligations. Each individual Change still has at most one active custodian and one selected Kernel version per active segment.
+
 
 ## Semantic operations and Jev
 
@@ -312,7 +354,7 @@ Code owns thresholds, aggregation and scheduling facts; required prohibitions ca
 
 Memory has two complementary homes, not two competing current copies. **Change memory** retains what happened in a particular pursuit and why: original and revised intent, decisions, material alternatives, assumptions, attempts, exact procedure/assessment/candidate references, effects, observed outcomes, failures, repairs and unresolved consequences. **State memory** retains what currently applies: adopted procedures, continuing goals/preferences/constraints and supported knowledge with scope, uncertainty and adoption/revision/retirement history. Preserve concise attributable rationale and necessary grounds, not every conversation or private reasoning transcript.
 
-The engine owns representation, custody, versioning, retrieval and transitions; each container owns contents and visibility. Tools are executable abilities; procedures are reusable strategies, not permission grants. An authoritative native runbook or executable policy can be adopted by exact reference rather than copied into another writable store. Developer-supplied guidance can seed proposals; installation alone does not adopt it.
+The engine owns representation, custody, versioning, retrieval and transitions; Workspace resource authorities and Change owners govern their respective contents and visibility. Tools are executable abilities; procedures are reusable strategies, not permission grants. An authoritative native runbook or executable policy can be adopted by exact reference rather than copied into another writable store. Developer-supplied guidance can seed proposals; installation alone does not adopt it.
 
 ```text
 Change experience → proposed lesson → assessment and authorized adoption
@@ -326,7 +368,7 @@ A procedure identifies purpose/applicability, instructions or exact code/configu
 
 | Material | Durable home |
 | --- | --- |
-| Immediate pursuit and its intent revisions | Change record and trace. |
+| Immediate pursuit and its intent revisions | Change Trace log. |
 | Case-specific observations and outcomes | Retained grounds referenced from Change memory. |
 | Continuing goal, preference or constraint | Scoped adopted State. |
 | Supported knowledge or reusable strategy | Versioned State with evidence and applicability limits. |
@@ -335,7 +377,7 @@ A procedure identifies purpose/applicability, instructions or exact code/configu
 
 Repetition and correlation can justify a proposal, not automatic policy or proof of causation. A memory update cannot weaken the rules authorizing its own adoption. Local success must not silently become a prohibition, global preference or shared developer policy. Purpose may transfer while its implementation does not: readability is not always font size 16. Failed or recovered work can teach without completing its original goal. Not every observation needs a procedure or backlog item.
 
-Retrieve within current permissions before judging relevance; include applicable obligations, exact versions and uncertainty rather than just similar prose. Return whether material is historical context, proposed learning or current adopted guidance. Summaries and indexes are derived, not replacement sources or independent corroboration. Context eviction does not retire policy. Generate bounded human/agent briefs or exports when useful, not another independently editable intent or memory file. Cross-container reuse and derived knowledge require authorized sharing. Memory guides investigation and repair but never replaces exact effect receipts, recovery grounds or current observations.
+Retrieve within current permissions before judging relevance; include applicable obligations, exact versions and uncertainty rather than just similar prose. Return whether material is historical context, proposed learning or current adopted guidance. Summaries and indexes are derived, not replacement sources or independent corroboration. Context eviction does not retire policy. Generate bounded human/agent briefs or exports when useful, not another independently editable intent or memory file. Cross-Workspace reuse and derived knowledge require authorized sharing. Memory guides investigation and repair but never replaces exact effect receipts, recovery grounds or current observations.
 
 The [Anthropic playbook](https://claude.com/blog/the-ai-native-sdlc-playbook), its [on-call account](https://claude.com/blog/ai-ci-cd-on-call) and [security account](https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle) informed this direction: durable handoffs, incident-to-procedure learning, early feedback, evaluation of agent configuration and attention to delegated authority. They combine guidance and reported experience, not qualification evidence for ChangeKernel. Their Markdown layouts, fixed workflow sequences and sample hooks are not adopted as universal contracts. More explicit architecture is not proof of greater efficiency; compare useful outcomes, human attention, missed constraints, rework, recovery and total cost.
 
@@ -371,26 +413,28 @@ The first viable self-development release includes a practical terminal interfac
 | Outcome review | Distinguish planned, attempted, published and observed results; inspect remaining obligations and recovery status instead of treating completed Work as proof of the desired outcome. |
 | Operational control | See the controlling immutable release, supported capabilities, connection/freshness state, unavailable services and unresolved custody; understand the next permitted action and why other actions are blocked. |
 
-The minimum surface provides proposal entry, an attention queue, Decision and Execution views, Change details, Work/attempt tracking, candidate/Check/Evidence inspection and controller health. The two public phases do not hide planning, waiting, approval, applying, verifying, cancellation or recovery states. Operators can inspect why a Change exists, what happened, what guidance currently applies and what remains unresolved; exact historical and current references must remain distinguishable. Product priorities and execution priorities are governed revisions or views of existing records, not a second independently editable backlog. A small initial worker configuration and simple presentation are sufficient; unsupported controls must be visibly unavailable rather than cosmetic buttons.
+The minimum surface provides proposal entry, an attention queue, Decision, Planning and Execution views, Change details, Work/attempt tracking, candidate/Check/Evidence inspection and controller health. Workspace selection and a private cross-Workspace My Changes view must not expose another user's folder or duplicate history authority. The three stages do not hide waiting, approval, applying, verifying, custody transfer, cancellation or recovery states. Operators can inspect why a Change exists, what happened, what guidance currently applies and what remains unresolved; exact historical and current references must remain distinguishable. Product priorities and execution priorities are governed revisions or views of existing records, not a second independently editable backlog. A small initial worker configuration and simple presentation are sufficient; unsupported controls must be visibly unavailable rather than cosmetic buttons.
 
 Observability is part of backend contracts from the start. Retain attributable state transitions, attempts, waiting reasons, assessment and effect references, operator decisions and available usage. Views derive from durable records with explicit freshness and coverage; reconnecting must recover current status without inventing missing progress or rerunning work. Reading or rendering a view does not launch workers, Checks or inference. Private logs and secrets are not automatically operator-visible Evidence.
 
-Operator commands bind actor, exact subject/version and retry identity. Revisions invalidate affected assessments; reprioritization does not bypass dependencies or accepted commitments. Pause does not imply that an active process has stopped, cancellation is not confirmed termination, and retry requires outcome/custody reconciliation. Closing the terminal does not silently cancel host-owned Work. The interface must show pending requests, confirmed outcomes and uncertainty separately, preserve rejected input, and explain safe recovery without requiring the operator to inspect raw database rows.
+Operator commands bind actor, exact subject/version and retry identity. Revisions invalidate affected assessments; reprioritization does not bypass dependencies or accepted commitments. Pause does not imply that an active process has stopped, cancellation is not confirmed termination, and retry requires outcome/custody reconciliation. Closing the terminal does not silently cancel host-owned Work. The interface must show pending requests, confirmed outcomes and uncertainty separately, preserve rejected input, and explain safe recovery without requiring the operator to inspect raw storage.
 
-## Cross-container development
+## Cross-workspace development
 
-A user goal can depend on authorized development elsewhere without merging State, permissions, memory or transactions. First compose existing capabilities and generic State: a missing predefined entity is not necessarily a capability gap. Native integrations, shared schemas, application behavior or release changes may require developer-owned work.
+A user goal can depend on authorized development elsewhere without merging State, permissions, memory or transactions. First compose existing capabilities and any supported generic representation: a missing predefined entity is not necessarily a capability gap. Missing information, missing instances, unsupported capabilities, operational unavailability and denied access are different conditions; denial is not permission to develop a bypass.
 
 For “Book three weekend shows near Porto within €1,200”:
 
-1. Pursue what existing authorized abilities support and identify the genuine missing capability, such as booking-request/confirmation tracking.
-2. Share only authorized unmet-need material through a request visible in user and developer intake; use permissioned views, not divergent ticket copies.
-3. Developers accept, defer or reject. Accepting consideration is not an automatic implementation commitment; promised results and limits are explicit.
-4. Authorized development and separately authorized deployment establish actual capability availability, not merely a merged commit.
-5. Verify the required version/result, then recheck current user intent, authority, State, requirements and commitments before resuming.
-6. Review actual bookings, not feature delivery alone.
+1. The user creates C0 for the application Workspace, passes applicable Decision Checks and enters Planning under their Kernel.
+2. Planning identifies a genuine capability gap. If full-file disclosure and handoff are authorized and supported, the PM borrows the same C0 into private custody; otherwise share only the authorized unmet-need material. The user folder is never shared.
+3. The PM's Kernel admits consideration and records attributable refinements without replacing original user intent. Consideration is not an automatic implementation commitment.
+4. Planning identifies design/development contributions and routes linked C1/C2 to appropriate owners/Kernels. Each child has its own identity, owner and fixed Workspace; developer-owned resources in another Workspace require that explicit target. Alternative pursuits may use forks instead of complementary children.
+5. Each new Change follows its own Decision → Planning → Execution path. The parent consumes authorized results under its dependency conditions. Work, assessments and ownership do not become shared writable histories.
+6. Native-authorized integration/publication and separately authorized deployment establish actual capability availability, not merely completed children or a merged commit.
+7. Return/continue C0 through the supported custody protocol, verify availability for the intended user, and recheck current intent, permissions, State, requirements and commitments before resuming the original pursuit.
+8. Review actual bookings, not feature delivery alone.
 
-A dependency binds specific results/capabilities and satisfaction conditions, not whole containers globally. One developer Change may support several user requests without merging private scopes. Request submission authorizes asking, not implementation/deployment. Rejection, deferral, cancellation, supersession, revoked visibility and unavailable capabilities remain inspectable; permission does not create feasibility or outside cooperation.
+Dependencies bind particular results/capabilities and satisfaction conditions, not whole Workspaces globally. One developer Change may support several user requests without merging private scopes. Submission authorizes asking, not implementation or deployment. Rejection, deferral, cancellation, supersession, revoked visibility and unavailable capabilities remain inspectable; permission does not create feasibility or outside cooperation.
 
 ## Hosting, distribution and evolution
 
@@ -398,9 +442,9 @@ One engine supports a library interface and standard launcher; applications bund
 
 The internal core remains pure and deterministic; the host performs storage, inference and effects through qualified bindings. Placement, ownership, authority and enforcement are separate. Installing a library, service, skill or operating-system package governs nothing until scoped resources and write routes are enforced. A local host cannot prevent remote-source bypass with a client filter alone.
 
-Build the first useful self-development product in Rust: the authoritative kernel, application coordination, host and terminal client share one engine implementation. Retain TypeScript only for application bindings, controlled Pi integration and JavaScript/compiled-TypeScript Check execution where needed. JavaScript runtimes and workers remain explicit capabilities, not dependencies of pure kernel use. Git history preserves retired TypeScript behavior and useful safeguards; reproducing every prototype feature or interface is not a release requirement. Preserve historical records and meanings without automatically importing them into the new runtime.
+Build the first useful self-development product in Rust: the pure engine core, application coordination, host and terminal client share one implementation. User Kernel definitions are versioned inputs, not separate engine forks. Retain TypeScript only for application bindings, controlled Pi integration and JavaScript/compiled-TypeScript Check execution where needed. JavaScript runtimes and workers remain explicit capabilities, not dependencies of pure engine-core use. Git history preserves retired TypeScript behavior and useful safeguards; reproducing every prototype feature or interface is not a release requirement. Preserve historical records and meanings without automatically importing them into the new runtime.
 
-Bandwagon and Omarchy test generality, not the product boundary. Linux-first qualification is acceptable without positioning ChangeKernel as Linux-only. Machine integration starts with bounded supported resources and independent recovery access, not whole-machine guarantees. Friendly Check authoring, team administration and a Packs marketplace remain deferred Hub work; ordinary collaborative containers do not require Hub.
+Bandwagon and Omarchy test generality, not the product boundary. Linux-first qualification is acceptable without positioning ChangeKernel as Linux-only. Machine integration starts with bounded supported resources and independent recovery access, not whole-machine guarantees. Friendly Check authoring, team administration and a Packs marketplace remain deferred Hub work; ordinary collaborative Workspaces do not require Hub.
 
 One immutable release owns common interpretation and transitions. Definitions, source revisions, adopted evaluators and execution/model settings retain their own exact identities. Upgrades require explicit supported transition, not silent reinterpretation, migration or authority transfer. Detailed release and qualification obligations live in the [release contract](../system/components/package.md).
 
@@ -408,7 +452,7 @@ One immutable release owns common interpretation and transitions. Definitions, s
 
 Source structure must make ownership and dependency boundaries visible. Retain the pure-kernel/ports/adapters split and meaningful boundary checks. The retired TypeScript prototype mixed Git-specific host composition, terminal rendering and server coordination; Git preserves that implementation and its review evidence. Its removal does not establish the native operator path, and Git/Wiki-specific concepts must not define universal State.
 
-The following depth-three target is approved design, not a claim that Rust implementation or relocation has occurred. Directory names alone establish no boundary: ownership mappings, import direction, package reachability and tests must agree. Tests follow source responsibilities; Rust unit tests may live beside their modules, with broader suites under `tests/`.
+The following depth-three target expresses desired responsibilities, not a claim that Rust implementation or relocation has occurred. `src/kernel/` names the pure source layer; user Kernel definitions are domain data within that layer. Concrete file-store modules and public interfaces must follow the dependency gates below rather than being inferred from this outline. Directory names alone establish no boundary: ownership mappings, import direction, package reachability and tests must agree. Tests follow source responsibilities; Rust unit tests may live beside their modules, with broader suites under `tests/`.
 
 ```text
 Cargo.toml                     # One Rust library/executable package
@@ -424,7 +468,8 @@ src/
 ├── kernel/
 │   ├── data_contracts/
 │   ├── identity/
-│   ├── containers/
+│   ├── workspaces/
+│   ├── kernels/
 │   ├── state/
 │   ├── changes/
 │   ├── work/
@@ -434,7 +479,8 @@ src/
 ├── application/
 │   ├── commands/
 │   ├── queries/
-│   ├── factory/
+│   ├── planning/
+│   ├── coordination/
 │   ├── assessment/
 │   ├── publication/
 │   └── recovery/
@@ -483,7 +529,9 @@ Design remains in these canonical documents, governed lifecycle history in its e
 
 ## Current implementation and historical meanings
 
-Current source implements bounded native SQLite intake and verified committed-source observations, plus narrow TypeScript Pi bridges and their required protocol/codec dependencies. The historical TypeScript engine, console, Git/Wiki orchestration and SQLite candidate implementation have been removed; their capabilities are not native exports. The native private-continuation contract is approved, with explicit schema initialization, revision-zero custody, verified intent reads and atomic SQLite intent appends with exact retry reconciliation. Concrete SQLite file-candidate custody remains unintegrated pending the shared retained-attribution repair; its generic ports and data types are not a completed write capability. Decision + Execution is approved desired lifecycle, not an implemented replacement for stored stage protocols. Full progression, generalized discovery, source publication, native Jev operations, durable factory/recovery, memory adoption, operator controls and cross-container dependencies remain unfinished. Examples above are not current exports.
+Current source implements bounded native SQLite intake and verified committed-source observations, plus narrow TypeScript Pi bridges and their required protocol/codec dependencies. The historical TypeScript engine, console, Git/Wiki orchestration and SQLite candidate implementation have been removed; their capabilities are not native exports. The bounded native private-continuation contract has explicit schema initialization, revision-zero custody, verified intent reads and atomic SQLite intent appends with exact retry reconciliation. Concrete SQLite file-candidate custody remains unintegrated pending shared retained-attribution correction; its generic ports and data types are not a completed write capability.
+
+The Workspace/user-Kernel model, file-first Change Trace authority and Decision → Planning → Execution pipeline are approved desired design, not implemented replacements for those profiles. General membership, portable handoff/fork protocols, encrypted sharing, full progression, publication, native Jev operations, durable coordination/recovery, memory adoption and operator controls remain unfinished. Examples above are not current exports. Existing `container_id` fields and SQLite layouts keep their exact bounded meanings; no rename, automatic migration, JSONL dual-writing or inferred compatibility is authorized. Before extending or replacing those profiles, resolve the affected contracts and explicit compatibility disposition.
 
 `ProjectSnapshot`, `readSnapshot`, `snapshotDigest`, existing `codewiki.*` protocols, managed-document fields and historical Planning operations retain their original meanings until explicit versioned implementation. They are not generalized snapshots, acceptance certificates or new-stage results. Git history retains the old Git/Wiki implementation and tests; its document/type hierarchy is not part of this new universal model. Markdown knowledge may be ordinary source-backed State through a suitable binding, not a separate required Wiki subsystem.
 
@@ -491,15 +539,26 @@ Source design metadata is not managed adoption. Consolidated `ownership` mapping
 
 ## Unresolved contracts and proof
 
-Before implementation, specify:
+The agreed primitives, cardinalities and required invariants do not depend on selecting a particular transport, cipher, database or orchestration product. No conflict was found between those decisions. However, durable file custody, exclusive borrowing, confidential transfer and safe aggregate commitments **do depend on concrete protocols and proof**. They are requirements, not guarantees established by this document. The open matters below cannot be left until after the interfaces or implementations that depend on them have been committed to.
 
-- Generalized creation/opening, Decision/Execution, intent-revision, candidate custody, inspection, feedback and retry contracts beyond bounded native intake and committed-source reads; membership and shared-resource relationships.
-- First database/execution bindings, transaction integration, history/retention, backup and declared recovery guarantees.
-- Supported discovery languages/frameworks, validation of derived definitions, incremental invalidation and unresolved coverage.
-- Typed mutations, native capabilities and any restricted generated programs; their execution isolation and limits.
-- Concrete binding of existing system identity/permissions and owner-configured delegation; exact intent, memory, research-custody and procedure-input representations, retention/visibility and local versus shared evolution. A generalized additional AI-restriction layer remains deferred.
-- Work refinement, worker selection, budgets, fairness, cancellation, reservations and uncertain-outcome reconciliation.
-- Jev deployment, operation contracts, initial classification vocabulary and quality thresholds; terminal toolkit/transport, frontend freshness/privacy and cross-container dependency semantics.
-- Evidence that the two-phase interface preserves admission, pre-effect and outcome obligations, exposes actionable states and reduces duplicated work before any persisted-contract transition.
+### Dependency-gated implementation
 
-Prove one complete enforced path with a goal not already encoded as a dedicated workflow, ambiguity/repair, recoverable failure, durable learning and another worker continuing from retained records. Then prove the same semantics with a substantially different source/backend and frontend plus replaceable agent clients. Measure end-to-end correctness, missed constraints, escalation, cost and ordinary/slow-path latency. [Qualification](../system/components/package.md#qualification) defines the challenge matrix; this section is not a parallel implementation roadmap.
+This is the canonical capability dependency plan, not a separate roadmap or an assignment queue. Resolve and review each affected contract before assigning implementation that freezes it. Bounded disposable probes may inform that decision without claiming operational support. Independent work may proceed only against agreed interfaces. If a feasible supported profile cannot preserve an agreed invariant, stop and return the product tradeoff to the user rather than silently weakening it.
+
+| Gate | Contract to settle | Dependencies and blocked implementation/claim |
+| --- | --- | --- |
+| Workspace and identity binding | Concrete descriptor/IDs, native identity and membership mapping, authenticated folder ownership, exposed resources/operations, scope revisions and supported enforcement. | Before new public identity/binding formats, persisted associations or access-bearing endpoints. No discovery-as-permission or descriptor-as-credential shortcuts. |
+| File-first Trace profile | Versioned bounded schema, serialization, accepted-prefix identity, durable append/acknowledgment, writer arbitration, exact retries, replay/import, interrupted tail versus corruption, retention and backup. Decide Git's authority/commit role for that profile. | Requires the identity/custody boundary; precedes new authoritative persistence and continuation. JSONL framing, a hash or a Git commit alone is insufficient. |
+| Kernel and lifecycle contracts | Kernel/Check version references, stage/intent/plan subjects, effective mandatory requirements, feedback, control operations, evidence reuse and explicit old-profile disposition. | Requires agreed identity and record/reference contracts before new stored stage formats or public APIs. The three-stage model cannot reinterpret historical Planning or two-phase records. |
+| Work and execution custody | Work/attempt identities, scoped inputs and artifacts, tools/effects, budgets, dependency/result conditions, supervision, cancellation and unknown-outcome handling. | Requires lifecycle and protected persistence contracts before worker dispatch. Missing process/provider custody cannot be repaired by inference or a new attempt ID. |
+| Publication and shared commitments | Concrete source guards, serialized admission across overlapping resources/Changes, source receipts or equivalent outcome protocol, repair and reconciliation. | Requires exact candidates, applicable Checks, current authority and durable custody before real effects or safe-retry/aggregate-safety claims. Outside writers need cooperation/guards or explicitly weaker declared coverage. |
+| Borrowing, forks and routing | Exact checkpoint derivation, authenticated offer/accept/return, one active continuation authority, stale-copy rejection, interrupted transfer, in-flight Work, dependency/selection/cancellation and checked result adoption. | Local fork creation requires agreed identity, Trace and admission contracts; multi-user continuation additionally requires transfer/sharing protocols. No simultaneous authority from copied files or independent approval of conflicting forks. |
+| Confidential sharing | Disclosure policy, authenticated encryption/transport formats, key distribution/rotation/revocation, authorized views and metadata visibility. | Before sensitive export/transfer or encrypted collaboration claims. Local protected custody can be qualified without promising a remote encrypted-sharing capability; disclosed plaintext cannot be recalled. |
+| Generic State and further bindings | Representation when native structure is absent, discovery coverage, native capability integration, binding-specific retention and recovery. | Before promising that fallback or additional source capability. A first native file/repository binding need not wait for every database/API or generic-record design. |
+| Compatibility and qualification | Explicit migration or non-migration disposition, exact artifacts/dependencies, preservation of historical meanings, interruption/backup proof and controller adoption/handoff. | Before format conversion, release claims, activation or controller transfer. Source checks and design approval do not qualify a release. |
+
+For the first bounded file-first path, agree identity/scope and the Trace/Git profile first, then Kernel/lifecycle/reference contracts and protected candidate/Work execution, then guarded effects and recovery. A local single-custodian profile may precede remote borrowing, encryption and cross-Workspace cooperation only by advertising those capabilities as unavailable, not approximating them. Profile contracts must resolve their own writer exclusion and recovery even when broader distributed protocols are deferred. Operator views/controls may develop against agreed supported/unavailable semantics in parallel; no new worker assignment is implied by this plan.
+
+Additional implementation choices remain local to their capability: supported discovery languages/frameworks, incremental invalidation, typed/native/restricted-program execution forms, Jev deployment/questions/quality thresholds, worker ranking/fairness and terminal toolkit/transport. Settle their contracts before affected implementation. A generalized additional AI-restriction layer, marketplace and broad cloud/machine integration remain deferred rather than prerequisites for the first enforced path. No new storage, cryptographic, orchestration or synchronization dependency is selected by the research.
+
+Prove one complete enforced path with a goal not already encoded as a dedicated workflow, ambiguity/repair, recoverable failure, durable learning and another worker continuing from retained records. Qualify each additional custody/transport/source profile before claiming it. Broader generality requires the same semantics with a substantially different source/backend and frontend plus replaceable agent clients. Measure end-to-end correctness, missed constraints, escalation, cost and ordinary/slow-path latency. [Qualification](../system/components/package.md#qualification) owns the challenge matrix; the temporary handoff owns current execution status.
