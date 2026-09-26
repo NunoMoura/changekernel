@@ -40,7 +40,7 @@ No power-loss, storage-error, backup, authentication, containment or source-effe
 
 ## R7 — A/B changes requested; C proposal pending
 
-All three lanes use safety checkpoint `201ac299bea4f12fcfa6ff52d24899cd9af33430`. A/B submitted committed reports; the manager independently reviewed them and requests bounded revisions below. **Neither contract is adopted.** C remains at assignment `66cfe2df5`; its launch/completion is not confirmed. These are report/probe-only tasks; each worker owns only its own `CHANGEKERNEL_STATUS.md`. No production dispatch, Wiki adoption, dependency change or runtime qualification follows. Old R5/R6 trees remain stopped and untouched; the manager has launched no worker processes.
+All three lanes use safety checkpoint `201ac299bea4f12fcfa6ff52d24899cd9af33430`. A/B submitted committed reports; the manager independently reviewed them and requests bounded revisions below. The user confirms both workers stopped after their original reports. Their subsequent manager-review commits contain the new instructions and are ready for the user to resume; no revision work or worker restart is claimed. **Neither contract is adopted.** C remains at assignment `66cfe2df5`; its launch/completion is not confirmed. These are report/probe-only tasks; each worker owns only its own `CHANGEKERNEL_STATUS.md`. No production dispatch, Wiki adoption, dependency change or runtime qualification follows. Old R5/R6 trees remain stopped and untouched; the manager has launched no worker processes.
 
 | Worker | Branch / worktree | Reviewed revision and next action |
 | --- | --- | --- |
