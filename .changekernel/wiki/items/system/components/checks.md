@@ -149,6 +149,8 @@ Backend and domain evaluators share execution machinery while retaining distinct
 
 Completed results contain `passed: true | false`, feedback, Evidence references and limits. False distinguishes contradiction from insufficient support. Missing input, stale sources, malformed output and operational failures block relevant progression but are not fabricated completed semantic refutations.
 
+The backend constructs authoritative assessment records from the qualified Check execution and its exact inputs, identity and result; a client cannot manufacture one by submitting a passing flag or appending JSONL. A permitted human approval remains an attributable decision, not an invented Check result or waiver of mandatory requirements. Deterministic validation/serialization supplies consistent recording, not a guarantee of semantic correctness or actual source-effect success. See [backend-only authoritative writes](state.md#backend-only-authoritative-writes).
+
 Feedback identifies the condition, location/scope, grounds, uncertainty, possible correction or collection need and intent/constraints that must not be weakened. Successful feedback can be concise and source-linked. Source-provided next steps are data, not permissions. Humans clarify or approve where needed; they need not manually execute routine Checks.
 
 Successful progression requires current valid passing required results from every applicable owner, adequate coverage and separate transition/effect authority. A score average, model confidence or human approval cannot rewrite a failed requirement. Missing execution cannot disappear from aggregation. The system can repair, pause, reject, defer or withdraw; it must not retry until every proposal passes.
