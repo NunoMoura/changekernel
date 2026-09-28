@@ -33,6 +33,8 @@ source-history:
 
 **ChangeKernel is a redistributable State-and-Change engine for applications.** Developers provide structures and native abilities; users choose goals; agents and other workers compose paths. ChangeKernel governs State evolution, supports recovery within declared limits and retains useful learning for people and agents. It is not an agent, a harness, a database engine or an operating-system kernel.
 
+The Rust core owns orchestration above eligible harness workers and the agent-facing interaction boundary. Change and Work own continuity; harness sessions supply worker context, not lifecycle authority. Build the product around these contracts, selectively reusing suitable mechanisms rather than inheriting another product's architecture. This does not require rewriting accepted code or commodity libraries. The [runtime research disposition](../system/components/agent-execution.md#runtime-selection-and-research-basis) governs the reviewed projects.
+
 This is the primary desired-state design, not a statement of implemented capabilities or release qualification. Four supporting contracts retain substantial detail without a separate document for every role, stage or flow:
 
 | Contract | Detail owned there |
@@ -220,6 +222,10 @@ Recovery is normally a new guarded transition that preserves later valid work wh
 
 Intake accepts **What** and available **Why**, or exact structured edits. **How** develops internally. Trusted transport binds actor, scope, source references, expected versions and stable retry identity; natural language supplies no authority. Same retry identity with different input must not execute another operation. Reads and inquiries can remain reads; “yes” binds an exact proposal and “stop” identifies active work.
 
+ChangeKernel owns how agents query the system and request changes, rather than delegating that distinction to a harness or prompt convention. For natural-language requests, use bounded Jev judgments to distinguish requests for information from requests for State change, with explicit handling of mixed or unresolved intent. Preserve the original request and interpretation; clarify consequential ambiguity instead of forcing every message into a binary answer. Exact typed queries and commands already declare their operation and bypass unnecessary semantic classification. This is a semantic responsibility, not a frozen API or label vocabulary.
+
+Classification proposes routing, not authority or effect eligibility. The backend authorizes query scope and disclosure, and routes requested State changes through applicable Change controls, current permissions and required Checks. A query route cannot invoke mutation capabilities, and a change label cannot turn an informational request into consent to act. Misclassification, unavailable Jev or malformed output must not unlock effects or silently discard an unresolved change request. Explicit natural-language interpretation is an admitted, bounded model operation; typed reads, historical lookup and view reconstruction do not implicitly invoke it. Internal accounting and custody recording use their own protected operations, not an infinite nested Change for every read or log append.
+
 The Change owns the immediate pursuit's original request, interpreted intent, desired outcome and success observations, scope, exclusions, commitments, consequential decisions and material alternatives. Distinguish stated, inherited, inferred-but-unconfirmed and unknown meaning. Preserve attributable revisions instead of rewriting accepted intent to match delivered output. Work inherits exact intent and relevant State versions; continuing goals, requirements and adopted procedures belong in State. No independently writable `intent.md` at each task boundary is required. The **Change Trace log** is its durable append-only history, not the release `CHANGELOG.md`; current design is not replaced by its revision history.
 
 Missing information remains explicit rather than becoming mandatory paperwork before an idea can be retained. “Edited in frontend” is origin, not rationale. Routine steps can inherit purpose; consequential ambiguity warrants clarification, not an invented default or a reason dialog for every minor edit. Setting font size to 16 does not establish a permanent preference or prove improved readability.
@@ -331,7 +337,7 @@ A parent can remain in Planning while forked candidate explorations pass through
 
 ## Semantic operations and Jev
 
-ChangeKernel owns a provider-independent semantic service for binding, context/support judgments, Checks, discovery classification, Work ranking/fit and experience/guidance retrieval. Packs do not supply independent provider clients, credentials or schedulers. Jev is central intended machinery for suitable bounded judgments, not the whole model or an authorization replacement.
+ChangeKernel owns a provider-independent semantic service for query-versus-Change interpretation at the [interaction boundary](#intent-and-lifecycle), binding, context/support judgments, Checks, discovery classification, Work ranking/fit and experience/guidance retrieval. Packs do not supply independent provider clients, credentials or schedulers. Jev is central intended machinery for suitable bounded judgments, not the whole model or an authorization replacement.
 
 Code handles exact identities, permissions, literals, dates, arithmetic, schemas, transitions and outcome lookup. Copy supplied text. Use a producer only for genuinely missing text, plans, programs or definitions; no mandatory generative verification of every Jev answer is required. Exact structured edits bypass unnecessary rebinding.
 
@@ -406,6 +412,8 @@ Fetch guidance early, reuse assessments only while exact input and relevant vers
 ## Operator console for development
 
 The first viable self-development release includes a practical terminal interface, not merely a read-only log viewer or a later visual-polish milestone. It must let a person direct product outcomes and manage execution through the same authoritative backend used by workers. A terminal client neither owns lifecycle policy nor gains a privileged mutation route. Keep it separate from the worker harness and expose it through the standard launcher/shared backend, not only a harness-specific view. Terminal toolkit and transport remain implementation choices requiring review.
+
+Own the interaction design around outcomes, Changes, Work and the user's next decision, not a copy of a terminal multiplexer or harness transcript. Selected Herdr mechanisms may support this interface without adopting its pane-centred product model, workspace identities or completion semantics. Improve comprehension and human attention requirements through measured workflows; source reuse alone establishes neither superior UX nor market demand.
 
 | Operator responsibility | Required visibility and controls |
 | --- | --- |
