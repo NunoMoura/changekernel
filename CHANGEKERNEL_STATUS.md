@@ -2,7 +2,24 @@
 
 Role: project manager in `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`. The user owns product intent. [AGENTS.md](AGENTS.md) owns procedure; [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design. Use native source-development tools; never load this checkout as controller.
 
-## R9 — reports reviewed; operating decision required
+## First dogfood delivery — plan updated; dependent dispatch blocked
+
+The user confirmed the bounded end-to-end delivery direction and requested a plan update and ready worker assignments. The canonical [first dogfood delivery sequence](.changekernel/wiki/items/product/changekernel.md#first-dogfood-delivery-sequence) now makes usable increments and their prerequisite contracts explicit. The archived SK0 contracts remain byte-preserved historical evidence; no standalone semantic-kernel roadmap was created. A typed-only milestone is not release acceptance.
+
+**Current verdict: the delivery direction is accepted; dependent Rust implementation remains blocked.** Confirmation of the delivery goal does not explicitly select R9-A's administrator provisioning, managed ingress/source enrollment or UID lifecycle costs, nor a concrete restart/incident authority. No installation, privileged experiment, live inference, deployment, release activation or controller handoff is authorized by this documentation update.
+
+| Manager-owned gate | Required next action |
+| --- | --- |
+| First-host operating burden | Obtain the user's choice on administrator-provisioned protection and managed client/source enrollment versus another host direction. Preserve native acting-user rights and the reusable engine; no proposed host is operationally qualified. |
+| Restart deployment and evidence | Establish whether the first host must remain single-machine/offline or may depend on a separately managed restart authority, then select and review one concrete mechanism and its bootstrap, failure and predecessor-exclusion contract. The R8-B blocker is not solved by a local marker or by this plan update. Any required experiment has its own authorization boundary. |
+| Shared implementation contracts | Compose exact identity, declaration/definition, reference, retry, creation/reentry, lifecycle, operation/query and source-outcome contracts for the selected profile. Select the eligible worker/runtime scope and settle protected attempts/results, accounting and cleanup before dependent dispatch. Give shared composition, manifests and lockfiles one owner. |
+| Ready source assignments | Release cohesive Rust slices only from an exact reviewed contract checkpoint, with non-overlapping owned paths, real application call sites, requirement links and behavioral acceptance checks. Do not reopen frozen R5-A, unreleased R8-B Phase 2 or completed proposal assignments, or commission another generic report round. |
+
+No new assignment, worktree, session or peer message was created. The four retained workers remain instructed stopped. The current reviewed proposals do not supply the agreed operational/public/persistence boundaries required for the first dependent source slice; an unused compiler or lifecycle module would not close that gap. The manager owes the decisions and composition above before dispatch, then independently reviews each submission and the combined working path.
+
+Checks: assigned integration branch, exact starting HEAD `1f95f8d63d5dece90ca47394ea5425433d3829f9` and clean starting tree verified; diff scope and whitespace passed; four local links/anchors in the added sections resolve; active LSP diagnostics found zero findings on both changed Markdown paths; archived documents remain byte-identical. Source/tests/manifests remain unchanged from `0b1b434ab`. No Cargo/npm, permission, restart, storage-failure, model or deployment qualification ran. No dependencies, controller state or host configuration were changed; native and TypeScript execution checks do not apply to this documentation-only update.
+
+## Preserved R9 proposal reviews
 
 The repeated request to resume worker assignments did not create duplicate work. A/C had completed the exact R9 assignments dispatched from `e3cd731275c2fd7659d6332e43bf32eef79ae457`; the manager collected their correlated completion records, independently reviewed the submitted revisions and appended verdicts without modifying submitted bytes. The original dispatch/acknowledgment checkpoint remains `3d76f2c38f4b553c3b694ef29658c180823ed3b0:CHANGEKERNEL_STATUS.md`.
 
@@ -13,7 +30,7 @@ The repeated request to resume worker assignments did not create duplicate work.
 
 Worker worktrees are `/home/canina7/Projects/changekernel-workers/host-admission-closure` and `/home/canina7/Projects/changekernel-workers/binding-compiler-contract`. Each report and review changes only its own `CHANGEKERNEL_STATUS.md`. Two freshly recipient-checked verdict notices instructed A/C to stop, with no acknowledgment or back-message requested. Their CLI success is not claimed as a processing acknowledgment. B/D received no work. The managed pool remains four retained workers, all instructed stopped; no new worker was created or enrolled. No task was invented to occupy unused capacity.
 
-## Manager findings and next decision
+## Preserved R9 findings and operating proposal
 
 Both reports identify real prerequisites, not missing boilerplate. The manager owns their resolution rather than commissioning another equivalent report round.
 
@@ -36,8 +53,8 @@ Requirements remain in [first self-development delivery](.changekernel/wiki/item
 - Prior coordination and review evidence: `961b1442ffcbd466bf263bbb2143aab031153b70:CHANGEKERNEL_STATUS.md`; latest design checkpoint: `e3cd731275c2fd7659d6332e43bf32eef79ae457:CHANGEKERNEL_STATUS.md`; restart-witness limits: `22e5a93ec8edaca56c2ffc5083e263b4e35ac276:CHANGEKERNEL_STATUS.md`.
 - Latest executable integration remains `0b1b434ab`. R5-B stays accepted; R5-A stays frozen/unintegrated. Historical SQLite and `container_id` semantics are unchanged. Worker-language eligibility and the owned-inner-loop question remain unresolved. No runtime, dependency, storage, release qualification or controller handoff is selected by this review.
 
-## Review checks and evidence
+## R9 review checks and evidence
 
 The manager verified exact assignment/submission/review ancestry, handoff-only diffs, preserved assignment and submission bytes, and clean worker verdict trees. Both reviewed worker paths have zero active Markdown diagnostics; 26 local requirement links/anchors and 11 per-report commit references resolve. Worker A's prose left final checks pending; the manager supplies actual checks rather than treating its transport completion claim as proof. Worker C recorded its repeated clean diagnostic probe, independently confirmed by the manager. Native source/test/manifest paths are unchanged from `0b1b434ab`; that comparison is not a new runtime test.
 
-Current changes are review/handoff only. Source, tests, Wiki, AGENTS, manifests/lockfiles, dependencies and controller state remain unchanged. No Cargo/npm, permission/isolation, reboot, storage-failure, compiler or live-model qualification ran. The manager handoff has zero active Markdown diagnostics, eight resolving local links/anchors and 15 resolving project commit references. Review scope, preserved submission bytes, clean verdict trees, unchanged clean B/D trees and whitespace checks passed. Exact review/notification metadata is outside project Git at `/home/canina7/.local/state/ck-r9-review.lj58qaug/`; original dispatch evidence remains at `/home/canina7/.local/state/ck-r9-dispatch.j7dkaiyz/`. Transient routing identities and transport receipts are not project source truth.
+At the R9 checkpoint, changes were review/handoff only. Source, tests, Wiki, AGENTS, manifests/lockfiles, dependencies and controller state remained unchanged. No Cargo/npm, permission/isolation, reboot, storage-failure, compiler or live-model qualification ran. The manager handoff has zero active Markdown diagnostics, eight resolving local links/anchors and 15 resolving project commit references. Review scope, preserved submission bytes, clean verdict trees, unchanged clean B/D trees and whitespace checks passed. Exact review/notification metadata is outside project Git at `/home/canina7/.local/state/ck-r9-review.lj58qaug/`; original dispatch evidence remains at `/home/canina7/.local/state/ck-r9-dispatch.j7dkaiyz/`. Transient routing identities and transport receipts are not project source truth.
