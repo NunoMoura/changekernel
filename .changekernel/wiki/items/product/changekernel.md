@@ -60,7 +60,7 @@ Develop and integrate capabilities → pursue user goals → observe actual outc
     → assess, authorize and realize supported Changes → use and learn again
 ```
 
-This is an open-world approach to goals, not a requirement to enumerate a workflow for every outcome. Workers compose supported abilities, acquire needed observations and expose unresolved knowledge or capability gaps. Open-world pursuit does not imply unrestricted effects, automatic policy changes or invented capabilities. Existing abilities may satisfy a goal without software development; genuine gaps can lead to separately authorized development and deployment through [cross-workspace development](#cross-workspace-development).
+This is an open-world approach to goals, not a requirement to enumerate a workflow for every outcome. ChangeKernel bridges user input to existing application backends and preserves unmet user requirements as inputs to governed application extension. Workers first compose supported abilities and acquire needed observations; a missing predefined entity or compiled binding does not by itself establish a capability gap. Genuine gaps can reach responsible developers through authorized Change borrowing and linked design/development Changes, followed by separately authorized integration and deployment through [cross-workspace development](#cross-workspace-development). Preserve the original user pursuit through that cycle: delivering a feature enables its continuation, but does not establish the user's outcome. Open-world pursuit does not imply unrestricted effects, automatic policy changes or invented capabilities.
 
 ChangeKernel provides one authoritative boundary for governed product operations, with human interfaces, agents and other integrations as clients. Clients request typed operations; only the current custodian's authorized backend constructs and durably retains authoritative Change Trace records. JSONL is not a raw editing API. Backend-only writes require protected storage and qualified privilege separation, not client cooperation; [State](../system/components/state.md#backend-only-authoritative-writes) defines that contract. A user request is not permission to modify the product's code, deploy a release or change governing policy. Shared experience can ground improvement proposals, but adoption and realization require the same controls as other Changes. Keep user and developer scopes, private data, commitments and Evidence distinct throughout the cycle.
 
@@ -148,7 +148,7 @@ The system enforces its supported boundary independently of model cooperation. A
 
 ## Developer experience
 
-**Connect → discover → govern → learn.** Connect an existing application/account/repository or establish a bounded new Workspace without a handwritten entity/action catalogue or separate server per Workspace. Setup happens once for the relevant integration, not on every Save. These scenarios describe desired behavior, not implemented exports or a frozen descriptor/API format.
+**Connect → compile bindings → govern → learn.** Connect an existing application/account/repository or establish a bounded new Workspace without a handwritten entity/action catalogue or separate server per Workspace. Prepare reusable binding knowledge during integration, build and deployment rather than inspecting the application anew on ordinary end-user requests. Setup and affected updates are developer-side work, not an entity-by-entity or request-by-request registration ceremony. These scenarios describe desired behavior, not implemented exports or a frozen descriptor/API format.
 
 An authenticated user selects a Workspace and suitable Kernel, then supplies What and available Why. The engine retains a Change in protected user-bound custody and progresses it through Decision, Planning and Execution. A durable reference is not synchronous completion. Inspection exposes the selected Kernel version, native capabilities, scope, requirements, relevant State observations, Work and unresolved conditions.
 
@@ -170,6 +170,8 @@ The first operational profile must support clean host restart and ordinary reboo
 
 ## Discovery and bindings
 
+The default is ahead-of-time binding compilation: inspect the declared integration scope thoroughly, prepare supported mappings before ordinary application use, and resolve exceptions with developers rather than charging every user request for discovery. Initial source access, authenticated scope and supported native interfaces must still be established; compilation cannot discover its own authority. Source-only inspection does not establish deployed capability, so validate applicable bindings against the actual deployment and native schema before use.
+
 Reuse authoritative sources instead of duplicating their contracts:
 
 | Source | Contribution and limit |
@@ -185,18 +187,35 @@ Developers can integrate external tools, services and agent-facing interfaces th
 
 Rust types constrain engine contracts; versioned runtime definitions describe application-specific entities without compiling every application's domain into the engine. Validate model and client inputs at runtime, preserve native validators and derive typed client interfaces from public contracts rather than duplicate governing rules. Semantic interpretation proposes bindings and values; it does not confer authority.
 
-Repository discovery follows:
+Binding compilation follows:
 
 ```text
 Versioned sources → syntax/dependency units → exact schema extraction
   → bounded parallel Jev classification → evidence-backed grouping
   → producer synthesis of missing meaning → source/binding validation
-  → inspectable version-bound definition
+  → inspectable version-bound definition → deployment compatibility validation
 ```
+
+The resulting artifact describes entity types, identities and relationships; supported capabilities and input/output schemas; native handler/validator references; relevant constraints and declared effect/outcome support. It also supplies source-backed semantic descriptions, bounded Jev question/option definitions and candidate-selection metadata. Inspecting a helper or internal structure does not expose it as a public capability. Types and signatures alone do not prove business meaning, authorization, side effects or safe retry behavior. Report unresolved mappings and unsupported operations as developer-facing diagnostics rather than inventing support.
 
 Keep source locations, enclosing context, imports and relevant dependencies. A whole function is not necessarily whole context; oversized units require explicit subdivision or another route. Roles include resources, input/output/value structures, validators, capabilities, helpers and unresolved units; roles can overlap. Preserve uncertainty rather than drop ambiguous candidates. Code extracts exact fields/types; generation must not invent replacements or unsupported relationships.
 
-Use incremental analysis of changed units and affected dependencies, not repository rediscovery on every Save. Discovery can identify resources without loading every row into memory or sending a database to a model. Repository text is untrusted data: never execute discovered instructions, imports, scripts or plugins. Hosted analysis requires disclosure authority. Discovering structure neither deploys capability nor grants mutation permission.
+The ordinary natural-language runtime path uses the prepared definitions:
+
+```text
+Request → authorized capability candidates
+  → query/Change/mixed interpretation and feature/entity selection
+  → authorized entity resolution + exact input parsing/validation
+  → applicable query or Change controls → native operation
+```
+
+These are semantic responsibilities, not one mandatory model call per arrow. Batch independent judgments; dependent questions cannot consume earlier answers within the same Jev request. Code resolves identities, copies/parses supplied literals and validates typed inputs; [Jev judgments](#semantic-operations-and-jev) do not provide unconstrained extraction or generation. Separate user-supplied parameters from backend-bound actor, scope, credential and control fields. Typed operations bypass unnecessary interpretation. Compiled definitions do not waive current native permissions, relevant State observations, concurrency guards, required Checks or outcome reconciliation.
+
+The catalogue covers types and capabilities, not every live record; new ordinary records do not require recompilation. Fetch only the relevant authorized State at runtime. Preserve unfamiliar requirements instead of forcing them into the nearest compiled capability or rejecting them merely for lacking a binding. A catalogue miss is a coverage question, not proof of native absence. Genuine missing capabilities retain the [development and continuation route](#cross-workspace-development); denied access, operational unavailability and uncertain coverage remain distinct.
+
+Use incremental analysis of changed units and affected dependencies, not repository rediscovery on every Save. Discovery can identify resources without loading every row into memory or sending a database to a model. Stale or unsupported bindings require explicit compatibility handling or developer-side repair, not silent full-source discovery, unrestricted generic writes or guessed execution on the end-user path. Repository text is untrusted data: never execute discovered instructions, imports, scripts or plugins. Hosted analysis requires disclosure authority. Discovering structure neither deploys capability nor grants mutation permission.
+
+This selects preparation and runtime responsibilities, not a compiler implementation, public artifact schema or qualified integration. Compiled definitions follow the [State and custody boundary](../system/components/state.md#one-authoritative-current-representation); native source authority and protected Change continuation remain separate.
 
 ## State, evidence and recovery
 
