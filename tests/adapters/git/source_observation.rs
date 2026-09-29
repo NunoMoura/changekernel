@@ -12,7 +12,32 @@ use std::{
 };
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
-struct Repo(PathBuf);
+struct Repo(PathBuf, std::cell::RefCell<Vec<PathBuf>>);
+
+struct Linked {
+    worktree: PathBuf,
+    private: PathBuf,
+    common: PathBuf,
+}
+impl Linked {
+    fn binding(&self, git: PathBuf, paths: &[&str]) -> GitSourceObserver {
+        GitSourceObserver::new_linked(
+            "c".into(),
+            "s".into(),
+            self.worktree.clone(),
+            self.private.clone(),
+            self.common.clone(),
+            git,
+            paths.iter().map(|p| (*p).into()).collect(),
+        )
+        .unwrap()
+    }
+}
+impl Drop for Linked {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.worktree);
+    }
+}
 impl Repo {
     fn new() -> Self {
         let path = std::env::temp_dir().join(format!(
@@ -22,7 +47,33 @@ impl Repo {
         ));
         fs::create_dir(&path).unwrap();
         git(&path, &["init", "-q"]);
-        Self(path)
+        Self(path, std::cell::RefCell::new(Vec::new()))
+    }
+    fn linked(&self, commit: &str) -> Linked {
+        let name = format!(
+            "ck-linked-{}-{}-雪",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        );
+        let worktree = self.0.parent().unwrap().join(format!("{name} space"));
+        let common = self.0.join(".git");
+        let linked = Linked {
+            // Git's fixture registration replaces the space; no pointer discovers this binding.
+            private: common.join("worktrees").join(format!("{name}-space")),
+            worktree,
+            common,
+        };
+        git(
+            &self.0,
+            &[
+                "worktree",
+                "add",
+                "--detach",
+                linked.worktree.to_str().unwrap(),
+                commit,
+            ],
+        );
+        linked
     }
     fn setup(&self) -> (Intake<SqliteIntake>, String) {
         let db = self.0.parent().unwrap().join(format!(
@@ -30,7 +81,8 @@ impl Repo {
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
-        // Keep store outside observed repo. Fixture removes file via return? test process temp names unique.
+        // Keep storage outside the observed source and clean it even on a failed assertion.
+        self.1.borrow_mut().push(db.clone());
         let mut intake = Intake::new(SqliteIntake::initialize(&db).unwrap());
         intake.create("c", "owner").unwrap();
         (intake, db.to_string_lossy().into_owned())
@@ -69,7 +121,13 @@ impl Repo {
 }
 impl Drop for Repo {
     fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
+        let _ = fs::remove_dir_all(&self.0);
+        for path in self.1.get_mut() {
+            let _ = fs::remove_file(&*path);
+            for suffix in ["-journal", "-wal", "-shm"] {
+                let _ = fs::remove_file(format!("{}{suffix}", path.display()));
+            }
+        }
     }
 }
 fn git(root: &Path, args: &[&str]) -> Vec<u8> {
@@ -93,18 +151,29 @@ fn selection(commit: &str, paths: &[&str]) -> SourceSelection {
         paths: paths.iter().map(|s| (*s).into()).collect(),
     }
 }
-fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>)> {
-    fn walk(dir: &Path, root: &Path, out: &mut Vec<(PathBuf, Vec<u8>)>) {
+#[derive(Debug, PartialEq, Eq)]
+enum SnapshotEntry {
+    Directory,
+    File(Vec<u8>),
+    Symlink(PathBuf),
+    Special,
+}
+fn snapshot(dir: &Path) -> Vec<(PathBuf, SnapshotEntry)> {
+    fn walk(dir: &Path, root: &Path, out: &mut Vec<(PathBuf, SnapshotEntry)>) {
         for entry in fs::read_dir(dir).unwrap() {
             let entry = entry.unwrap();
-            if entry.file_type().unwrap().is_dir() {
+            let kind = entry.file_type().unwrap();
+            let value = if kind.is_dir() {
                 walk(&entry.path(), root, out);
+                SnapshotEntry::Directory
+            } else if kind.is_symlink() {
+                SnapshotEntry::Symlink(fs::read_link(entry.path()).unwrap())
+            } else if kind.is_file() {
+                SnapshotEntry::File(fs::read(entry.path()).unwrap())
             } else {
-                out.push((
-                    entry.path().strip_prefix(root).unwrap().into(),
-                    fs::read(entry.path()).unwrap(),
-                ));
-            }
+                SnapshotEntry::Special
+            };
+            out.push((entry.path().strip_prefix(root).unwrap().into(), value));
         }
     }
     let mut data = Vec::new();
@@ -112,6 +181,85 @@ fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>)> {
     data.sort_by(|a, b| a.0.cmp(&b.0));
     data
 }
+fn passive_developer_config(path: &Path) {
+    let mut config = fs::read_to_string(path).unwrap();
+    config.push_str(
+        "\n# Passive developer metadata\n; No helpers\n[user]\n name = \"Developer 雪\"\n email = dev@example.test\n[remote \"origin\"]\n url = https://example.test/repository.git\n fetch = +refs/heads/*:refs/remotes/origin/*\n[branch \"main\"]\n remote = origin\n merge = refs/heads/main\n vscode-merge-base = origin/main\n",
+    );
+    fs::write(path, config).unwrap();
+}
+
+fn unavailable_unchanged(
+    r: &Repo,
+    linked: Option<&Linked>,
+    intake: &Intake<SqliteIntake>,
+    binding: &GitSourceObserver,
+    request: &SourceSelection,
+    db: &str,
+) {
+    let before = snapshot(&r.0);
+    let linked_before = linked.map(|l| snapshot(&l.worktree));
+    let store_before = fs::read(db).unwrap();
+    assert_eq!(
+        observe_committed_source(intake, binding, request, "owner"),
+        Err(Issue::Unavailable)
+    );
+    assert_eq!(before, snapshot(&r.0), "observer mutated source/controls");
+    assert_eq!(linked_before, linked.map(|l| snapshot(&l.worktree)));
+    assert_eq!(store_before, fs::read(db).unwrap());
+}
+
+#[cfg(unix)]
+fn forbidden_git(r: &Repo) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    let script = r.0.join("forbidden-git");
+    fs::write(
+        &script,
+        format!(
+            "#!/bin/sh\n/usr/bin/touch '{}'\nexit 1\n",
+            r.0.join("git-was-run").display()
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+    script
+}
+
+#[cfg(unix)]
+fn malformed_controls(path: &Path, check: impl Fn()) {
+    let original = fs::read(path).unwrap();
+    for bytes in [
+        b"gitdir: /uninstalled\n".to_vec(),
+        b"/uninstalled/.git\n".to_vec(),
+        b"../../foreign\n".to_vec(),
+        original.strip_suffix(b"\n").unwrap().to_vec(),
+        [original.as_slice(), b"extra\n"].concat(),
+        vec![b'x'; 8193],
+    ] {
+        fs::write(path, bytes).unwrap();
+        check();
+    }
+    fs::remove_file(path).unwrap();
+    check();
+    fs::create_dir(path).unwrap();
+    check();
+    fs::remove_dir(path).unwrap();
+    let target = path.with_extension("saved-control");
+    fs::write(&target, &original).unwrap();
+    std::os::unix::fs::symlink(&target, path).unwrap();
+    check();
+    fs::remove_file(path).unwrap();
+    fs::remove_file(target).unwrap();
+    assert!(Command::new("/usr/bin/mkfifo")
+        .arg(path)
+        .status()
+        .unwrap()
+        .success());
+    check();
+    fs::remove_file(path).unwrap();
+    fs::write(path, original).unwrap();
+}
+
 #[test]
 fn exact_commit_scope_absence_and_no_effects() {
     let r = Repo::new();
@@ -126,6 +274,9 @@ fn exact_commit_scope_absence_and_no_effects() {
     let commit = r.commit();
     let (intake, db) = r.setup();
     let binding = r.binding(&["binary", "é.txt", "run", "missing"]);
+    passive_developer_config(&r.0.join(".git/config"));
+    fs::write(r.0.join("binary"), b"new HEAD").unwrap();
+    r.commit();
     fs::write(r.0.join("binary"), b"dirty").unwrap();
     fs::write(r.0.join("untracked"), b"private").unwrap();
     let before = snapshot(&r.0);
@@ -350,25 +501,11 @@ fn linked_worktree_indirection_is_unavailable() {
     fs::write(r.0.join("file"), b"ok").unwrap();
     let commit = r.commit();
     let (intake, db) = r.setup();
-    let linked = r.0.parent().unwrap().join(format!(
-        "ck-linked-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
-    git(
-        &r.0,
-        &[
-            "worktree",
-            "add",
-            "--detach",
-            linked.to_str().unwrap(),
-            &commit,
-        ],
-    );
+    let linked = r.linked(&commit);
     let binding = GitSourceObserver::new(
         "c".into(),
         "s".into(),
-        linked.clone(),
+        linked.worktree.clone(),
         PathBuf::from("/usr/bin/git"),
         vec!["file".into()],
     )
@@ -376,10 +513,6 @@ fn linked_worktree_indirection_is_unavailable() {
     assert_eq!(
         observe_committed_source(&intake, &binding, &selection(&commit, &["file"]), "owner"),
         Err(Issue::Unavailable)
-    );
-    git(
-        &r.0,
-        &["worktree", "remove", "--force", linked.to_str().unwrap()],
     );
     fs::remove_file(db).unwrap();
 }
@@ -393,11 +526,7 @@ fn child_timeout_and_output_overflow_are_unavailable() {
     fs::write(r.0.join("file"), b"ok").unwrap();
     let commit = r.commit();
     let (intake, db) = r.setup();
-    let script = r.0.parent().unwrap().join(format!(
-        "ck-git-script-{}-{}",
-        std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
-    ));
+    let script = r.0.join("git-fixture");
     fs::write(&script, b"#!/bin/sh\nsleep 30 &\nwait\n").unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
     let bind = || {
@@ -622,4 +751,398 @@ fn exited_child_does_not_leave_closed_stream_descendants_running() {
         assert!(!running, "child exit {code} leaked descendant {pid}");
     }
     fs::remove_file(db).unwrap();
+}
+
+#[test]
+fn installed_linked_source_captures_old_commit_without_effects() {
+    let r = Repo::new();
+    fs::write(r.0.join("binary"), [0, 255, 10]).unwrap();
+    fs::write(r.0.join("é.txt"), "雪\n").unwrap();
+    let commit = r.commit();
+    let linked = r.linked(&commit);
+    passive_developer_config(&linked.common.join("config"));
+    let (intake, db) = r.setup();
+    let binding = linked.binding(
+        PathBuf::from("/usr/bin/git"),
+        &["binary", "é.txt", "missing"],
+    );
+    fs::write(r.0.join("binary"), b"new HEAD").unwrap();
+    let next = r.commit();
+    git(&linked.worktree, &["reset", "--hard", &next]);
+    fs::write(linked.worktree.join("binary"), b"dirty").unwrap();
+    fs::write(linked.worktree.join("untracked"), b"private").unwrap();
+    let before = snapshot(&r.0);
+    let linked_before = snapshot(&linked.worktree);
+    let store_before = fs::read(&db).unwrap();
+    let request = selection(&commit, &["missing", "é.txt", "binary"]);
+    let result = observe_committed_source(&intake, &binding, &request, "owner").unwrap();
+    assert_eq!(result.container_id, "c");
+    assert_eq!(result.source_id, "s");
+    assert_eq!(result.commit, commit);
+    assert_eq!(result.paths[0], ("missing".into(), PathResult::Absent));
+    for (index, name, bytes) in [
+        (1, "é.txt", "雪\n".as_bytes()),
+        (2, "binary", &[0, 255, 10]),
+    ] {
+        assert_eq!(result.paths[index].0, name);
+        let PathResult::Present(file) = &result.paths[index].1 else {
+            panic!()
+        };
+        assert_eq!(file.bytes, bytes);
+        assert_eq!(
+            file.fingerprint,
+            format!("sha256@1:{:x}", sha2::Sha256::digest(bytes))
+        );
+        assert_eq!(
+            file.object_id,
+            String::from_utf8(git(&r.0, &["rev-parse", &format!("{commit}:{name}")]))
+                .unwrap()
+                .trim()
+        );
+    }
+    assert_eq!(
+        observe_committed_source(&intake, &binding, &request, "other"),
+        Err(Issue::Denied)
+    );
+    for field in ["container", "source"] {
+        let mut wrong = request.clone();
+        if field == "container" {
+            wrong.container_id = "other".into();
+        } else {
+            wrong.source_id = "other".into();
+        }
+        assert_eq!(
+            observe_committed_source(&intake, &binding, &wrong, "owner"),
+            Err(Issue::Denied)
+        );
+    }
+    assert_eq!(
+        observe_committed_source(
+            &intake,
+            &binding,
+            &selection(&commit, &["not-allowed"]),
+            "owner"
+        ),
+        Err(Issue::InvalidInput)
+    );
+    assert_eq!(before, snapshot(&r.0));
+    assert_eq!(linked_before, snapshot(&linked.worktree));
+    assert_eq!(store_before, fs::read(&db).unwrap());
+}
+
+#[cfg(unix)]
+#[test]
+fn linked_controls_and_installed_directories_are_revalidated_before_git() {
+    let r = Repo::new();
+    fs::write(r.0.join("file"), b"ok").unwrap();
+    let commit = r.commit();
+    let linked = r.linked(&commit);
+    let (intake, db) = r.setup();
+    let script = forbidden_git(&r);
+    let binding = linked.binding(script.clone(), &["file"]);
+    let request = selection(&commit, &["file"]);
+    for path in [
+        linked.worktree.join(".git"),
+        linked.private.join("gitdir"),
+        linked.private.join("commondir"),
+    ] {
+        malformed_controls(&path, || {
+            unavailable_unchanged(&r, Some(&linked), &intake, &binding, &request, &db)
+        });
+    }
+    assert!(!r.0.join("git-was-run").exists());
+    let other = Repo::new();
+    for (worktree, private, common) in [
+        (r.0.clone(), linked.private.clone(), linked.common.clone()),
+        (
+            linked.worktree.clone(),
+            linked.common.clone(),
+            linked.common.clone(),
+        ),
+        (
+            linked.worktree.clone(),
+            linked.private.clone(),
+            other.0.join(".git"),
+        ),
+    ] {
+        assert!(matches!(
+            GitSourceObserver::new_linked(
+                "c".into(),
+                "s".into(),
+                worktree,
+                private,
+                common,
+                script.clone(),
+                vec!["file".into()]
+            ),
+            Err(Issue::Unavailable)
+        ));
+    }
+    // Components() normalizes some spelling; reject those forms before touching the topology.
+    for worktree in [
+        PathBuf::from(format!("{}/.", linked.worktree.display())),
+        PathBuf::from(format!(
+            "{}/../{}",
+            linked.worktree.display(),
+            linked.worktree.file_name().unwrap().to_str().unwrap()
+        )),
+        PathBuf::from(format!("{}//", linked.worktree.display())),
+        PathBuf::from(format!("{}/bad\nname", linked.worktree.display())),
+        PathBuf::from(format!("/{}", "x".repeat(4096))),
+        PathBuf::from("relative"),
+    ] {
+        assert!(matches!(
+            GitSourceObserver::new_linked(
+                "c".into(),
+                "s".into(),
+                worktree,
+                linked.private.clone(),
+                linked.common.clone(),
+                script.clone(),
+                vec!["file".into()]
+            ),
+            Err(Issue::Unavailable)
+        ));
+    }
+    use std::os::unix::ffi::OsStringExt;
+    let non_utf8 = PathBuf::from(std::ffi::OsString::from_vec(b"/tmp/invalid-\xff".to_vec()));
+    assert!(matches!(
+        GitSourceObserver::new_linked(
+            "c".into(),
+            "s".into(),
+            non_utf8,
+            linked.private.clone(),
+            linked.common.clone(),
+            script.clone(),
+            vec!["file".into()]
+        ),
+        Err(Issue::Unavailable)
+    ));
+    // A protected directory replaced by a symlink must invalidate an already installed observer.
+    for directory in [&linked.worktree, &linked.private, &linked.common] {
+        let saved = directory.with_extension("saved-directory");
+        fs::rename(directory, &saved).unwrap();
+        std::os::unix::fs::symlink(&saved, directory).unwrap();
+        let result = observe_committed_source(&intake, &binding, &request, "owner");
+        fs::remove_file(directory).unwrap();
+        fs::rename(saved, directory).unwrap();
+        assert_eq!(result, Err(Issue::Unavailable));
+        assert!(!r.0.join("git-was-run").exists());
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn passive_config_subset_rejects_active_ambiguous_and_nonregular_controls() {
+    let r = Repo::new();
+    fs::write(r.0.join("file"), b"ok").unwrap();
+    let commit = r.commit();
+    let linked = r.linked(&commit);
+    let (intake, db) = r.setup();
+    let config_path = linked.common.join("config");
+    passive_developer_config(&config_path);
+    let config = fs::read(&config_path).unwrap();
+    let request = selection(&commit, &["file"]);
+    let script = forbidden_git(&r);
+    let ordinary = GitSourceObserver::new(
+        "c".into(),
+        "s".into(),
+        r.0.clone(),
+        script.clone(),
+        vec!["file".into()],
+    )
+    .unwrap();
+    let linked_binding = linked.binding(script, &["file"]);
+    let check = || {
+        for binding in [&ordinary, &linked_binding] {
+            unavailable_unchanged(&r, Some(&linked), &intake, binding, &request, &db);
+        }
+    };
+    for unsupported in [
+        "[include]\n path = /uninstalled\n",
+        "[includeIf \"gitdir:/tmp/\"]\n path = /uninstalled\n",
+        "[extensions]\n worktreeConfig = true\n",
+        "[core]\n hooksPath = /uninstalled\n",
+        "[core]\n worktree = /uninstalled\n",
+        "[filter \"f\"]\n smudge = /uninstalled\n",
+        "[alias]\n inspect = !touch /uninstalled\n",
+        "[credential]\n helper = /uninstalled\n",
+        "[protocol \"file\"]\n allow = always\n",
+        "[url \"/uninstalled\"]\n insteadOf = https://example.test\n",
+        "[user]\n name = text\\\n[include]\n path = /uninstalled\n",
+        "[user]\n email = \"dev\\t@example.test\"\n",
+        "[user]\n name = \"unterminated\n",
+        "[user]\n name = text ; unsupported inline comment\n",
+        "[remote.origin]\n url = /uninstalled\n",
+        "[branch main]\n remote = origin\n",
+        "[user] trailing\n name = dev\n",
+        "[ core ]\n",
+        "[remote \"extra\" ]\n url = /uninstalled\n",
+        "[core]\n bare = true\n",
+        "[core]\n repositoryformatversion = 1\n",
+        "[user]\n email = first\n email = second\n",
+    ] {
+        fs::write(
+            &config_path,
+            [config.as_slice(), unsupported.as_bytes()].concat(),
+        )
+        .unwrap();
+        check();
+    }
+    malformed_controls(&config_path, check);
+    fs::write(&config_path, vec![b'#'; 16_385]).unwrap();
+    check();
+    fs::write(&config_path, &config).unwrap();
+    for path in [
+        linked.common.join("config.worktree"),
+        linked.private.join("config.worktree"),
+    ] {
+        fs::write(&path, b"[core]\n hooksPath = /uninstalled\n").unwrap();
+        // Private config need not steer the common reader, but the linked profile refuses it.
+        unavailable_unchanged(&r, Some(&linked), &intake, &linked_binding, &request, &db);
+        fs::remove_file(path).unwrap();
+    }
+    assert!(!r.0.join("git-was-run").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn linked_store_exclusions_and_exact_object_identity_remain_required() {
+    let r = Repo::new();
+    fs::write(r.0.join("file"), b"good").unwrap();
+    let commit = r.commit();
+    let linked = r.linked(&commit);
+    let (intake, db) = r.setup();
+    let request = selection(&commit, &["file"]);
+    let binding = linked.binding(PathBuf::from("/usr/bin/git"), &["file"]);
+    let forbidden = linked.binding(forbidden_git(&r), &["file"]);
+    for name in [
+        "commondir",
+        "shallow",
+        "objects/info/alternates",
+        "objects/info/http-alternates",
+        "objects/pack/test.promisor",
+    ] {
+        let path = linked.common.join(name);
+        fs::write(&path, b"/uninstalled\n").unwrap();
+        unavailable_unchanged(&r, Some(&linked), &intake, &forbidden, &request, &db);
+        fs::remove_file(path).unwrap();
+    }
+    // Missing common store is not tree-proven absence and must fail before any object command.
+    let objects = linked.common.join("objects");
+    let saved = linked.common.join("saved-objects");
+    fs::rename(&objects, &saved).unwrap();
+    unavailable_unchanged(&r, Some(&linked), &intake, &forbidden, &request, &db);
+    fs::rename(saved, objects).unwrap();
+    assert!(!r.0.join("git-was-run").exists());
+    let oid = String::from_utf8(git(&r.0, &["rev-parse", &format!("{commit}:file")]))
+        .unwrap()
+        .trim()
+        .to_owned();
+    let object = linked
+        .common
+        .join("objects")
+        .join(&oid[..2])
+        .join(&oid[2..]);
+    let original = fs::read(&object).unwrap();
+    fs::remove_file(&object).unwrap();
+    unavailable_unchanged(&r, Some(&linked), &intake, &binding, &request, &db);
+    // A well-formed blob with different bytes under the original ID is also unavailable.
+    fs::write(r.0.join("file"), b"evil").unwrap();
+    let next = r.commit();
+    let different = String::from_utf8(git(&r.0, &["rev-parse", &format!("{next}:file")]))
+        .unwrap()
+        .trim()
+        .to_owned();
+    fs::copy(
+        linked
+            .common
+            .join("objects")
+            .join(&different[..2])
+            .join(&different[2..]),
+        &object,
+    )
+    .unwrap();
+    unavailable_unchanged(&r, Some(&linked), &intake, &binding, &request, &db);
+    fs::remove_file(&object).unwrap();
+    fs::write(object, original).unwrap();
+    assert!(observe_committed_source(&intake, &binding, &request, "owner").is_ok());
+}
+
+#[cfg(unix)]
+#[test]
+fn ordinary_source_directory_preserves_native_bytes() {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+
+    let parent = Repo::new();
+    let approved = Repo(
+        parent.0.join(OsString::from_vec(b"source-\xff".to_vec())),
+        std::cell::RefCell::new(Vec::new()),
+    );
+    let foreign = Repo(
+        parent.0.join("source-\u{fffd}"),
+        std::cell::RefCell::new(Vec::new()),
+    );
+    assert_ne!(approved.0, foreign.0);
+    assert_eq!(approved.0.to_string_lossy(), foreign.0.to_string_lossy());
+    for path in [&approved.0, &foreign.0] {
+        fs::create_dir(path).unwrap();
+        git(path, &["init", "-q"]);
+    }
+    fs::write(approved.0.join("file"), b"approved source").unwrap();
+    let approved_commit = approved.commit();
+    fs::write(foreign.0.join("file"), b"foreign source").unwrap();
+    let foreign_commit = foreign.commit();
+    let absent = Command::new("/usr/bin/git")
+        .arg("--git-dir")
+        .arg(approved.0.join(".git"))
+        .args(["cat-file", "-e", &foreign_commit])
+        .output()
+        .unwrap();
+    assert!(
+        !absent.status.success(),
+        "foreign commit must be absent from approved store"
+    );
+
+    let (intake, db) = approved.setup();
+    let binding = approved.binding(&["file"]);
+    let before = snapshot(&parent.0);
+    let store_before = fs::read(&db).unwrap();
+    let actual = observe_committed_source(
+        &intake,
+        &binding,
+        &selection(&approved_commit, &["file"]),
+        "owner",
+    );
+    let foreign_result = observe_committed_source(
+        &intake,
+        &binding,
+        &selection(&foreign_commit, &["file"]),
+        "owner",
+    );
+    assert_eq!(before, snapshot(&parent.0));
+    assert_eq!(store_before, fs::read(&db).unwrap());
+    let fixture_path = parent.0.clone();
+    drop(intake);
+    drop(approved);
+    drop(foreign);
+    drop(parent);
+    assert!(
+        !fixture_path.exists(),
+        "fixture repositories must be removed"
+    );
+    assert!(!Path::new(&db).exists(), "fixture intake must be removed");
+    assert_eq!(
+        foreign_result,
+        Err(Issue::Unavailable),
+        "never attribute a lossy-path sibling to the installed source"
+    );
+    let actual = actual.expect("approved native-byte path must remain usable");
+    assert_eq!(actual.container_id, "c");
+    assert_eq!(actual.source_id, "s");
+    assert_eq!(actual.commit, approved_commit);
+    assert!(
+        matches!(&actual.paths[0].1, PathResult::Present(file) if file.bytes == b"approved source")
+    );
 }
