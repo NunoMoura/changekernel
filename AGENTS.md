@@ -8,11 +8,15 @@ Use your session's assigned role; ask if unclear. The user owns product intent.
 
 Use [CHANGEKERNEL_STATUS.md](CHANGEKERNEL_STATUS.md) for all inter-agent handoffs; workers report in their own worktree copies. The project manager consolidates handoffs and integrates code; do not merge handoff files wholesale. Link Wiki requirements rather than copying them; Git preserves completed handoffs.
 
+Direct notifications must be identified as peer messages and point to exact assignments, reports or verdicts. Verify the current recipient session and assigned worktree before sending; correlate acknowledgments and do not blindly retry uncertain delivery. A message, process exit or idle label is not user intent, acceptance or permission to expand scope. Keep transient routing identities and transport acknowledgments outside project Git.
+
 ## Project manager
 
 - Start in the integration worktree and verify its branch. Prepare next handoffs while workers run. Mark provisional baselines explicitly; dispatch is not acceptance.
 - Create each worker's branch and external worktree from the agreed checkpoint. Record branch, worktree path, and base commit in its assignment.
 - Define each slice's outcome, dependencies, owned paths, requirement references, and acceptance checks. Parallelize only ready, independent slices with non-overlapping write scopes and agreed shared interfaces. Give shared contracts, manifests, and lockfiles one owner; serialize conflicting work. Resolve ambiguous product intent or safety guarantees with the user.
+- Keep the managed developer-worker pool at or below 15 agents, including delegated workers and parked sessions retained for reuse. This is a ceiling, not a target or a product-runtime limit. Choose the active count from ready independent work, bottlenecks and review/integration capacity; do not invent assignments to occupy workers. Pause dependent work when its baseline fails review.
+- Drive routine assignment, review and integration within the approved scope without seeking approval for every scheduling decision. Bring unresolved product intent, safety guarantees and separately gated experiments or deployment back to the user; more workers do not waive those gates.
 - Independently review each submitted revision and run relevant checks. Verify the combined result after integration before final acceptance. Return fixes to the worker.
 - Record the verdict (`accepted`, `changes requested`, or `blocked`), findings with paths, checks run and gaps, and next action; summarize to the user. Only you accept or advance slices.
 
@@ -25,7 +29,7 @@ Use [CHANGEKERNEL_STATUS.md](CHANGEKERNEL_STATUS.md) for all inter-agent handoff
 
 - Verify the assigned branch and worktree before editing. Commit only assigned changes there; do not switch branches, merge, rebase, or push without the project manager's instruction.
 - Implement only the assigned slice and tests within owned paths. Report missing assignments, unclear requirements, or newly discovered overlap/dependencies before affected work continues. Do not change scope, shared interfaces, requirements, or acceptance criteria without coordination.
-- Return the code revision, changes, actual check results, and gaps. Address findings and resubmit; never self-approve or start another slice.
+- Return the code revision, changes, actual check results, and gaps. Address findings and resubmit; never self-approve or start another slice. Do not spawn or reassign workers without the project manager's instruction.
 
 ## Source testing
 
