@@ -2,6 +2,14 @@
 
 Role: project manager in `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`. The user owns product intent. [AGENTS.md](AGENTS.md) owns procedure; [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design. Use native source-development tools; never load this checkout as controller.
 
+## Resume after compaction
+
+Integration was clean at `41e8bb9dd8e3b06deddb10b993378b65e63c5893`. R10-S worker now has clean HEAD `d7460d318e5d385db3ab7f990d9ba8b253478134`; its correlated completion file was still absent at the last check. Treat this as an unreviewed code checkpoint, not acceptance. Next: check completion/report, verify exact assignment ancestry and owned-path scope, review committed source/tests, run focused independent probes and native checks, then integrate only accepted code without merging the worker handoff wholesale. Four workers remain retained; only R10-S is active, no new assignment or notification was sent during this continuation.
+
+A read-only provisional snapshot was inspected while the worker was still editing: `/home/canina7/.local/state/ck-r10-review.fgvnwzap/provisional.json` records exact file hashes. This was not a submitted revision and no candidate tests were run against it. Recheck final committed bytes. One unconfirmed review lead: `git_input` constructs `--git-dir` using `Path::display()`, which can substitute a replacement character for non-UTF-8 bytes in the ordinary constructor's source path. Probe a non-UTF-8 source directory beside its literal replacement-character sibling for wrong-source capture before calling this a finding; the new linked constructor separately rejects non-UTF-8 paths. This pattern predates R10-S. Do not alter the worker's moving tree or reopen frozen R5-A/R8-B work.
+
+Dispatch/acknowledgment and baseline logs remain at `/home/canina7/.local/state/ck-r10-dispatch.t2t_aj69/`; the next manager should check `completion.json` there. Operational host/restart/worker-runtime gates below remain unresolved and are not waived by the source-read slice. Use Pi-native compaction; do not load this checkout as controller.
+
 ## R10 — linked-source observation implementation
 
 The user reaffirmed selective Herdr reuse and authorized proceeding. The [first-release scope](.changekernel/wiki/items/product/changekernel.md#first-dogfood-delivery-sequence) remains local-only on the sole developer's machine; service-backed collaboration/borrowing is the second-release direction. Selective reuse is settled, not another architecture vote. It does not adopt Herdr's same-user trust, session snapshots as acceptance control, or pane completion as Work acceptance.
