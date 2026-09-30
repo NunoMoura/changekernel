@@ -14,9 +14,16 @@ Role: project manager in `/home/canina7/Projects/changekernel-workers/integratio
 
 Independent evidence: `/home/canina7/.local/state/ck-r13-review.ftog5ob0/`; private submission/notification records: `/home/canina7/.local/state/ck-r13-coordination.mmx7x_j1/`. Integration/verdict checkpoint: `c885fbe5aff0aa1c3b4ff0be4e0e8e2cf612bd18`. The combined documentation revision passed its checks. A received that exact verdict and acknowledged the bounded falsification, blocked implementation gate, parked status and unchanged clean checkpoint; the private receipt was correlated without resending. No next worker slice is released by accepting this report.
 
-## Manager-owned next work and unresolved decisions
+## R14-H — manager-owned pre-exec admission assessment
 
-Assess the concrete pre-exec admission candidate before proposing a new operating dependency: where the original thread context is checked, how admission is bound to the protected installed image, and how policy absence/removal, namespaces, changed restrictions and owner-route forwarding fail closed. Read-only design assessment is not permission to install policy or run a privileged probe. Expose the supported contexts and unavoidable deployment/workflow costs to the user before selecting such a dependency or substituting separately authenticated owner authority. Do not claim the failed post-exec candidate proves that every other design needs an LSM.
+The user authorized proceeding with the bounded assessment from clean integration base `c565c78e3d240879feff16febcaf5f13fdd5e993`. This is read-only kernel/interface research and documentation, not adoption of an LSM, a helper API or separately authenticated owner authority. Workers remain parked; no new worker is dispatched.
+
+- **Outcome:** assess one concrete Linux BPF-LSM exec-admission candidate against the accepted R13 counterexample, including original-thread observation, fixed-image binding, policy lifecycle and source/worker boundaries. Compare a built-in gate only where necessary to explain the dynamic-policy cost; do not turn this into a generic catalogue of host designs.
+- **Owned paths:** manager `CHANGEKERNEL_STATUS.md` and, after evidence review, the relevant Wiki component. All executable/configuration/dependency/OS/Pi paths remain unchanged. Source excerpts and disposable review notes remain outside project Git.
+- **Checks:** pin inspected code to the reviewed Linux commit; distinguish `current_cred()` from the already-normalized proposed exec credentials and executable objects from path/PID claims. Challenge disabled/unattached/detached policy, loader failure, boot ordering, exec failure/retry, namespace/LSM transitions, group semantics, inherited handles, worker forwarding and revocation. Preserve all independent enrollment/source/recovery gates.
+- **Stop:** return the narrow supported mechanism or decisive remaining counterexample, actual evidence and explicit deployment/workflow costs. No BPF program is compiled/loaded, no policy is installed, no privileged/device/namespace/source-effect probe or controller/product call occurs. Any new operating dependency or authority-subject change returns to the user for an explicit choice before implementation release.
+
+Expose the supported contexts and unavoidable costs before selecting a dependency. The failed post-exec candidate does not prove that every design needs an LSM.
 
 Dependent host/Trace implementation remains **blocked**:
 
