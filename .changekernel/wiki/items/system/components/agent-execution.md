@@ -6,10 +6,12 @@ aliases:
 source-id: cw:component:runtime
 ownership:
   sourcePatterns:
+    - src/adapters/linux/local_packet.rs
     - src/adapters/pi/**
     - src/ports/agent-runtime.ts
     - src/ports/check-model.ts
   testPatterns:
+    - tests/native_local_packet.rs
     - tests/adapters/pi/**
 source-history:
   provenance:
@@ -82,6 +84,60 @@ Delegation must retain the originating request, owner, authenticated acting iden
 Research Work can acquire and retain new source material under explicit access, disclosure, retention and resource limits. Retained artifacts become ordinary authorized source inputs with exact provenance, not executable instructions or automatically adopted facts. Bind exact procedure versions, required fresh observations and relevant history in the continuation context. Gather missing grounds separately from Check execution and retain the actual supplied inputs and omissions. [State](state.md#sources-observations-and-retained-research) owns source and memory custody; private session content is not a replacement for those records.
 
 A Change may span many bounded attempts and batches without preallocating an enormous task graph or holding a long transaction. Classification and decomposition do not multiply budgets or authority. Preserve aggregate commitments across related Changes and Work, and expose partial results and unresolved obligations. Autonomous learning can prepare memory updates, but publishing adopted knowledge or procedures uses the same protected Change path. No internal learner gains an alternative write route or permission to revise its own governing rules.
+
+## Linux local packet ingress
+
+The first local host uses a small Linux `AF_UNIX`/`SOCK_SEQPACKET` adapter as the byte-and-peer boundary for its protected control plane. This component is independently implementable before the domain dispatcher and custody writer. It does not create an access-bearing Change endpoint, authenticate a durable account incarnation, authorize a source operation or qualify the service. In particular, `ucred` does not supply supplementary groups, filesystem credentials, capabilities, namespace/LSM restrictions or a faithful source-access context. Native source access, enrollment/revocation, process protection and the complete storage protocol remain separate prerequisites; none may be inferred from successful IPC.
+
+The trusted host supplies an already bound/listening descriptor and a currently eligible native UID for each serialized request. It must protect the endpoint, keep the enrollment/policy guard valid through callback and reply, and resolve the semantic owner independently of payload claims. The installed service process itself creates/listens on the socket and handles replies; socket activation or listener handoff from a different process is not supported by this first component. This is not a service-manager selection. Privileged processes capable of forging credentials and compromise of the trusted host/OS remain outside the stated protection boundary.
+
+The bounded library surface is `changekernel::local_packet`, available only on Linux:
+
+```rust
+pub const MAX_PACKET_BYTES: usize = 196_608;
+
+pub struct PeerCredentials {
+    pub pid: i32,
+    pub uid: u32,
+    pub gid: u32,
+}
+
+pub enum PacketIssue {
+    Denied,
+    InvalidInput,
+    Unavailable,
+}
+
+pub fn serve_one<F>(
+    listener: &std::os::fd::OwnedFd,
+    expected_uid: u32,
+    handler: F,
+) -> Result<(), PacketIssue>
+where
+    F: FnOnce(PeerCredentials, Vec<u8>) -> Result<Vec<u8>, PacketIssue>;
+
+pub fn request(
+    endpoint: &std::path::Path,
+    expected_service_uid: u32,
+    payload: &[u8],
+) -> Result<Vec<u8>, PacketIssue>;
+```
+
+`PeerCredentials` is a data observation from Linux, not a freely transferable authorization token. `expected_uid` and `expected_service_uid` are trusted configuration/guard inputs, never extracted from a packet. This layer deliberately does not select a JSON schema, command vocabulary, Workspace descriptor, retry namespace or persistent representation. Its callback will be the trusted, closed typed dispatcher, not a raw-append or generic shell/file capability. Existing `container_id` APIs and SQLite profiles remain unchanged.
+
+The adapter has the following exact behavior:
+
+- Validate the supplied descriptor as a listening pathname `AF_UNIX` `SOCK_SEQPACKET` socket with `O_NONBLOCK`, `FD_CLOEXEC` and `SO_PASSCRED` already enabled. The host enables credential receipt before listening, so data queued before `accept` is covered. Invalid/unsupported descriptor configuration is `InvalidInput`; the adapter does not bind, unlink, chmod, change process identity or repair an endpoint. It does not own the borrowed listener's lifetime.
+- Each `serve_one` accepts at most one connection, consumes one nonempty packet, invokes its callback at most once and sends at most one nonempty reply. Packet and reply bounds are independently 196,608 bytes. No batching, fragment reassembly, automatic retry, second callback or interpretation of trailing queued packets occurs; the accepted connection closes on every exit. Input exceeding the bound or transport truncation is rejected before callback entry, never accepted as a shorter request.
+- Before dispatch, require a positive peer PID and the configured UID from `SO_PEERCRED`, then exactly one complete kernel-validated `SCM_CREDENTIALS` record accompanying the packet. Its PID, UID and GID must equal the connected peer tuple. Missing or mismatched credentials deny dispatch. This rejects a different process sending through an inherited/transferred connection even when the connection's cached credentials still name an allowed user. Payload bytes cannot change the observed tuple. This does not turn a numeric PID into a durable process identity or claim to prevent an authorized client deliberately forwarding its own permitted results.
+- Accept no other ancillary capability. Use bounded control storage and `MSG_CMSG_CLOEXEC`; close every delivered descriptor, including descriptor-bearing ancillary forms, before rejecting unsupported control data or `MSG_CTRUNC`. Do not leak `SCM_RIGHTS` or PID descriptors on any failure path. The kernel closes descriptors not delivered because the control buffer was truncated; the application still owns those actually delivered. Unexpected non-credential ancillary data is `InvalidInput` and never reaches the callback.
+- The client creates a nonblocking, close-on-exec sequenced-packet socket with credential receipt enabled before connecting. Its endpoint is an explicitly supplied absolute native pathname of at most 107 bytes, without NUL. Preserve native bytes, including non-UTF-8 names; never use display/lossy conversion to address the socket. Abstract endpoints are unsupported; a client-side kernel autobind caused by `SO_PASSCRED` is not an abstract service endpoint. Verify the service UID through `SO_PEERCRED` before sending and verify the reply's credential tuple against that same peer before returning bytes. Do not discover another endpoint or fall back to another transport.
+- Socket waits use monotonic deadlines and nonblocking operations. The server has one five-second accept/receive budget and a fresh five-second reply budget after the callback. The client has one five-second connect/send budget and a fresh five-second receive budget. `EINTR` and readiness races do not reset a deadline. The trusted callback's execution is not included in a claimed transport time bound; its domain implementation must establish its own limits. Ensure the supported send-buffer capacity can carry a maximum packet, or return `Unavailable`, rather than silently lower the payload limit. Use `MSG_NOSIGNAL`; peer loss must not terminate the process with `SIGPIPE`.
+- `Denied` means a credential check failed. `InvalidInput` means invalid caller arguments, descriptor configuration or packet/control framing. Syscall failures, deadline expiry, EOF and unsupported platform facilities are `Unavailable`, not a fabricated domain permission decision or proof of rollback. A callback error closes the connection and is returned unchanged to the server caller, without an invented wire error envelope; domain outcomes must be encoded by the later typed dispatcher. A successful server return means the response packet was submitted to the socket, not that the client received or accepted a domain result. The client performs no retry; lost replies require the domain's exact-operation reconciliation.
+
+Source acceptance exercises the public adapter with disposable, unprivileged pathname sockets: binary and maximum-size round trips, data queued before accept, native non-UTF-8 endpoint identity, configured-UID and service-UID rejection without callback entry, inherited connection use by a different process, empty/oversized packets, ancillary-descriptor rejection without leaks, peer closure and bounded timeout/cleanup. Test kernel observations rather than caller-constructed credential structs. Same-user fixtures do not qualify cross-UID worker isolation, account lifecycle, source permissions, service installation or reboot recovery. No source-controlled code, installed ChangeKernel controller, privileged action or model call is needed for these checks.
+
+The Linux mechanisms and limits are grounded in [`unix(7)`](https://man7.org/linux/man-pages/man7/unix.7.html), including the distinction between cached peer credentials and per-message credentials, native pathname bounds, socket buffering and descriptor truncation. This selects a mechanism and component contract, not copied implementation code or adoption of another product's trust model.
 
 ## Change handoff and continuation
 

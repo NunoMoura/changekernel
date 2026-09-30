@@ -33,8 +33,14 @@ mod adapters {
     pub mod git {
         pub mod source_observation;
     }
+    #[cfg(target_os = "linux")]
+    pub mod linux {
+        pub mod local_packet;
+    }
 }
 pub use adapters::git::source_observation::GitSourceObserver;
+#[cfg(target_os = "linux")]
+pub use adapters::linux::local_packet;
 pub use adapters::sqlite::container_intake::SqliteIntake;
 pub use application::file_candidate::{
     prepare as prepare_file_candidate, read as read_file_candidate,
