@@ -79,6 +79,8 @@ Assessment uses the accountable user's intent and the applicable system requirem
 
 Decision admission establishes readiness for bounded planning/pursuit, not blanket readiness to execute. Recording a proposal is not admission; conversation or an automated origin supplies neither permission nor a requirement for manual approval by itself. Valid retained discussion, findings and exact-subject approval may satisfy applicable requirements without another interview. Common judgments that depend on domain findings must use those exact retained findings and limitations. Material intent, scope or authority changes reopen Decision.
 
+A [state-triggered proposal](../../product/changekernel.md#state-triggered-automation) supplies an exact adopted standing-intent version and triggering observations instead of requiring a fresh conversation. A satisfied source condition is not a passing Decision or pre-effect Check, and a rule's adoption does not preapprove every future effect. Reuse only applicable exact-subject grounds under current authority and freshness requirements. Checks assess supplied material; monitoring, occurrence deduplication and dispatch remain runtime responsibilities, not new Check kinds or another public stage.
+
 Planning assesses:
 
 | Condition | Required conclusion |
