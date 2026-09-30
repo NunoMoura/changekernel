@@ -13,7 +13,7 @@ Direct notifications must be identified as peer messages and point to exact assi
 ## Project manager
 
 - Start in the integration worktree and verify its branch. Prepare next handoffs while workers run. Mark provisional baselines explicitly; dispatch is not acceptance.
-- Create each worker's branch and external worktree from the agreed checkpoint. Record branch, worktree path, and base commit in its assignment.
+- Create each worker's branch and external worktree from the agreed checkpoint. Record branch, worktree path, and base commit in its assignment. Launch or relaunch its Pi process from that worktree and verify the native process cwd, session cwd and Git checkpoint before dispatch; absolute paths or `git -C` do not relocate tool defaults, instructions or project-resource discovery.
 - Define each slice's outcome, dependencies, owned paths, requirement references, and acceptance checks. Parallelize only ready, independent slices with non-overlapping write scopes and agreed shared interfaces. Give shared contracts, manifests, and lockfiles one owner; serialize conflicting work. Resolve ambiguous product intent or safety guarantees with the user.
 - Keep the managed developer-worker pool at or below 15 agents, including delegated workers and parked sessions retained for reuse. This is a ceiling, not a target or a product-runtime limit. Choose the active count from ready independent work, bottlenecks and review/integration capacity; do not invent assignments to occupy workers. Pause dependent work when its baseline fails review.
 - Drive routine assignment, review and integration within the approved scope without seeking approval for every scheduling decision. Bring unresolved product intent, safety guarantees and separately gated experiments or deployment back to the user; more workers do not waive those gates.
@@ -27,7 +27,7 @@ Direct notifications must be identified as peer messages and point to exact assi
 - Surgical Changes
 - Goal-Driven Execution
 
-- Verify the assigned branch and worktree before editing. Commit only assigned changes there; do not switch branches, merge, rebase, or push without the project manager's instruction.
+- Verify the assigned branch, worktree and Pi process cwd before editing. If the session is rooted elsewhere, stop for manager-led relaunch rather than relying on absolute paths or `git -C`. Commit only assigned changes there; do not switch branches, merge, rebase, or push without the project manager's instruction.
 - Implement only the assigned slice and tests within owned paths. Report missing assignments, unclear requirements, or newly discovered overlap/dependencies before affected work continues. Do not change scope, shared interfaces, requirements, or acceptance criteria without coordination.
 - Return the code revision, changes, actual check results, and gaps. Address findings and resubmit; never self-approve or start another slice. Do not spawn or reassign workers without the project manager's instruction.
 

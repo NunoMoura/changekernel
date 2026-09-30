@@ -8,7 +8,22 @@ The user explicitly approved both choices proposed at `80c05d5d330654bae33652ef8
 
 Next manager work is concrete contract composition for the protected opening/history increment: select the minimum native credential and isolation route; define installed root/enrollment/source identity, bounded typed requests and exact historical retry/result references; settle the versioned Trace/checkpoint/control inventory, sole-writer and first-root ordering, acknowledgment, recovery admission, and live/retained-incident handling under the newly approved limit. Resolve those shared interfaces before dependent implementation, then dispatch ready non-overlapping source slices to the existing workers. Do not mechanically adopt all R9-A operating mechanisms or copy the old witness-dependent R8-B state machine. No further generic proposal report is owed.
 
-Four retained workers remain stopped; no new assignment or session was created by this approval-recording change. The manager retains shared contracts, Wiki, composition, manifests and lockfiles. Approval covers design only: no installation, privileged/device experiment, live inference, deployment, activation or controller handoff is authorized.
+Four retained workers remain stopped. The manager retains shared contracts, Wiki, composition, manifests and lockfiles. Approval covers design only: no installation, privileged/device experiment, live inference, deployment, activation or controller handoff is authorized.
+
+## Worker session cwd alignment — completed
+
+The user authorized correcting the worker sessions' working directories. A, C and D were gracefully stopped and relaunched in their latest assigned worktrees, preserving history through Pi-native session forks. B was already aligned and was left unchanged. The managed pool remains four; no extra pane or implementation assignment was created.
+
+| Worker | Actual Pi cwd under `/home/canina7/Projects/changekernel-workers/` | Assigned branch |
+| --- | --- | --- |
+| A | `host-admission-closure` | `work/host-admission-closure` |
+| B | `restart-trace-contract` | `work/restart-trace-contract` |
+| C | `linked-source-observer` | `work/linked-source-observer` |
+| D | `attempt-supervision-contract` | `work/attempt-supervision-contract` |
+
+The manager independently verified native process cwd, the new session headers, exact Git checkpoints and clean worker trees. A/C/D returned correlated acknowledgments confirming their actual tool cwd and exposed pi-lens tools; they remain parked. Routing identities, session paths and receipts are retained only in private state under `/home/canina7/.local/state/ck-session-reanchor.82feqa6y/`. Project resource autoloading was disabled for the relaunched sessions; the existing installed pi-lens and source-boundary instructions were supplied explicitly, without creating project-local package links or loading ChangeKernel. [AGENTS.md](AGENTS.md) now requires native/session cwd verification before dispatch; absolute paths and `git -C` are not substitutes.
+
+Shared opening/history contracts remain the next implementation gate, not an assignment implied by session relocation. In particular, composition must distinguish the frozen [native continuation retry scope](.changekernel/wiki/items/system/components/state.md#native-continuation-api-and-storage-v1) from the desired file-first per-Change history: reusing data types cannot silently change retry identity or custody meaning. No new public/persistence format, source stub or operational host was introduced by this coordination repair.
 
 ## R10-S — completed
 
@@ -40,4 +55,6 @@ Full prior handoff: `68084365221f87579cb7dbb3c97eea812b8460fc:CHANGEKERNEL_STATU
 
 ## Actual checks
 
-R10-S source checks and diagnostic limits are preserved at `2bbfc98666a34dd6d9f2e2e2879614eef2c9524c:CHANGEKERNEL_STATUS.md`; baseline preparation is at `41e8bb9dd8e3b06deddb10b993378b65e63c5893:CHANGEKERNEL_STATUS.md`; the rejected submission/F1 evidence is at `bcc3a038d5b6dc095a693b5a7431b6323f3f7131:CHANGEKERNEL_STATUS.md`. Approval recording changes only four Wiki pages and this handoff, not source, tests, manifests or locks. Active Markdown diagnostics checked all five paths with zero findings; 75 local links/anchors, exact five-path scope and `git diff --check` passed. Native bytes/manifests/locks were verified unchanged from accepted R10 integration. Native tests are not rerun for this documentation-only change. No hardware/host experiment, installation or controller operation occurred, and no new operational qualification is claimed.
+R10-S source checks and diagnostic limits are preserved at `2bbfc98666a34dd6d9f2e2e2879614eef2c9524c:CHANGEKERNEL_STATUS.md`; baseline preparation is at `41e8bb9dd8e3b06deddb10b993378b65e63c5893:CHANGEKERNEL_STATUS.md`; the rejected submission/F1 evidence is at `bcc3a038d5b6dc095a693b5a7431b6323f3f7131:CHANGEKERNEL_STATUS.md`. Approval-recording checks are preserved at `91143c65437b8a7126ff9539bc3e2a4a3fd2515d:CHANGEKERNEL_STATUS.md`. The subsequent session-alignment repair changes only `AGENTS.md` and this handoff; its checks are recorded below. Native source, tests, manifests and locks remain unchanged. No native tests, hardware/host experiment, installation or controller operation is implied by this coordination-only repair; no new operational qualification is claimed.
+
+Session-alignment checks: native process/session cwd and exact branch/HEAD checks passed for the managed workers; A/C/D acknowledgments were correlated with their replacement sessions, and B's original process was verified unchanged. All worker trees remained clean and no project npm directory was created in the relaunched worktrees. Active Markdown diagnostics checked both changed files with zero findings; 14 local links/anchors and `git diff --check` passed. The source/test/manifests/lockfile comparison against the approved-design checkpoint was empty. Cargo/npm were not rerun for this procedure/handoff-only change.
