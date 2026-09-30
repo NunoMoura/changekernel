@@ -56,6 +56,8 @@ A Check is a bounded, read-only assessment with explicit inputs, one reportable 
 
 A gate controls progression or a protected effect using applicable requirements, current inputs and separate authority. Assessment scope identifies the subject, question and required timing, not a mandatory screen, model call, transaction or commit. Planning Checks assess decomposition, dependencies, routes and parallelism; the engine performs authorized dispatch, custody transfer, effects and review coordination. Typed edits can satisfy suitable boundaries directly in code. Historical stage fields/results retain their original interpretation until an explicit qualified transition.
 
+Under the [State-access and Change-authorization model](../../product/changekernel.md#state-access-and-change-authorization), a Check assesses an exact subject; it neither grants native rights nor substitutes for current Change/delegation authorization. Required passing assessments, native permission, delegated execution scope and effect/custody guards must all hold. Native write access does not approve a transformation, and human approval or a passing Check cannot override native denial. Check workers receive only their bounded authorized inputs and do not gain source write rights through the shared Rust sandbox machinery.
+
 ## Common assessment requirements
 
 The release owns these requirements; they are not optional Packs. Applicability follows actual supported subjects, not caller labels. Exact computation and eligible retained results may satisfy suitable conditions without mandatory inference on every small edit.
