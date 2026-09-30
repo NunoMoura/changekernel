@@ -10,7 +10,7 @@ The user approved documenting the [State-access/Change-authorization model](.cha
 
 ### Immediate work
 
-**Ready for dispatch; not yet acknowledged.** The manager created both branches/worktrees from accepted direction checkpoint `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`, relaunched each native Pi process there, and independently verified process/session cwd, branch, clean exact base and no project-local package installation. The worktree copies intentionally retain the design-checkpoint handoff; workers must read their exact committed integration assignment before work. Neither slice consumes the other's provisional report.
+**Dispatched and acknowledged; work in progress, not accepted.** Exact assignment: `2f41818f9765ff72d0b181c39494801382183dcc:CHANGEKERNEL_STATUS.md`. The manager created both branches/worktrees from accepted direction checkpoint `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`, relaunched each native Pi process there, and independently verified process/session cwd, branch, clean exact base and no project-local package installation. Each assignment was sent once. Both workers acknowledged the exact current session, cwd, branch and clean base, accepted the work with no initial blockers, and proceeded; receipts were independently correlated without resending. The worktree copies intentionally retain the design-checkpoint handoff; the committed integration assignment supplies the exact task. Neither slice consumes the other's provisional report.
 
 | Slice / worker | Assigned branch | Assigned worktree | Exact base |
 | --- | --- | --- | --- |
@@ -57,7 +57,7 @@ The [canonical dependency plan](.changekernel/wiki/items/product/changekernel.md
 - Verify native process/session cwd, assigned worktree, branch and clean exact base before dispatch. Require correlated acknowledgment, exact submitted revision and actual checks/gaps. Source inspection is not runtime qualification.
 - Review each immutable report independently, resolve contradictions, consolidate durable conclusions into Wiki, and record `accepted`, `changes requested` or `blocked`. A precise blocker is evidence, not automatic acceptance or permission for a weaker guarantee.
 - Return unresolved product/safety choices and the exact disposable sandbox experiment proposal to the user before those actions. Do not request routine scheduling approval or ask workers to rediscover already accepted counterexamples.
-- Direction documentation checked: exact six-path scope and whitespace passed; all 110 local links/anchors resolved; active Markdown diagnostics confirmed all six documents clean. No source/configuration/dependency changed; Cargo/npm were not run for prose-only work. This accepts the documentation update, not sandbox or native-tool qualification.
+- Combined documentation checked: exact six-path scope and whitespace passed; all 118 local links/anchors resolved; active Markdown diagnostics confirmed all six documents clean. No source/configuration/dependency changed; Cargo/npm were not run for prose-only work. This accepts the documentation update and records correlated dispatch, not worker submissions, sandbox or native-tool qualification.
 - Assignment checkpoint checked: status-only scope/whitespace, 18 local links/anchors, seven historical handoff references and both clean exact worker bases passed. Active handoff Markdown diagnostics are clean. Dispatch and worker reports remain separate from acceptance.
 
 ## Preserved blockers and accepted evidence
@@ -79,12 +79,12 @@ The [canonical dependency plan](.changekernel/wiki/items/product/changekernel.md
 
 ## Retained worker pool
 
-Four developers are retained; the ceiling of 15 is not a utilization target. Two ready independent slices justify two active workers after verified relaunch; C/D stay parked for dependent work. Completed acknowledgments are not replayed. Routing identities and transport evidence remain outside Git.
+Four developers are retained; the ceiling of 15 is not a utilization target. A/B are active on the two independent prerequisite slices after verified relaunch and acknowledgment; C/D stay parked for dependent work. Completed acknowledgments are not replayed. Routing identities and transport evidence remain outside Git.
 
 | Worker | Current worktree under `/home/canina7/Projects/changekernel-workers/` | Branch | Retained checkpoint |
 | --- | --- | --- | --- |
-| A | `r17-landlock-contract` | `work/r17-landlock-contract` | `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`; native relaunch verified, R17-L ready for dispatch |
-| B | `r17-native-authority` | `work/r17-native-authority` | `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`; native relaunch verified, R17-A ready for dispatch |
+| A | `r17-landlock-contract` | `work/r17-landlock-contract` | `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`; R17-L dispatched and acknowledged; submission pending |
+| B | `r17-native-authority` | `work/r17-native-authority` | `06a7932f966e7a9a9999aa5b2b0e4a5ff1d6c9f5`; R17-A dispatched and acknowledged; submission pending |
 | C | `analyzer-reconciliation` | `work/r12-analyzer-reconciliation` | `b212699c4772a56613e4db11f3ce741a634b4fbd`; parked |
 | D | `attempt-supervision-contract` | `work/attempt-supervision-contract` | `5421254d4563de3176d964eb18bca79d6786a56f`; parked |
 
