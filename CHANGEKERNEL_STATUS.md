@@ -2,9 +2,17 @@
 
 Role: project manager in `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`. The user owns product intent. [AGENTS.md](AGENTS.md) owns procedure; [Wiki](.changekernel/wiki/items/product/changekernel.md) owns desired design. Never load this mutable checkout as controller.
 
-## Compaction checkpoint
+## Manager continuation — recovery protocol advanced; host blocked
 
-The user requested a clean compaction/new-session boundary. R11-L is independently reviewed and integrated in this checkpoint; no next slice is released. All four workers are to remain parked. Acceptance delivery status belongs in the private routing state below; reconcile it before any later notification and never repeat a completed delivery. Compact through Pi's native mechanism. Resume by verifying this branch and clean HEAD, then read this handoff and the linked requirements; do not replay completed assignments or repeat product-choice questions.
+Resumed at the user-specified `69b97cddea6aaa2c8f4b2591c37200a42ccf2995`, clean tree on the assigned integration branch. Native Pi process cwd matched the integration worktree. R11-L remains accepted; no completed assignment or notification was replayed. All four workers remain parked.
+
+The manager selected the [logical local recovery admission protocol](.changekernel/wiki/items/system/components/state.md#first-local-recovery-admission-protocol): one observed writer, qualified predecessor/handle fencing plus permanent lock, first-use versus reopen separation, exact checkpoint-selected prefix, fresh file/parent barriers, retained-incident refusal, no suffix promotion/truncation, and original-key historical retry before fresh source work. This removes the obsolete witness-dependent clean-close gate without weakening retained-incident refusal or pretending to recover a lost error observation. It is not the complete codec/control freeze, an installed host or an implementation release.
+
+**Verdict: partial contract progress; dependent implementation blocked.** Remaining engineering work is the closed opening/history operation profile, exact reference/result bytes, complete control/checkpoint/incident encoding and bounds, and the host credential/descriptor/policy/account-lifecycle handoff. No old A numeric cap, opaque authority reference or R8-B state machine was silently adopted. R9-A's managed-ingress candidate still requires consequential operating decisions and concrete installed proofs; administrator installation alone did not approve managed login sessions, administrator-controlled repository placement or permanent UID-retirement constraints.
+
+Next action: resolve those additional host operating commitments with the user, then compose/freeze the full shared profile and release only ready source slices. Do not repeat the already approved local service/lost-incident choice. No installation, privileged probe, witness, source implementation, qualification, deployment or controller handoff was released.
+
+Checks for this continuation: reviewed current Wiki and exact R8-A/R9-A reports/verdicts; consulted upstream Linux fsync/flock/rename syscall documentation for concrete barrier and descriptor-lifetime premises. These are documentary checks, not a host or storage experiment. Only `state.md` and this handoff changed. `git diff --check` and two-path scope inspection passed. Active Markdown LSP checked both files: zero unsuppressed findings, with one existing disposition/policy-suppressed finding reported by the aggregate; this is not an unsuppressed-all-rules claim. Cargo/npm are not applicable to this documentation-only change. Transient evidence and routing remain outside Git; correlate existing R11 acceptance delivery before any later notification.
 
 ## R11-L — accepted as a bounded, unqualified library component
 
