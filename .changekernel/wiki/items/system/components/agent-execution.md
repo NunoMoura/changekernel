@@ -85,6 +85,59 @@ Research Work can acquire and retain new source material under explicit access, 
 
 A Change may span many bounded attempts and batches without preallocating an enormous task graph or holding a long transaction. Classification and decomposition do not multiply budgets or authority. Preserve aggregate commitments across related Changes and Work, and expose partial results and unresolved obligations. Autonomous learning can prepare memory updates, but publishing adopted knowledge or procedures uses the same protected Change path. No internal learner gains an alternative write route or permission to revise its own governing rules.
 
+## Ordinary-client host direction
+
+Preserve ordinary Pi/terminal sessions as untrusted frontends and existing repository locations where the qualified binding can support them. This is the preferred design direction, not a claim that arbitrary sessions, filesystems or execution environments are already supported. Before requiring a managed login, repository relocation or a permanent UID-nonreuse policy, identify the concrete unsatisfied guarantee, assess a narrower mechanism and expose any unavoidable workflow cost. The selected administrator-installed custody service and local recovery limit remain unchanged. This direction selects neither a privileged helper implementation nor deployment permission.
+
+### Separate the frontend from trusted execution
+
+A frontend submits bounded typed input and displays authorized results. It need not be the source of authenticated owner identity, source-permission evidence, accepted assessments or effect receipts. The backend obtains those through protected native authority and custody paths. Therefore, protecting the writer does not by itself require replacing the user's login or trusting the entire Pi process. The existing [packet adapter](#linux-local-packet-ingress) supplies only its documented peer/byte observations; it does not establish enrollment or human intent.
+
+Preserving an existing frontend also does **not** qualify its unrestricted shell, extensions or generated code as a governed worker. Protected Work needs a separately admitted execution boundary and attributable results. An ordinary client must not be able to launder a restricted worker's request into broader owner authority: the worker must lack access to owner credentials, owner-command IPC, client process/handle control and any forwarding path that would grant that authority. A worker route carries its protected Work/delegation scope and cannot choose the owner route using payload fields. The exact worker mechanism remains a prerequisite. Do not silently change a same-UID worker into a trusted owner process merely to preserve session reuse.
+
+The preferred composition keeps three roles distinct:
+
+| Role | Responsibility | Forbidden substitution |
+| --- | --- | --- |
+| Ordinary client | Submit intent/typed requests and inspect authorized views through the protected endpoint. | Client code, PID, session name or claimed actor is not a trust grant; client observations are contributions until independently established. |
+| Native source-access helper | Perform a bounded operation under a freshly established, faithful native authority context and exact source binding; return attributable observations/outcomes over a protected channel. | No custody handles, generated code, arbitrary shell or source access under the service's greater rights. |
+| Custody writer | Authenticate current enrollment/disclosure, enforce domain controls, reconcile exact retries and durably accept results under the recovery protocol. | No second authoritative helper history or privileged re-open that replaces the helper's native permission check. |
+
+A short-lived protected helper per operation is a narrower candidate than a managed interactive login. It still needs a concrete trusted launch, credential acquisition, process/IPC protection and revocation protocol. It is not implemented by accepting a client's assertion that it ran a fixed binary. Normal session reuse and a protected helper are compatible design goals, not proof that the helper exists.
+
+### Native credentials: useful observations and rejected shortcuts
+
+Keep the actual primary and complete supplementary groups, filesystem IDs, relevant namespaces, capabilities and security restrictions in the authority analysis. Removing groups can broaden DAC/ACL access: for another owner's file in group `G`, mode `0604`, a supplementary member of `G` is denied while a nonmember receives `other` read access. Mode `0640` exercises the converse group grant. A fresh account-database lookup is not a capture of the requesting task's credentials; a different LSM subject is not automatically narrower. Any additional confinement must be proved to restrict, rather than replace, the required native authority.
+
+| Candidate shortcut | What it establishes | What remains missing |
+| --- | --- | --- |
+| `SO_PEERCRED` plus per-message `SCM_CREDENTIALS` | Kernel-checked connected/sending PID and UID/GID under the adapter's constraints. | Supplementary groups, filesystem IDs, per-thread restrictions, durable account incarnation and source authority. |
+| `SO_PEERGROUPS` and `SO_PEERPIDFD` | Supplementary groups from the socket's saved peer credentials and a reference to its saved peer process, respectively. | Not an atomic current sending-thread authority snapshot; no reproduction of filesystem IDs, Landlock/LSM policy, namespace view or later revocation. Reconnecting alone does not fill those fields. |
+| `/proc` reads, PID pinning and before/after comparisons | Particular process observations, with lifetime pinning where correctly used. | No general proof that a task/thread did not change authority between observations and access. A pin protects process identity, not immutable permissions. |
+| User-launched fixed helper or caller-opened source FD | A possible execution/descriptor path. | Trusted launch and resistance to preexisting tracing/injection; exact credential transitions; current permissions and freshness of the open. A descriptor may outlive revocation or have been transferred. |
+| Service-side `initgroups`/UID switch | A newly constructed account context. | Faithfulness to the required acting context. It must not discard restrictions or exploit the group-deny/other-allow counterexample. |
+
+A complete source-access contract must specify which native subject authorizes the operation and how that subject is obtained without client assertions. If proposing a separately authenticated user context instead of the calling task, justify its authority and preserve worker/delegation restrictions explicitly; do not silently redefine “acting user” to mean whatever context the service can create. Unsupported contexts make the source-dependent operation unavailable. Private historical delivery has its own current enrollment/disclosure checks and does not need a fabricated source context.
+
+The source-helper path must bind current principal/enrollment, exact request and source/binding revision, operation/scope and response identity; observe credential and policy withdrawal at the required points; and keep its executable, launch configuration, descendants and result channel outside client/worker control. An independent result cannot be replaced by a typed Rust value constructed by the caller. Holding an enrollment guard cannot serialize arbitrary native ACL or namespace changes; supported observation/effect semantics still need their own point-of-use rules.
+
+### Account retirement without assuming a permanent UID ban
+
+A numeric UID and username identify neither a person nor a durable enrollment incarnation. Minting a protected principal ID does not solve authentication if delivery still maps any holder of the same UID to that principal. Even identical `/etc/passwd` fields before and after a delete/recreate can conceal a new account. A watcher or cached account hash is not an interlock.
+
+Two bounded alternatives must be assessed before selecting a permanent UID-nonreuse commitment:
+
+- **Enrolled-account lifecycle interlock:** fence the old enrollment and outstanding delivery/execution authority before account deletion or reassignment, retain that retirement, and require distinct enrollment for a later account. Integrate every supported administrative route; an advisory uninstall hook or best-effort watcher is insufficient. This need not reserve all host UIDs forever, but it does require enforceable coordination for enrolled accounts and safe crash/reboot ordering.
+- **Independent principal authentication:** authenticate an enrollment-specific credential in addition to native UID eligibility, with explicit enrollment, revocation, recovery and custody. A token left in files inherited by a replacement UID is not independent proof. This introduces a real secret-management or unlock cost and must not be selected invisibly as “ordinary login.”
+
+Neither alternative is selected or qualified here. Losing the required enrollment/lifecycle proof blocks old-history delivery; it never transfers history, creates a replacement principal or authorizes deletion of retained grounds. Account retirement must reconcile outstanding Work separately from closing a client window. The host/administrator trust boundary does not excuse an unhandled ordinary account-replacement path.
+
+### Evidence and qualification boundary
+
+These findings use [Linux credentials](https://docs.kernel.org/security/credentials.html), [unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html), the Linux v6.12 [`SO_PEERGROUPS`/`SO_PEERPIDFD` implementations](https://github.com/torvalds/linux/blob/v6.12/net/core/sock.c) and [saved UNIX peer credentials](https://github.com/torvalds/linux/blob/v6.12/net/unix/af_unix.c), [Landlock inheritance and descriptor semantics](https://docs.kernel.org/6.12/userspace-api/landlock.html), [execve(2)](https://man7.org/linux/man-pages/man2/execve.2.html) and [passwd(5)](https://man7.org/linux/man-pages/man5/passwd.5.html). Kernel credential and Landlock restrictions can be per-thread; saved socket groups and a process handle do not export a complete current authority context. Documentation/source inspection selects no kernel minimum, LSM, service manager, authentication package or new adapter API, and is not an installed test.
+
+Before freezing the host, challenge group-deny/group-grant and ACL ancestors; sending-thread versus leader credentials; restrictions applied after connection; transferred/stale handles; helper tracing/exec/namespace substitution; restricted-worker forwarding; revocation before reply; account deletion/reuse with unchanged public fields; and interrupted retirement/enrollment. Preserve the [source enrollment and continuity boundary](state.md#in-place-source-enrollment-and-continuity) and all existing recovery/qualification gates. A credential-snapshot value cannot by itself satisfy host authorization.
+
 ## Linux local packet ingress
 
 The first local host uses a small Linux `AF_UNIX`/`SOCK_SEQPACKET` adapter as the byte-and-peer boundary for its protected control plane. This component is independently implementable before the domain dispatcher and custody writer. It does not create an access-bearing Change endpoint, authenticate a durable account incarnation, authorize a source operation or qualify the service. In particular, `ucred` does not supply supplementary groups, filesystem credentials, capabilities, namespace/LSM restrictions or a faithful source-access context. Native source access, enrollment/revocation, process protection and the complete storage protocol remain separate prerequisites; none may be inferred from successful IPC.
