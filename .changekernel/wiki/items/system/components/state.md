@@ -66,6 +66,14 @@ Client messages claiming approval, Check success or execution completion are con
 
 Backend-only writing must be enforced independently of cooperation. Workers, evaluators, client applications and generic file/resource APIs must not be able to rewrite the Trace, checkpoint, identity/custody bindings or live policy through filesystem access, aliases, inherited handles, process access or another write route. Use native protection and qualified isolation; a process with the same effective storage privileges can bypass an API convention. Logical user ownership of a Change does not require clients to have raw write access to its authoritative files. Authorized views and exports are not writable continuation authority.
 
+### File-first domain interface boundary
+
+The operational file-first host will expose a new, explicitly versioned domain interface and persistence profile. It will not present a file implementation of the frozen [native continuation v1 contracts](#native-continuation-api-and-storage-v1) while silently changing their meanings. In particular, native revision/candidate retries have container-and-actor-scoped, separate operation namespaces; the file-first existing-Change contract below instead reserves a request key across actors and operation kinds within the installed logical Trace identity. Those are different protocols, not interchangeable storage adapters.
+
+Keep existing SQLite formats, identifiers and public library behavior intact. Reuse bounded values or pure validation only where their meanings really agree; do not reuse an old receipt, revision identifier or `container_id` as an implicit Workspace/Trace authority. The new host resolves its installed Workspace/Change context and authenticated actor independently of request claims, then applies its own closed typed operations and exact retry rules. Legacy library ports do not become raw IPC endpoints. Any future import or migration requires a separate explicit protocol; this boundary does not authorize one.
+
+This selects the interface separation, not the still-unsettled public message encoding, operation result references, persistent inventory or creation/recovery algorithm. The [Linux packet adapter](agent-execution.md#linux-local-packet-ingress) is deliberately below that boundary: verified packet credentials and opaque bytes do not settle domain acceptance, source permissions or any of those formats.
+
 ### Protected accepted prefix and recovery boundary
 
 The first local file-first direction uses a protected JSONL Trace for lifecycle history and a separate protected checkpoint identifying its accepted prefix. This checkpoint is authoritative acceptance control, not another lifecycle history or a rebuildable cache. Its exact representation, identity binding, writer exclusion and joint creation/commit/recovery protocol must be settled before implementation. A second file or a hash alone supplies none of those guarantees.
