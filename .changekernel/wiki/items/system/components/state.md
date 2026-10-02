@@ -62,7 +62,9 @@ Prefer existing resource locations. A binding must establish the identity and co
 
 The desired lifecycle authority is **one append-only JSONL Change Trace per Change**. Bounded, versioned typed records retain original/revised intent, exact policy/plan/Check subjects, decisions, attempts, failures and actual outcomes with attributable actors. A proposed or attempted effect is not a receipt for its completion. Large artifacts and private runtime transcripts may be referenced under explicit retention and disclosure rules.
 
-JSONL is the authoritative Change format, not an audit export after a second lifecycle database commits. Necessary acceptance controls, native effect receipts and retained artifacts have distinct explicit roles. They are not competing task/entity histories. A hash identifies bytes under its stated interpretation; it does not prove authenticity, authorization, completeness or latest custody.
+**Change history** means the accepted records in these Traces, not a separate History entity, database or storage subsystem. Native State remains authoritative in the application's own database/filesystem; Change lifecycle history remains authoritative in the JSONL Traces. JSONL is not an audit export after a second lifecycle database commits.
+
+Acceptance checkpoints and other custody/recovery controls may also be persisted, as may Trace-referenced evidence and artifacts. These support acceptance, review and recovery; they do not form another authoritative lifecycle history. Native effect receipts retain their binding-specific evidentiary role. Views and indexes are derived from retained authoritative grounds, not independently writable histories. A hash identifies bytes under its stated interpretation; it does not prove authenticity, authorization, completeness or latest custody.
 
 ### Backend-only authoritative writes
 
@@ -166,9 +168,9 @@ Trace persistence and an application effect are not automatically one transactio
 
 Native multi-resource transactions and compensation have application-specific limits. Cancellation or compensation does not make an irreversible effect disappear. A compensating action is a new authorized effect, not historical erasure.
 
-## History, protection and recovery
+## Change history, protection and recovery
 
-History explains accepted decisions and evidenced effects within its declared coverage. It does not prove that no external actor changed State, that every old copy is latest, or that all prior intentions succeeded. Initial baselines, external drift and uncertainty remain visible.
+The accepted Change Trace records explain decisions and evidenced effects within their declared coverage. This Change history is not a complete history of the native application: it does not prove that no external actor changed State, that every old copy is latest, or that all prior intentions succeeded. Initial baselines, external drift and uncertainty remain visible.
 
 ## Recovery and continuation obligations
 
