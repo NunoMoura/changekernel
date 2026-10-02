@@ -54,6 +54,12 @@ These checks establish a regression-clean dependency baseline, not the unimpleme
 
 On R21-I submission, the manager checks the exact owned-path delta and public compatibility, then reviews the real ingress/authorization, codec, custody/lock, provisioning/reservation/acceptance, temporary cleanup and incident paths together with their consumed tests. Fresh-process success and refusal must exercise production boundaries, not only a duplicate test algorithm or forged fixture success. Select any independent disposable probe from concrete remaining risks after reading the code. Re-run relevant checks on the combined integration result before a verdict; an additional worker review, if needed, gets an exact candidate checkpoint and correctly rooted worktree. No later Phase 1 slice is released by a worker report or idle label.
 
+## Pi JSONL research follow-up — no R21 scope change
+
+At the user's request, the manager compared Pi 0.87.1's pinned upstream SessionManager source and selected test source with the consumed opening profile. The [Wiki comparison](.changekernel/wiki/items/system/research.md#pi-jsonl-sessions-as-a-trace-design-reference) records transferable record/projection/index patterns and the important differences in lazy persistence, malformed-line salvage, rewriting, original-key identity and durable acceptance. This was read-only upstream inspection, not a Pi test run, runtime qualification, dependency adoption or a contract amendment.
+
+R21-I remains governed by its exact assignment at `8e253175f08b9cfaaf436dbfbfd4d8ccf0b67c1e`. The comparison supplies review context, not another implementation owner, extra subsystem or permission to add conversational branching/compaction. No production source, tests, manifests, lockfiles, tool settings or controller state changed in this research follow-up.
+
 ## Coordination and source boundary
 
 R20-P is parked on `work/r20-core-profile` at `/home/canina7/Projects/changekernel-workers/r20-core-profile`, clean report checkpoint `9d5644e3a873ea5bf488175212dd489aa94b254c`. R20-V is parked on `work/r20-core-validation` at `/home/canina7/Projects/changekernel-workers/r20-core-validation`, clean review checkpoint `e3de73ae5fa68779acd4213ce8fb973c09d4e6d8`. Acceptance does not assign another slice. Pool with R21-I: these two plus four previously retained sessions and one new implementation worker, seven total, below the ceiling of 15. Only the ready cohesive implementation is active; parked workers are not assigned speculative parallel work.
