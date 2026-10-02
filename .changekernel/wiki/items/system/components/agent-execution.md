@@ -109,7 +109,7 @@ Release-owned validators and adopted domain evaluators retain distinct identity 
 
 ## Model and harness boundaries
 
-Models and harnesses are optional adapters. Bind authorized provider/model/settings, input disclosure, transport and resource limits before asynchronous execution. Keep credentials and public hashes of them out of portable records. A loopback URL does not establish local processing; unsupported redirects or fallback routes must not bypass disclosure policy.
+Models and harnesses are optional adapters, integrated only after the [ledger/file/operation/backend foundation gate](../../product/plan.md#foundations-before-agent-integration) has evidence. They consume typed operations and [purpose-specific Change context Views](state.md#structured-history-access-and-context-projections), not a private conversation promoted to lifecycle authority. Human and deterministic clients must already be able to inspect and continue the supported core path. Bind authorized provider/model/settings, input disclosure, transport and resource limits before asynchronous execution. Keep credentials and public hashes of them out of portable records. A loopback URL does not establish local processing; unsupported redirects or fallback routes must not bypass disclosure policy.
 
 Do not load ambient project extensions, tools, prompts or secrets implicitly. Explicitly qualify any compaction, retries, generated code and tool bindings. Missing usage is unknown, not zero cost; a completed prompt promise or idle session is not successful Work. Models used by read-only Checks do not inherit producer tools or conversation.
 

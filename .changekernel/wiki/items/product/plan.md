@@ -27,6 +27,24 @@ For each small increment:
 
 Each phase can take several such loops. Failure is useful information, not a reason to add unrelated infrastructure. Prior acceptance is bounded by the tested bytes and assumptions; changed semantics or assumptions require applicable revalidation. No need to settle all future product contracts before advancing the current supported slice.
 
+## Foundations before agent integration
+
+The selected delivery priority is a robust **user-owned ledger/folder, individual Change files, typed Change operations and an efficient backend for navigation, Views and derived Change context**. Product agents come only after these foundations are supported by evidence. This is a dependency direction, not a claim that JSONL or a successful one-record fixture already supplies scalable retrieval. Ordinary developer Pi use and independent source review remain allowed under `AGENTS.md`; deferring the product agent layer does not defer source development.
+
+Build the smallest useful file path first, then extend it into the collection and operation capabilities it can support:
+
+1. Establish the consumed provision/open/inspect/reopen/original-key retry witness for one file, including useful recovery and specified refusal.
+2. Extend the same accountable history through intent revision, deterministic Decision and Planning operations. Preserve exact original results and operation references rather than layering a conversation store on top.
+3. Establish explicit user-owned ledger operations over multiple Changes: creation, bounded authorized listing/selection and reopening the selected Change, with independent identities, original creation-key resolution and no implied cross-file transaction or folder-wide sharing.
+4. Establish origin/tip/cursor navigation, bounded head/tail/range access and purpose-specific context Views for actual consumers. Do not require a rich UI, model summary, generic query engine or speculative indexing framework.
+5. Measure representative cold and warm backend workloads, including both many small Change files and longer operation histories, before choosing extra caches/indexes. Include authorization and accepted-prefix validation costs, bytes read/decoded, memory and projection work, not only the final rendering time.
+
+These are successive cohesive capability increments, not parallel writers of the same persistence contract. The first opening assignment remains bounded to its selected single-slot profile; later ledger/navigation/context work requires its own consumed interfaces and acceptance. There is no retrospective requirement that the opening fixture implement the whole foundation gate.
+
+Before integrating product agents, demonstrate a useful model-free ledger workflow, exact and bounded operation retrieval, context reconstruction from accepted history and retained references, restart/retry correctness and measured behavior under a declared workload. Rebuildable acceleration may be lost without changing accepted truth; missing acceptance control cannot be treated as an absent cache. Publish limits and counterexamples rather than an unmeasured claim of efficiency. Multi-user transfer, hostile-host protection and remote custody retain separate qualification gates.
+
+The two focused research questions are **operation-record layout/addressability** and **navigation/projection access paths**. The [Pi comparison](../system/research.md#pi-jsonl-sessions-as-a-trace-design-reference) supplies inspected reference behavior, not a storage implementation to copy. Resolve concrete format/navigation tradeoffs with their consumers and the [State read contract](../system/components/state.md#structured-history-access-and-context-projections), rather than freezing a universal schema or waiting for an agent framework.
+
 ## Selected starting profile
 
 - One trusted host integration, one authenticated user and one Workspace binding.
@@ -40,9 +58,9 @@ The complete initial witness is a conditional update of one resource in a dispos
 
 ## Phase 1 — A durable, inspectable Change without effects
 
-**Proposition H1:** one typed Change history can preserve original/revised intent, exact decisions and a bounded plan across restart without a second lifecycle database or an agent session.
+**Proposition H1:** typed Change histories in a user-owned ledger can preserve original/revised intent, exact decisions and bounded plans across restart, and support useful bounded inspection/context reconstruction without a second lifecycle database or an agent session.
 
-Implement one consumed opening → revision/Decision/Planning → inspection/reopen path. Give the authorized host and custody writer real consumers. It can record refusal and unready states as well as admission. Include one fixed versioned policy and deterministic requirements; no native mutation yet.
+Start with one consumed opening → revision/Decision/Planning → inspection/reopen path, then establish the ledger and read/projection capabilities selected in the foundation gate. Give the authorized host and custody writer real consumers. They can record refusal and unready states as well as admission. Include one fixed versioned policy and deterministic requirements; no native mutation yet.
 
 Resolve the minimal versioned operation/result encoding, identities/bounds, original-key scope, single-writer behavior and joint JSONL/checkpoint initialization/acceptance/recovery contract for this profile. Do not freeze a universal schema, extend legacy SQLite, or wait for deferred original-thread/BPF/VM protocols. The retained historical recovery proposal is input to this work, not a qualified implementation.
 
@@ -50,7 +68,7 @@ Resolve the minimal versioned operation/result encoding, identities/bounds, orig
 
 **Required challenges:** forged caller identity/approval/result, wrong Change or source association, conflicting reuse of a key, malformed/oversized input, changed intent with stale admission, missing required assessment, interrupted initialization/append/checkpoint replacement, competing writer, accepted corruption versus unaccepted tail, retained storage incidents and denied historical disclosure. Reopening cannot guess missing acceptance control or execute work.
 
-**Advance only with:** native unit and real filesystem integration evidence for the consumed path, reviewed encoding/recovery assumptions and an honest supported-profile description. This establishes durable lifecycle behavior, not native effects, hostile-process protection or a qualified release.
+**Advance only with:** native unit and real filesystem integration evidence for the consumed path, reviewed encoding/recovery assumptions and an honest supported-profile description. The complete foundation also needs authorized multi-Change collection behavior, origin/tip/range retrieval, grounded context Views and measured cold/warm read costs for the selected workloads. A one-record fixture cannot supply that evidence. This establishes supported lifecycle/storage/read behavior, not native effects, hostile-process protection or a qualified release.
 
 ## Phase 2 — One guarded effect and honest reconciliation
 
@@ -82,7 +100,7 @@ Freeze the candidate and its host/binding/dependency/configuration subjects. Pro
 
 **Proposition H5:** an eligible worker/executor can produce a useful development result while ChangeKernel retains intent, current authority, exact assessments and durable continuation.
 
-Start only with a concrete workflow that needs a worker beyond the typed path. Prefer a suitable existing harness/executor over building an owned model loop. Define exact inputs, scope, attempt/result identity, disclosure, limits, cancellation and cleanup. Qualify the additional host/containment obligations before untrusted execution. If no available executor supplies them, either keep the capability unavailable or explicitly approve a bounded new host-profile hypothesis.
+Start only after the foundation gate is evidenced and a concrete workflow needs a worker beyond the typed path. Agents consume the existing typed operations and authorized context Views; they do not become the ledger, another context authority or a prerequisite for basic retrieval. Prefer a suitable existing harness/executor over building an owned model loop. Define exact inputs, scope, attempt/result identity, disclosure, limits, cancellation and cleanup. Qualify the additional host/containment obligations before untrusted execution. If no available executor supplies them, either keep the capability unavailable or explicitly approve a bounded new host-profile hypothesis.
 
 Use one repository binding, a small Work configuration and meaningful adopted software Checks. Independent candidate assessment and guarded publication are required where promised. Broaden to multi-file effects only with their native concurrency and partial-outcome contract. A planning pass or sandbox exit is not publication success.
 

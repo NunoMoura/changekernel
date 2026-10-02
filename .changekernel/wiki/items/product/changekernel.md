@@ -152,6 +152,18 @@ JSONL is the canonical durable Change language, not an export after another data
 
 Sharing information and transferring active continuation are distinct. Git and file copies can transport evidence but cannot grant execution authority or prove that a copy is latest.
 
+## Ledger, Change files and derived context
+
+Build the foundations before integrating a product AI-agent layer: **user-owned Change ledger → individual Change file → typed lifecycle operations → efficient backend navigation, Views and context**. The engine must be useful through human and deterministic clients without an agent session. The [foundation gate](plan.md#foundations-before-agent-integration) selects the evidence needed before optional agents become consumers of this backend.
+
+A user's Changes folder provides their Change ledger for a system. The ledger is an owned collection of individual Changes, not a second lifecycle database or an automatically shared Workspace folder. Each Change has its own authoritative JSONL Trace; each accepted line is a bounded, attributable lifecycle-operation record. Recording an attempt and observing an effect's outcome remain distinct boundaries. Physical directory layout and transport do not establish ownership, authority or cross-file atomicity by themselves.
+
+The primary navigation model is **origin + accepted tip + navigable middle**. Origin preserves the pursuit's original intent; the tip identifies the latest accepted operation; a reader's cursor selects the point being inspected. Moving the cursor neither changes the accepted tip nor grants active continuation. Stable operation identities/references are distinct from physical byte offsets. Timelines, current lifecycle Views and contextual projections are different consumers of the same accepted records.
+
+**Change context is an authorized, purpose-specific View of a particular Change version and its referenced grounds.** The Trace anchors it; a versioned projector assembles it for understanding, Decision, Planning, Execution, review or continuation. Native State remains native, and externally referenced evidence retains its own version, custody, disclosure and retention requirements. Context identifies the selected prefix, projection interpretation, coverage and gaps; exact reproduction requires the relevant original inputs to remain available. A model summary can be a derived convenience, not replacement authority for intent, decisions, results or missing evidence. File content does not become executable policy or grant native permissions.
+
+This gives a fresh person, deterministic executor or later agent continuity without making a conversation the Change's memory store. Rebuildable indexes and projection caches may accelerate access when justified by measured workloads; they do not replace accepted Traces or the distinct non-rebuildable acceptance controls. The [State contract](../system/components/state.md#structured-history-access-and-context-projections) defines the corresponding read and projection obligations.
+
 ## Intent and lifecycle
 
 **Decision → Planning → Execution are the three public Kernel stages.** Review of actual outcomes remains within Execution. Deployment is a possible governed activity, not a fourth stage. Typed operations may satisfy boundaries without a model call or repeated human prompt.
@@ -183,6 +195,8 @@ Future parallel Work requires independently admissible scopes, explicit dependen
 ## Routing, borrowing and forks
 
 These are intended later collaboration capabilities, not initial delivery dependencies. Borrowing transfers an individual Change's active continuation, not its ownership or native permissions. The recipient establishes current admission under its applicable Kernel. Returning a result requires attributable provenance and current acceptance; it does not merge arbitrary authoritative logs.
+
+The Rust borrowing analogy distinguishes inspection of an exact version from exclusive active continuation of an individual Change. A read snapshot is not a competing writer. Allowing readers of an immutable accepted prefix while a writer extends it is versioned-snapshot behavior, not an automatic consequence of Rust's same-value borrowing rules. Its actual custody, concurrency and interrupted-transfer protocol needs separate evidence; the first single-user file witness does not implement multi-user lending.
 
 Forking creates a new Change from an exact checkpoint for an alternative pursuit. Retained copies, encryption and file movement do not enforce single-custodian continuation, revoke plaintext or prove freshness. Their protocols must be qualified separately before use. Dependencies across Changes do not imply atomic cross-Workspace effects.
 
