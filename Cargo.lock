@@ -39,6 +39,7 @@ version = "0.4.0-sk3g.1"
 dependencies = [
  "libc",
  "rusqlite",
+ "serde_core",
  "serde_json",
  "sha2",
 ]
