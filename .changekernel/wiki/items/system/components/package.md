@@ -93,7 +93,7 @@ The first core release must demonstrate one complete intent-bearing transition t
 | Boundary | Required evidence |
 | --- | --- |
 | Host and native authority | Authenticated context cannot be supplied by request fields; native denial and Change denial independently prevent effects. The trusted-host premise and excluded same-privilege threats are explicit. |
-| Intent and policy | Original/revised intent, exact policy/plan/subject binding and required deterministic Checks survive restart. Changed intent or source cannot silently inherit stale admission. |
+| Intent and policy | Original/revised intent, exact policy/operation/subject and any adopted plan binding, and required deterministic Checks survive restart without a universal workflow. Changed intent or source cannot silently inherit stale admission. |
 | JSONL acceptance | Joint Trace/checkpoint initialization, one writer, acceptance-bearing durability, original-key retry and exact retained result delivery work under the supported storage profile. |
 | Native effect | A real permitted bounded operation succeeds under its point-of-use version/concurrency guard. Unauthorized or stale operations do not apply. |
 | Interruption | Lost replies, storage faults and effect/Trace gaps do not cause duplicate effects, invented results or silently repaired accepted history. Reconcile where supported; otherwise expose unresolved status and stop dependent work. |
@@ -121,7 +121,7 @@ This repository must never load mutable checkout code as its controller. A later
 
 1. Exact immutable qualified product bytes installed outside this checkout, verified at activation and restart. An unavailable controller never falls back to source.
 2. Explicit adopted scope, observed baseline, definitions, host/execution configuration and permitted effects without fabricated history.
-3. A complete supported Decision → Planning → Execution path with meaningful pre-effect and actual-outcome assessment, native rights, custody and recovery.
+3. A complete supported development workflow with exact adopted commitments, meaningful pre-effect and actual-outcome assessment, native rights, custody and recovery. Its planning/approval/review obligations remain required where promised; the Change format imposes no universal stage sequence.
 4. Exact-candidate qualification in disposable external projects with isolated Pi settings. Fixes produce a new candidate requiring the applicable requalification.
 5. Separate activation and explicit controller handoff with prior custody reconciled. Release activation alone does not transfer authority.
 
@@ -151,7 +151,7 @@ The native package is `changekernel`, with `src/lib.rs`, a thin `src/main.rs`, a
 
 The launcher remains non-operational: no arguments or `--help` shows unqualified usage; `--version` prints the package version; unsupported arguments fail. It does not start a host or worker, open application storage, mutate sources or transfer authority. Bounded library capabilities beyond metadata are documented in [retained native profiles](native-profiles.md), not inferred from the launcher.
 
-Existing direct dependency and tool requirements remain defined by the actual manifests/lockfiles and bounded contracts: `rusqlite` with bundled SQLite, `sha2`, test-only `serde_json`, and an explicitly configured trusted Git executable for the committed-source observer. This prose revision adopts no new dependency, model, toolchain, sandbox or runtime and does not remove compatibility code.
+Existing direct dependency and tool requirements remain defined by the actual manifests/lockfiles and bounded contracts: `rusqlite` with bundled SQLite, `sha2`, runtime `serde_json` plus manual `serde_core` traits for the consumed opening codec, Linux `libc`, and an explicitly configured trusted Git executable for the committed-source observer. This prose revision adopts no new dependency, model, toolchain, sandbox or runtime and does not remove compatibility code.
 
 The supporting npm package exports retained Pi bridges and required protocol/codec dependencies, not a parallel engine or native launcher. Run its checks only when that boundary changes. Source tests and normal builds do not establish installed capability or controller authority.
 

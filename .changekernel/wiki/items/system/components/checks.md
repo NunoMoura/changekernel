@@ -54,7 +54,7 @@ source-history:
 
 A Check is a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. A completed result has a passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
 
-Checks inform **Decision → Planning → Execution**; pre-effect assessment and observed-outcome Review are distinct responsibilities within Execution. Checks do not dispatch Work, mutate State or grant native permissions. The authorized backend owns progression and acceptance.
+Checks support workflow-independent typed operations. Pre-effect assessment and observed-outcome assessment have distinct subjects; neither imposes a universal stage sequence. A Check definition may be reused inside or outside an adopted workflow. Checks do not dispatch Work, mutate native State or grant permissions. The authorized backend owns progression and acceptance.
 
 ## Engine invariants and configurable policy
 
@@ -62,7 +62,7 @@ The engine owns the invariants that make an accepted transition meaningful. It d
 
 | Owner | Responsibility |
 | --- | --- |
-| Engine | Valid typed transitions; exact intent/plan/policy/subject binding; current authorization and delegated scope; required assessment coverage; attributable retained results; truthful distinction between proposed, attempted, observed and uncertain outcomes. |
+| Engine | Valid typed transitions; exact relevant intent/operation/policy/subject and any adopted plan binding; current authorization and delegated scope; required assessment coverage; attributable retained results; truthful distinction between proposed, attempted, observed and uncertain outcomes. |
 | Native application/resource owner | Native permissions, schemas, business constraints and scoped mandatory obligations. |
 | User's selected Kernel | Goal-specific admission, planning rigor, success criteria, approval requirements and optional quality assessments within native/resource constraints. |
 | Adopted domain Pack | Reusable evaluators and defaults for a domain, not permission to override the other owners. |
@@ -73,10 +73,10 @@ The earlier release-wide checklist of comparative justification, feasibility and
 
 Applicable requirements come from the actual subject and governing policies, not a producer's label. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.
 
-- **Decision:** preserve the exact proposal and current authority; establish whatever admission criteria the selected Kernel and resource policy require. Recording a proposal is not admission to effects. Material intent, scope or authority changes require appropriate re-admission.
-- **Planning:** bind the admitted pursuit to exact operations, subjects, preconditions, expected outcomes and recovery limits. The first path may have one operation. Later decomposition, routing and aggregate commitments require their own supported coordination evidence.
-- **Execution before effect:** assess the exact operation/candidate and current guards. A planning pass does not certify an unknown candidate or future permission.
-- **Execution outcome Review:** distinguish intended benefit, actual effects and remaining uncertainty. Candidate success is not evidence of successful publication or deployment. Required outcomes cannot be hidden as optional follow-ups.
+- **Intent and admission:** preserve the exact proposal and current authority; establish whatever criteria the selected Kernel and resource policy require. Recording a proposal is not admission to effects. Material intent, scope or authority changes require appropriate re-admission, not automatic reassessment on every query.
+- **Operation specification:** bind the pursuit to exact operations, subjects, preconditions, expected outcomes and recovery limits. This does not require a separate plan or Planning stage. Later decomposition, routing and aggregate commitments need their own supported coordination evidence.
+- **Before effect:** assess the exact operation/candidate and current guards where required. An earlier planning or assessment result does not certify an unknown candidate or future permission.
+- **Observed outcome and conclusion:** distinguish intended benefit, actual effects and remaining uncertainty. Candidate success is not evidence of publication, deployment or fulfillment of the Change. Required outcomes cannot be hidden as optional follow-ups; a formal Review stage is not universally required.
 
 A Change promising a reviewed artifact can finish before a separately authorized deployment; one promising deployed behavior cannot. Intent and acceptance conditions determine which observation is needed. The engine preserves that contract rather than judging which goals should prevail.
 
@@ -84,7 +84,7 @@ Exact computation, current native validation and eligible retained results can s
 
 ## Internal intake feedback and classification
 
-Intake is capture/refinement within Decision, not another public stage. Validate shape, identity, scope and retry consistency without inventing missing intent. Retain original/rejected input and attributable revisions. Feedback names the exact revision, condition, grounds, uncertainty and next permitted action; advice and mandatory blockers remain distinct.
+Intake captures/refines intent without imposing a Decision stage. Validate shape, identity, scope and retry consistency without inventing missing intent. Retain original/rejected input and attributable revisions. Feedback names the exact revision, condition, grounds, uncertainty and next permitted action; advice and mandatory blockers remain distinct.
 
 A proposal can be recorded while unready. Missing information may permit bounded inquiry; missing authority requires permission or refusal. Repeated failure is not resampled until it passes. Changing input requires a distinct operation rather than conflicting reuse of an old key.
 
@@ -92,13 +92,19 @@ Natural-language classification is optional future assistance. It can propose ap
 
 ## Ownership, policy and activation
 
-Bind each assessment to the actual actor/context, exact Kernel/Check versions, stage responsibility, relevant intent/plan/candidate, State observations and applicable resource policy. A default preference, matching hash, installed Pack or shared definition does not establish adoption or authority.
+Bind each assessment to the actual actor/context, exact Kernel/Check versions, relevant intent/operation/candidate and any adopted plan/workflow, State observations and applicable resource policy. Stage membership is neither a required Check field nor a source of authority. A default preference, matching hash, installed Pack or shared definition does not establish adoption or authority.
 
 A Check definition identifies its question, passing condition, inputs/outputs, applicability, dependencies, evaluator version and execution limits. An adoption record identifies who adopted that exact definition/settings, for which scope and under which current authority. Historical results keep their original interpretation after a definition changes.
 
 Applicability is established from actual scope/effects and governing rules. A candidate cannot activate its own exemption or weaker evaluator. Legitimate policy revision remains possible through the currently authorized transition; the engine does not freeze every old rule forever. Adopt executable policy by exact reference where appropriate instead of maintaining competing prose copies.
 
 Future borrowed or forked Changes establish applicable admission under their selected Kernel; retained evidence is not a portable approved flag. The initial single-user profile need not implement this transport to preserve exact version binding.
+
+## Typed Check requests
+
+Running a Check is an explicit supported operation, distinct from defining or adopting the Check. The operation contract identifies an assessment request before any record is written. Its exact adopted definition supplies the question, passing condition, input/output contract and evaluator; the backend authenticates the caller, validates applicability/inputs, establishes run/retry identity and accepts attributable results from supported execution. It does not infer a Check from prose or accept a caller's passing flag. Unknown definitions or unsupported execution remain unavailable/unsupported under the selected profile, never a guessed validator.
+
+A small closed dispatcher and trusted deterministic definitions are enough initially. User-authored validators and pipelines are later capabilities with adoption and execution obligations; no generic registry, callback loader or workflow runtime is required. Intent completeness, candidate behavior and observed fulfillment can share the assessment mechanism while retaining distinct exact questions and subjects. A Check receives the authorized inputs it needs, not automatically the entire intent or Change history. An intent reference establishes grounding, not proof of alignment or eligibility for reuse after revision.
 
 ## Evaluation boundary
 

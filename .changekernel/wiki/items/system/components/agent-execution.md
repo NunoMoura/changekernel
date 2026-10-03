@@ -59,7 +59,7 @@ source-history:
 ---
 # Agent Execution
 
-The engine owns admitted Work, attempt identity, bounded dispatch, accepted outcomes and continuation. Hosts and native bindings supply authenticated execution and effects; harnesses supply session/inference mechanics. [Decision → Planning → Execution](../../product/changekernel.md#intent-and-lifecycle) governs the pursuit, not a mandatory sequence of model calls. A person or deterministic native operation can perform Work without an agent.
+The engine owns admitted Work, attempt identity, bounded dispatch, accepted outcomes and continuation. Hosts and native bindings supply authenticated execution and effects; harnesses supply session/inference mechanics. [Typed operations and applicable policy](../../product/changekernel.md#intent-and-lifecycle) govern the pursuit without a universal workflow or mandatory sequence of model calls. A person or deterministic native operation can perform Work without an agent.
 
 This contract distinguishes the **first trusted-host profile** from **later untrusted-worker and standalone-host profiles**. [Research](../research.md) retains investigated mechanisms without making them dependencies. Existing [Linux packet ingress](native-profiles.md#linux-local-packet-ingress) and Pi adapters keep their unchanged narrower contracts.
 
@@ -85,7 +85,7 @@ Containment, native source authority, result evidence and Trace acceptance are d
 
 ## Durable attempts and outcome delivery
 
-The Change Trace owns lifecycle history. Supporting attempt reservations, outputs and native receipts have explicit custody/recovery roles, not independent Work histories. Bind the actual intent/plan/Kernel/Check versions, subject, input, actor, operation and retry identity before effects.
+The Change Trace owns lifecycle history. Supporting attempt reservations, outputs and native receipts have explicit custody/recovery roles, not independent Work histories. Bind the relevant intent, Kernel, Check, operation/subject and any adopted plan/workflow versions, input, actor and retry identity before effects. These are accountability grounds, not a required Stage field.
 
 For the first effect path:
 
@@ -129,7 +129,7 @@ Self-improvement can propose revised procedures, prompts or policies, but adopti
 
 Multi-user borrowing and forks are later capabilities. A Change has one logical authoritative history and at most one active continuation custodian. Authenticate the exact checkpoint and parties, current rights, recipient admission, in-flight Work responsibility and interrupted transfer before supporting them. A pathname, copied file, timeout or encrypted transport does not establish exclusive custody.
 
-A recipient uses an exact Kernel version and current admission. Historical progress stays attributable; no portable Execution-ready flag bypasses new requirements. A fork has its own Change identity and does not repeat completed or uncertain effects. Result adoption preserves provenance without merging authoritative logs.
+A recipient uses an exact Kernel version and current admission. Historical progress stays attributable; no portable effect-ready flag or folder placement bypasses new requirements. A fork has its own Change identity and does not repeat completed or uncertain effects. Result adoption preserves provenance without merging authoritative logs.
 
 Moving a file does not cancel active Work. Reconcile effects and cleanup or transfer responsibility through a qualified protocol before dependent continuation. Unknown outcomes cannot become assumed absence. Retained review copies remain evidence, not independent authority to resume.
 

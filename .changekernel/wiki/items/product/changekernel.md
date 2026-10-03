@@ -43,7 +43,7 @@ This page defines intended product responsibilities. A desired capability is not
 | --- | --- |
 | Change identity, intent, revisions, scope and attribution | Intent and accountability must survive tools, sessions and failures. |
 | Typed lifecycle operations and authoritative JSONL history | There must be one coherent account of accepted decisions, attempts and outcomes. |
-| Decision → Planning → Execution progression and applicable Check enforcement | Approval, execution and success must have precise, distinct meanings. |
+| Policy-governed typed progression and applicable Check enforcement | Approval, execution and success must have precise, distinct meanings without imposing a universal workflow. |
 | State references, observations and evidence lineage | Plans and worker claims must not become invented actual outcomes. |
 | Bounded execution coordination and reconciliation | Lost replies and partial effects must not cause blind repetition or false completion. |
 | Host and binding contracts, including authority and custody obligations | Integration must expose supported guarantees and refuse unsupported ones. |
@@ -83,8 +83,8 @@ This scope change does not relax existing frozen native APIs, authorize a privil
 | Workspace | The persistent, identified subject with explicit resource boundaries and established authorities. Use `workspace_id` in the new contracts. It is not a mandatory process, database or directory. |
 | State | A scoped, version-/time-bound representation of a Workspace. Retained observations are evidence, not necessarily complete snapshots. |
 | Change | A user-owned pursuit of a transition, preserving intended and actual outcomes separately. A proposal is already a Change. |
-| Kernel | A user's versioned Decision → Planning → Execution definition and selected Checks. It is not the engine implementation. |
-| Work | An attributable unit of pursuit belonging to one Change. The first path needs one planned operation, not a generalized scheduler. |
+| Kernel | A user's versioned governance policy and selected requirements/Checks. It may adopt a workflow; it is neither a universal stage sequence nor the engine implementation. |
+| Work | An attributable unit of pursuit belonging to one Change. The first effect path needs one precisely specified operation, not a mandatory planning stage or generalized scheduler. |
 
 Each Change has one originating owner and one fixed Workspace. Contributions remain attributable to their actual actors; borrowing cannot rewrite earlier attribution. Original intent is not overwritten to fit eventual delivery. Owning a Change never grants rights over its target resources.
 
@@ -100,9 +100,13 @@ A user may own multiple Kernels and join multiple Workspaces. A Workspace may ha
 
 A Change has at most one active continuation custodian. Dependencies form a graph, not a mandatory tree. Fork lineage does not itself create a dependency. These are long-term logical relationships, not requirements to implement multi-user custody or a graph scheduler in the first profile.
 
+Relationships use stable Change identities and explicit meanings, not directory nesting. Informational relatedness, dependence on a specific result/condition, contribution to a broader pursuit and supersession have distinct semantics; their wire names are not selected here. A dependency needs exact adequate grounds, not merely another Change's closed label. Contribution does not automatically complete the broader pursuit, and supersession does not erase earlier outcomes. Unavailable or undisclosable required grounds remain unresolved. Linking another user's Change grants neither access nor authority.
+
+A relationship assertion is attributable in the asserting Change. It does not require an unqualified atomic update of both files; reverse links and graph navigation may be derived indexes. Required reciprocal agreement needs its own explicit contract. Shared-resource conflicts still require native concurrency guards even when no relationship was recorded.
+
 ### User Kernels and version selection
 
-Bind progression to exact intent, Kernel, applicable Check and plan versions. New versions do not rewrite old decisions. Explicitly assess a continuation under changed policy before it authorizes new effects. The first profile can use one fixed, versioned policy; user authoring and distribution are later capabilities.
+Bind progression to exact intent, Kernel, applicable Check, operation/subject and any adopted plan or workflow versions. New versions do not rewrite old decisions. Explicitly assess a continuation under changed policy before it authorizes new effects. The first profile can use one fixed, versioned policy; user authoring and distribution are later capabilities.
 
 ## Workspaces, membership and boundaries
 
@@ -114,7 +118,7 @@ Automation is an intended later capability under adopted intent and current dele
 
 ### State-triggered automation
 
-Future triggers consume authorized scoped observations and create or continue Changes through the same pipeline. Observation is not authorization. Version/cursor identity, duplicates, gaps, reset, revocation and uncertain outcomes need binding-specific evidence before a trigger is supported. No universal monitoring service, complete event stream or automatic repair guarantee follows from the product goal.
+Future triggers consume authorized scoped observations and create or continue Changes through the same typed-operation and authority boundaries. Observation is not authorization. Version/cursor identity, duplicates, gaps, reset, revocation and uncertain outcomes need binding-specific evidence before a trigger is supported. No universal monitoring service, complete event stream or automatic repair guarantee follows from the product goal.
 
 ## Developer experience
 
@@ -160,33 +164,55 @@ A user's Changes folder provides their Change ledger for a system. The ledger is
 
 The primary navigation model is **origin + accepted tip + navigable middle**. Origin preserves the pursuit's original intent; the tip identifies the latest accepted operation; a reader's cursor selects the point being inspected. Moving the cursor neither changes the accepted tip nor grants active continuation. Stable operation identities/references are distinct from physical byte offsets. Timelines, current lifecycle Views and contextual projections are different consumers of the same accepted records.
 
-**Change context is an authorized, purpose-specific View of a particular Change version and its referenced grounds.** The Trace anchors it; a versioned projector assembles it for understanding, Decision, Planning, Execution, review or continuation. Native State remains native, and externally referenced evidence retains its own version, custody, disclosure and retention requirements. Context identifies the selected prefix, projection interpretation, coverage and gaps; exact reproduction requires the relevant original inputs to remain available. A model summary can be a derived convenience, not replacement authority for intent, decisions, results or missing evidence. File content does not become executable policy or grant native permissions.
+**Change context is an authorized, purpose-specific View of a particular Change version and its referenced grounds.** The Trace anchors it; a versioned projector assembles it for purposes such as understanding, planning, assessment, execution or continuation, not for mandatory public stages. Native State remains native, and externally referenced evidence retains its own version, custody, disclosure and retention requirements. Context identifies the selected prefix, projection interpretation, coverage and gaps; exact reproduction requires the relevant original inputs to remain available. A model summary can be a derived convenience, not replacement authority for intent, decisions, results or missing evidence. File content does not become executable policy or grant native permissions.
 
 This gives a fresh person, deterministic executor or later agent continuity without making a conversation the Change's memory store. Rebuildable indexes and projection caches may accelerate access when justified by measured workloads; they do not replace accepted Traces or the distinct non-rebuildable acceptance controls. The [State contract](../system/components/state.md#structured-history-access-and-context-projections) defines the corresponding read and projection obligations.
 
 ## Intent and lifecycle
 
-**Decision → Planning → Execution are the three public Kernel stages.** Review of actual outcomes remains within Execution. Deployment is a possible governed activity, not a fourth stage. Typed operations may satisfy boundaries without a model call or repeated human prompt.
+**The Change format is independent of a fixed pipeline.** Decision, Planning, Execution and Review may be activities or stage names in a selected workflow, but are not universal Change stages. A proposal, refusal or withdrawn pursuit is already a Change without execution. A direct authorized action need not manufacture a plan or separate approval artifact; a stricter workflow may require both. Removing ceremony never removes current authority, exact operation/subject binding, required evidence or honest outcome handling.
 
-### Decision admission and refinement
+### Intent capture and refinement
 
-Capture What and the supplied Why without inventing missing intent. Clarification or revision is attributable and does not erase the original. Bind admission to the exact proposal, scope and applicable policy; refusal, deferral and withdrawal remain inspectable. Admission to pursue is not blanket effect authorization.
+Capture What and the supplied Why without inventing missing intent. Natural language is first-class, not the sole intended representation: later profiles may consume typed desired conditions or identified source material. Preserve supplied content and provenance separately from derived summaries or proposed formalizations. Adopted clarification, scope, constraints or success conditions become attributable revisions; they do not silently replace the original. The consumed opening profile remains exact UTF-8 What plus nullable Why; no additional input fields are introduced here.
 
-### Planning admission and refinement
+Pursuit-affecting operations are grounded in the relevant intent version, not required to reassess the whole intent on every call. Bind admission to exact scope and applicable policy; an intent reference alone does not prove alignment or grant effect authority. A result about an earlier revision cannot silently certify a later one. Give each consumer only the authorized relevant inputs. Inspection/navigation remain queries, not automatic lifecycle mutations or evaluation requests.
 
-Describe the admitted operation, exact subject/preconditions, expected outcome and recovery limits. A one-operation plan is sufficient for the first path. Later decomposition and routing are supported only when their coordination contracts are qualified. A changed plan or source can invalidate earlier assessments.
+### Typed requests, operations and records
+
+The backend identifies an operation before recording through its explicit supported type/version and validated contract, not through natural-language classification, a tool name, filename or inferred stage. Clients request operations; the host establishes identity/authority; the backend binds exact inputs/definitions, resolves retries, performs or refuses supported work, and constructs accepted records from the established grounds. The Trace is not a raw command inbox, and reading it does not execute instructions.
+
+A Check is an assessment definition; running one is a typed operation with an exact definition, question and subject. Intent completeness, candidate behavior and observed outcomes are different assessment questions, not one universal validator of worthy goals. Checks may be requested directly or required by applicable policy. Callers cannot supply authoritative actor, approval or passing-result bytes. Unsupported definitions and missing inputs remain explicit rather than being guessed or accepted.
+
+Change is the unit of purpose; domain action is the unit of native work; a Trace record is the accepted lifecycle account. They need not be one-to-one. One action can require separate attempt and outcome records, while one native transaction can contain several statements without a record per statement. Candidate families such as opening, intent revision, assessment, decision, attempt, outcome and conclusion guide design; they are not a frozen universal opcode list. Each supported profile selects closed schemas and precise semantics with its consumer. Unknown semantics cannot count as understood success or permission.
+
+### Workflows outside the Change primitive set
+
+A Stage is not a universal Change primitive, required field or required context on every operation. Workflows and their stages are reusable procedures outside the intrinsic Change model. A user, application, harness or agent may propose their definitions; authorship is not authority to adopt them. Preserve exact policy/workflow references wherever needed to explain a consequential operation, without embedding an entire workflow or recording every private UI step. Such provenance is not a portable stage-ready permission flag.
+
+Workflow definitions must not depend on stage folders in the Change ledger, and file placement or movement cannot manufacture approval, weaken obligations or trigger execution. Definitions, adoption and optional workflow participation need their own supported contracts; no generic workflow designer, arbitrary-code registry or scheduler is implied.
 
 ### Assessment responsibilities
 
-The engine enforces authority, exact subject/version bindings, valid transitions, retained evidence and honest uncertainty. Selected Kernel and resource policies supply quality criteria and goal-specific passing conditions. Comparative value, feasibility judgments and engineering rigor may be useful defaults; they are not a universal release-owned verdict on which goals deserve pursuit.
+The engine enforces authority, exact subject/version bindings, valid typed transitions, retained evidence and honest uncertainty. Selected Kernel and resource policies supply quality criteria and goal-specific passing conditions. Comparative value, feasibility judgments and engineering rigor may be useful defaults; they are not a universal release-owned verdict on which goals deserve pursuit.
 
-Checks are read-only assessments. Only the authorized backend admits progression and records authoritative outcomes. The [Checks contract](../system/components/checks.md) distinguishes completed true/false assessments from unavailable, canceled or failed evaluation.
+Checks are read-only assessments. Only the authorized backend admits progression and records authoritative outcomes. The [Checks contract](../system/components/checks.md) distinguishes completed true/false assessments from unavailable, canceled or failed evaluation. Planning and formal review are optional unless applicable policy requires them; knowing the concrete operation, scope, preconditions and supported outcome/recovery limits before effects is not optional.
 
-### Change granularity and classification
+### Change granularity and native actions
 
-A Change should preserve one accountable pursuit, not mirror every file or tool call. Ordinary typed input need not be routed through natural-language classification. Later semantic routing can propose a query, clarification or Change, but cannot turn a read into an authorized effect or replace the owner's commitments.
+A Change preserves one coherent accountable pursuit, not every file or incidental tool call. It can encompass database operations, API invocations, tool-mediated work, file/document edits and manual contributions within its fixed Workspace and declared scope. Native applications retain their State, permissions, transaction semantics and business rules. A tool name or generic command string does not establish a qualified operation; a binding must expose its actual authority, input/subject, concurrency, result and recovery contract.
 
-## Planning and Work coordination
+A person's or agent's completion report remains an attributable claim unless the promised observation/evidence establishes more. External activity can be reconciled with honest provenance, not invented prior authorization. Retain consequential commitments, attempts and outcomes at their authority/recovery boundaries, with larger evidence referenced under retention/disclosure rules. Sharing one Change ID supplies neither a distributed transaction nor global rollback or exactly-once execution. Cross-Workspace work uses explicit coordination or linked Changes, not silently broadened scope.
+
+Ordinary typed input needs no natural-language routing. Later semantic routing may propose a query, clarification or Change, but cannot turn a read into an authorized effect or replace the owner's commitments.
+
+### Completion and other conclusions
+
+Completion is an explicit accepted conclusion against an exact intent revision, applicable completion conditions and supporting outcomes/evidence, with the responsible actor and limits retained. Success of an operation, a worker exit or exhaustion of a task list does not itself complete the pursuit. Required unresolved outcomes cannot silently become success. Conditions may permit an authorized human acceptance or require stronger observations; human acceptance does not masquerade as independent verification or waive native/resource obligations.
+
+Distinguish fulfillment from stopping, declining or superseding a pursuit. Their final record names are not selected here. Withdrawal neither undoes effects nor erases unresolved attempts. Narrowing intent requires an attributable revision rather than retrospective proof of the original goal. Completion concerns the supported subjects/versions and evidence, not a promise that native reality will remain unchanged forever. Applicable policy determines required assessment, not a universal final Review stage. [Storage restoration](../system/components/state.md#ledger-working-set-archive-and-restore) is separate from both conclusion and authorized continuation.
+
+## Work coordination
 
 The first path has one operation and one durable attempt at a time. Work preserves inputs, authority, attempt identity, results and unresolved outcomes across process loss. A worker exit is not completion, and a retry is not a new opportunity to bypass an unresolved effect.
 
