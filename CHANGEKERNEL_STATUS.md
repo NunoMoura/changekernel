@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R21 accepted; next intent-revision contract prepared
+## Current gate — R21 accepted; intent-revision contract proposal dispatched
 
 **R21-I is accepted for its bounded source profile.** Integration executable checkpoint: `b6bbee2f63998873bbceac17d3ea918e7d8c9008`. Its seven source/test paths exactly match implementation `3b96b86aaf111bac6f3568254e26c49b5aca826c`; author report `49d891d6ee78b044665153327bbe07b425ab64ca` and independent review `12a74dd31bcd1ed99abb9969537480a7465ef6f9` changed only their workers' status files. The manager integrated no worker handoff wholesale, reviewed the source and tests, and checked the combined result before this verdict.
 
@@ -33,7 +33,7 @@ Clarification-documentation checks: eight changed Markdown files had no active w
 
 ## R22-P — Consumed intent-revision contract proposal
 
-**Prepared, not yet dispatched.** This is one ready dependent design task, not permission to implement a new backend or infer a complete primitive standard.
+**Dispatched** under exact assignment `d484e8f6ca579c670925b68b0c30c52fcb20aa7f:CHANGEKERNEL_STATUS.md`. The manager verified native Pi cwd, actual session-header cwd, branch and clean accepted base before substantive dispatch; readiness and assignment acknowledgments were correlated once each. This is one ready dependent design task, not permission to implement a new backend or infer a complete primitive standard.
 
 - **Branch/worktree:** `work/r22-intent-contract`; `/home/canina7/Projects/changekernel-workers/r22-intent-contract`.
 - **Base:** `b6bbee2f63998873bbceac17d3ea918e7d8c9008`, the accepted R21 source plus approved workflow-independent Wiki clarification. The authoritative assignment is this exact manager status revision supplied at dispatch; the base's local status predates the R21 verdict.
@@ -56,7 +56,7 @@ Return the exact report commit, recommendation, unresolved product/safety questi
 
 The manager remains on `integration/rust-kickoff-01` in `/home/canina7/Projects/changekernel-workers/integration`. Verify each recipient's live native cwd, actual session-header cwd, assigned branch/checkpoint and cleanliness before a peer message or dispatch. Keep routing identities and acknowledgments outside Git. Relaunch a reused worker from its newly assigned worktree; absolute paths or `git -C` do not relocate a running session.
 
-The managed pool is eight workers before any reuse: R20-P, R20-V, R21-I, R21-V and four older retained sessions. Reuse the parked R21 author for R22-P rather than grow the pool. R21-I's retained worktree remains `work/r21-opening` at `49d891d6ee78b044665153327bbe07b425ab64ca`; R21-V remains `work/r21-opening-review` at `12a74dd31bcd1ed99abb9969537480a7465ef6f9`. No parked worker is assigned speculative parallel work, and no source continuation is authorized by a receipt/idle label.
+The managed pool remains eight: R20-P, R20-V, R21-V, reused R22-P and four older retained sessions. Both R21 workers acknowledged the exact bounded acceptance once. The manager gracefully closed the idle R21 author's Pi process, verified its exit, changed the available shell to the new assigned worktree, and launched a fresh offline/no-approve session there; no saved tool/settings changes or package acquisition occurred. R21-I's historical worktree remains `work/r21-opening` at `49d891d6ee78b044665153327bbe07b425ab64ca`; parked R21-V remains `work/r21-opening-review` at `12a74dd31bcd1ed99abb9969537480a7465ef6f9`. Only R22-P's report is active; no parked worker is assigned speculative parallel work and no source continuation is authorized by a receipt/idle label.
 
 Completed R20 handoffs/dependency decisions and historical worker reports remain at `d82283f26d0cc50988a2c62a92a045d8cda2c0a8:CHANGEKERNEL_STATUS.md`; the full R21 assignment/dispatch history remains in Git at the exact revisions above. Pi reference research remains in [research](.changekernel/wiki/items/system/research.md#pi-jsonl-sessions-as-a-trace-design-reference). Older privilege/launcher investigations and exact reports remain in [retained limits](.changekernel/wiki/items/system/research.md#exact-reports-and-retained-limits); none is silently reopened by this source acceptance. Native analyzer readiness remains a separate unresolved investigation.
 
