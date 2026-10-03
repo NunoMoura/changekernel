@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R23 bounded source accepted; next contract proposal prepared
+## Current gate — R23 bounded source accepted; R24 contract proposal active
 
 **Manager verdict: accepted** — combined source checkpoint `6a28ef80bd559165baf5eeaf80184088e62d8c56` satisfies the consumed [fresh-only intent-trace profile](.changekernel/wiki/items/system/components/intent-trace.md). Independent final review `9e6334dcb11374949a28d0e2dc30dbbdb2675c7a` is accepted as an exact-subject intent-fixture review. The manager independently reviewed the separately authored packet fixture correction and verified the combined result. Worker reports and passing checks alone did not establish this verdict.
 
@@ -34,7 +34,7 @@ Limits remain: one trusted Linux host, authenticated fixture owner, fixed Worksp
 
 ## R24-P — One concrete deterministic assessment contract
 
-**Prepared, not yet dispatched.** Reuse the parked intent author only after graceful process exit, shell relocation and fresh offline/no-approve session launch in the new worktree. Verify native process cwd, actual session-header cwd, branch and clean exact base before dispatch. No additional worker is needed.
+**Dispatched** under exact assignment `918b12968abf2a02c51fd08a0808f53284448ccb:CHANGEKERNEL_STATUS.md`, after acceptance acknowledgments, verified old intent-author process exit, shell relocation and fresh offline/no-approve launch. Native/session cwd, branch and clean accepted base were verified; readiness and one dispatch acknowledgment were correlated. Only this report-only proposal is active. Dispatch adopts no proposed policy, question, schema or implementation scope; the pool remains eight.
 
 - **Branch:** `work/r24-assessment-contract`.
 - **Worktree:** `/home/canina7/Projects/changekernel-workers/r24-assessment-contract`.
@@ -53,4 +53,4 @@ No branch switch/rebase/merge/push, other-pane messages, delegation, dependency 
 
 ## Coordination
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Intent author remains parked at `3269bcd11c403d1ce603cf2f5626ab42f429ceca` in `work/r23-intent-trace`, awaiting verified reuse for R24-P. Reviewer is parked at `9e6334dcb11374949a28d0e2dc30dbbdb2675c7a` in `work/r23-fixture-review`. Pool remains eight, including R20-P/R20-V and four older parked sessions; historical worktrees are not extra workers. Direct messages must point to exact assignments/verdicts and be correlated once; routing and acknowledgments stay outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. The former intent-author process exited at `3269bcd11c403d1ce603cf2f5626ab42f429ceca`; its historical `work/r23-intent-trace` worktree remains unchanged. The reused worker is R24-P in `work/r24-assessment-contract` at accepted base `6a28ef80bd559165baf5eeaf80184088e62d8c56`. Reviewer is parked at `9e6334dcb11374949a28d0e2dc30dbbdb2675c7a` in `work/r23-fixture-review`. Pool remains eight, including R20-P/R20-V and four older parked sessions; historical worktrees are not extra workers. Direct messages must point to exact assignments/verdicts and be correlated once; routing and acknowledgments stay outside Git.
