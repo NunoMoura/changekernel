@@ -4,7 +4,7 @@
 
 R21's bounded opening source remains accepted at `b6bbee2f63998873bbceac17d3ea918e7d8c9008`. R22's fresh-only successor contract was adopted at `10aa1e5ea5dd71fd676768805196db0ce2169d70`; [the consumed intent profile](.changekernel/wiki/items/system/components/intent-trace.md) is normative. Neither milestone completes [Phase 1](.changekernel/wiki/items/product/plan.md#phase-1--a-durable-inspectable-change-without-effects), qualifies a release/host or transfers controller authority.
 
-**Verdict: blocked pending exact-subject re-review and combined-result checks on R23-I2.** The correction is submitted, not accepted. Its author is parked. No dependent slice is released. Integration still contains the original nine R23 source/test paths provisionally; worker handoffs are not merged.
+**Verdict: blocked pending exact-subject re-review and combined-result checks on R23-I2.** The correction is submitted, not accepted. Its author is parked. No dependent slice is released. Integration now contains the corrected nine R23 source/test paths at exact `93ac076ed32f7b7904bdf1dedbd5cd7085b513ee` provisionally; worker handoffs are not merged.
 
 | Subject | Exact revision / disposition |
 | --- | --- |
@@ -33,7 +33,7 @@ The author reports that the correction counts actual attempts/completions separa
 
 ## R23-V2 — Exact correction re-review
 
-**Prepared, not yet dispatched.** Reuse the parked R23 reviewer only after verified graceful exit, shell relocation and fresh offline/no-approve process launch. Verify native process cwd, actual session-header cwd, assigned branch and clean exact subject before dispatch. The pool remains eight; no extra worker is needed.
+**Dispatched** under `75b600a826285e6b0b3b8f80f99df942df82594b:CHANGEKERNEL_STATUS.md`. The old reviewer process exited; the available shell was relocated and a fresh offline/no-approve process launched in the assigned worktree. Native/session cwd, branch and clean exact subject were verified, readiness and one assignment acknowledgment correlated. The author acknowledged receipt and remains parked. The pool remains eight.
 
 - **Branch:** `work/r23-accounting-review`.
 - **Worktree:** `/home/canina7/Projects/changekernel-workers/r23-accounting-review`.
@@ -48,11 +48,21 @@ The author reports that the correction counts actual attempts/completions separa
 
 No dependency acquisition, settings/tool repair, controller operation, provider/model/Check/privileged or power-loss experiment is authorized. Maintain one cooperative owner on the trusted Linux fixture, no owning-host fork, confirmed predecessor exit before successor custody. A fresh-process fixture is not reboot/hostile-host/release qualification. Legacy v1 **inspection**, not supported v1 opening, is the privately recognized unsupported shape on profile 2.
 
+## Manager combined-result finding — full-suite incident assertion
+
+**Acceptance remains blocked; cause is not yet established.** On exact provisional `93ac076ed32f7b7904bdf1dedbd5cd7085b513ee`, the manager's full `CARGO_NET_OFFLINE=true cargo test --locked --message-format=json -- --nocapture` failed after 193.705 seconds: intent target 19 passed, one failed. `cleanup_relationships_cuts_and_monotonic_observed_faults` failed at `tests/file_first_intent.rs:1109`: neither `incident.tmp` nor a blocked installed incident existed. Cargo stopped at that target, so later targets and the driver's subsequent fmt/clippy were not run; no full-suite pass is claimed. A focused isolated rerun passed in 0.16 seconds; that does not erase the combined failure.
+
+Read the entire test at lines 978–1118, `Fixture::child` at lines 100–120 and storage connection/lock/retention paths. The test treats a failed connection as if its intended hook ran, without recording that fact. A concrete profile concern is that parallel tests in the same binary can hold other `IntentHost`s while another test spawns a child: dropping the spawning test's own handle alone does not establish a process-wide no-owning-host-fork condition. CLOEXEC closes descriptors on exec, not at process creation. This may cause transient competing lock custody before exec, but the failing connection's precise reason was not captured, so that causal explanation remains a hypothesis. Diagnose the fixture/protocol boundary; do not weaken incident persistence, retry until green or describe the failure as an established product defect without evidence. No deliberately owning-host-fork experiment is authorized.
+
+R23-V2 should incorporate this exact manager finding into its review, inspect the profile concern and retained evidence, and report any needed correction without editing source/tests. Already running checks may finish; do not repeatedly run the parallel suite to fish for a pass. Manager will return a scoped correction to the author if required. No dependent work advances.
+
+Other manager evidence on the same subject: focused five accounting tests passed; disposable production-consumer probes passed 25 normal/recovery child invocations plus 18 accounting invocations across nine cases, each confirming predecessor exit before successor; parent never owned custody. Prior counterexamples now report the expected incident-read/decode/emission work, early and discarded replies, distinct constructed controls and failed-decode boundaries, including failed incident retention and delivery uncertainty. Active diagnostics on the nine changed paths plus opening test found no source errors/warnings, only two auxiliary preexisting let-chain style suggestions. Full native acceptance is still missing.
+
 ## Retained limits and coordination
 
 The profile is fresh-only, one fixed trusted owner/Workspace/binding/slot, at most 128 accepted records and 16 MiB accepted bytes. Original/intervening What/Why and exact retries remain preserved. Existing R21 custody is not migrated, copied into continuing custody, rewritten or dual-written. No native effects, models, Check execution, ledger collection, archive, transfer or mandatory Stage/workflow is included. Native State stays native; accepted Trace records are Change history.
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author: `work/r23-intent-trace` at submitted `93ac076ed32f7b7904bdf1dedbd5cd7085b513ee`, parked. Reviewer: parked `work/r23-intent-review` at `1d7a859943c70059472f38471e4a680eb0549952`, awaiting verified relaunch for R23-V2. R20-P/R20-V and four older sessions remain parked. Historical worktrees are not extra live workers. Transient routing and acknowledgments remain outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author: `work/r23-intent-trace` at submitted `93ac076ed32f7b7904bdf1dedbd5cd7085b513ee`, parked. Reviewer: active `work/r23-accounting-review` at candidate `93ac076ed32f7b7904bdf1dedbd5cd7085b513ee`; the earlier `work/r23-intent-review` at report `1d7a859943c70059472f38471e4a680eb0549952` is historical, with its old process exited. R20-P/R20-V and four older sessions remain parked. Historical worktrees are not extra live workers. Transient routing and acknowledgments remain outside Git.
 
 Active integration probes on the previous subject confirmed all nine changed paths and `tests/file_first_opening.rs` clean; earlier unresolved-root-export findings were not reproduced. No cause or repair claim is made. The separate graph was stale and cannot establish current source health; probe the newly selected correction paths afresh.
 
