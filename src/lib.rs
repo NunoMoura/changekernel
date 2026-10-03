@@ -1,4 +1,4 @@
-//! Unqualified native library: bounded intake and committed-source reads; no host or effects.
+//! Unqualified source library: native operations and trusted-fixture JSONL opening; no controller or application effects.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 mod kernel {
     pub mod containers {
@@ -6,6 +6,7 @@ mod kernel {
     }
     pub mod changes {
         pub mod intent;
+        pub mod opening;
     }
     pub mod state {
         pub mod file_candidate;
@@ -21,9 +22,15 @@ mod application {
     pub mod file_candidate;
     pub mod intake;
     pub mod intent;
+    #[cfg(target_os = "linux")]
+    pub mod opening;
     pub mod source_observation;
 }
 mod adapters {
+    #[cfg(target_os = "linux")]
+    pub mod jsonl {
+        pub mod opening;
+    }
     pub mod sqlite {
         pub mod container_intake;
         pub mod continuation;
@@ -40,6 +47,10 @@ mod adapters {
 }
 pub use adapters::git::source_observation::GitSourceObserver;
 #[cfg(target_os = "linux")]
+pub use adapters::jsonl::opening::{
+    OpeningIoEvent, OpeningIoFault, OpeningIoHook, OpeningMode, OpeningSlot,
+};
+#[cfg(target_os = "linux")]
 pub use adapters::linux::local_packet;
 pub use adapters::sqlite::container_intake::SqliteIntake;
 pub use application::file_candidate::{
@@ -47,8 +58,11 @@ pub use application::file_candidate::{
 };
 pub use application::intake::Intake;
 pub use application::intent::{read as read_intent, revise as revise_intent};
+#[cfg(target_os = "linux")]
+pub use application::opening::{OpeningGuard, OpeningHost, OpeningPermission};
 pub use application::source_observation::observe as observe_committed_source;
 pub use kernel::changes::intent::{IntentRevision, IntentRevisionRequest};
+pub use kernel::changes::opening::OpeningError;
 pub use kernel::containers::intake::{Issue, Proposal, Receipt};
 pub use kernel::state::file_candidate::{
     CandidateScope, FileCandidate, FileCandidateRequest, FileEffect, ProposedFile,
