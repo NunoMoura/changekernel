@@ -1,6 +1,6 @@
 use super::{
     anchor_matches,
-    codec::{self, Anchor, Incident, Prefix},
+    codec::{self, Anchor, Incident},
     initial_prefix, validate, OpeningIoEvent, OpeningIoFault, OpeningIoHook, OpeningMode,
     OpeningSlot,
 };
@@ -17,7 +17,7 @@ use std::{
 };
 
 #[derive(Debug)]
-pub(super) struct Failure {
+pub(crate) struct Failure {
     issue: &'static str,
     observed: bool,
 }
@@ -110,15 +110,26 @@ fn at(dir: &File, name: &[u8], flags: i32, mode: u32) -> Result<File, Failure> {
     Ok(f)
 }
 fn read_file(mut f: File, limit: usize) -> Result<Vec<u8>, Failure> {
-    if f.metadata().map_err(|_| Failure::io())?.len() > limit as u64 {
+    read_file_counted(&mut f, limit, None)
+}
+fn read_file_counted(
+    f: &mut File,
+    limit: usize,
+    observed: Option<&std::cell::Cell<u64>>,
+) -> Result<Vec<u8>, Failure> {
+    let length = f.metadata().map_err(|_| Failure::io())?.len();
+    if length > limit as u64 {
         return Err(Failure::damage());
     }
-    let mut b = Vec::new();
-    (&mut f)
-        .take(limit as u64 + 1)
-        .read_to_end(&mut b)
-        .map_err(|_| Failure::io())?;
-    if b.len() > limit {
+    let mut b = Vec::with_capacity(length as usize + 1);
+    let result = f.take(length + 1).read_to_end(&mut b);
+    // Count bytes actually appended to this buffer even if reading or the
+    // metadata-size check fails. This is not syscall/disk/cache accounting.
+    if let Some(counter) = observed {
+        counter.set(counter.get() + b.len() as u64);
+    }
+    result.map_err(|_| Failure::io())?;
+    if b.len() as u64 != length {
         return Err(Failure::damage());
     }
     Ok(b)
@@ -166,7 +177,37 @@ fn rename(dir: &File, from: &str, to: &str) -> Result<(), Failure> {
     }
     Ok(())
 }
-pub(super) struct Storage {
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Profile {
+    Opening,
+    Intent,
+}
+impl Profile {
+    fn anchor(self) -> &'static str {
+        match self {
+            Self::Opening => "ck-opening-anchor@1",
+            Self::Intent => "ck-intent-anchor@2",
+        }
+    }
+    fn incident(self) -> &'static str {
+        match self {
+            Self::Opening => "ck-opening-incident@1",
+            Self::Intent => "ck-intent-incident@2",
+        }
+    }
+    fn anchor_matches(self, a: &Anchor, slot: &OpeningSlot) -> bool {
+        let mut old = a.clone();
+        old.format = "ck-opening-anchor@1".into();
+        a.format == self.anchor() && anchor_matches(&old, slot)
+    }
+}
+pub(crate) struct Storage {
+    profile: Profile,
+    pub trace_read: std::cell::Cell<u64>,
+    pub control_read: std::cell::Cell<u64>,
+    pub control_codec: std::cell::Cell<codec::RetainedWork>,
+    pub constructed_control_attempts: std::cell::Cell<u64>,
+    pub constructed_control_emissions: std::cell::Cell<u64>,
     slot: OpeningSlot,
     dir: File,
     lock: File,
@@ -181,7 +222,15 @@ impl Storage {
     pub fn connect(
         slot: OpeningSlot,
         mode: OpeningMode,
+        hook: Option<OpeningIoHook>,
+    ) -> Result<Self, Failure> {
+        Self::connect_profile(slot, mode, hook, Profile::Opening)
+    }
+    pub fn connect_profile(
+        slot: OpeningSlot,
+        mode: OpeningMode,
         mut hook: Option<OpeningIoHook>,
+        profile: Profile,
     ) -> Result<Self, Failure> {
         let parent_path = slot.anchor.parent().ok_or_else(Failure::damage)?;
         let anchor_name = slot
@@ -239,7 +288,7 @@ impl Storage {
             let (directory_device, directory_inode) = id(&dir)?;
             let (lock_device, lock_inode) = id(&lock)?;
             Anchor {
-                format: "ck-opening-anchor@1".into(),
+                format: profile.anchor().into(),
                 custody: "custody-1".into(),
                 workspace_id: "workspace-1".into(),
                 binding: "fixture@1".into(),
@@ -264,13 +313,19 @@ impl Storage {
             )?)
             .map_err(|_| Failure::damage())?
         };
-        if !anchor_matches(&anchor, &slot)
+        if !profile.anchor_matches(&anchor, &slot)
             || (mode == OpeningMode::Reopen && anchor.stage != "installed")
             || (mode == OpeningMode::ResumeProvision && anchor.stage != "preparing")
         {
             return Err(Failure::damage());
         }
         let mut s = Self {
+            profile,
+            trace_read: std::cell::Cell::new(0),
+            control_read: std::cell::Cell::new(0),
+            control_codec: std::cell::Cell::new(codec::RetainedWork::default()),
+            constructed_control_attempts: std::cell::Cell::new(0),
+            constructed_control_emissions: std::cell::Cell::new(0),
             slot,
             dir,
             lock,
@@ -298,7 +353,7 @@ impl Storage {
                     libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL,
                     0o600,
                 )?;
-                let bytes = codec::emit(&s.anchor).map_err(|_| Failure::damage())?;
+                let bytes = s.emit_control(&s.anchor)?;
                 s.write_file(f, &bytes, "anchor.json")?;
                 s.event("anchor.json", "before_parent_sync")?;
                 s.sync_parent()?;
@@ -329,13 +384,13 @@ impl Storage {
                 s.initial_inventory()?;
                 s.barriers()?;
                 s.anchor.stage = "installed".into();
-                let bytes = codec::emit(&s.anchor).map_err(|_| Failure::damage())?;
+                let bytes = s.emit_control(&s.anchor)?;
                 s.replace_anchor(&bytes)?;
             }
             s.phase = "recover";
-            validate(&mut s)?;
+            s.validate_profile()?;
             s.barriers()?;
-            validate(&mut s)?;
+            s.validate_profile()?;
             Ok(())
         })();
         if let Err(e) = result {
@@ -343,6 +398,12 @@ impl Storage {
             return Err(e);
         }
         Ok(s)
+    }
+    fn validate_profile(&mut self) -> Result<(), Failure> {
+        match self.profile {
+            Profile::Opening => validate(self).map(|_| ()),
+            Profile::Intent => super::super::intent_trace::validate_connect(self),
+        }
     }
     pub fn event(
         &mut self,
@@ -387,13 +448,39 @@ impl Storage {
         Ok(())
     }
     pub fn read(&self, name: &str, limit: usize) -> Result<Vec<u8>, Failure> {
-        read_file(at(&self.dir, name.as_bytes(), libc::O_RDONLY, 0)?, limit)
+        let counter = if name == "trace.jsonl" {
+            &self.trace_read
+        } else {
+            &self.control_read
+        };
+        read_file_counted(
+            &mut at(&self.dir, name.as_bytes(), libc::O_RDONLY, 0)?,
+            limit,
+            Some(counter),
+        )
     }
     pub fn read_canonical<T: for<'de> Deserialize<'de> + Serialize>(
         &self,
         name: &str,
     ) -> Result<T, Failure> {
-        codec::retained(&self.read(name, codec::LIMIT)?).map_err(|_| Failure::damage())
+        self.canonical_control(&self.read(name, codec::LIMIT)?)
+    }
+    fn canonical_control<T: for<'de> Deserialize<'de> + Serialize>(
+        &self,
+        bytes: &[u8],
+    ) -> Result<T, Failure> {
+        let mut work = self.control_codec.get();
+        let value = codec::retained_counted(bytes, &mut work);
+        self.control_codec.set(work);
+        value.map_err(|_| Failure::damage())
+    }
+    fn emit_control<T: Serialize>(&self, value: &T) -> Result<Vec<u8>, Failure> {
+        self.constructed_control_attempts
+            .set(self.constructed_control_attempts.get() + 1);
+        let bytes = codec::emit(value).map_err(|_| Failure::damage())?;
+        self.constructed_control_emissions
+            .set(self.constructed_control_emissions.get() + 1);
+        Ok(bytes)
     }
     pub fn exists(&self, name: &str) -> Result<bool, Failure> {
         exists_at(&self.dir, name)
@@ -437,12 +524,13 @@ impl Storage {
         self.sync_parent()
     }
     pub fn identity(&self) -> Result<(), Failure> {
-        let a: Anchor = codec::retained(&read_file(
-            at(&self.parent, self.anchor_name.as_bytes(), libc::O_RDONLY, 0)?,
+        let bytes = read_file_counted(
+            &mut at(&self.parent, self.anchor_name.as_bytes(), libc::O_RDONLY, 0)?,
             codec::LIMIT,
-        )?)
-        .map_err(|_| Failure::damage())?;
-        if !anchor_matches(&a, &self.slot)
+            Some(&self.control_read),
+        )?;
+        let a: Anchor = self.canonical_control(&bytes)?;
+        if !self.profile.anchor_matches(&a, &self.slot)
             || a != self.anchor
             || id(&self.dir)? != (a.directory_device, a.directory_inode)
             || id(&self.lock)? != (a.lock_device, a.lock_inode)
@@ -492,17 +580,19 @@ impl Storage {
             ("trace.jsonl", vec![]),
             (
                 "checkpoint.json",
-                codec::emit(&initial_prefix()).map_err(|_| Failure::damage())?,
+                match self.profile {
+                    Profile::Opening => self.emit_control(&initial_prefix()),
+                    Profile::Intent => {
+                        self.emit_control(&super::super::intent_trace::initial_prefix())
+                    }
+                }?,
             ),
-            (
-                "incident.json",
-                codec::emit(&self.clear_incident()).map_err(|_| Failure::damage())?,
-            ),
+            ("incident.json", self.emit_control(&self.clear_incident())?),
         ])
     }
     fn clear_incident(&self) -> Incident {
         Incident {
-            format: "ck-opening-incident@1".into(),
+            format: self.profile.incident().into(),
             custody: "custody-1".into(),
             state: "clear".into(),
             phase: None,
@@ -571,7 +661,7 @@ impl Storage {
         temp: &'static str,
         value: &T,
     ) -> Result<(), Failure> {
-        let bytes = codec::emit(value).map_err(|_| Failure::damage())?;
+        let bytes = self.emit_control(value)?;
         self.event(temp, "before_create")?;
         let f = at(
             &self.dir,
@@ -586,7 +676,7 @@ impl Storage {
         self.event(temp, "renamed")?;
         self.sync_directory()
     }
-    pub fn replace_prefix(&mut self, p: &Prefix) -> Result<(), Failure> {
+    pub fn replace_prefix<T: Serialize>(&mut self, p: &T) -> Result<(), Failure> {
         self.replace("checkpoint.json", "checkpoint.tmp", p)
     }
     pub fn append(&mut self, bytes: &[u8]) -> Result<(), Failure> {
@@ -611,7 +701,7 @@ impl Storage {
         Ok(())
     }
     fn valid_incident(&self, i: &Incident) -> bool {
-        i.format == "ck-opening-incident@1"
+        i.format == self.profile.incident()
             && i.custody == "custody-1"
             && (i == &self.clear_incident()
                 || (i.state == "blocked"

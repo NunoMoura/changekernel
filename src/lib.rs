@@ -6,6 +6,7 @@ mod kernel {
     }
     pub mod changes {
         pub mod intent;
+        pub mod intent_trace;
         pub mod opening;
     }
     pub mod state {
@@ -23,12 +24,15 @@ mod application {
     pub mod intake;
     pub mod intent;
     #[cfg(target_os = "linux")]
+    pub mod intent_trace;
+    #[cfg(target_os = "linux")]
     pub mod opening;
     pub mod source_observation;
 }
 mod adapters {
     #[cfg(target_os = "linux")]
     pub mod jsonl {
+        pub mod intent_trace;
         pub mod opening;
     }
     pub mod sqlite {
@@ -74,3 +78,9 @@ pub use ports::continuation::{
     ContinuationStore, CustodyUse, FileCandidateStore, IntentRevisionStore, SourceCustody,
 };
 pub use ports::source_observer::SourceObserver;
+
+#[cfg(target_os = "linux")]
+pub use application::intent_trace::IntentHost;
+
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::intent_trace::IntentWork;

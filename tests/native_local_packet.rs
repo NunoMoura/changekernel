@@ -10,10 +10,15 @@ use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
+// Exclude unrelated child creation for the entire descriptor lifetime, including
+// deliberately clearing CLOEXEC, spawning the chosen child and restoring it.
+// Keep within-test threads concurrent; child entries run in separate processes.
+static TEST_GATE: Mutex<()> = Mutex::new(());
 
 fn uid() -> u32 {
     unsafe { libc::getuid() }
@@ -232,6 +237,7 @@ fn child(test: &str, fd: Option<RawFd>, mode: &str) -> std::process::Child {
 
 #[test]
 fn binary_and_maximum_round_trips() {
+    let _gate = TEST_GATE.lock().unwrap();
     for bytes in [vec![0, 255, 1, 0, 128], vec![93; MAX_PACKET_BYTES]] {
         let fixture = Fixture::new();
         thread::scope(|scope| {
@@ -251,6 +257,7 @@ fn binary_and_maximum_round_trips() {
 
 #[test]
 fn native_non_utf8_endpoint_and_preaccept_packet() {
+    let _gate = TEST_GATE.lock().unwrap();
     for fixture in [
         Fixture::named(OsString::from_vec(b"socket-\xff".to_vec())),
         Fixture::with_name(|directory| {
@@ -280,6 +287,7 @@ fn native_non_utf8_endpoint_and_preaccept_packet() {
 
 #[test]
 fn configured_peer_and_service_uid_denials() {
+    let _gate = TEST_GATE.lock().unwrap();
     let fixture = Fixture::new();
     let connection = fixture.connect();
     raw_send(connection.as_raw_fd(), b"untrusted");
@@ -306,6 +314,7 @@ fn configured_peer_and_service_uid_denials() {
 
 #[test]
 fn inherited_and_transferred_connections_deny_different_sender_process() {
+    let _gate = TEST_GATE.lock().unwrap();
     for mode in ["inherit", "transfer"] {
         let fixture = Fixture::new();
         let connection = fixture.connect(); // SO_PEERCRED caches this parent PID.
@@ -344,6 +353,7 @@ fn child_sender() {
 
 #[test]
 fn empty_oversized_and_invalid_reply_packets() {
+    let _gate = TEST_GATE.lock().unwrap();
     for payload in [vec![], vec![0; MAX_PACKET_BYTES + 1]] {
         let fixture = Fixture::new();
         let connection = fixture.connect();
@@ -374,6 +384,7 @@ fn empty_oversized_and_invalid_reply_packets() {
 
 #[test]
 fn ancillary_descriptors_are_rejected_and_closed_including_truncation() {
+    let _gate = TEST_GATE.lock().unwrap();
     assert!(child("ancillary_cleanup_child", None, "cleanup")
         .wait()
         .unwrap()
@@ -458,6 +469,7 @@ fn ancillary_cleanup_child() {
 
 #[test]
 fn peer_closure_callback_errors_and_single_packet_consumption() {
+    let _gate = TEST_GATE.lock().unwrap();
     let fixture = Fixture::new();
     drop(fixture.connect());
     assert_eq!(
@@ -490,6 +502,7 @@ fn peer_closure_callback_errors_and_single_packet_consumption() {
 
 #[test]
 fn reply_credentials_and_reply_framing_are_checked() {
+    let _gate = TEST_GATE.lock().unwrap();
     for mode in [
         "empty",
         "large",
@@ -542,6 +555,7 @@ fn reply_credentials_and_reply_framing_are_checked() {
 
 #[test]
 fn invalid_endpoint_and_listener_configuration() {
+    let _gate = TEST_GATE.lock().unwrap();
     let long = PathBuf::from(format!("/{}", "x".repeat(107)));
     let nul = PathBuf::from(OsString::from_vec(b"/tmp/a\0b".to_vec()));
     for path in [Path::new("relative"), &long, &nul] {
@@ -619,6 +633,7 @@ fn invalid_endpoint_and_listener_configuration() {
 
 #[test]
 fn accept_receive_and_client_receive_waits_are_finite() {
+    let _gate = TEST_GATE.lock().unwrap();
     // Run the three independent five-second budgets concurrently.
     thread::scope(|scope| {
         let accept = scope.spawn(|| {
@@ -680,6 +695,7 @@ fn accept_receive_and_client_receive_waits_are_finite() {
 
 #[test]
 fn interrupted_wait_does_not_reset_deadline() {
+    let _gate = TEST_GATE.lock().unwrap();
     assert!(child("interrupted_wait_child", None, "interrupt")
         .wait()
         .unwrap()

@@ -6,7 +6,7 @@ use serde_core::{
 };
 use std::{fmt, io};
 
-pub(super) const LIMIT: usize = 1_048_576;
+pub(crate) const LIMIT: usize = 1_048_576;
 // Fixed-schema visitors: each outer slot records presence even for nullable fields.
 macro_rules! shape {
     ($ty:ident { $($field:ident : $ft:ty),+ $(,)? }) => {
@@ -42,6 +42,7 @@ macro_rules! shape {
         }
     };
 }
+pub(crate) use shape;
 shape!(Opened {
     v: u64,
     kind: String,
@@ -74,7 +75,7 @@ pub(super) struct Prefix {
 }
 shape!(Prefix { format: String, custody: String, change: String, generation: u64, end: u64, sha256: Option<String>, pending: Option<Pending> });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Anchor {
+pub(crate) struct Anchor {
     pub format: String,
     pub custody: String,
     pub workspace_id: String,
@@ -105,7 +106,7 @@ shape!(Anchor {
     stage: String
 });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Incident {
+pub(crate) struct Incident {
     pub format: String,
     pub custody: String,
     pub state: String,
@@ -289,13 +290,19 @@ impl serde_json::ser::Formatter for Canonical {
     }
 }
 pub(crate) fn emit<T: Serialize>(v: &T) -> Result<Vec<u8>, ()> {
+    emit_bounded(v, LIMIT)
+}
+pub(crate) fn emit_query<T: Serialize>(v: &T) -> Result<Vec<u8>, ()> {
+    emit_bounded(v, 2_097_152)
+}
+fn emit_bounded<T: Serialize>(v: &T, limit: usize) -> Result<Vec<u8>, ()> {
     let mut bytes = Vec::new();
     v.serialize(&mut serde_json::Serializer::with_formatter(
         &mut bytes, Canonical,
     ))
     .map_err(|_| ())?;
     bytes.push(b'\n');
-    if bytes.len() > LIMIT {
+    if bytes.len() > limit {
         return Err(());
     }
     Ok(bytes)
@@ -309,9 +316,29 @@ pub(crate) fn decode<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, ()
     d.end().map_err(|_| ())?;
     Ok(value)
 }
-pub(super) fn retained<T: for<'de> Deserialize<'de> + Serialize>(b: &[u8]) -> Result<T, ()> {
+/// Fixed retained-codec boundaries; completion does not imply byte equality or
+/// contextual validity. No emission is attempted when decoding fails.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct RetainedWork {
+    pub decode_attempts: u64,
+    pub decodes: u64,
+    pub emission_attempts: u64,
+    pub emissions: u64,
+}
+pub(crate) fn retained<T: for<'de> Deserialize<'de> + Serialize>(b: &[u8]) -> Result<T, ()> {
+    retained_counted(b, &mut RetainedWork::default())
+}
+pub(crate) fn retained_counted<T: for<'de> Deserialize<'de> + Serialize>(
+    b: &[u8],
+    work: &mut RetainedWork,
+) -> Result<T, ()> {
+    work.decode_attempts += 1;
     let v = decode(b)?;
-    if emit(&v)? != b {
+    work.decodes += 1;
+    work.emission_attempts += 1;
+    let emitted = emit(&v)?;
+    work.emissions += 1;
+    if emitted != b {
         return Err(());
     }
     Ok(v)

@@ -1,6 +1,6 @@
 //! Concrete Linux custody for the consumed opening profile. No public raw append.
-mod codec;
-mod storage;
+pub(super) mod codec;
+pub(super) mod storage;
 use crate::kernel::changes::opening::{Opened, OpeningError, Origin, Request};
 use codec::Inspection;
 pub(crate) use codec::{decode, emit};
