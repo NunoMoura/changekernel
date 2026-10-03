@@ -32,6 +32,8 @@ ownership:
 
 This contract defines the core State/evidence and JSONL custody obligations. [The plan](../../product/plan.md) selects when a capability must prove them. The first profile uses a trusted host, one authenticated user, one binding and a bounded operation. Multi-user sharing, autonomous workers and generalized discovery are later capabilities, not implicit prerequisites.
 
+The [consumed opening profile](#consumed-opening-profile) and separate [consumed intent-revision profile](intent-trace.md) define concrete producer/consumer contracts. The latter is explicitly selected for fresh custody, not an upgrade of existing opening custody. These bounded fixture contracts do not establish implementation, general ledger formats or release qualification by themselves.
+
 Native values, desired obligations, observations, candidates and research claims have different meanings. State is scoped and version-/time-bound; it is not necessarily a complete snapshot. A failed or uncertain operation must not produce an invented after-State. Existing systems begin from an acknowledged baseline. Confirmed effects and reconciled external changes explain subsequent State without fabricating earlier intent.
 
 ## One authoritative current representation
