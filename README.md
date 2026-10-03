@@ -6,7 +6,7 @@ Developers expose native resources and abilities. Users choose goals and version
 
 The intended product connects application development, ordinary use and improvement through the same actor-neutral primitives. Users own intent; supported hosts and bindings enforce native permissions; observed effects do not automatically prove the intended benefit. Automation and agent-mediated use are later capabilities, not permission to change software, deploy releases or alter policy.
 
-**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the historical prototype. Bounded native intake and committed-source observations are implemented; the Workspace/user-Kernel model, file-first Trace authority and complete lifecycle are not implemented. See [temporary status](CHANGEKERNEL_STATUS.md).
+**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the historical prototype. Bounded native intake, committed-source observations and a Linux trusted-fixture JSONL opening/inspection/retry path are implemented. The general Workspace/user-Kernel model, multi-Change ledger, later file-first operations and complete lifecycle remain unfinished. See [temporary status](CHANGEKERNEL_STATUS.md).
 
 ## Design and plan
 
@@ -44,7 +44,9 @@ The continuation profile adds explicit `SqliteIntake::initialize_continuation`, 
 
 `GitSourceObserver` and `observe_committed_source` implement [bounded committed-source reads](.changekernel/wiki/items/system/components/native-profiles.md#native-committed-source-observations). They recheck container access and return exact selected file bytes/modes/identities or verified absence from an explicit commit. Captured commit/tree/blob bytes must match their Git identities; child execution and cleanup are bounded. Unsupported or corrupt sources and operational failures remain unavailable, not inferred absence or denial. This is neither a live workspace view nor retained assessment grounds, candidate custody, publication or OS containment.
 
-Core file-first custody, public Kernel progression, guarded effects and complete continuation remain unfinished. Broader discovery, model integration, worker coordination, rich clients, borrowing/forks, encrypted sharing and cross-Workspace dependencies are unsupported later capabilities, not initial release prerequisites. Draft persistence and passing source tests do not establish qualified adoption.
+`OpeningHost` implements the [consumed opening profile](.changekernel/wiki/items/system/components/state.md#consumed-opening-profile): one independently provisioned Linux fixture slot, host-established identity/current policy, accepted-prefix authority, useful inspection and original-key replay after writer exit and fresh-process reopen. The library exposes no raw append, public actor/approval/result input, source capture or application effects. Tests exercise real files/process cuts, deterministic recovery or specified refusal, and incident preservation; they do not qualify power loss, hostile writers, relocation, archive/transfer or an operational release. Existing SQLite APIs, schemas and tests remain unchanged.
+
+General ledger discovery/navigation, intent revision and Check execution in the file-first backend, guarded effects and complete continuation remain unfinished. Broader discovery, model integration, worker coordination, rich clients, borrowing/forks, encrypted sharing and cross-Workspace dependencies are unsupported later capabilities, not initial release prerequisites. Draft persistence and passing source tests do not establish qualified adoption.
 
 ## Development and repository truth
 
