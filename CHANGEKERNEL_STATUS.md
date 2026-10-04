@@ -1,8 +1,8 @@
 # ChangeKernel temporary status
 
-## Current gate — R25 changes requested; bounded accounting correction prepared
+## Current gate — R25 changes requested; bounded accounting correction active
 
-**Manager verdict: changes requested.** Candidate `4b0a9a5e87e139cfdcfdbe3115ebb9a5939f8847` is not accepted or integrated. Independent report `e79129f3959c023ff526e9bf7d9563ebc3190e01:CHANGEKERNEL_STATUS.md` and manager production-consuming probes establish F1/F2 below. Malformed custody was correctly refused; the blocker is incomplete observation of actual reached validation work. Passing budget ceilings and functional tests do not close missing accounting boundaries. R25-I2 is prepared, not dispatched.
+**Manager verdict: changes requested.** Candidate `4b0a9a5e87e139cfdcfdbe3115ebb9a5939f8847` is not accepted or integrated. Independent report `e79129f3959c023ff526e9bf7d9563ebc3190e01:CHANGEKERNEL_STATUS.md` and manager production-consuming probes establish F1/F2 below. Malformed custody was correctly refused; the blocker is incomplete observation of actual reached validation work. Passing budget ceilings and functional tests do not close missing accounting boundaries. R25-I2 is dispatched under `bf4dd6acaec035b8b73c25daebe6b6faad5ece0f:CHANGEKERNEL_STATUS.md`; one author assignment acknowledgment and one reviewer verdict acknowledgment were correlated.
 
 The accepted executable baseline remains R23 `6a28ef80bd559165baf5eeaf80184088e62d8c56`, accepted at `918b12968abf2a02c51fd08a0808f53284448ccb:CHANGEKERNEL_STATUS.md`. The [assessment contract](.changekernel/wiki/items/system/components/assessment-trace.md) was adopted at `df8dab424d7d2011f3f8db7c29a37b7c1ddf53d0`. This is still a bounded Phase-1 source increment, not general ledger/navigation, application effects, release qualification or controller handoff. Never load this checkout as its controller.
 
@@ -35,7 +35,7 @@ The normative [comparison families](.changekernel/wiki/items/system/components/a
 
 ## R25-I2 — Close concrete whole-call observation gaps
 
-**Prepared, not dispatched.** Continue the same author branch/worktree, not a new worker or branch. Verify its native process/session cwd, exact report checkpoint and cleanliness before dispatch. Base-local status is the author's report; this immutable manager assignment controls the correction.
+**Dispatched** under `bf4dd6acaec035b8b73c25daebe6b6faad5ece0f:CHANGEKERNEL_STATUS.md`. The same author continues in its assigned branch/worktree. Native process/session cwd, exact clean report checkpoint and recipient session were verified before dispatch. The assignment was acknowledged once; no new worker or branch was created. Base-local status is the author's report; the immutable manager assignment controls the correction. Dispatch is not acceptance.
 
 - **Branch/worktree:** `work/r25-assessment-trace`, `/home/canina7/Projects/changekernel-workers/r25-assessment-trace`.
 - **Starting checkpoint:** clean `dd6a0bc7dc3da19221399bcd09199561068b17a4` (source `4b0a9a5e87e139cfdcfdbe3115ebb9a5939f8847`). Original adopted base remains `df8dab424d7d2011f3f8db7c29a37b7c1ddf53d0`.
@@ -60,6 +60,6 @@ Return separate exact correction code/report commits, named source boundaries au
 
 The earlier read-seam/missing-receipt clarification remains `ee985aae7294747bd6c227735a008ada0d8dce9e:CHANGEKERNEL_STATUS.md`. Post-read injected refusal is after a completed bounded read, not partial/failing syscall evidence. Earlier `/tmp` logs remain lost; session extracts do not recreate them. The first resumed compiler error and its correction remain recorded. Neither current Markdown diagnostics nor a clean candidate snapshot explains the earlier Rust-LSP discrepancies. These limits are not authorization for tooling repair or stronger platform claims.
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is parked at `dd6a0bc7dc3da19221399bcd09199561068b17a4` until verified R25-I2 dispatch. Reviewer is parked at clean `e79129f3959c023ff526e9bf7d9563ebc3190e01` in `work/r25-assessment-review`, `/home/canina7/Projects/changekernel-workers/r25-assessment-review`; no correction-review assignment exists yet. R20-P/R20-V and four older parked workers remain in the managed pool of eight. Historical worktrees are not extra workers. Transient routing/session/acknowledgment data and runtime fixtures stay outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is active on R25-I2 from verified clean `dd6a0bc7dc3da19221399bcd09199561068b17a4`. Reviewer is parked at clean `e79129f3959c023ff526e9bf7d9563ebc3190e01` in `work/r25-assessment-review`, `/home/canina7/Projects/changekernel-workers/r25-assessment-review`; no correction-review assignment exists yet. R20-P/R20-V and four older parked workers remain in the managed pool of eight. Historical worktrees are not extra workers. Transient routing/session/acknowledgment data and runtime fixtures stay outside Git.
 
 No R26 assignment exists. Multi-Change ledger, broader navigation/context, guarded effects, release qualification and product-agent/self-development workflows remain later gates under the [phased plan](.changekernel/wiki/items/product/plan.md#foundations-before-agent-integration).
