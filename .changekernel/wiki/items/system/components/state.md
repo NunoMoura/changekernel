@@ -124,6 +124,8 @@ Future hosts must preserve per-user attribution, visibility, native rights and C
 
 ## Ledger working set, archive and restore
 
+The [proposed ledger collection and selection profile](ledger-selection.md) scopes the next contract-selection gate. It does not yet select a wire/storage protocol or authorize implementation; the existing single-slot profiles remain unchanged.
+
 The logical user-owned ledger is the collection of Changes, including retained inactive history. Begin with stable flat Change identity/storage and an active-only default View, not folders for workflow stages. Use authorized bounded/paginated listing and, when justified by measured workloads, rebuildable metadata indexes rather than decoding every complete Trace for every list. Flatness alone proves neither scalability nor reliability. Supporting custody controls and referenced evidence keep their distinct roles; this is not a requirement that the physical directory contain only JSONL files.
 
 Relationships, lifecycle disposition and physical location are independent. A completed Change may remain in the working set; moving it to an archive does not establish completion. Physical archive storage is optional and requires its own consumed protocol and explicit configured location. A separate flat archive root is a possible layout, not a selected public format or current relocation capability. Directory placement must not authorize an effect, adopt a workflow, transfer ownership or create a new Change.
