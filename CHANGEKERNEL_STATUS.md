@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R24 changes requested; comparison-accounting correction active
+## Current gate — R24 correction submitted; focused re-challenge prepared
 
 **Manager verdict: changes requested** on R24-P `0ceb66ae1c9de730512b02480d575863102fe001:CHANGEKERNEL_STATUS.md`. Independent R24-V `fe83abdb7e3a0d3b9f1ef527cd4f9d8ba0f47354:CHANGEKERNEL_STATUS.md` is **accepted as a report-only challenge**: F1 identifies omitted comparison work in the proposed complete-call budget. It is not a custody/lifecycle failure, measured performance defect, policy adoption or implementation acceptance. Dependent implementation remains paused.
 
@@ -43,7 +43,7 @@ The proposed `ck-assessment@3` / `fixture-notice@1` fixture asks whether exact W
 
 ## R24-P2 — Narrow proposal correction
 
-**Dispatched** under `9c28fb697f20134c81832cacd33df00b39ee5780:CHANGEKERNEL_STATUS.md`. Both recipients' native/session cwd, branch, exact report checkpoint and cleanliness were verified; each acknowledged once. The author continues in its original proposal worktree without branch switch, merge/rebase or relaunch. The reviewer remains parked; no focused re-challenge is dispatched yet.
+**Returned** as `a500b6ca5d23fe8a59230a00268a53b6c3883740:CHANGEKERNEL_STATUS.md`, following verified dispatch under `9c28fb697f20134c81832cacd33df00b39ee5780`. Both recipients acknowledged once. The manager read the full correction delta: request-only nullable wording, comparison categories and operand-charge boundaries, call-wide N, explicit owner lifetimes and documentary failure-path audits. Submitted source/tests/dependencies and all 18 complete examples are unchanged. Availability is not F1 closure; focused re-challenge follows.
 
 - **Branch/worktree:** `work/r24-assessment-contract`, `/home/canina7/Projects/changekernel-workers/r24-assessment-contract`.
 - **Base/current submission:** `0ceb66ae1c9de730512b02480d575863102fe001`; executable baseline `6a28ef80bd559165baf5eeaf80184088e62d8c56` remains unchanged.
@@ -56,6 +56,18 @@ The proposed `ck-assessment@3` / `fixture-notice@1` fixture asks whether exact W
 
 No source/test/Wiki/shared-contract/manifests/lockfiles/settings edits, branch switch/rebase/merge/push, other-pane messages, delegation, dependencies, tool repair, privileged/provider/model/governed-Check experiments, native effects or controller operations are authorized. Independent reviewer parks; no dependent work resumes on report availability alone.
 
+## R24-V2 — Focused exact correction challenge
+
+**Prepared, not dispatched.** Reuse the same reviewer/session, `work/r24-assessment-review`, `/home/canina7/Projects/changekernel-workers/r24-assessment-review`, based at `0ceb66ae1c9de730512b02480d575863102fe001` and parked on its own report `fe83abdb7e3a0d3b9f1ef527cd4f9d8ba0f47354`. Read exact corrected Git object `a500b6ca5d23fe8a59230a00268a53b6c3883740:CHANGEKERNEL_STATUS.md`; source/test/dependency trees are identical. No checkout/rebase/new worktree is needed for this report-only delta.
+
+- Own only reviewer status; all R24-V restrictions remain. Reverify native/session cwd and exact clean checkpoint before work. Read complete correction and changed context against original proposal and exact manager correction assignment.
+- Challenge F1/C1 closure, not the unchanged general design anew. Verify actual-boundary attempts/completions/outcomes versus conservative one-sided operand charges, separate suffix/candidate/canonical/semantic/key/control work, malformed/refused and incident-retention paths, connection work including the supplied-path-dependent H bound, and unchanged admission/recovery semantics. No CPU/libc scanning measurements may be inferred.
+- Independently check D/K/S/B formulas and specimen totals, count-changing N, optional re-decodes, decoded unknown/mixed-shape member cases and late failures. Distinguish conservative bounds from measured work and avoid recursive instrumentation requirements. Ensure small-field/accounting obligations can stay concrete and bounded; no generic profiler, comparator framework, extra parse/emission/prefix walk or persistent index is warranted.
+- Verify required release of preflight key/selection/next-buffer owners makes simultaneous bounds coherent without borrowing an old profile's unmodified layout as proof. Validate all 18 example bytes and source identity; flag new wire/authority/schema scope or a narrowed guarantee.
+- Only read-only source/document inspection, in-memory arithmetic/shape/link/scope checks and available documentation diagnostics. No native/npm/build suite, implementation, runtime/evaluator/storage/fork experiment, dependency/settings/tool repair or controller work. Return exact subject, findings/recommendation, actual checks and limits; commit status with hooks disabled, then park. No self-adoption, other-pane messages or dependent work.
+
+A no-blocker review remains conditional on manager selection/adoption of the fixture policy and exact Wiki contract. It is not runtime evidence or R25 dispatch.
+
 ## Coordination
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is active on R24-P2 from proposal `0ceb66ae…` in its assigned worktree. Reviewer is parked at `fe83abdb…` in `/home/canina7/Projects/changekernel-workers/r24-assessment-review`. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not extra live workers. Peer messages identify exact assignments/reports/verdicts; correlate one acknowledgment and keep routing outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is parked at corrected proposal `a500b6ca…`. Reviewer is parked at `fe83abdb…` in `/home/canina7/Projects/changekernel-workers/r24-assessment-review`, awaiting verified R24-V2 dispatch. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not extra live workers. Peer messages identify exact assignments/reports/verdicts; correlate one acknowledgment and keep routing outside Git.
