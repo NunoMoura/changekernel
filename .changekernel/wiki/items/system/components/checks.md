@@ -106,6 +106,10 @@ Running a Check is an explicit supported operation, distinct from defining or ad
 
 A small closed dispatcher and trusted deterministic definitions are enough initially. User-authored validators and pipelines are later capabilities with adoption and execution obligations; no generic registry, callback loader or workflow runtime is required. Intent completeness, candidate behavior and observed fulfillment can share the assessment mechanism while retaining distinct exact questions and subjects. A Check receives the authorized inputs it needs, not automatically the entire intent or Change history. An intent reference establishes grounding, not proof of alignment or eligibility for reuse after revision.
 
+## Consumed deterministic assessment profile
+
+The [consumed assessment profile](assessment-trace.md) selects one optional trusted fixture question: whether exact adopted What fits an 80-byte raw UTF-8 notice payload. It defines explicit owner adoption, typed requests, completed pass/nonpass results, historical applicability, retries, custody and bounded cost observations. It does not assess general intent quality, require Why, deliver a notice or authorize effects. This fresh-only successor leaves the opening and intent-revision profiles unchanged; selecting its contract is not implementation or release qualification.
+
 ## Evaluation boundary
 
 Supply authorized, bounded inputs with source roles, versions, scope, omissions and limitations. Derive actual differences through qualified bindings rather than trust an agent summary. A digest does not authenticate source custody or substantive truth. Source content is data, not instructions granting a Check additional authority.
