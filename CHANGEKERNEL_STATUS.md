@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R24 changes requested; comparison-accounting correction prepared
+## Current gate — R24 changes requested; comparison-accounting correction active
 
 **Manager verdict: changes requested** on R24-P `0ceb66ae1c9de730512b02480d575863102fe001:CHANGEKERNEL_STATUS.md`. Independent R24-V `fe83abdb7e3a0d3b9f1ef527cd4f9d8ba0f47354:CHANGEKERNEL_STATUS.md` is **accepted as a report-only challenge**: F1 identifies omitted comparison work in the proposed complete-call budget. It is not a custody/lifecycle failure, measured performance defect, policy adoption or implementation acceptance. Dependent implementation remains paused.
 
@@ -43,7 +43,7 @@ The proposed `ck-assessment@3` / `fixture-notice@1` fixture asks whether exact W
 
 ## R24-P2 — Narrow proposal correction
 
-**Prepared, not dispatched.** Continue with the existing author in its verified original proposal worktree; no branch switch, merge/rebase or relaunch is needed.
+**Dispatched** under `9c28fb697f20134c81832cacd33df00b39ee5780:CHANGEKERNEL_STATUS.md`. Both recipients' native/session cwd, branch, exact report checkpoint and cleanliness were verified; each acknowledged once. The author continues in its original proposal worktree without branch switch, merge/rebase or relaunch. The reviewer remains parked; no focused re-challenge is dispatched yet.
 
 - **Branch/worktree:** `work/r24-assessment-contract`, `/home/canina7/Projects/changekernel-workers/r24-assessment-contract`.
 - **Base/current submission:** `0ceb66ae1c9de730512b02480d575863102fe001`; executable baseline `6a28ef80bd559165baf5eeaf80184088e62d8c56` remains unchanged.
@@ -58,4 +58,4 @@ No source/test/Wiki/shared-contract/manifests/lockfiles/settings edits, branch s
 
 ## Coordination
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is parked at proposal `0ceb66ae…`, pending verified R24-P2 dispatch. Reviewer is parked at `fe83abdb…` in `/home/canina7/Projects/changekernel-workers/r24-assessment-review`. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not extra live workers. Peer messages identify exact assignments/reports/verdicts; correlate one acknowledgment and keep routing outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is active on R24-P2 from proposal `0ceb66ae…` in its assigned worktree. Reviewer is parked at `fe83abdb…` in `/home/canina7/Projects/changekernel-workers/r24-assessment-review`. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not extra live workers. Peer messages identify exact assignments/reports/verdicts; correlate one acknowledgment and keep routing outside Git.
