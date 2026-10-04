@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R24 contract adopted; R25 implementation prepared
+## Current gate — R24 contract adopted; R25 implementation active
 
 **Manager verdict: accepted** — corrected proposal `a500b6ca5d23fe8a59230a00268a53b6c3883740:CHANGEKERNEL_STATUS.md` and focused independent review `84e5eb7004c8a679e9fe9d89ca5e91747c26394c:CHANGEKERNEL_STATUS.md`. F1 comparison accounting and C1 nullable wording are closed at the contract level. The manager independently reviewed the complete correction/report, relevant accepted bodies and arithmetic. Passing document checks and a worker recommendation alone did not establish this verdict.
 
@@ -35,7 +35,7 @@ Adoption checks: exact source/report/example/provenance scope, subjects, whitesp
 
 ## R25-I — Cohesive deterministic assessment implementation
 
-**Prepared, not dispatched.** Reuse the parked R24 author only after graceful process exit, shell relocation and fresh offline/no-approve launch. Verify native process cwd, actual session-header cwd, assigned branch and clean exact base before dispatch. One owner covers this shared-storage slice; the pool stays eight.
+**Dispatched** under `03d76be46f4490d50e154205412dba6a81c89920:CHANGEKERNEL_STATUS.md`. Both R24 workers acknowledged adoption once. The former author's process exited; shell relocation and fresh offline/no-approve launch were verified in the new assigned worktree. Native/session cwd, branch and clean exact adopted base matched; readiness and one assignment acknowledgment were correlated. One owner is active on this shared-storage slice; the pool stays eight. Dispatch is not source acceptance.
 
 - **Branch/worktree:** `work/r25-assessment-trace`, `/home/canina7/Projects/changekernel-workers/r25-assessment-trace`.
 - **Base:** contract adoption `df8dab424d7d2011f3f8db7c29a37b7c1ddf53d0`; accepted executable tree remains `6a28ef80bd559165baf5eeaf80184088e62d8c56`. Base-local status predates this assignment; use the exact manager assignment revision.
@@ -55,4 +55,4 @@ No source controller/dogfood installation, ChangeKernel wiki tools, package link
 
 ## Coordination
 
-Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. Author is parked at `a500b6ca5d23fe8a59230a00268a53b6c3883740` in `work/r24-assessment-contract`; reviewer at `84e5eb7004c8a679e9fe9d89ca5e91747c26394c` in `work/r24-assessment-review`. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not additional live workers. Exact verdict acknowledgments and any later relaunch must be verified; routing evidence stays outside Git.
+Manager: `/home/canina7/Projects/changekernel-workers/integration`, `integration/rust-kickoff-01`. The former R24 author's process exited at `a500b6ca5d23fe8a59230a00268a53b6c3883740`; its historical worktree remains unchanged. The reused worker is active as R25-I in `work/r25-assessment-trace` from adopted base `df8dab424d7d2011f3f8db7c29a37b7c1ddf53d0`. Reviewer remains parked at `84e5eb7004c8a679e9fe9d89ca5e91747c26394c` in `work/r24-assessment-review` without a new source-review assignment. Managed pool remains eight, including R20-P/R20-V and four older parked workers. Historical worktrees are not additional live workers. Exact verdict acknowledgments and any later relaunch must be verified; routing evidence stays outside Git.
