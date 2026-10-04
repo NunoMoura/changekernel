@@ -1,4 +1,5 @@
 use super::super::opening::codec::shape;
+use super::assessment_work as observation;
 use crate::kernel::changes::intent_trace::{Request, Revised, Revision};
 use serde_core::{
     de::{self, MapAccess, Visitor},
@@ -49,6 +50,18 @@ pub(crate) struct Prefix {
     pub sha256: Option<String>,
     pub pending: Option<Pending>,
 }
+impl Prefix {
+    pub(crate) fn payload(&self) -> u64 {
+        (self.format.len()
+            + self.custody.len()
+            + self.change.len()
+            + self.sha256.as_ref().map_or(0, String::len)) as u64
+            + self
+                .pending
+                .as_ref()
+                .map_or(0, |p| p.input.payload() + p.actor.len() as u64)
+    }
+}
 shape!(Prefix { format:String, custody:String, change:String, generation:u64, end:u64, sha256:Option<String>, pending:Option<Pending> });
 impl<'de> Deserialize<'de> for Request {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
@@ -60,12 +73,14 @@ impl<'de> Deserialize<'de> for Request {
             }
             fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<Request, M::Error> {
                 let mut v = None;
+                let mut check = None;
                 let (mut op, mut workspace_id, mut change, mut key, mut expected_intent, mut what) =
                     (None, None, None, None, None, None);
                 let (mut why, mut at): (Option<Option<String>>, Option<Option<String>>) =
                     (None, None);
                 let mut seen = 0u16;
                 while let Some(k) = m.next_key::<String>()? {
+                    observation::member_attempt(&k);
                     let bit = match k.as_str() {
                         "v" => 1,
                         "op" => 2,
@@ -76,9 +91,17 @@ impl<'de> Deserialize<'de> for Request {
                         "what" => 64,
                         "why" => 128,
                         "at" => 256,
-                        _ => return Err(de::Error::custom("unknown field")),
+                        "check" => 512,
+                        _ => {
+                            observation::member_complete(false);
+                            return Err(de::Error::custom("unknown field"));
+                        }
                     };
-                    if seen & bit != 0 {
+                    observation::member_complete(true);
+                    observation::field_attempt(0);
+                    let duplicate = seen & bit != 0;
+                    observation::field_complete(!duplicate);
+                    if duplicate {
                         return Err(de::Error::custom("duplicate field"));
                     }
                     seen |= bit;
@@ -92,19 +115,50 @@ impl<'de> Deserialize<'de> for Request {
                         64 => what = Some(m.next_value::<String>()?),
                         128 => why = Some(m.next_value::<Option<String>>()?),
                         256 => at = Some(m.next_value::<Option<String>>()?),
+                        512 => check = Some(m.next_value::<String>()?),
                         _ => unreachable!(),
                     }
                 }
-                let v = v.ok_or_else(|| de::Error::missing_field("v"))?;
-                let op: String = op.ok_or_else(|| de::Error::missing_field("op"))?;
+                observation::field_attempt(0);
+                let v = match v {
+                    Some(v) => {
+                        observation::field_complete(true);
+                        v
+                    }
+                    None => {
+                        observation::field_complete(false);
+                        return Err(de::Error::missing_field("v"));
+                    }
+                };
+                observation::field_attempt(0);
+                let op: String = match op {
+                    Some(op) => {
+                        observation::field_complete(true);
+                        op
+                    }
+                    None => {
+                        observation::field_complete(false);
+                        return Err(de::Error::missing_field("op"));
+                    }
+                };
+                observation::field_attempt(128);
                 let mask = match (v, op.as_str()) {
                     (1, "open_change") => 223,
                     (1, "inspect_change") => 15,
-                    (2, "revise_intent") => 255,
-                    (2, "inspect_intent") => 271,
-                    _ => return Err(de::Error::custom("unknown request pair")),
+                    (2 | 3, "revise_intent") => 255,
+                    (2 | 3, "inspect_intent") => 271,
+                    (3, "inspect_assessment") => 271,
+                    (3, "assess_intent") => 575,
+                    _ => {
+                        observation::field_complete(false);
+                        return Err(de::Error::custom("unknown request pair"));
+                    }
                 };
-                if seen != mask {
+                observation::field_complete(true);
+                observation::field_attempt(0);
+                let matching = seen == mask;
+                observation::field_complete(matching);
+                if !matching {
                     return Err(de::Error::custom("wrong field set"));
                 }
                 let r = Request {
@@ -118,8 +172,12 @@ impl<'de> Deserialize<'de> for Request {
                     what,
                     why,
                     at,
+                    check,
                 };
-                if !r.valid() {
+                observation::field_attempt(512);
+                let valid = r.valid() || crate::kernel::changes::assessment::valid(&r);
+                observation::field_complete(valid);
+                if !valid {
                     return Err(de::Error::custom("invalid request value"));
                 }
                 Ok(r)
@@ -135,7 +193,8 @@ impl Serialize for Request {
             match self.op.as_str() {
                 "open_change" => 7,
                 "revise_intent" => 8,
-                "inspect_intent" => 5,
+                "inspect_intent" | "inspect_assessment" => 5,
+                "assess_intent" => 7,
                 _ => 4,
             },
         )?;
@@ -157,6 +216,9 @@ impl Serialize for Request {
         }
         if let Some(v) = &self.at {
             o.serialize_field("at", v)?;
+        }
+        if let Some(v) = &self.check {
+            o.serialize_field("check", v)?;
         }
         o.end()
     }

@@ -11,10 +11,31 @@ pub(crate) struct Request {
     pub what: Option<String>,
     pub why: Option<Option<String>>,
     pub at: Option<Option<String>>,
+    pub check: Option<String>,
 }
 impl Request {
+    pub(crate) fn payload(&self) -> u64 {
+        (self.op.len()
+            + self.workspace_id.len()
+            + self.change.len()
+            + self.key.as_ref().map_or(0, String::len)
+            + self.expected_intent.as_ref().map_or(0, String::len)
+            + self.what.as_ref().map_or(0, String::len)
+            + self
+                .why
+                .as_ref()
+                .and_then(|s| s.as_ref())
+                .map_or(0, String::len)
+            + self
+                .at
+                .as_ref()
+                .and_then(|s| s.as_ref())
+                .map_or(0, String::len)
+            + self.check.as_ref().map_or(0, String::len)) as u64
+    }
     pub fn valid(&self) -> bool {
-        identifier(&self.workspace_id)
+        self.check.is_none()
+            && identifier(&self.workspace_id)
             && identifier(&self.change)
             && match (self.v, self.op.as_str()) {
                 (1, "open_change") => {
@@ -76,6 +97,7 @@ impl Request {
             key: r.key,
             what: r.what,
             why: r.why,
+            check: None,
             expected_intent: None,
             at: None,
         }

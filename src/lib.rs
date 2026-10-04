@@ -5,6 +5,7 @@ mod kernel {
         pub mod intake;
     }
     pub mod changes {
+        pub mod assessment;
         pub mod intent;
         pub mod intent_trace;
         pub mod opening;
@@ -20,6 +21,8 @@ mod ports {
     pub mod source_observer;
 }
 mod application {
+    #[cfg(target_os = "linux")]
+    pub mod assessment;
     pub mod file_candidate;
     pub mod intake;
     pub mod intent;
@@ -84,3 +87,11 @@ pub use application::intent_trace::IntentHost;
 
 #[cfg(target_os = "linux")]
 pub use adapters::jsonl::intent_trace::IntentWork;
+
+#[cfg(target_os = "linux")]
+pub use application::assessment::{AssessmentHost, AssessmentPolicy};
+
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::intent_trace::assessment_work::{
+    AssessmentComparison, AssessmentComparisons, AssessmentWork,
+};

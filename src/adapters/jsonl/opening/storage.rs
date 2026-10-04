@@ -1,3 +1,4 @@
+use super::super::intent_trace::assessment_work::{self as observation, Boundary};
 use super::{
     anchor_matches,
     codec::{self, Anchor, Incident},
@@ -49,12 +50,14 @@ impl Failure {
 }
 // O_NOFOLLOW at every path component; all owning descriptors are close-on-exec.
 fn directory(path: &Path) -> Result<File, Failure> {
-    if !path.is_absolute()
+    observation::field_attempt(0);
+    let invalid = !path.is_absolute()
         || path.as_os_str().len() > 4096
         || path
             .to_str()
-            .is_none_or(|s| s.chars().any(char::is_control))
-    {
+            .is_none_or(|s| s.chars().any(char::is_control));
+    observation::field_complete(!invalid);
+    if invalid {
         return Err(Failure::damage());
     }
     let mut dir = File::open("/").map_err(|_| Failure::io())?;
@@ -68,12 +71,14 @@ fn directory(path: &Path) -> Result<File, Failure> {
         }
     }
     // components() normalizes embedded '.', so reject original spelling too.
-    if path
+    observation::field_attempt(3);
+    let unnormalized = path
         .as_os_str()
         .as_bytes()
         .split(|b| *b == b'/')
-        .any(|s| s == b"." || s == b"..")
-    {
+        .any(|s| s == b"." || s == b"..");
+    observation::field_complete(!unnormalized);
+    if unnormalized {
         return Err(Failure::damage());
     }
     Ok(dir)
@@ -104,21 +109,30 @@ fn at(dir: &File, name: &[u8], flags: i32, mode: u32) -> Result<File, Failure> {
     }
     // SAFETY: openat succeeded and ownership is transferred exactly once.
     let f = unsafe { File::from_raw_fd(fd) };
-    if flags & libc::O_DIRECTORY == 0 && !f.metadata().map_err(|_| Failure::io())?.is_file() {
-        return Err(Failure::damage());
+    if flags & libc::O_DIRECTORY == 0 {
+        observation::field_attempt(0);
+        let regular = f.metadata().map_err(|_| Failure::io())?.is_file();
+        observation::field_complete(regular);
+        if !regular {
+            return Err(Failure::damage());
+        }
     }
     Ok(f)
 }
 fn read_file(mut f: File, limit: usize) -> Result<Vec<u8>, Failure> {
-    read_file_counted(&mut f, limit, None)
+    read_file_counted(&mut f, limit, None, false)
 }
 fn read_file_counted(
     f: &mut File,
     limit: usize,
     observed: Option<&std::cell::Cell<u64>>,
+    trace: bool,
 ) -> Result<Vec<u8>, Failure> {
     let length = f.metadata().map_err(|_| Failure::io())?.len();
-    if length > limit as u64 {
+    observation::field_attempt(0);
+    let bounded = length <= limit as u64;
+    observation::field_complete(bounded);
+    if !bounded {
         return Err(Failure::damage());
     }
     let mut b = Vec::with_capacity(length as usize + 1);
@@ -128,8 +142,15 @@ fn read_file_counted(
     if let Some(counter) = observed {
         counter.set(counter.get() + b.len() as u64);
     }
+    observation::read_bytes(trace, b.len());
+    if trace {
+        observation::trace_capacity(b.capacity());
+    }
     result.map_err(|_| Failure::io())?;
-    if b.len() as u64 != length {
+    observation::field_attempt(0);
+    let same_length = b.len() as u64 == length;
+    observation::field_complete(same_length);
+    if !same_length {
         return Err(Failure::damage());
     }
     Ok(b)
@@ -181,18 +202,30 @@ fn rename(dir: &File, from: &str, to: &str) -> Result<(), Failure> {
 pub(crate) enum Profile {
     Opening,
     Intent,
+    Assessment,
 }
 impl Profile {
     fn anchor(self) -> &'static str {
         match self {
             Self::Opening => "ck-opening-anchor@1",
             Self::Intent => "ck-intent-anchor@2",
+            Self::Assessment => "ck-assessment-anchor@3",
         }
     }
     fn incident(self) -> &'static str {
         match self {
             Self::Opening => "ck-opening-incident@1",
             Self::Intent => "ck-intent-incident@2",
+            Self::Assessment => "ck-assessment-incident@3",
+        }
+    }
+    fn read_anchor(self, bytes: &[u8]) -> Result<Anchor, Failure> {
+        if self == Self::Assessment {
+            let a: super::super::intent_trace::assessment_codec::AdoptedAnchor =
+                codec::retained(bytes).map_err(|_| Failure::damage())?;
+            a.base().map_err(|_| Failure::damage())
+        } else {
+            codec::retained(bytes).map_err(|_| Failure::damage())
         }
     }
     fn anchor_matches(self, a: &Anchor, slot: &OpeningSlot) -> bool {
@@ -239,17 +272,30 @@ impl Storage {
             .and_then(|s| s.to_str())
             .ok_or_else(Failure::damage)?
             .to_owned();
-        if anchor_name == "anchor.tmp"
-            || parent_path.starts_with(&slot.directory)
-            || slot.directory.file_name().is_none()
-        {
+        observation::attempt(
+            Boundary::SuppliedPath,
+            (parent_path.as_os_str().len() + slot.directory.as_os_str().len()) as u64,
+            1,
+        );
+        let inside = parent_path.starts_with(&slot.directory);
+        observation::complete(Boundary::SuppliedPath, inside);
+        observation::field_attempt(10);
+        let invalid_path =
+            anchor_name == "anchor.tmp" || inside || slot.directory.file_name().is_none();
+        observation::field_complete(!invalid_path);
+        if invalid_path {
             return Err(Failure::damage());
         }
         let parent = directory(parent_path)?;
         let slot_parent = directory(slot.directory.parent().ok_or_else(Failure::damage)?)?;
+        observation::field_attempt(0);
         let fresh = mode == OpeningMode::FreshProvision;
+        observation::field_complete(fresh);
         if fresh {
-            if exists_at(&parent, &anchor_name)? || exists_at(&parent, "anchor.tmp")? {
+            observation::field_attempt(0);
+            let existing = exists_at(&parent, &anchor_name)? || exists_at(&parent, "anchor.tmp")?;
+            observation::field_complete(!existing);
+            if existing {
                 return Err(Failure::damage());
             }
             let n = CString::new(slot.directory.file_name().unwrap().as_bytes())
@@ -307,16 +353,24 @@ impl Storage {
                 stage: "preparing".into(),
             }
         } else {
-            codec::retained(&read_file(
+            profile.read_anchor(&read_file(
                 at(&parent, anchor_name.as_bytes(), libc::O_RDONLY, 0)?,
                 codec::LIMIT,
-            )?)
-            .map_err(|_| Failure::damage())?
+            )?)?
         };
-        if !profile.anchor_matches(&anchor, &slot)
-            || (mode == OpeningMode::Reopen && anchor.stage != "installed")
-            || (mode == OpeningMode::ResumeProvision && anchor.stage != "preparing")
-        {
+        observation::field_attempt(8192);
+        let associated = profile.anchor_matches(&anchor, &slot);
+        observation::field_complete(associated);
+        if !associated {
+            return Err(Failure::damage());
+        }
+        // Separate from association: an association refusal never reaches the
+        // mode/stage predicate, nor any later Storage identity validation.
+        observation::field_attempt(18);
+        let invalid_stage = (mode == OpeningMode::Reopen && anchor.stage != "installed")
+            || (mode == OpeningMode::ResumeProvision && anchor.stage != "preparing");
+        observation::field_complete(!invalid_stage);
+        if invalid_stage {
             return Err(Failure::damage());
         }
         let mut s = Self {
@@ -353,7 +407,7 @@ impl Storage {
                     libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL,
                     0o600,
                 )?;
-                let bytes = s.emit_control(&s.anchor)?;
+                let bytes = s.emit_anchor(&s.anchor)?;
                 s.write_file(f, &bytes, "anchor.json")?;
                 s.event("anchor.json", "before_parent_sync")?;
                 s.sync_parent()?;
@@ -361,12 +415,23 @@ impl Storage {
             }
             s.identity()?;
             s.anchor_temporary()?;
-            if s.anchor.stage == "preparing" {
+            observation::field_attempt(9);
+            let preparing = s.anchor.stage == "preparing";
+            observation::field_complete(preparing);
+            if preparing {
                 s.inventory(true)?;
                 // Existing controls must be deterministic initial values, never overwritten.
                 for (name, bytes) in s.initial_controls()? {
                     if s.exists(name)? {
-                        if s.read(name, codec::LIMIT)? != bytes {
+                        let retained = s.read(name, codec::LIMIT)?;
+                        observation::attempt(
+                            Boundary::InitialRaw,
+                            retained.len().max(bytes.len()) as u64,
+                            1,
+                        );
+                        let equal = retained == bytes;
+                        observation::complete(Boundary::InitialRaw, equal);
+                        if !equal {
                             return Err(Failure::damage());
                         }
                     } else {
@@ -384,7 +449,7 @@ impl Storage {
                 s.initial_inventory()?;
                 s.barriers()?;
                 s.anchor.stage = "installed".into();
-                let bytes = s.emit_control(&s.anchor)?;
+                let bytes = s.emit_anchor(&s.anchor)?;
                 s.replace_anchor(&bytes)?;
             }
             s.phase = "recover";
@@ -402,7 +467,19 @@ impl Storage {
     fn validate_profile(&mut self) -> Result<(), Failure> {
         match self.profile {
             Profile::Opening => validate(self).map(|_| ()),
-            Profile::Intent => super::super::intent_trace::validate_connect(self),
+            Profile::Intent | Profile::Assessment => {
+                super::super::intent_trace::validate_connect(self)
+            }
+        }
+    }
+    pub fn profile(&self) -> Profile {
+        self.profile
+    }
+    fn emit_anchor(&self, a: &Anchor) -> Result<Vec<u8>, Failure> {
+        if self.profile == Profile::Assessment {
+            self.emit_control(&super::super::intent_trace::assessment_codec::AdoptedAnchor::new(a))
+        } else {
+            self.emit_control(a)
         }
     }
     pub fn event(
@@ -447,23 +524,35 @@ impl Storage {
         self.event(object, "synced")?;
         Ok(())
     }
-    pub fn read(&self, name: &str, limit: usize) -> Result<Vec<u8>, Failure> {
+    pub fn read(&mut self, name: &str, limit: usize) -> Result<Vec<u8>, Failure> {
+        // Profile-3 source-fixture cuts only. A post-read cut follows a fully
+        // completed bounded read; it does not emulate a syscall or partial I/O.
+        // Old profiles deliberately receive neither additional event.
+        if self.profile == Profile::Assessment {
+            self.event(read_object(name)?, "before_read")?;
+        }
         let counter = if name == "trace.jsonl" {
             &self.trace_read
         } else {
             &self.control_read
         };
-        read_file_counted(
+        let bytes = read_file_counted(
             &mut at(&self.dir, name.as_bytes(), libc::O_RDONLY, 0)?,
             limit,
             Some(counter),
-        )
+            name == "trace.jsonl",
+        )?;
+        if self.profile == Profile::Assessment {
+            self.event(read_object(name)?, "read")?;
+        }
+        Ok(bytes)
     }
     pub fn read_canonical<T: for<'de> Deserialize<'de> + Serialize>(
-        &self,
+        &mut self,
         name: &str,
     ) -> Result<T, Failure> {
-        self.canonical_control(&self.read(name, codec::LIMIT)?)
+        let bytes = self.read(name, codec::LIMIT)?;
+        self.canonical_control(&bytes)
     }
     fn canonical_control<T: for<'de> Deserialize<'de> + Serialize>(
         &self,
@@ -475,9 +564,11 @@ impl Storage {
         value.map_err(|_| Failure::damage())
     }
     fn emit_control<T: Serialize>(&self, value: &T) -> Result<Vec<u8>, Failure> {
+        observation::control_construct_attempt();
         self.constructed_control_attempts
             .set(self.constructed_control_attempts.get() + 1);
         let bytes = codec::emit(value).map_err(|_| Failure::damage())?;
+        observation::control_construct_complete();
         self.constructed_control_emissions
             .set(self.constructed_control_emissions.get() + 1);
         Ok(bytes)
@@ -528,15 +619,38 @@ impl Storage {
             &mut at(&self.parent, self.anchor_name.as_bytes(), libc::O_RDONLY, 0)?,
             codec::LIMIT,
             Some(&self.control_read),
+            false,
         )?;
-        let a: Anchor = self.canonical_control(&bytes)?;
-        if !self.profile.anchor_matches(&a, &self.slot)
-            || a != self.anchor
-            || id(&self.dir)? != (a.directory_device, a.directory_inode)
-            || id(&self.lock)? != (a.lock_device, a.lock_inode)
-            || id(&directory(&self.slot.directory)?)? != id(&self.dir)?
-            || id(&at(&self.dir, b"writer.lock", libc::O_RDWR, 0)?)? != id(&self.lock)?
-        {
+        let a: Anchor = if self.profile == Profile::Assessment {
+            let a: super::super::intent_trace::assessment_codec::AdoptedAnchor =
+                self.canonical_control(&bytes)?;
+            a.base().map_err(|_| Failure::damage())?
+        } else {
+            self.canonical_control(&bytes)?
+        };
+        observation::field_attempt(8192);
+        let matches = self.profile.anchor_matches(&a, &self.slot);
+        observation::field_complete(matches);
+        if !matches {
+            return Err(Failure::damage());
+        }
+        observation::attempt(
+            Boundary::ControlTyped,
+            a.payload().max(self.anchor.payload()) + 64,
+            64,
+        );
+        let equal = a == self.anchor;
+        observation::complete(Boundary::ControlTyped, equal);
+        if !equal {
+            return Err(Failure::damage());
+        }
+        observation::field_attempt(0);
+        let pinned = id(&self.dir)? == (a.directory_device, a.directory_inode)
+            && id(&self.lock)? == (a.lock_device, a.lock_inode)
+            && id(&directory(&self.slot.directory)?)? == id(&self.dir)?
+            && id(&at(&self.dir, b"writer.lock", libc::O_RDWR, 0)?)? == id(&self.lock)?;
+        observation::field_complete(pinned);
+        if !pinned {
             return Err(Failure::damage());
         }
         Ok(())
@@ -546,7 +660,8 @@ impl Storage {
         for e in fs::read_dir(&self.slot.directory).map_err(|_| Failure::io())? {
             let e = e.map_err(|_| Failure::io())?;
             let name = e.file_name().into_string().map_err(|_| Failure::damage())?;
-            if !matches!(
+            observation::field_attempt(8192);
+            let allowed = matches!(
                 name.as_str(),
                 "writer.lock"
                     | "trace.jsonl"
@@ -554,11 +669,22 @@ impl Storage {
                     | "incident.json"
                     | "checkpoint.tmp"
                     | "incident.tmp"
-            ) || !e.file_type().map_err(|_| Failure::io())?.is_file()
-            {
+            );
+            observation::field_complete(allowed);
+            if !allowed {
                 return Err(Failure::damage());
             }
-            if preparing && matches!(name.as_str(), "checkpoint.tmp" | "incident.tmp") {
+            observation::field_attempt(0);
+            let regular = e.file_type().map_err(|_| Failure::io())?.is_file();
+            observation::field_complete(regular);
+            if !regular {
+                return Err(Failure::damage());
+            }
+            observation::field_attempt(24);
+            let unexpected =
+                preparing && matches!(name.as_str(), "checkpoint.tmp" | "incident.tmp");
+            observation::field_complete(!unexpected);
+            if unexpected {
                 return Err(Failure::damage());
             }
             names.push(name);
@@ -569,7 +695,10 @@ impl Storage {
             "checkpoint.json",
             "incident.json",
         ] {
-            if (!preparing || n == "writer.lock") && !names.iter().any(|s| s == n) {
+            observation::field_attempt(8192);
+            let missing = (!preparing || n == "writer.lock") && !names.iter().any(|s| s == n);
+            observation::field_complete(!missing);
+            if missing {
                 return Err(Failure::damage());
             }
         }
@@ -582,6 +711,9 @@ impl Storage {
                 "checkpoint.json",
                 match self.profile {
                     Profile::Opening => self.emit_control(&initial_prefix()),
+                    Profile::Assessment => {
+                        self.emit_control(&super::super::intent_trace::initial_assessment_prefix())
+                    }
                     Profile::Intent => {
                         self.emit_control(&super::super::intent_trace::initial_prefix())
                     }
@@ -599,37 +731,78 @@ impl Storage {
             issue: None,
         }
     }
-    fn initial_inventory(&self) -> Result<(), Failure> {
+    fn initial_inventory(&mut self) -> Result<(), Failure> {
         self.inventory(false)?;
-        if self.exists("checkpoint.tmp")? || self.exists("incident.tmp")? {
+        observation::field_attempt(0);
+        let temporary = self.exists("checkpoint.tmp")? || self.exists("incident.tmp")?;
+        observation::field_complete(!temporary);
+        if temporary {
             return Err(Failure::damage());
         }
         for (name, bytes) in self.initial_controls()? {
-            if self.read(name, codec::LIMIT)? != bytes {
+            let retained = self.read(name, codec::LIMIT)?;
+            observation::attempt(
+                Boundary::InitialRaw,
+                retained.len().max(bytes.len()) as u64,
+                1,
+            );
+            let equal = retained == bytes;
+            observation::complete(Boundary::InitialRaw, equal);
+            if !equal {
                 return Err(Failure::damage());
             }
         }
         Ok(())
     }
     fn anchor_temporary(&mut self) -> Result<(), Failure> {
-        if exists_at(&self.parent, "anchor.tmp")? {
+        observation::field_attempt(0);
+        let present = exists_at(&self.parent, "anchor.tmp")?;
+        observation::field_complete(present);
+        if present {
             self.initial_inventory()?;
-            let temp: Anchor = codec::retained(&read_file(
+            let temp: Anchor = self.profile.read_anchor(&read_file(
                 at(&self.parent, b"anchor.tmp", libc::O_RDONLY, 0)?,
                 codec::LIMIT,
-            )?)
-            .map_err(|_| Failure::damage())?;
+            )?)?;
             let mut installed = self.anchor.clone();
             installed.stage = "installed".into();
-            if temp != self.anchor && !(self.anchor.stage == "preparing" && temp == installed) {
+            observation::attempt(
+                Boundary::ControlTyped,
+                temp.payload().max(self.anchor.payload()) + 64,
+                64,
+            );
+            let same = temp == self.anchor;
+            observation::complete(Boundary::ControlTyped, same);
+            let known = if same {
+                true
+            } else {
+                observation::field_attempt(9);
+                let preparing = self.anchor.stage == "preparing";
+                observation::field_complete(preparing);
+                if preparing {
+                    observation::attempt(
+                        Boundary::ControlTyped,
+                        temp.payload().max(installed.payload()) + 64,
+                        64,
+                    );
+                    let equal = temp == installed;
+                    observation::complete(Boundary::ControlTyped, equal);
+                    equal
+                } else {
+                    false
+                }
+            };
+            if !known {
                 return Err(Failure::damage());
             }
+            observation::cleanup_attempt();
             self.event("anchor.tmp", "before_unlink")?;
             unlink(&self.parent, "anchor.tmp")?;
             self.event("anchor.tmp", "unlinked")?;
             self.event("anchor.tmp", "before_cleanup_sync")?;
             self.sync_parent()?;
             self.event("anchor.tmp", "cleanup_synced")?;
+            observation::cleanup_complete();
             self.identity()?;
             self.initial_inventory()?;
         } else {
@@ -701,34 +874,53 @@ impl Storage {
         Ok(())
     }
     fn valid_incident(&self, i: &Incident) -> bool {
-        i.format == self.profile.incident()
-            && i.custody == "custody-1"
-            && (i == &self.clear_incident()
-                || (i.state == "blocked"
-                    && i.phase.as_deref().is_some_and(|p| {
-                        matches!(
-                            p,
-                            "provision"
-                                | "reserve"
-                                | "append"
-                                | "checkpoint"
-                                | "deliver"
-                                | "recover"
-                        )
-                    })
-                    && i.issue.as_deref().is_some_and(|p| {
-                        matches!(p, "io" | "short_write" | "barrier" | "inconsistent")
-                    })))
+        observation::field_attempt(64);
+        let family = i.format == self.profile.incident() && i.custody == "custody-1";
+        observation::field_complete(family);
+        if !family {
+            return false;
+        }
+        let clear = self.clear_incident();
+        observation::attempt(Boundary::ControlTyped, i.payload().max(clear.payload()), 64);
+        let equal = i == &clear;
+        observation::complete(Boundary::ControlTyped, equal);
+        if equal {
+            return true;
+        }
+        observation::field_attempt(512);
+        let known = i.state == "blocked"
+            && i.phase.as_deref().is_some_and(|p| {
+                matches!(
+                    p,
+                    "provision" | "reserve" | "append" | "checkpoint" | "deliver" | "recover"
+                )
+            })
+            && i.issue
+                .as_deref()
+                .is_some_and(|p| matches!(p, "io" | "short_write" | "barrier" | "inconsistent"));
+        observation::field_complete(known);
+        known
     }
-    pub fn check_incident(&self) -> Result<(), Failure> {
+    pub fn check_incident(&mut self) -> Result<(), Failure> {
         let i: Incident = self.read_canonical("incident.json")?;
-        if !self.valid_incident(&i) || i.state != "clear" {
+        let valid = self.valid_incident(&i);
+        observation::field_attempt(5);
+        let clear = valid && i.state == "clear";
+        observation::field_complete(clear);
+        if !clear {
             return Err(Failure::damage());
         }
-        if self.exists("incident.tmp")? {
+        observation::field_attempt(0);
+        let temporary = self.exists("incident.tmp")?;
+        observation::field_complete(!temporary);
+        if temporary {
             // Never erase or replace a surviving incident temporary, even if clear.
             let t: Incident = self.read_canonical("incident.tmp")?;
-            if !self.valid_incident(&t) || t.state != "clear" {
+            let valid = self.valid_incident(&t);
+            observation::field_attempt(5);
+            let clear = valid && t.state == "clear";
+            observation::field_complete(clear);
+            if !clear {
                 return Err(Failure::damage());
             }
             return Err(Failure::damage()); // clear incident replacement is not part of this protocol
@@ -736,18 +928,45 @@ impl Storage {
         Ok(())
     }
     pub fn retain_failure(&mut self, e: &Failure) {
-        if !e.observed {
+        observation::field_attempt(0);
+        let observed = e.observed;
+        observation::field_complete(observed);
+        if !observed {
             return;
         }
+        observation::retain();
         self.latched = true;
         // Preserve all existing blocked/malformed evidence. Never overwrite it with clear.
-        if self.exists("incident.tmp").unwrap_or(true) {
+        observation::field_attempt(0);
+        let temporary = self.exists("incident.tmp").unwrap_or(true);
+        observation::field_complete(!temporary);
+        if temporary {
             return;
         }
-        if self.exists("incident.json").unwrap_or(true) {
+        observation::field_attempt(0);
+        let installed = self.exists("incident.json").unwrap_or(true);
+        observation::field_complete(installed);
+        if installed {
+            observation::field_attempt(0);
             match self.read_canonical::<Incident>("incident.json") {
-                Ok(i) if i == self.clear_incident() => (),
-                _ => return,
+                Ok(i) => {
+                    observation::field_complete(true);
+                    let clear = self.clear_incident();
+                    observation::attempt(
+                        Boundary::ControlTyped,
+                        i.payload().max(clear.payload()),
+                        64,
+                    );
+                    let equal = i == clear;
+                    observation::complete(Boundary::ControlTyped, equal);
+                    if !equal {
+                        return;
+                    }
+                }
+                _ => {
+                    observation::field_complete(false);
+                    return;
+                }
             }
         }
         let i = Incident {
@@ -757,5 +976,16 @@ impl Storage {
             ..self.clear_incident()
         };
         let _ = self.replace("incident.json", "incident.tmp", &i);
+    }
+}
+
+fn read_object(name: &str) -> Result<&'static str, Failure> {
+    match name {
+        "trace.jsonl" => Ok("trace.jsonl"),
+        "checkpoint.json" => Ok("checkpoint.json"),
+        "checkpoint.tmp" => Ok("checkpoint.tmp"),
+        "incident.json" => Ok("incident.json"),
+        "incident.tmp" => Ok("incident.tmp"),
+        _ => Err(Failure::damage()),
     }
 }

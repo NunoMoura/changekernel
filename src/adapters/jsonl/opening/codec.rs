@@ -1,3 +1,4 @@
+use super::super::intent_trace::assessment_work as observation;
 use crate::kernel::changes::opening::{Opened, Origin, Request};
 use serde_core::{
     de::{self, MapAccess, Visitor},
@@ -19,14 +20,20 @@ macro_rules! shape {
                     fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<$ty, M::Error> {
                         $(let mut $field: Option<$ft> = None;)+
                         while let Some(k) = m.next_key::<String>()? {
+                            observation::member_attempt(&k);
                             match k.as_str() {
                                 $(stringify!($field) => {
-                                    if $field.is_some() { return Err(de::Error::duplicate_field(stringify!($field))); }
+                                    observation::member_complete(true);
+                                    observation::field_attempt(0);
+                                    let duplicate=$field.is_some();observation::field_complete(!duplicate);
+                                    if duplicate { return Err(de::Error::duplicate_field(stringify!($field))); }
                                     $field = Some(m.next_value()?);
                                 },)+
-                                _ => return Err(de::Error::custom("unknown field")),
+                                _ => { observation::member_complete(false); return Err(de::Error::custom("unknown field")); },
                             }
                         }
+                        observation::field_attempt(0);
+                        let complete=true $(&& $field.is_some())+;observation::field_complete(complete);
                         Ok($ty { $($field: $field.ok_or_else(|| de::Error::missing_field(stringify!($field)))?),+ })
                     }
                 }
@@ -90,6 +97,19 @@ pub(crate) struct Anchor {
     pub lock_inode: u64,
     pub stage: String,
 }
+impl Anchor {
+    pub(crate) fn payload(&self) -> u64 {
+        (self.format.len()
+            + self.custody.len()
+            + self.workspace_id.len()
+            + self.binding.len()
+            + self.change.len()
+            + self.owner.len()
+            + self.key.len()
+            + self.directory.len()
+            + self.stage.len()) as u64
+    }
+}
 shape!(Anchor {
     format: String,
     custody: String,
@@ -113,6 +133,15 @@ pub(crate) struct Incident {
     pub phase: Option<String>,
     pub issue: Option<String>,
 }
+impl Incident {
+    pub(crate) fn payload(&self) -> u64 {
+        (self.format.len()
+            + self.custody.len()
+            + self.state.len()
+            + self.phase.as_ref().map_or(0, String::len)
+            + self.issue.as_ref().map_or(0, String::len)) as u64
+    }
+}
 // Clear and blocked have different, closed field sets. Presence is not inferred from null.
 impl<'de> Deserialize<'de> for Incident {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
@@ -126,29 +155,72 @@ impl<'de> Deserialize<'de> for Incident {
                 let (mut format, mut custody, mut state, mut phase, mut issue) =
                     (None, None, None, None, None);
                 while let Some(k) = m.next_key::<String>()? {
+                    observation::member_attempt(&k);
                     let slot = match k.as_str() {
                         "format" => &mut format,
                         "custody" => &mut custody,
                         "state" => &mut state,
                         "phase" => &mut phase,
                         "issue" => &mut issue,
-                        _ => return Err(de::Error::custom("unknown field")),
+                        _ => {
+                            observation::member_complete(false);
+                            return Err(de::Error::custom("unknown field"));
+                        }
                     };
-                    if slot.is_some() {
+                    observation::member_complete(true);
+                    observation::field_attempt(0);
+                    let duplicate = slot.is_some();
+                    observation::field_complete(!duplicate);
+                    if duplicate {
                         return Err(de::Error::custom("duplicate field"));
                     }
                     *slot = Some(m.next_value::<String>()?);
                 }
-                let state = state.ok_or_else(|| de::Error::missing_field("state"))?;
-                if !matches!(
+                observation::field_attempt(0);
+                let state = match state {
+                    Some(state) => {
+                        observation::field_complete(true);
+                        state
+                    }
+                    None => {
+                        observation::field_complete(false);
+                        return Err(de::Error::missing_field("state"));
+                    }
+                };
+                observation::field_attempt(12);
+                let shape = matches!(
                     (state.as_str(), phase.is_some(), issue.is_some()),
                     ("clear", false, false) | ("blocked", true, true)
-                ) {
+                );
+                observation::field_complete(shape);
+                if !shape {
                     return Err(de::Error::custom("incident shape"));
                 }
+                observation::field_attempt(0);
+                let format = match format {
+                    Some(format) => {
+                        observation::field_complete(true);
+                        format
+                    }
+                    None => {
+                        observation::field_complete(false);
+                        return Err(de::Error::missing_field("format"));
+                    }
+                };
+                observation::field_attempt(0);
+                let custody = match custody {
+                    Some(custody) => {
+                        observation::field_complete(true);
+                        custody
+                    }
+                    None => {
+                        observation::field_complete(false);
+                        return Err(de::Error::missing_field("custody"));
+                    }
+                };
                 Ok(Incident {
-                    format: format.ok_or_else(|| de::Error::missing_field("format"))?,
-                    custody: custody.ok_or_else(|| de::Error::missing_field("custody"))?,
+                    format,
+                    custody,
                     state,
                     phase,
                     issue,
@@ -296,19 +368,47 @@ pub(crate) fn emit_query<T: Serialize>(v: &T) -> Result<Vec<u8>, ()> {
     emit_bounded(v, 2_097_152)
 }
 fn emit_bounded<T: Serialize>(v: &T, limit: usize) -> Result<Vec<u8>, ()> {
-    let mut bytes = Vec::new();
+    struct Bounded {
+        bytes: Vec<u8>,
+        limit: usize,
+    }
+    impl io::Write for Bounded {
+        fn write(&mut self, b: &[u8]) -> io::Result<usize> {
+            let end = self
+                .bytes
+                .len()
+                .checked_add(b.len())
+                .filter(|n| *n < self.limit)
+                .ok_or_else(|| io::Error::other("output bound"))?;
+            if end > self.bytes.capacity() {
+                let capacity = end
+                    .max(self.bytes.capacity().saturating_mul(2))
+                    .min(self.limit);
+                self.bytes.reserve_exact(capacity - self.bytes.len());
+            }
+            self.bytes.extend_from_slice(b);
+            Ok(b.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut out = Bounded {
+        bytes: Vec::new(),
+        limit,
+    };
     v.serialize(&mut serde_json::Serializer::with_formatter(
-        &mut bytes, Canonical,
+        &mut out, Canonical,
     ))
     .map_err(|_| ())?;
-    bytes.push(b'\n');
-    if bytes.len() > limit {
-        return Err(());
-    }
-    Ok(bytes)
+    out.bytes.push(b'\n');
+    Ok(out.bytes)
 }
 pub(crate) fn decode<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, ()> {
-    if bytes.len() > LIMIT {
+    observation::field_attempt(0);
+    let bounded = bytes.len() <= LIMIT;
+    observation::field_complete(bounded);
+    if !bounded {
         return Err(());
     }
     let mut d = serde_json::Deserializer::from_slice(bytes);
@@ -332,13 +432,20 @@ pub(crate) fn retained_counted<T: for<'de> Deserialize<'de> + Serialize>(
     b: &[u8],
     work: &mut RetainedWork,
 ) -> Result<T, ()> {
+    observation::retained_decode_attempt();
     work.decode_attempts += 1;
     let v = decode(b)?;
+    observation::retained_decode_complete();
     work.decodes += 1;
+    observation::retained_emit_attempt();
     work.emission_attempts += 1;
     let emitted = emit(&v)?;
+    observation::retained_emit_complete();
     work.emissions += 1;
-    if emitted != b {
+    observation::canonical_attempt(emitted.len().max(b.len()) as u64);
+    let equal = emitted == b;
+    observation::canonical_complete(equal);
+    if !equal {
         return Err(());
     }
     Ok(v)
