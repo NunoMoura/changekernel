@@ -56,6 +56,12 @@ Run active changed-path diagnostics when available; report unavailable/stale res
 
 Return separate exact correction code/report commits, named source boundaries audited, actual regression/check results, changed whole-call observations and remaining gaps. Commit only owned changes with `git -c core.hooksPath=/dev/null commit`, then stop. No self-approval, source integration, branch switch/merge/rebase/push, other-pane message, new worker or next slice. The manager will arrange exact-subject independent re-review and the combined gate before acceptance.
 
+## R25-I2 resumption and source-byte observation
+
+After session restoration, the manager verified the author's native/session cwd, the same `dd6a0bc7dc3da19221399bcd09199561068b17a4` checkpoint and six scoped unfinished files, preserved their complete diff/bytes/hashes privately, and resumed the existing assignment with one correlated acknowledgment. No correction submission or unseen full/compatibility completion was inferred. The two failed regression receipts and their diagnosed assertion corrections survive; the corrected mode/stage run passed before the last recorded directory/regular-file accounting edits.
+
+The pre-resumption `src/adapters/jsonl/intent_trace.rs` snapshot and subsequently read live file each contained 92 trailing NUL bytes after the Rust source, SHA-256 `9991a46c61b80b82c63bd245b1b8dae84af03113cf77c1a520c2185dbf2b33fa`. The bytes were preserved before author resumption; this observation does not establish their author or cause, or that earlier successful checks consumed them. Within the existing owned source path, the author may inspect the surviving edit/check receipts and remove this exact extraneous trailer while preserving the complete prior bytes and reporting the provenance limit. No tooling/settings repair, other-path cleanup or retrospective test-success claim is authorized. Corrected-source checks and exact submission remain required.
+
 ## Evidence limits and coordination
 
 The earlier read-seam/missing-receipt clarification remains `ee985aae7294747bd6c227735a008ada0d8dce9e:CHANGEKERNEL_STATUS.md`. Post-read injected refusal is after a completed bounded read, not partial/failing syscall evidence. Earlier `/tmp` logs remain lost; session extracts do not recreate them. The first resumed compiler error and its correction remain recorded. Neither current Markdown diagnostics nor a clean candidate snapshot explains the earlier Rust-LSP discrepancies. These limits are not authorization for tooling repair or stronger platform claims.
