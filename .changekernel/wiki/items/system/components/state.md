@@ -124,7 +124,7 @@ Future hosts must preserve per-user attribution, visibility, native rights and C
 
 ## Ledger working set, archive and restore
 
-The [proposed ledger collection and selection profile](ledger-selection.md) scopes the next contract-selection gate. It does not yet select a wire/storage protocol or authorize implementation; the existing single-slot profiles remain unchanged.
+The [ledger collection and selection profile](ledger-selection.md) selects the fresh-only, opening-only collection successor after independent correction review and manager adoption. Its bounded wire/storage, permanent creation association, authorization, recovery and live-pagination rules are consumed requirements for a separately assigned source increment, not evidence of implementation or qualification. Existing single-slot profiles remain unchanged.
 
 The logical user-owned ledger is the collection of Changes, including retained inactive history. Begin with stable flat Change identity/storage and an active-only default View, not folders for workflow stages. Use authorized bounded/paginated listing and, when justified by measured workloads, rebuildable metadata indexes rather than decoding every complete Trace for every list. Flatness alone proves neither scalability nor reliability. Supporting custody controls and referenced evidence keep their distinct roles; this is not a requirement that the physical directory contain only JSONL files.
 
