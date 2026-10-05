@@ -39,6 +39,10 @@ Direct notifications must be identified as peer messages and point to exact assi
 - Test observable behavior and consequential failure boundaries. Retain regressions for authorization, exact source identity, recovery/idempotency and cleanup; do not test compiler guarantees, file inventories, documentation wording or duplicate implementations for parity. No test-count target, blanket coverage quota, mandatory mutation ritual or extra testing framework.
 - Independent review may use focused disposable probes. Add a tool or a permanent test only for a concrete risk not already covered. Release qualification is separate from routine source checks; see the [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy).
 
+## TypeSafe development
+
+For TypeSafe/Jev design, experiments and integration work, load the globally installed `typesafe-ai` skill and follow its current documentation index, relevant API/primitive guidance and closest cookbook. Keep the skill outside this checkout; do not add project-local copies or package links. Project contracts, authorized experiment scope, credential handling and controller boundaries still govern; provider examples do not authorize extra calls or change frozen APIs.
+
 ## Controller boundary
 
 Never load this checkout as its controller. Governed operations require the designated qualified, immutable external release and explicit handoff; stop if unavailable. Before handoff, use native source-development tools.

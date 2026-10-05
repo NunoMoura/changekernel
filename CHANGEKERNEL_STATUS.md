@@ -23,6 +23,12 @@ Pinned primary-source inspection now includes Laya and Jared Palmer's Kev-4B; th
 
 Only research Wiki and this note change in the follow-up; accepted source/tests, APIs, manifests/settings, lifecycle and controller state remain untouched. The earlier six-page design update and its documentation-only checks remain at `157c438bb`/`08449207f`. Completed source handoffs and all evidence limits remain in the Git references below. Follow-up documentation checks passed: `git diff --check`, 35 local links/anchors, exact two-path scope and empty executable/protected delta; active LSP found both changed Markdown paths clean. No inference, Rust/npm tests, build or qualification has run for this follow-up.
 
+### TypeSafe skill installation
+
+At the user's request, installed only the `typesafe-ai` skill using the non-Claude method: `npx --yes skills add typesafe-ai/skills --skill typesafe-ai --agent pi --global --yes`, from a disposable external working directory with install telemetry disabled. Exit 0; the installed skill and MIT license are at `~/.pi/agent/skills/typesafe-ai/`. Despite the installer's initial canonical-directory summary, `~/.agents/skills/typesafe-ai` is absent; only the Pi global copy exists. No project-local skill, package link, lockfile, settings or source change was introduced by installation. External install log/exit: `/home/canina7/.local/state/changekernel-source-review/typesafe-skill-install.hoQe1s/`.
+
+Read the entire installed skill and license, followed the live documentation index and inspected the building guide, HTTP API and reranking cookbook. Apply that guidance to TypeSafe work under the new source-development procedure in `AGENTS.md`, without importing cookbook call counts, thresholds or model aliases as project policy. The installed skill is read into this session; `/reload` makes newly installed skill commands discoverable in an already-running Pi session. Installation supplies instructions, not an API key or runtime integration; no inference was sent. The existing credential check only covered environment names and is not proof that no provider credential exists elsewhere.
+
 ## Accepted executable baseline — R27
 
 - **Integrated source:** `a4fc984e5ffb69938f83e8bc75335f27b7986c90`, byte-identical on thirteen owned paths to reviewed source `c9c3e301dce0534d266fc08a2c54bf6100dcbd97`.
