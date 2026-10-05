@@ -52,7 +52,9 @@ source-history:
 ---
 # Checks
 
-A Check is a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. A completed result has a passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
+A **Check** defines a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. Running the Check produces a **Check assessment**, tied to the exact Check version and subject/version. A completed result reports the defined passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
+
+Use subject-first terminology in new interfaces and explanations: “run Check” for evaluation and “Check assessment” for the retained evaluation/result. Definition, adoption and execution remain distinct operations. Existing wire names and historical contracts remain unchanged; the shortened “assessment” below retains this qualified meaning. A multiclass navigation recommendation is not automatically a Check assessment, and a human approval remains a distinct attributable decision.
 
 Checks support workflow-independent typed operations. Pre-effect assessment and observed-outcome assessment have distinct subjects; neither imposes a universal stage sequence. A Check definition may be reused inside or outside an adopted workflow. Checks do not dispatch Work, mutate native State or grant permissions. The authorized backend owns progression and acceptance.
 
@@ -88,7 +90,7 @@ Intake captures/refines intent without imposing a Decision stage. Validate shape
 
 A proposal can be recorded while unready. Missing information may permit bounded inquiry; missing authority requires permission or refusal. Repeated failure is not resampled until it passes. Changing input requires a distinct operation rather than conflicting reuse of an old key.
 
-Natural-language classification is optional future assistance. It can propose applicability or routing, not choose a weaker pipeline or grant consent. Typed operations need no redundant classification call. Before supporting classification, test misleading labels, omitted effects, mixed intent, uncertain coverage and attempts to evade cumulative obligations through decomposition. Jev-specific vocabulary and model limits are not engine invariants.
+Natural-language classification is optional assistance under the [bounded semantic discovery contract](state.md#bounded-semantic-discovery). Prefer small constrained semantic models before general-purpose LLMs where interpretation is necessary; typed operations need no redundant classification call. Classification can propose applicability or routing, not choose a weaker pipeline, hide a required Check assessment or grant consent. Before supporting it, test misleading labels, omitted effects, mixed intent, uncertain coverage and attempts to evade cumulative obligations through decomposition. Jev-specific vocabulary and model limits are not engine invariants. A routing score is not a calibrated Check outcome or evidence of user adoption.
 
 ## Ownership, policy and activation
 
