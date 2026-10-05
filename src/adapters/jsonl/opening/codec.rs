@@ -367,24 +367,41 @@ pub(crate) fn emit<T: Serialize>(v: &T) -> Result<Vec<u8>, ()> {
 pub(crate) fn emit_query<T: Serialize>(v: &T) -> Result<Vec<u8>, ()> {
     emit_bounded(v, 2_097_152)
 }
-fn emit_bounded<T: Serialize>(v: &T, limit: usize) -> Result<Vec<u8>, ()> {
-    struct Bounded {
+pub(crate) fn emit_bounded<T: Serialize>(v: &T, limit: usize) -> Result<Vec<u8>, ()> {
+    emit_observed(v, limit, None)
+}
+pub(crate) fn emit_observed<T: Serialize>(
+    v: &T,
+    limit: usize,
+    capacity: Option<&dyn Fn(usize)>,
+) -> Result<Vec<u8>, ()> {
+    struct Bounded<'a> {
         bytes: Vec<u8>,
         limit: usize,
+        capacity: Option<&'a dyn Fn(usize)>,
     }
-    impl io::Write for Bounded {
+    impl io::Write for Bounded<'_> {
         fn write(&mut self, b: &[u8]) -> io::Result<usize> {
             let end = self
                 .bytes
                 .len()
                 .checked_add(b.len())
                 .filter(|n| *n < self.limit)
-                .ok_or_else(|| io::Error::other("output bound"))?;
+                .ok_or_else(|| {
+                    if self.capacity.is_some() {
+                        io::Error::from(io::ErrorKind::FileTooLarge)
+                    } else {
+                        io::Error::other("output bound")
+                    }
+                })?;
             if end > self.bytes.capacity() {
                 let capacity = end
                     .max(self.bytes.capacity().saturating_mul(2))
                     .min(self.limit);
                 self.bytes.reserve_exact(capacity - self.bytes.len());
+                if let Some(observe) = self.capacity {
+                    observe(self.bytes.capacity());
+                }
             }
             self.bytes.extend_from_slice(b);
             Ok(b.len())
@@ -396,12 +413,16 @@ fn emit_bounded<T: Serialize>(v: &T, limit: usize) -> Result<Vec<u8>, ()> {
     let mut out = Bounded {
         bytes: Vec::new(),
         limit,
+        capacity,
     };
     v.serialize(&mut serde_json::Serializer::with_formatter(
         &mut out, Canonical,
     ))
     .map_err(|_| ())?;
     out.bytes.push(b'\n');
+    if let Some(observe) = capacity {
+        observe(out.bytes.capacity());
+    }
     Ok(out.bytes)
 }
 pub(crate) fn decode<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, ()> {

@@ -8,6 +8,7 @@ mod kernel {
         pub mod assessment;
         pub mod intent;
         pub mod intent_trace;
+        pub mod ledger;
         pub mod opening;
     }
     pub mod state {
@@ -29,6 +30,8 @@ mod application {
     #[cfg(target_os = "linux")]
     pub mod intent_trace;
     #[cfg(target_os = "linux")]
+    pub mod ledger;
+    #[cfg(target_os = "linux")]
     pub mod opening;
     pub mod source_observation;
 }
@@ -36,6 +39,7 @@ mod adapters {
     #[cfg(target_os = "linux")]
     pub mod jsonl {
         pub mod intent_trace;
+        pub mod ledger;
         pub mod opening;
     }
     pub mod sqlite {
@@ -95,3 +99,13 @@ pub use application::assessment::{AssessmentHost, AssessmentPolicy};
 pub use adapters::jsonl::intent_trace::assessment_work::{
     AssessmentComparison, AssessmentComparisons, AssessmentWork,
 };
+
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::ledger::{
+    LedgerBoundary, LedgerIoEvent, LedgerIoFault, LedgerIoHook, LedgerWork,
+};
+#[cfg(target_os = "linux")]
+pub use application::ledger::{
+    LedgerCollectionPermission, LedgerGuard, LedgerHost, LedgerMemberPermission, LedgerPermission,
+};
+pub use kernel::changes::ledger::{LedgerGrant, LedgerGrantSpec, LedgerInput, LedgerPair};

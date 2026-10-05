@@ -19,8 +19,8 @@ use std::{
 
 #[derive(Debug)]
 pub(crate) struct Failure {
-    issue: &'static str,
-    observed: bool,
+    pub(crate) issue: &'static str,
+    pub(crate) observed: bool,
 }
 impl Failure {
     pub fn damage() -> Self {
@@ -29,19 +29,19 @@ impl Failure {
             observed: false,
         }
     }
-    fn io() -> Self {
+    pub(crate) fn io() -> Self {
         Self {
             issue: "io",
             observed: true,
         }
     }
-    fn barrier() -> Self {
+    pub(crate) fn barrier() -> Self {
         Self {
             issue: "barrier",
             observed: true,
         }
     }
-    fn short() -> Self {
+    pub(crate) fn short() -> Self {
         Self {
             issue: "short_write",
             observed: true,
@@ -49,42 +49,234 @@ impl Failure {
     }
 }
 // O_NOFOLLOW at every path component; all owning descriptors are close-on-exec.
-fn directory(path: &Path) -> Result<File, Failure> {
+pub(crate) fn directory(path: &Path) -> Result<File, Failure> {
+    directory_observed(path, None)
+}
+struct FdObservation<'a> {
+    observe: Option<&'a dyn Fn(bool)>,
+    armed: bool,
+}
+impl Drop for FdObservation<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            if let Some(o) = self.observe {
+                o(false);
+            }
+        }
+    }
+}
+pub(crate) fn directory_observed(
+    path: &Path,
+    observe: Option<&dyn Fn(bool)>,
+) -> Result<File, Failure> {
+    directory_resources(path, observe, None, None)
+}
+pub(crate) type FieldRanges<'a> = &'a dyn Fn(usize, usize, Option<bool>);
+#[derive(Clone, Copy)]
+struct PrimitiveFields<'a> {
+    legacy: Option<&'a dyn Fn(Option<bool>)>,
+    ranges: Option<FieldRanges<'a>>,
+}
+impl PrimitiveFields<'_> {
+    fn reached(self, bytes: usize, words: usize, result: Option<bool>) {
+        if let Some(o) = self.legacy {
+            o(result);
+        }
+        self.range(bytes, words, result);
+    }
+    fn range(self, bytes: usize, words: usize, result: Option<bool>) {
+        if let Some(o) = self.ranges {
+            o(bytes, words, result);
+        }
+    }
+}
+pub(crate) fn directory_resources(
+    path: &Path,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    field: Option<&dyn Fn(Option<bool>)>,
+) -> Result<File, Failure> {
+    directory_inner(
+        path,
+        observe,
+        capacity,
+        PrimitiveFields {
+            legacy: field,
+            ranges: None,
+        },
+    )
+}
+/// Optional range-aware observations; legacy callers retain their original
+/// callbacks and assessment-work counters, without extra validation or I/O.
+pub(crate) fn directory_operands(
+    path: &Path,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    ranges: Option<FieldRanges<'_>>,
+) -> Result<File, Failure> {
+    directory_inner(
+        path,
+        observe,
+        capacity,
+        PrimitiveFields {
+            legacy: None,
+            ranges,
+        },
+    )
+}
+fn directory_inner(
+    path: &Path,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    fields: PrimitiveFields<'_>,
+) -> Result<File, Failure> {
     observation::field_attempt(0);
+    fields.reached(path.as_os_str().len(), 4, None);
     let invalid = !path.is_absolute()
         || path.as_os_str().len() > 4096
         || path
             .to_str()
             .is_none_or(|s| s.chars().any(char::is_control));
     observation::field_complete(!invalid);
+    fields.reached(path.as_os_str().len(), 4, Some(!invalid));
     if invalid {
         return Err(Failure::damage());
     }
     let mut dir = File::open("/").map_err(|_| Failure::io())?;
+    if let Some(o) = observe {
+        o(true);
+    }
+    let mut guard = FdObservation {
+        observe,
+        armed: true,
+    };
+    // Metadata for the spelling group comes from the existing traversal, not
+    // a second scan. Dot-normalization contributes only the fixed literals.
+    let mut segment_bytes = 0;
+    fields.range(0, 5, None);
     for component in path.components() {
         match component {
             Component::RootDir => (),
             Component::Normal(name) => {
-                dir = at(&dir, name.as_bytes(), libc::O_RDONLY | libc::O_DIRECTORY, 0)?;
+                segment_bytes = segment_bytes.max(name.len());
+                dir = at_inner(
+                    &dir,
+                    name.as_bytes(),
+                    libc::O_RDONLY | libc::O_DIRECTORY,
+                    0,
+                    observe,
+                    capacity,
+                    fields,
+                )?;
+                if let Some(o) = observe {
+                    o(false);
+                }
             }
-            _ => return Err(Failure::damage()),
+            _ => {
+                fields.range(0, 5, Some(false));
+                return Err(Failure::damage());
+            }
         }
     }
+    fields.range(0, 5, Some(true));
     // components() normalizes embedded '.', so reject original spelling too.
     observation::field_attempt(3);
+    fields.reached(segment_bytes.max(b"..".len()), 3, None);
     let unnormalized = path
         .as_os_str()
         .as_bytes()
         .split(|b| *b == b'/')
         .any(|s| s == b"." || s == b"..");
     observation::field_complete(!unnormalized);
+    fields.reached(segment_bytes.max(b"..".len()), 3, Some(!unnormalized));
     if unnormalized {
         return Err(Failure::damage());
     }
+    guard.armed = false;
     Ok(dir)
 }
-fn at(dir: &File, name: &[u8], flags: i32, mode: u32) -> Result<File, Failure> {
-    let name = CString::new(name).map_err(|_| Failure::damage())?;
+pub(crate) fn at(dir: &File, name: &[u8], flags: i32, mode: u32) -> Result<File, Failure> {
+    at_observed(dir, name, flags, mode, None)
+}
+pub(crate) fn at_observed(
+    dir: &File,
+    name: &[u8],
+    flags: i32,
+    mode: u32,
+    observe: Option<&dyn Fn(bool)>,
+) -> Result<File, Failure> {
+    at_resources(dir, name, flags, mode, observe, None, None)
+}
+pub(crate) fn at_resources(
+    dir: &File,
+    name: &[u8],
+    flags: i32,
+    mode: u32,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    field: Option<&dyn Fn(Option<bool>)>,
+) -> Result<File, Failure> {
+    at_inner(
+        dir,
+        name,
+        flags,
+        mode,
+        observe,
+        capacity,
+        PrimitiveFields {
+            legacy: field,
+            ranges: None,
+        },
+    )
+}
+pub(crate) fn at_operands(
+    dir: &File,
+    name: &[u8],
+    flags: i32,
+    mode: u32,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    ranges: Option<FieldRanges<'_>>,
+) -> Result<File, Failure> {
+    at_inner(
+        dir,
+        name,
+        flags,
+        mode,
+        observe,
+        capacity,
+        PrimitiveFields {
+            legacy: None,
+            ranges,
+        },
+    )
+}
+fn at_inner(
+    dir: &File,
+    name: &[u8],
+    flags: i32,
+    mode: u32,
+    observe: Option<&dyn Fn(bool)>,
+    capacity: Option<&dyn Fn(usize)>,
+    fields: PrimitiveFields<'_>,
+) -> Result<File, Failure> {
+    fields.range(name.len().max(1), 1, None);
+    let candidate = CString::new(name);
+    fields.range(name.len().max(1), 1, Some(candidate.is_ok()));
+    let name = candidate.map_err(|_| Failure::damage())?;
+    // CString owns an exact boxed slice, including its trailing NUL.
+    if let Some(o) = capacity {
+        o(name.to_bytes_with_nul().len());
+    }
+    struct Name<'a>(Option<&'a dyn Fn(usize)>);
+    impl Drop for Name<'_> {
+        fn drop(&mut self) {
+            if let Some(o) = self.0 {
+                o(0);
+            }
+        }
+    }
+    let _name = Name(capacity);
     // SAFETY: valid directory fd and NUL-terminated filename; returned fd is uniquely owned.
     let fd = unsafe {
         libc::openat(
@@ -109,34 +301,80 @@ fn at(dir: &File, name: &[u8], flags: i32, mode: u32) -> Result<File, Failure> {
     }
     // SAFETY: openat succeeded and ownership is transferred exactly once.
     let f = unsafe { File::from_raw_fd(fd) };
+    if let Some(o) = observe {
+        o(true);
+    }
+    let mut guard = FdObservation {
+        observe,
+        armed: true,
+    };
     if flags & libc::O_DIRECTORY == 0 {
         observation::field_attempt(0);
+        fields.reached(0, 1, None);
         let regular = f.metadata().map_err(|_| Failure::io())?.is_file();
         observation::field_complete(regular);
+        fields.reached(0, 1, Some(regular));
         if !regular {
             return Err(Failure::damage());
         }
     }
+    guard.armed = false;
     Ok(f)
 }
 fn read_file(mut f: File, limit: usize) -> Result<Vec<u8>, Failure> {
     read_file_counted(&mut f, limit, None, false)
 }
-fn read_file_counted(
+pub(crate) fn read_file_counted(
     f: &mut File,
     limit: usize,
     observed: Option<&std::cell::Cell<u64>>,
     trace: bool,
 ) -> Result<Vec<u8>, Failure> {
+    read_file_observed(f, limit, observed, trace, None)
+}
+
+pub(crate) fn read_file_observed(
+    f: &mut File,
+    limit: usize,
+    observed: Option<&std::cell::Cell<u64>>,
+    trace: bool,
+    allocated: Option<&std::cell::Cell<usize>>,
+) -> Result<Vec<u8>, Failure> {
+    read_file_capacity(f, limit, observed, trace, allocated, None, None)
+}
+pub(crate) fn read_file_capacity(
+    f: &mut File,
+    limit: usize,
+    observed: Option<&std::cell::Cell<u64>>,
+    trace: bool,
+    allocated: Option<&std::cell::Cell<usize>>,
+    capacity: Option<&dyn Fn(usize)>,
+    field: Option<&dyn Fn(Option<bool>)>,
+) -> Result<Vec<u8>, Failure> {
     let length = f.metadata().map_err(|_| Failure::io())?.len();
     observation::field_attempt(0);
+    if let Some(o) = field {
+        o(None);
+    }
     let bounded = length <= limit as u64;
     observation::field_complete(bounded);
+    if let Some(o) = field {
+        o(Some(bounded));
+    }
     if !bounded {
         return Err(Failure::damage());
     }
     let mut b = Vec::with_capacity(length as usize + 1);
+    if let Some(o) = capacity {
+        o(b.capacity());
+    }
     let result = f.take(length + 1).read_to_end(&mut b);
+    if let Some(o) = capacity {
+        o(b.capacity());
+    }
+    if let Some(allocated) = allocated {
+        allocated.set(b.capacity());
+    }
     // Count bytes actually appended to this buffer even if reading or the
     // metadata-size check fails. This is not syscall/disk/cache accounting.
     if let Some(counter) = observed {
@@ -148,19 +386,44 @@ fn read_file_counted(
     }
     result.map_err(|_| Failure::io())?;
     observation::field_attempt(0);
+    if let Some(o) = field {
+        o(None);
+    }
     let same_length = b.len() as u64 == length;
     observation::field_complete(same_length);
+    if let Some(o) = field {
+        o(Some(same_length));
+    }
     if !same_length {
         return Err(Failure::damage());
     }
     Ok(b)
 }
-fn id(f: &File) -> Result<(u64, u64), Failure> {
+pub(crate) fn id(f: &File) -> Result<(u64, u64), Failure> {
     let m = f.metadata().map_err(|_| Failure::io())?;
     Ok((m.dev(), m.ino()))
 }
-fn exists_at(dir: &File, name: &str) -> Result<bool, Failure> {
+pub(crate) fn exists_at(dir: &File, name: &str) -> Result<bool, Failure> {
+    exists_at_capacity(dir, name, None)
+}
+struct Names<'a>(Option<&'a dyn Fn(usize)>);
+impl Drop for Names<'_> {
+    fn drop(&mut self) {
+        if let Some(o) = self.0 {
+            o(0);
+        }
+    }
+}
+pub(crate) fn exists_at_capacity(
+    dir: &File,
+    name: &str,
+    capacity: Option<&dyn Fn(usize)>,
+) -> Result<bool, Failure> {
     let name = CString::new(name).map_err(|_| Failure::damage())?;
+    let _names = Names(capacity);
+    if let Some(o) = capacity {
+        o(name.as_bytes_with_nul().len());
+    }
     let mut st = std::mem::MaybeUninit::<libc::stat>::uninit();
     // SAFETY: stat storage and filename are valid; no follow occurs.
     let result = unsafe {
@@ -180,17 +443,43 @@ fn exists_at(dir: &File, name: &str) -> Result<bool, Failure> {
         Err(Failure::io())
     }
 }
-fn unlink(dir: &File, name: &str) -> Result<(), Failure> {
+pub(crate) fn unlink(dir: &File, name: &str) -> Result<(), Failure> {
+    unlink_capacity(dir, name, None)
+}
+pub(crate) fn unlink_capacity(
+    dir: &File,
+    name: &str,
+    capacity: Option<&dyn Fn(usize)>,
+) -> Result<(), Failure> {
     let name = CString::new(name).map_err(|_| Failure::damage())?;
+    let _names = Names(capacity);
+    if let Some(o) = capacity {
+        o(name.as_bytes_with_nul().len());
+    }
     // SAFETY: directory and filename valid; no recursive or path-selected deletion.
     if unsafe { libc::unlinkat(dir.as_raw_fd(), name.as_ptr(), 0) } != 0 {
         return Err(Failure::io());
     }
     Ok(())
 }
-fn rename(dir: &File, from: &str, to: &str) -> Result<(), Failure> {
+pub(crate) fn rename(dir: &File, from: &str, to: &str) -> Result<(), Failure> {
+    rename_capacity(dir, from, to, None)
+}
+pub(crate) fn rename_capacity(
+    dir: &File,
+    from: &str,
+    to: &str,
+    capacity: Option<&dyn Fn(usize)>,
+) -> Result<(), Failure> {
     let from = CString::new(from).map_err(|_| Failure::damage())?;
+    let _names = Names(capacity);
+    if let Some(o) = capacity {
+        o(from.as_bytes_with_nul().len());
+    }
     let to = CString::new(to).map_err(|_| Failure::damage())?;
+    if let Some(o) = capacity {
+        o(from.as_bytes_with_nul().len() + to.as_bytes_with_nul().len());
+    }
     // SAFETY: same pinned parent, valid fds and filenames.
     if unsafe { libc::renameat(dir.as_raw_fd(), from.as_ptr(), dir.as_raw_fd(), to.as_ptr()) } != 0
     {
