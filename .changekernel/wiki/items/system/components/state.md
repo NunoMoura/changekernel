@@ -168,6 +168,8 @@ Original intent, later clarification and actual delivery remain separately attri
 
 ### Structured history access and context projections
 
+The [combined ledger history and understanding profile](ledger-history.md) selects a fresh successor with ledger-bound intent revisions, fixed Check assessments, bounded history ranges and deterministic current/historical Change context. Its native interface and custody, authorization, coverage and resource requirements are consumed design obligations after independent review and manager adoption, not evidence of implementation or qualification. It does not migrate or widen the frozen profiles.
+
 Expose authorized, bounded reads over accepted history and retained evidence. The collection boundary is a user's Change ledger; the file boundary is one Change; the record boundary is one typed lifecycle-operation record. A ledger is not another lifecycle database, and listing a collection does not authorize disclosure of every member. The first single-slot opening profile below is a smaller witness, not an implementation of collection queries or longer histories.
 
 Use **origin** for the initial accepted grounds, **tip** for the latest accepted position and **cursor** for the reader's selected position. Navigation must not move the tip, confer continuation or execute work. Logical Change/operation identity and physical byte offsets serve different roles. Selected head/tail/range/follow and at-position reads must preserve exact identity, ordering, coverage, current disclosure and explicit gaps. Tail navigation ends at the selected accepted prefix, not at an arbitrary parseable file end. The most recent operation does not necessarily contain the complete current lifecycle View.
