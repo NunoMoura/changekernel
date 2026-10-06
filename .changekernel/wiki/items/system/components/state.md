@@ -116,6 +116,8 @@ Replaying accepted history reconstructs lifecycle views, not effects. It must no
 
 Git can retain history, diffs, transport and checkpoint evidence. It is not the initial live acceptance authority. A commit, ref, copied Trace, signature label or merge does not itself authenticate the acting subject, establish current custody or authorize execution. Authoritative logs are not reconciled by text merge.
 
+The first dogfood target selects read-only sharing of explicitly authorized individual Change material, not active borrowing. An exported inspection snapshot or bounded View preserves exact source ledger/Change/accepted-prefix references, originating ownership, actual actors and declared coverage/gaps. Disclosure authorization is distinct from source/native access and continuation authority. A receiver's ledger may retain a review reference or copy only under the selected disclosure contract; it must not relabel old records, infer ownership, merge authoritative logs or enroll that material as a continuing Change. Bare Change names may collide across ledgers, so source-ledger association cannot be discarded. Views and copied bytes are evidence, not acceptance control. The disclosure contract must state that already disclosed plaintext cannot be recalled and that source authenticity requires qualified provenance, not hash equality alone. No export/import wire interface or multi-tenant host is selected by these requirements.
+
 Borrowing, encrypted transfer and remote custody are later capabilities. Encrypting bytes neither revokes already disclosed plaintext nor enforces exclusive continuation. New storage/custody profiles require separate protocol evidence; none is activated implicitly by the use of JSONL.
 
 ### Multi-tenant scope and ownership
