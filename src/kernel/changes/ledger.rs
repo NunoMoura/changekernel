@@ -96,22 +96,6 @@ impl LedgerGrant {
             grants: std::array::from_fn(|i| s.grants[i].clone()),
         })
     }
-    pub(crate) fn valid(&self) -> bool {
-        self.profile == "ck-ledger@4"
-            && identifier(&self.ledger)
-            && identifier(&self.custody)
-            && self.owner == "owner-1"
-            && self.workspace_id == "workspace-1"
-            && self.binding == "fixture@1"
-            && self.grants.iter().enumerate().all(|(i, p)| {
-                identifier(&p.change)
-                    && identifier(&p.custody)
-                    && p.custody != self.custody
-                    && self.grants[..i]
-                        .iter()
-                        .all(|q| q.change != p.change && q.custody != p.custody)
-            })
-    }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Cursor {

@@ -92,6 +92,7 @@ pub struct LedgerIoEvent {
 pub type LedgerIoHook = Box<dyn FnMut(LedgerIoEvent) -> LedgerIoFault>;
 pub(super) struct Context {
     pub hook: Option<LedgerIoHook>,
+    pub profile: super::selection::Profile,
     pub phase: &'static str,
     pub latched: [bool; 17],
     // Original failing syscall scope; retention must not reinterpret it.
@@ -110,14 +111,41 @@ impl Context {
         object: &'static str,
         step: &'static str,
     ) -> Result<LedgerIoFault, Failure> {
-        match self.hook.as_mut().map_or(LedgerIoFault::Continue, |h| {
+        let fault = self.hook.as_mut().map_or(LedgerIoFault::Continue, |h| {
             h(LedgerIoEvent {
                 scope,
                 phase: self.phase,
                 object,
                 step,
             })
-        }) {
+        });
+        if self.profile == super::selection::Profile::History {
+            let supported = match fault {
+                LedgerIoFault::Continue | LedgerIoFault::Refuse => true,
+                LedgerIoFault::ShortWrite => step == "before_write",
+                LedgerIoFault::Io => {
+                    matches!(
+                        step,
+                        "before_read"
+                            | "before_write"
+                            | "before_sync"
+                            | "before_unlink"
+                            | "before_create"
+                            | "before_rename"
+                    ) || (object == "reply" && step == "before")
+                }
+            };
+            if !supported {
+                return Err(Failure::damage());
+            }
+            if object == "reply" && step == "before" {
+                return match fault {
+                    LedgerIoFault::Refuse => Err(Failure::damage()),
+                    v => Ok(v),
+                };
+            }
+        }
+        match fault {
             LedgerIoFault::Refuse => Err(Failure::damage()),
             LedgerIoFault::Io
                 if !matches!(
@@ -142,6 +170,7 @@ pub(super) struct Node {
     pub parent: File,
     pub anchor_name: String,
     pub scope: u8,
+    pub profile: super::selection::Profile,
     pub custody: String,
     pub justified: Cell<bool>,
     pub passes: Cell<u64>,
@@ -598,12 +627,14 @@ impl Node {
     }
     pub fn clear(&self) -> Incident {
         Incident {
-            format: if self.scope == 0 {
-                "ck-ledger-incident@4"
-            } else {
-                "ck-ledger-member-incident@4"
-            }
-            .into(),
+            format: self
+                .profile
+                .tag(if self.scope == 0 {
+                    "incident"
+                } else {
+                    "member-incident"
+                })
+                .into(),
             custody: self.custody.clone(),
             state: "clear".into(),
             phase: None,

@@ -375,50 +375,65 @@ pub(crate) fn emit_observed<T: Serialize>(
     limit: usize,
     capacity: Option<&dyn Fn(usize)>,
 ) -> Result<Vec<u8>, ()> {
-    struct Bounded<'a> {
-        bytes: Vec<u8>,
-        limit: usize,
-        capacity: Option<&'a dyn Fn(usize)>,
-    }
-    impl io::Write for Bounded<'_> {
-        fn write(&mut self, b: &[u8]) -> io::Result<usize> {
-            let end = self
-                .bytes
-                .len()
-                .checked_add(b.len())
-                .filter(|n| *n < self.limit)
-                .ok_or_else(|| {
-                    if self.capacity.is_some() {
-                        io::Error::from(io::ErrorKind::FileTooLarge)
-                    } else {
-                        io::Error::other("output bound")
-                    }
-                })?;
-            if end > self.bytes.capacity() {
-                let capacity = end
-                    .max(self.bytes.capacity().saturating_mul(2))
-                    .min(self.limit);
-                self.bytes.reserve_exact(capacity - self.bytes.len());
-                if let Some(observe) = self.capacity {
-                    observe(self.bytes.capacity());
+    emit_stream(limit, capacity, |out| out.value(v))
+}
+pub(crate) struct Bounded<'a> {
+    bytes: Vec<u8>,
+    limit: usize,
+    capacity: Option<&'a dyn Fn(usize)>,
+}
+impl io::Write for Bounded<'_> {
+    fn write(&mut self, b: &[u8]) -> io::Result<usize> {
+        let end = self
+            .bytes
+            .len()
+            .checked_add(b.len())
+            .filter(|n| *n < self.limit)
+            .ok_or_else(|| {
+                if self.capacity.is_some() {
+                    io::Error::from(io::ErrorKind::FileTooLarge)
+                } else {
+                    io::Error::other("output bound")
                 }
+            })?;
+        if end > self.bytes.capacity() {
+            let capacity = end
+                .max(self.bytes.capacity().saturating_mul(2))
+                .min(self.limit);
+            self.bytes.reserve_exact(capacity - self.bytes.len());
+            if let Some(observe) = self.capacity {
+                observe(self.bytes.capacity());
             }
-            self.bytes.extend_from_slice(b);
-            Ok(b.len())
         }
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
+        self.bytes.extend_from_slice(b);
+        Ok(b.len())
     }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Bounded<'_> {
+    pub(crate) fn raw(&mut self, bytes: &[u8]) -> Result<(), ()> {
+        io::Write::write_all(self, bytes).map_err(|_| ())
+    }
+    pub(crate) fn value<T: Serialize + ?Sized>(&mut self, value: &T) -> Result<(), ()> {
+        value
+            .serialize(&mut serde_json::Serializer::with_formatter(self, Canonical))
+            .map_err(|_| ())
+    }
+}
+pub(crate) fn emit_stream(
+    limit: usize,
+    capacity: Option<&dyn Fn(usize)>,
+    fill: impl FnOnce(&mut Bounded<'_>) -> Result<(), ()>,
+) -> Result<Vec<u8>, ()> {
     let mut out = Bounded {
         bytes: Vec::new(),
         limit,
         capacity,
     };
-    v.serialize(&mut serde_json::Serializer::with_formatter(
-        &mut out, Canonical,
-    ))
-    .map_err(|_| ())?;
+    fill(&mut out)?;
     out.bytes.push(b'\n');
     if let Some(observe) = capacity {
         observe(out.bytes.capacity());

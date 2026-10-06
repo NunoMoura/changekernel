@@ -77,10 +77,12 @@ impl Custody {
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         work::attempt(B::Outputs, 0, 1);
         let bytes = codec::emit_reply(v, limit).map_err(|_| OpeningError::Unavailable)?;
-        work::complete(B::Outputs, true);
+        if !work::history_mode() {
+            work::complete(B::Outputs, true);
+        }
         Ok(bytes)
     }
-    fn delivery_event(&mut self) -> Result<(), OpeningError> {
+    pub(super) fn delivery_event(&mut self) -> Result<(), OpeningError> {
         match self.ctx.event(0, "reply", "before") {
             Ok(LedgerIoFault::Io) | Err(_) => Err(OpeningError::Unavailable),
             _ => Ok(()),
@@ -152,7 +154,9 @@ impl Custody {
                 });
                 codec::emit_reply(&*value, T).map_err(|_| Failure::damage())?
             };
-            work::complete(B::Outputs, true);
+            if !work::history_mode() {
+                work::complete(B::Outputs, true);
+            }
             drop(m);
             s.ctx.phase = "deliver";
             s.accepted_member_barrier(n, a)?;
@@ -161,9 +165,14 @@ impl Custody {
         drop(state);
         self.shared_sync()?;
         self.read_shared()?;
+        if work::history_mode() && self.ctx.phase == "deliver" {
+            self.delivery_event()?;
+        }
         self.final_collection(input, guard)?;
         self.member_permission(guard, change, false, selection)?;
-        self.delivery_event()?;
+        if !work::history_mode() {
+            self.delivery_event()?;
+        }
         Ok(result)
     }
     fn list(
@@ -256,6 +265,9 @@ impl Custody {
         }) {
             return Err(OpeningError::Unavailable);
         }
+        if work::history_mode() && self.ctx.phase == "deliver" {
+            self.delivery_event()?;
+        }
         self.final_collection(input, guard)?;
         for (i, a) in state.control.entries.0.iter().enumerate() {
             match (
@@ -271,7 +283,9 @@ impl Custody {
         if let Some(Some(cursor)) = &input.cursor {
             self.member_permission(guard, &cursor.after, false, true)?;
         }
-        self.delivery_event()?;
+        if !work::history_mode() {
+            self.delivery_event()?;
+        }
         Ok(bytes)
     }
     fn proof_member(
@@ -340,6 +354,9 @@ impl Custody {
         self.shared_sync()?;
         self.proof_state(p, kind)?;
         self.proof_member(p, kind, true)?;
+        if work::history_mode() && self.ctx.phase == "deliver" {
+            self.delivery_event()?;
+        }
         self.final_collection(input, guard)?;
         let change = &self.grant.grants[p.slot as usize - 1].change;
         self.member_permission(guard, change, true, false)?;
@@ -354,7 +371,7 @@ impl Custody {
         self.proof_member(p, kind, false)?;
         Ok(state)
     }
-    fn create(
+    pub(super) fn create(
         &mut self,
         input: &Request,
         guard: &mut dyn LedgerGuard,
@@ -382,7 +399,9 @@ impl Custody {
                 }
                 work::attempt(B::Outputs, 0, 1);
                 let bytes = codec::emit_reply(&record.result, C).map_err(|_| Failure::damage())?;
-                work::complete(B::Outputs, true);
+                if !work::history_mode() {
+                    work::complete(B::Outputs, true);
+                }
                 drop(m);
                 s.ctx.phase = "deliver";
                 s.accepted_member_barrier(n, a)?;
@@ -395,9 +414,14 @@ impl Custody {
             drop(state);
             self.shared_sync()?;
             self.read_shared()?;
+            if work::history_mode() && self.ctx.phase == "deliver" {
+                self.delivery_event()?;
+            }
             self.final_collection(input, guard)?;
             self.member_permission(guard, &change, false, false)?;
-            self.delivery_event()?;
+            if !work::history_mode() {
+                self.delivery_event()?;
+            }
             return bytes.ok_or(OpeningError::Unavailable);
         }
         let slot = state.control.entries.0.len() as u64 + 1;
@@ -465,6 +489,9 @@ impl Custody {
                         return Err(OpeningError::Unavailable);
                     }
                     self.shared_sync()?;
+                    if work::history_mode() && self.ctx.phase == "deliver" {
+                        self.delivery_event()?;
+                    }
                     self.final_collection(input, guard)?;
                     self.root
                         .cleanup(&mut self.ctx, "creation.tmp", false)
@@ -474,6 +501,9 @@ impl Custody {
                 }
                 Kind::Equal => {
                     self.shared_sync()?;
+                    if work::history_mode() && self.ctx.phase == "deliver" {
+                        self.delivery_event()?;
+                    }
                     self.final_collection(input, guard)?;
                     self.root
                         .cleanup(&mut self.ctx, "creation.tmp", false)
@@ -484,6 +514,15 @@ impl Custody {
             }
         }
         if state.control.pending.is_none() {
+            if work::history_mode() {
+                self.final_collection(input, guard)?;
+                self.member_permission(
+                    guard,
+                    &self.grant.grants[slot as usize - 1].change,
+                    true,
+                    false,
+                )?;
+            }
             let p = Owned::constructed(|| Reservation {
                 slot,
                 input: input.clone(),
@@ -522,85 +561,146 @@ impl Custody {
         }
         let p = Owned::constructed(|| state.control.pending.as_ref().unwrap().clone());
         self.ctx.phase = "recover";
-        let result = self.member_run(p.slot, false, |s, n| {
-            let mut m = s.member(n, Some(&p), None)?;
-            if m.anchor_temporary {
-                drop(m);
-                n.cleanup(&mut s.ctx, "anchor.tmp", true)?;
-                m = s.member(n, Some(&p), None)?;
-                if !work::test(B::Fields, 0, 1, || !m.anchor_temporary) {
-                    return Err(Failure::damage());
+        let mut authorization_error = None;
+        let result = self
+            .member_run(p.slot, false, |s, n| {
+                let mut m = s.member(n, Some(&p), None)?;
+                if m.anchor_temporary {
+                    if work::history_mode() {
+                        let gates = s.final_collection(input, guard).and_then(|()| {
+                            s.member_permission(
+                                guard,
+                                &s.grant.grants[n.scope as usize - 1].change,
+                                true,
+                                false,
+                            )
+                        });
+                        if let Err(e) = gates {
+                            authorization_error = Some(e);
+                            return Err(Failure::damage());
+                        }
+                    }
+                    drop(m);
+                    n.cleanup(&mut s.ctx, "anchor.tmp", true)?;
+                    m = s.member(n, Some(&p), None)?;
+                    if !work::test(B::Fields, 0, 1, || !m.anchor_temporary) {
+                        return Err(Failure::damage());
+                    }
                 }
-            }
-            if m.temporary {
-                drop(m);
-                n.cleanup(&mut s.ctx, "checkpoint.tmp", false)?;
-                m = s.member(n, Some(&p), None)?;
-                if !work::test(B::Fields, 0, 1, || !m.temporary) {
-                    return Err(Failure::damage());
+                if m.temporary {
+                    if work::history_mode() {
+                        let gates = s.final_collection(input, guard).and_then(|()| {
+                            s.member_permission(
+                                guard,
+                                &s.grant.grants[n.scope as usize - 1].change,
+                                true,
+                                false,
+                            )
+                        });
+                        if let Err(e) = gates {
+                            authorization_error = Some(e);
+                            return Err(Failure::damage());
+                        }
+                    }
+                    drop(m);
+                    n.cleanup(&mut s.ctx, "checkpoint.tmp", false)?;
+                    m = s.member(n, Some(&p), None)?;
+                    if !work::test(B::Fields, 0, 1, || !m.temporary) {
+                        return Err(Failure::damage());
+                    }
                 }
-            }
-            if m.prefix.generation == 0 {
-                if m.prefix.pending.is_none() {
-                    s.ctx.phase = "reserve";
-                    let pending = Owned::constructed(|| Prefix {
-                        pending: Some(Pending {
-                            input: p.input.clone(),
-                            actor: p.actor.clone(),
-                        }),
+                if m.prefix.generation == 0 {
+                    if m.prefix.pending.is_none() {
+                        if work::history_mode() {
+                            let gates = s.final_collection(input, guard).and_then(|()| {
+                                s.member_permission(
+                                    guard,
+                                    &s.grant.grants[n.scope as usize - 1].change,
+                                    true,
+                                    false,
+                                )
+                            });
+                            if let Err(e) = gates {
+                                authorization_error = Some(e);
+                                return Err(Failure::damage());
+                            }
+                        }
+                        s.ctx.phase = "reserve";
+                        let pending = Owned::constructed(|| Prefix {
+                            pending: Some(Pending {
+                                input: p.input.clone(),
+                                actor: p.actor.clone(),
+                            }),
+                            format: m.prefix.format.clone(),
+                            custody: m.prefix.custody.clone(),
+                            change: m.prefix.change.clone(),
+                            generation: m.prefix.generation,
+                            end: m.prefix.end,
+                            sha256: m.prefix.sha256.clone(),
+                        });
+                        n.replace(
+                            &mut s.ctx,
+                            "checkpoint.json",
+                            "checkpoint.tmp",
+                            &*pending,
+                            false,
+                        )?;
+                        drop(m);
+                        m = s.member(n, Some(&p), None)?;
+                    }
+                    let origin = s.origin(&p)?;
+                    let bytes = codec::emit_origin(&origin).map_err(|_| Failure::damage())?;
+                    s.ctx.phase = "append";
+                    if m.trace.len() < bytes.len() {
+                        n.append(&mut s.ctx, &bytes[m.trace.len()..])?;
+                    }
+                    n.sync_name(&mut s.ctx, "trace.jsonl")?;
+                    let prefix = Owned::constructed(|| Prefix {
+                        generation: 1,
+                        end: bytes.len() as u64,
+                        sha256: Some(hash(&bytes, false)),
+                        pending: None,
                         format: m.prefix.format.clone(),
                         custody: m.prefix.custody.clone(),
                         change: m.prefix.change.clone(),
-                        generation: m.prefix.generation,
-                        end: m.prefix.end,
-                        sha256: m.prefix.sha256.clone(),
                     });
+                    drop(origin);
+                    drop(bytes);
+                    drop(m);
+                    if work::history_mode() {
+                        let gates = s.final_collection(input, guard).and_then(|()| {
+                            s.member_permission(
+                                guard,
+                                &s.grant.grants[n.scope as usize - 1].change,
+                                true,
+                                false,
+                            )
+                        });
+                        if let Err(e) = gates {
+                            authorization_error = Some(e);
+                            return Err(Failure::damage());
+                        }
+                    }
+                    s.ctx.phase = "checkpoint";
                     n.replace(
                         &mut s.ctx,
                         "checkpoint.json",
                         "checkpoint.tmp",
-                        &*pending,
+                        &*prefix,
                         false,
                     )?;
-                    drop(m);
                     m = s.member(n, Some(&p), None)?;
                 }
-                let origin = s.origin(&p)?;
-                let bytes = codec::emit_origin(&origin).map_err(|_| Failure::damage())?;
-                s.ctx.phase = "append";
-                if m.trace.len() < bytes.len() {
-                    n.append(&mut s.ctx, &bytes[m.trace.len()..])?;
+                let record = m.record.as_ref().ok_or_else(Failure::damage)?;
+                let a = s.association(&p, record, &m.trace, None)?;
+                work::attempt(B::Outputs, 0, 1);
+                let result = codec::emit_reply(&record.result, C).map_err(|_| Failure::damage())?;
+                if !work::history_mode() {
+                    work::complete(B::Outputs, true);
                 }
-                n.sync_name(&mut s.ctx, "trace.jsonl")?;
-                let prefix = Owned::constructed(|| Prefix {
-                    generation: 1,
-                    end: bytes.len() as u64,
-                    sha256: Some(hash(&bytes, false)),
-                    pending: None,
-                    format: m.prefix.format.clone(),
-                    custody: m.prefix.custody.clone(),
-                    change: m.prefix.change.clone(),
-                });
-                drop(origin);
-                drop(bytes);
-                drop(m);
-                s.ctx.phase = "checkpoint";
-                n.replace(
-                    &mut s.ctx,
-                    "checkpoint.json",
-                    "checkpoint.tmp",
-                    &*prefix,
-                    false,
-                )?;
-                m = s.member(n, Some(&p), None)?;
-            }
-            let record = m.record.as_ref().ok_or_else(Failure::damage)?;
-            let a = s.association(&p, record, &m.trace, None)?;
-            work::attempt(B::Outputs, 0, 1);
-            let result = codec::emit_reply(&record.result, C).map_err(|_| Failure::damage())?;
-            work::complete(B::Outputs, true);
-            Ok((a, result))
-        })?;
+                Ok((a, result))
+            })
+            .map_err(|e| authorization_error.unwrap_or(e))?;
         let (a, result) = result;
         self.ctx.phase = "associate";
         state
@@ -611,6 +711,15 @@ impl Custody {
         state.control.pending = None;
         state.control.generation += 1;
         state.control.refresh();
+        if work::history_mode() {
+            self.final_collection(input, guard)?;
+            self.member_permission(
+                guard,
+                &self.grant.grants[p.slot as usize - 1].change,
+                true,
+                false,
+            )?;
+        }
         self.replace_shared(&state.control)?;
         drop(state);
         state = self.read_shared()?;
@@ -630,9 +739,14 @@ impl Custody {
         let change = Owned::new(a.change.clone());
         drop(state);
         self.read_shared()?;
+        if work::history_mode() && self.ctx.phase == "deliver" {
+            self.delivery_event()?;
+        }
         self.final_collection(input, guard)?;
         self.member_permission(guard, &change, true, false)?;
-        self.delivery_event()?;
+        if !work::history_mode() {
+            self.delivery_event()?;
+        }
         Ok(bytes)
     }
 }

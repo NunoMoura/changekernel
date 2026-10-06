@@ -1,8 +1,11 @@
 //! Concrete fresh collection custody. No public raw controls or append API.
+#[macro_use]
 pub(crate) mod codec;
+pub(crate) mod history;
 mod members;
 mod operations;
 mod parser;
+mod selection;
 mod storage;
 pub(crate) mod work;
 use crate::{
@@ -12,11 +15,14 @@ use crate::{
     },
     application::ledger::{self as policy, LedgerGuard, LedgerMemberPermission},
     kernel::changes::{
-        ledger::{Created, LedgerGrant, LedgerInput, Origin, Request, C, L, T},
+        ledger::{Created, LedgerGrant, LedgerInput, C, L, T},
         opening::{identifier, OpeningError},
     },
 };
 use codec::*;
+use selection::{
+    Installation, Operation as Origin, Profile, SelectedRequest as Request, SelectedResult,
+};
 use sha2::{Digest, Sha256};
 use std::cell::Cell;
 use storage::TrackedFile as File;
@@ -26,7 +32,7 @@ use work::{Boundary as B, Heap, Owned};
 pub use work::{LedgerBoundary, LedgerWork};
 
 pub(crate) struct Custody {
-    grant: LedgerGrant,
+    grant: Owned<Installation>,
     root: Owned<Node>,
     members: File,
     anchor: Owned<Anchor>,
@@ -36,6 +42,7 @@ pub(crate) struct Custody {
 impl Custody {
     pub fn payload(&self) -> usize {
         self.anchor.heap()
+            + self.grant.adoption.heap()
             + self.grant.grants.heap()
             + self.grant.profile.capacity()
             + self.grant.ledger.capacity()
@@ -51,6 +58,7 @@ impl Custody {
     }
     pub fn rebase(&mut self) {
         self.ctx.failure_scope = None;
+        self.grant.rebase();
         self.root.rebase();
         self.root.dir.rebase();
         self.root.lock.rebase();
@@ -69,13 +77,18 @@ impl Custody {
         mode: OpeningMode,
         hook: Option<LedgerIoHook>,
     ) -> Result<Self, OpeningError> {
-        Self::connect_inner(grant, mode, hook).map_err(|_| OpeningError::Unavailable)
+        Self::connect_inner(grant.into(), mode, hook).map_err(|_| OpeningError::Unavailable)
     }
     fn connect_inner(
-        grant: LedgerGrant,
+        grant: Installation,
         mode: OpeningMode,
         hook: Option<LedgerIoHook>,
     ) -> Result<Self, Failure> {
+        let grant = if grant.selected == Profile::History {
+            Owned::new(grant)
+        } else {
+            Owned::from_baseline(grant)
+        };
         // The grant predicate includes the reached pair-uniqueness comparisons,
         // not merely one visit to each string. Charge each available range in
         // the compound closed installation schema, including both earlier IDs.
@@ -116,6 +129,7 @@ impl Custody {
         let root_parent =
             storage::directory(grant.directory.parent().ok_or_else(Failure::damage)?)?;
         let mut ctx = Context {
+            profile: grant.selected,
             hook,
             phase: if mode == OpeningMode::Reopen {
                 "recover"
@@ -162,6 +176,7 @@ impl Custody {
             parent,
             anchor_name: anchor_name.into_inner(),
             scope: 0,
+            profile: grant.selected,
             custody: grant.custody.clone(),
             justified: Cell::new(false),
             passes: Cell::new(0),
@@ -177,7 +192,7 @@ impl Custody {
                 let (members_device, members_inode) = raw::id(&members)?;
                 Owned::try_constructed(|| {
                     Ok::<_, Failure>(Anchor {
-                        format: "ck-ledger-anchor@4".into(),
+                        format: grant.selected.tag("anchor").into(),
                         ledger: grant.ledger.clone(),
                         custody: grant.custody.clone(),
                         workspace_id: grant.workspace_id.clone(),
@@ -191,6 +206,7 @@ impl Custody {
                         members_device,
                         members_inode,
                         stage: "preparing".into(),
+                        adoption: grant.adoption.clone(),
                     })
                 })?
             } else {
@@ -262,7 +278,7 @@ impl Custody {
         Ok(s)
     }
     fn anchor_matches(
-        grant: &LedgerGrant,
+        grant: &Installation,
         root: &Node,
         members: &File,
         a: &Anchor,
@@ -272,23 +288,25 @@ impl Custody {
         if !work::test(
             B::Relationships,
             a.logical().max(
-                "ck-ledger-anchor@4".len()
+                grant.selected.tag("anchor").len()
                     + grant.ledger.len()
                     + grant.custody.len()
                     + grant.workspace_id.len()
                     + grant.binding.len()
                     + grant.owner.len()
                     + grant.directory.as_os_str().len()
+                    + grant.adoption.logical()
                     + "preparing".len(),
             ),
             64,
             || {
-                a.format == "ck-ledger-anchor@4"
+                a.format == grant.selected.tag("anchor")
                     && a.ledger == grant.ledger
                     && a.custody == grant.custody
                     && a.workspace_id == grant.workspace_id
                     && a.binding == grant.binding
                     && a.owner == grant.owner
+                    && a.adoption == grant.adoption
                     && Some(a.directory.as_str()) == grant.directory.to_str()
                     && matches!(a.stage.as_str(), "preparing" | "installed")
                     && (a.directory_device, a.directory_inode)
@@ -303,7 +321,7 @@ impl Custody {
     }
     fn initial(&self) -> Creations {
         Creations {
-            format: "ck-ledger-creations@4".into(),
+            format: self.grant.selected.tag("creations").into(),
             custody: self.grant.custody.clone(),
             ledger: self.grant.ledger.clone(),
             generation: 0,
@@ -500,7 +518,7 @@ impl Custody {
     }
     fn valid_control(&self, c: &Creations) -> Result<(), Failure> {
         if !work::test(B::Fields, 0, 3, || {
-            c.format.len() == "ck-ledger-creations@4".len()
+            c.format.len() == self.grant.selected.tag("creations").len()
                 && c.custody.len() == self.grant.custody.len()
                 && c.ledger.len() == self.grant.ledger.len()
         }) {
@@ -511,7 +529,7 @@ impl Custody {
             c.format.len() + c.custody.len() + c.ledger.len(),
             5,
             || {
-                c.format == "ck-ledger-creations@4"
+                c.format == self.grant.selected.tag("creations")
                     && c.custody == self.grant.custody
                     && c.ledger == self.grant.ledger
                     && c.entries.0.len() <= 16
@@ -627,7 +645,7 @@ impl Custody {
             .get(p.slot as usize - 1)
             .ok_or_else(Failure::damage)?;
         let result = Created {
-            v: 4,
+            v: self.grant.selected.version(),
             kind: "created".into(),
             ledger: self.grant.ledger.clone(),
             workspace_id: self.grant.workspace_id.clone(),
@@ -638,7 +656,7 @@ impl Custody {
             seq: 1,
         };
         let origin = Owned::new(Origin {
-            v: 4,
+            v: self.grant.selected.version(),
             custody: pair.custody.clone(),
             ledger: self.grant.ledger.clone(),
             workspace_id: self.grant.workspace_id.clone(),
@@ -648,7 +666,11 @@ impl Custody {
             prev: None,
             kind: "created".into(),
             input: p.input.clone(),
-            result,
+            result: if self.grant.selected == Profile::History {
+                SelectedResult::History(Box::new(history::codec::HistoryResult::created(result)))
+            } else {
+                SelectedResult::Ledger(result)
+            },
         });
         work::complete(B::Constructions, true);
         Ok(origin)
@@ -868,7 +890,9 @@ pub(crate) fn request(input: &LedgerInput) -> Result<Owned<Request>, OpeningErro
     if !schema(0, 1, || input.bytes.is_some()) {
         return Err(OpeningError::InvalidInput);
     }
-    codec::decode(input.as_bytes(), B::Ingress).map_err(|_| OpeningError::InvalidInput)
+    codec::decode::<crate::kernel::changes::ledger::Request>(input.as_bytes(), B::Ingress)
+        .map(|r| Owned::new(Request::Ledger(r.into_inner())))
+        .map_err(|_| OpeningError::InvalidInput)
 }
 pub(crate) fn reply(result: Result<Owned<Vec<u8>>, OpeningError>) -> Vec<u8> {
     match result {

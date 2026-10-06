@@ -1,5 +1,8 @@
+use super::selection::{Adoption, Operation as Origin, SelectedRequest as Request, SelectedResult};
 use super::work::{self, Boundary as B, Heap, Owned};
-use crate::kernel::changes::ledger::{Created, Cursor, LedgerPair, Origin, Request, C};
+use crate::kernel::changes::ledger::{
+    Created, Cursor, LedgerPair, Origin as LegacyOrigin, Request as LegacyRequest, C,
+};
 use serde_core::{
     de::{self, MapAccess, SeqAccess, Visitor},
     ser::SerializeStruct,
@@ -7,6 +10,9 @@ use serde_core::{
 };
 use std::fmt;
 macro_rules! role {
+    (LegacyOrigin,$s:ident) => {
+        work::Role::Record
+    };
     (Origin,$s:ident) => {
         work::Role::Record
     };
@@ -34,7 +40,7 @@ macro_rules! vector_role {
 // A closed discriminator compares one key with fixed candidate literals. The
 // conservative group covers the largest available candidate and every schema
 // alternative; empty/short keys do not erase the RHS or its words.
-fn field_key(key: &str, names: &[&str]) {
+pub(super) fn field_key(key: &str, names: &[&str]) {
     work::attempt(
         B::Fields,
         key.len()
@@ -42,7 +48,7 @@ fn field_key(key: &str, names: &[&str]) {
         names.len(),
     );
 }
-fn required<T, E: de::Error>(value: Option<T>, name: &'static str) -> Result<T, E> {
+pub(super) fn required<T, E: de::Error>(value: Option<T>, name: &'static str) -> Result<T, E> {
     work::test(B::Fields, 0, 1, || value.is_some());
     value.ok_or_else(|| E::missing_field(name))
 }
@@ -162,7 +168,8 @@ shape!(Created {
     result: String,
     seq: u64
 });
-shape!(Origin { v: u64, custody: String, ledger: String, workspace_id: String, binding: String, change: String, seq: u64, prev: Option<String>, kind: String, input: Request, result: Created });
+shape!(LegacyOrigin { v: u64, custody: String, ledger: String, workspace_id: String, binding: String, change: String, seq: u64, prev: Option<String>, kind: String, input: LegacyRequest, result: Created });
+shape!(Origin {v:u64,custody:String,ledger:String,workspace_id:String,binding:String,change:String,seq:u64,prev:Option<String>,kind:String,input:Request,result:SelectedResult});
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Physical {
     pub directory_device: u64,
@@ -192,9 +199,10 @@ pub(super) struct Anchor {
     pub members_device: u64,
     pub members_inode: u64,
     pub stage: String,
+    pub adoption: Option<Adoption>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct MemberAnchor {
+pub(super) struct MemberAnchorBase {
     pub format: String,
     pub custody: String,
     pub ledger: String,
@@ -210,7 +218,7 @@ pub(super) struct MemberAnchor {
     pub lock_inode: u64,
     pub stage: String,
 }
-shape!(MemberAnchor {
+shape!(MemberAnchorBase {
     format: String,
     custody: String,
     ledger: String,
@@ -226,6 +234,65 @@ shape!(MemberAnchor {
     lock_inode: u64,
     stage: String
 });
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct MemberAnchor {
+    pub base: MemberAnchorBase,
+    pub adoption: Option<Adoption>,
+}
+impl std::ops::Deref for MemberAnchor {
+    type Target = MemberAnchorBase;
+    fn deref(&self) -> &MemberAnchorBase {
+        &self.base
+    }
+}
+impl Heap for MemberAnchor {
+    fn heap(&self) -> usize {
+        self.base.heap() + self.adoption.heap()
+    }
+    fn logical(&self) -> usize {
+        self.base.logical() + self.adoption.logical()
+    }
+}
+impl Serialize for MemberAnchor {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        if self.adoption.is_none() {
+            return self.base.serialize(s);
+        }
+        let mut o = s.serialize_struct("member_anchor", 18)?;
+        o.serialize_field("format", &self.format)?;
+        o.serialize_field("custody", &self.custody)?;
+        o.serialize_field("ledger", &self.ledger)?;
+        o.serialize_field("workspace_id", &self.workspace_id)?;
+        o.serialize_field("binding", &self.binding)?;
+        o.serialize_field("change", &self.change)?;
+        o.serialize_field("owner", &self.owner)?;
+        o.serialize_field("key", &self.key)?;
+        o.serialize_field("directory", &self.directory)?;
+        o.serialize_field("directory_device", &self.directory_device)?;
+        o.serialize_field("directory_inode", &self.directory_inode)?;
+        o.serialize_field("lock_device", &self.lock_device)?;
+        o.serialize_field("lock_inode", &self.lock_inode)?;
+        o.serialize_field("stage", &self.stage)?;
+        let a = self.adoption.as_ref().unwrap();
+        o.serialize_field("policy", &a.policy)?;
+        o.serialize_field("check", &a.check)?;
+        o.serialize_field("evaluator", &a.evaluator)?;
+        o.serialize_field("adopter", &a.adopter)?;
+        o.end()
+    }
+}
+impl<'de> Deserialize<'de> for MemberAnchor {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        if work::history_mode() {
+            super::history::codec::MemberAnchorWire::deserialize(d).map(Into::into)
+        } else {
+            MemberAnchorBase::deserialize(d).map(|base| Self {
+                base,
+                adoption: None,
+            })
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Association {
     pub slot: u64,
@@ -378,7 +445,7 @@ shape!(Inspection {
     progress: String
 });
 
-impl Heap for Request {
+impl Heap for LegacyRequest {
     fn logical(&self) -> usize {
         self.payload()
     }
@@ -394,15 +461,15 @@ impl Heap for Request {
             + self.change.heap()
     }
 }
-impl<'de> Deserialize<'de> for Request {
+impl<'de> Deserialize<'de> for LegacyRequest {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         struct Union;
         impl<'de> Visitor<'de> for Union {
-            type Value = Request;
+            type Value = LegacyRequest;
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 f.write_str("closed v4 request")
             }
-            fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<Request, M::Error> {
+            fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<LegacyRequest, M::Error> {
                 let mut v: Option<Owned<u64>> = None;
                 let mut op: Option<Owned<String>> = None;
                 let mut ledger: Option<Owned<String>> = None;
@@ -467,7 +534,7 @@ impl<'de> Deserialize<'de> for Request {
                         _ => unreachable!(),
                     }
                 }
-                let r = Owned::new(Request {
+                let r = Owned::new(LegacyRequest {
                     v: required(v, "v")?.into_inner(),
                     op: required(op, "op")?.into_inner(),
                     ledger: required(ledger, "ledger")?.into_inner(),
@@ -506,7 +573,7 @@ impl<'de> Deserialize<'de> for Request {
         )
     }
 }
-impl Serialize for Request {
+impl Serialize for LegacyRequest {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut o = s.serialize_struct("request", 10)?;
         o.serialize_field("v", &self.v)?;
@@ -657,7 +724,7 @@ pub(super) fn emit_input(v: &Request) -> Result<Owned<Vec<u8>>, ()> {
 pub(super) fn emit_reply<T: Serialize + Heap>(v: &T, limit: usize) -> Result<Owned<Vec<u8>>, ()> {
     emit_mode(v, limit, false, B::ReplyEmissions)
 }
-fn emit_mode<T: Serialize + Heap>(
+pub(super) fn emit_mode<T: Serialize + Heap>(
     v: &T,
     limit: usize,
     trace: bool,
@@ -979,7 +1046,7 @@ impl Serialize for PageRef<'_> {
 }
 
 pub(super) fn emit_origin(v: &Origin) -> Result<Owned<Vec<u8>>, ()> {
-    emit_mode(v, C, true, B::CandidateEmissions)
+    emit_mode(v, C, !work::history_mode(), B::CandidateEmissions)
 }
 pub(super) struct CanonicalInput<'a>(&'a [u8]);
 impl CanonicalInput<'_> {
@@ -989,7 +1056,7 @@ impl CanonicalInput<'_> {
 }
 pub(super) fn retained_origin(bytes: &[u8]) -> Result<(Owned<Origin>, CanonicalInput<'_>), ()> {
     let record = decode(bytes, B::Origins)?;
-    let emitted = emit_mode(&*record, C, true, B::OriginEmissions)?;
+    let emitted = emit_mode(&*record, C, !work::history_mode(), B::OriginEmissions)?;
     if !work::test(B::Canonical, bytes.len().max(emitted.len()), 1, || {
         *emitted == bytes
     }) {
@@ -1054,6 +1121,7 @@ impl Heap for Anchor {
             + self.lock_inode.heap()
             + self.members_device.heap()
             + self.members_inode.heap()
+            + self.adoption.heap()
             + self.stage.heap()
     }
     fn logical(&self) -> usize {
@@ -1070,6 +1138,7 @@ impl Heap for Anchor {
             + self.lock_inode.logical()
             + self.members_device.logical()
             + self.members_inode.logical()
+            + self.adoption.logical()
             + self.stage.logical()
     }
 }
@@ -1103,6 +1172,12 @@ impl Serialize for AnchorWire<'_> {
         o.serialize_field("members_inode", &self.0.members_inode)?;
         o.serialize_field("grants", self.1)?;
         o.serialize_field("stage", &self.0.stage)?;
+        if let Some(a) = &self.0.adoption {
+            o.serialize_field("policy", &a.policy)?;
+            o.serialize_field("check", &a.check)?;
+            o.serialize_field("evaluator", &a.evaluator)?;
+            o.serialize_field("adopter", &a.adopter)?;
+        }
         o.end()
     }
 }
@@ -1172,28 +1247,41 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
             let mut members_device: Option<Owned<u64>> = None;
             let mut members_inode: Option<Owned<u64>> = None;
             let mut stage: Option<Owned<String>> = None;
-            let mut mask = 0u16;
+            let mut policy: Option<Owned<String>> = None;
+            let mut check: Option<Owned<String>> = None;
+            let mut evaluator: Option<Owned<String>> = None;
+            let mut adopter: Option<Owned<String>> = None;
+            let mut mask = 0u32;
             while let Some(k) = m.next_key::<String>()? {
                 let k = Owned::new(k);
+                let keys = [
+                    "format",
+                    "ledger",
+                    "custody",
+                    "workspace_id",
+                    "binding",
+                    "owner",
+                    "directory",
+                    "directory_device",
+                    "directory_inode",
+                    "lock_device",
+                    "lock_inode",
+                    "members_device",
+                    "members_inode",
+                    "stage",
+                    "grants",
+                    "policy",
+                    "check",
+                    "evaluator",
+                    "adopter",
+                ];
                 field_key(
                     &k,
-                    &[
-                        "format",
-                        "ledger",
-                        "custody",
-                        "workspace_id",
-                        "binding",
-                        "owner",
-                        "directory",
-                        "directory_device",
-                        "directory_inode",
-                        "lock_device",
-                        "lock_inode",
-                        "members_device",
-                        "members_inode",
-                        "stage",
-                        "grants",
-                    ],
+                    if work::history_mode() {
+                        &keys[..]
+                    } else {
+                        &keys[..15]
+                    },
                 );
                 let bit = match k.as_str() {
                     "format" => 1,
@@ -1211,6 +1299,10 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                     "members_inode" => 4096,
                     "stage" => 8192,
                     "grants" => 16384,
+                    "policy" if work::history_mode() => 32768,
+                    "check" if work::history_mode() => 65536,
+                    "evaluator" if work::history_mode() => 131072,
+                    "adopter" if work::history_mode() => 262144,
                     _ => {
                         work::complete(B::Fields, false);
                         return Err(de::Error::custom("unknown field"));
@@ -1239,10 +1331,16 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                     16384 => {
                         m.next_value_seed(Grants(self.0))?;
                     }
+                    32768 => policy = Some(Owned::new(m.next_value()?)),
+                    65536 => check = Some(Owned::new(m.next_value()?)),
+                    131072 => evaluator = Some(Owned::new(m.next_value()?)),
+                    262144 => adopter = Some(Owned::new(m.next_value()?)),
                     _ => unreachable!(),
                 }
             }
-            if !work::test(B::Fields, 0, 1, || mask == 32767) {
+            if !work::test(B::Fields, 0, 1, || {
+                mask == if work::history_mode() { 524287 } else { 32767 }
+            }) {
                 return Err(de::Error::custom("missing field"));
             }
             Ok(Anchor {
@@ -1260,6 +1358,16 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                 members_device: members_device.unwrap().into_inner(),
                 members_inode: members_inode.unwrap().into_inner(),
                 stage: stage.unwrap().into_inner(),
+                adoption: if work::history_mode() {
+                    Some(Adoption {
+                        policy: policy.unwrap().into_inner(),
+                        check: check.unwrap().into_inner(),
+                        evaluator: evaluator.unwrap().into_inner(),
+                        adopter: adopter.unwrap().into_inner(),
+                    })
+                } else {
+                    None
+                },
             })
         }
     }

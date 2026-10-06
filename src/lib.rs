@@ -9,6 +9,8 @@ mod kernel {
         pub mod intent;
         pub mod intent_trace;
         pub mod ledger;
+        #[cfg(target_os = "linux")]
+        pub mod ledger_history;
         pub mod opening;
     }
     pub mod state {
@@ -31,6 +33,8 @@ mod application {
     pub mod intent_trace;
     #[cfg(target_os = "linux")]
     pub mod ledger;
+    #[cfg(target_os = "linux")]
+    pub mod ledger_history;
     #[cfg(target_os = "linux")]
     pub mod opening;
     pub mod source_observation;
@@ -109,3 +113,15 @@ pub use application::ledger::{
     LedgerCollectionPermission, LedgerGuard, LedgerHost, LedgerMemberPermission, LedgerPermission,
 };
 pub use kernel::changes::ledger::{LedgerGrant, LedgerGrantSpec, LedgerInput, LedgerPair};
+
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::ledger::history::{LedgerHistoryCall, LedgerHistoryWork};
+#[cfg(target_os = "linux")]
+pub use kernel::changes::ledger_history::{
+    LedgerHistoryGrant, LedgerHistoryGrantSpec, LedgerHistoryInput,
+};
+
+#[cfg(target_os = "linux")]
+pub use application::ledger_history::{
+    LedgerHistoryGuard, LedgerHistoryHost, LedgerHistoryMemberPermission,
+};

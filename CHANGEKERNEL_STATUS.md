@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Current gate — R30 review closed; exact integration and combined checks pending
+## Current gate — R30 exact bytes integrated; fresh combined checks pending
 
 The user renewed the existing backend review/integration scope. The [combined ledger history/context contract](.changekernel/wiki/items/system/components/ledger-history.md) remains adopted at `25e3cfdd33e496156c2b2b6baf94dd5d6f93e3be`. No R30 source, release or controller is accepted yet. Manager worktree is `/home/canina7/Projects/changekernel-workers/integration`, branch `integration/rust-kickoff-01`.
 
@@ -32,7 +32,7 @@ Manager evidence: `/home/canina7/.local/state/changekernel-source-review/r30-man
 
 ## Manager verdict — A1/A2 closed; exact imports authorized
 
-**Accepted for integration only:** source `58a79c25125de3f81b29f684cc6eb8fee0e683a5` and the two unchanged exact test overlays above. Final source acceptance remains blocked until the integrated combined gates pass.
+**Accepted for integration only:** source `58a79c25125de3f81b29f684cc6eb8fee0e683a5` and the two unchanged exact test overlays above, manager verdict `7fc545a78:CHANGEKERNEL_STATUS.md`. This checkpoint imports exactly **22 owned source/test paths**, byte-identical to those subjects: 20 from the source revision and two consumer overlays. No worker status history, Wiki, manifest, lockfile, settings or other protected path was imported. Native manager cwd/session/branch/clean baseline was reverified before import. Final source acceptance remains blocked until the integrated combined gates pass.
 
 - Independent correction review `4793fe23cfdc03cc1bfa5c1ee990aed581cb62b4:CHANGEKERNEL_STATUS.md` recommends bounded closure of A1/A2, with no new scoped blocker. Manager read the full report, reverified its native/session/branch/clean state and status-only successor delta, and verified its archive's 125 source files against the exact candidate.
 - Manager independently ran `cargo test --locked --test ledger_history_work --test ledger_selection -- --nocapture`: **19 + 30 parent passes**, exit 0, 120.31 seconds within 180 seconds; fmt/clippy exit 0. The eight new cleanup combinations preserve both remnant types and restore same-host exact recovery; the actor/opcode cases reproduce the separately entered/refused scopes and expected counters. Nested legacy helper results are not extra parent passes.
@@ -67,7 +67,7 @@ Branch `work/r30-ledger-history-source`; worktree `/home/canina7/Projects/change
 
 ## Integration gate and retained limits
 
-Exact independent successor review and both consumers have returned and passed manager disposition. Import only the **20 owned source/work-test paths** identified by the exact source delta and the **two exact consumer tests**; never import worker status files wholesale. Run fresh **combined** native unit/integration/doc tests, fmt and locked warnings-denied all-target clippy after integration; verify imported bytes match reviewed subjects before final acceptance. No npm gate for Rust-only work. Source acceptance is not release qualification, controller transfer or permission for the later guarded real-world update.
+Exact independent successor review and both consumers have returned and passed manager disposition. The **20 owned source/work-test paths** and **two exact consumer tests** are now imported and independently byte-verified; the import manifest is `imported-paths.json` under the correction evidence root. Worker status files were not merged. Run fresh **combined** native unit/integration/doc tests, fmt and locked warnings-denied all-target clippy after integration; verify imported bytes match reviewed subjects before final acceptance. No npm gate for Rust-only work. Source acceptance is not release qualification, controller transfer or permission for the later guarded real-world update.
 
 The predecessor `d8918485` with both exact overlays passed manager full checks: **185 parent passes/zero failures/three ignored**, fmt/clippy exit 0, in `/home/canina7/.local/state/changekernel-source-review/r30-manager-combined.zwwg33bh/`. It nevertheless failed the independent A1/A2 probes. Those passes are not successor evidence. The reviewer’s first 120-second run had no returned exit code; its full partial log was overwritten, leaving only the timeout tool result and captured tail. Later passes do not repair that gap. Earlier R29/R30 180-second incomplete runs and R27 analyzer/lifetime/retention/rollback limits remain preserved.
 

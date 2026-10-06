@@ -6,6 +6,7 @@ pub(super) struct MemberState {
     pub(super) record: Option<Owned<Origin>>,
     pub(super) temporary: bool,
     pub(super) anchor_temporary: bool,
+    pub(super) history: Option<history::sequential::HistoryState>,
 }
 impl Custody {
     pub(super) fn member_node(&mut self, slot: u64, fresh: bool) -> Result<Node, Failure> {
@@ -38,6 +39,7 @@ impl Custody {
             parent: self.members.try_clone().map_err(|_| Failure::io())?,
             anchor_name: anchor_name.into_inner(),
             scope: slot as u8,
+            profile: self.grant.selected,
             custody: custody.into_inner(),
             justified: Cell::new(false),
             passes: Cell::new(0),
@@ -100,20 +102,23 @@ impl Custody {
         path.push(&*basename);
         path.refresh();
         let value = MemberAnchor {
-            format: "ck-ledger-member-anchor@4".into(),
-            custody: pair.custody.clone(),
-            ledger: self.grant.ledger.clone(),
-            workspace_id: self.grant.workspace_id.clone(),
-            binding: self.grant.binding.clone(),
-            change: pair.change.clone(),
-            owner: self.grant.owner.clone(),
-            key: key.into(),
-            directory: path.to_str().ok_or_else(Failure::damage)?.into(),
-            directory_device: p.directory_device,
-            directory_inode: p.directory_inode,
-            lock_device: p.lock_device,
-            lock_inode: p.lock_inode,
-            stage: stage.into(),
+            base: MemberAnchorBase {
+                format: self.grant.selected.tag("member-anchor").into(),
+                custody: pair.custody.clone(),
+                ledger: self.grant.ledger.clone(),
+                workspace_id: self.grant.workspace_id.clone(),
+                binding: self.grant.binding.clone(),
+                change: pair.change.clone(),
+                owner: self.grant.owner.clone(),
+                key: key.into(),
+                directory: path.to_str().ok_or_else(Failure::damage)?.into(),
+                directory_device: p.directory_device,
+                directory_inode: p.directory_inode,
+                lock_device: p.lock_device,
+                lock_inode: p.lock_inode,
+                stage: stage.into(),
+            },
+            adoption: self.grant.adoption.clone(),
         };
         // The raw aggregate and path scratch really overlap before adoption.
         work::buffered_capacity(value.heap(), false);
@@ -134,7 +139,7 @@ impl Custody {
         path.push(&*basename);
         path.refresh();
         let path = path.to_str().ok_or_else(Failure::damage)?;
-        let expected_bytes = 24
+        let expected_bytes = self.grant.selected.compared_tag("member-anchor", 24)
             + pair.custody.len()
             + self.grant.ledger.len()
             + self.grant.workspace_id.len()
@@ -143,19 +148,25 @@ impl Custody {
             + self.grant.owner.len()
             + key.len()
             + path.len()
+            + self.grant.adoption.logical()
             + 9;
         Ok(work::test(
             B::Relationships,
             a.logical().max(expected_bytes),
-            18,
+            if self.grant.selected == Profile::History {
+                23
+            } else {
+                18
+            },
             || {
-                a.format == "ck-ledger-member-anchor@4"
+                a.format == self.grant.selected.tag("member-anchor")
                     && a.custody == pair.custody
                     && a.ledger == self.grant.ledger
                     && a.workspace_id == self.grant.workspace_id
                     && a.binding == self.grant.binding
                     && a.change == pair.change
                     && a.owner == self.grant.owner
+                    && a.adoption == self.grant.adoption
                     && a.key == key
                     && a.directory == path
                     && a.directory_device == physical.directory_device
@@ -190,7 +201,7 @@ impl Custody {
     }
     pub(super) fn initial_prefix(&self, n: &Node) -> Prefix {
         Prefix {
-            format: "ck-ledger-member-prefix@4".into(),
+            format: self.grant.selected.tag("prefix").into(),
             custody: n.custody.clone(),
             change: self.grant.grants[n.scope as usize - 1].change.clone(),
             generation: 0,
@@ -395,7 +406,7 @@ impl Custody {
         n.incident(&mut self.ctx)?;
         let prefix: Owned<Prefix> = n.control(&mut self.ctx, "checkpoint.json")?;
         if !work::test(B::Fields, 0, 3, || {
-            prefix.format.len() == "ck-ledger-member-prefix@4".len()
+            prefix.format.len() == self.grant.selected.tag("prefix").len()
                 && prefix.custody.len() == n.custody.len()
                 && prefix.change.len() == self.grant.grants[n.scope as usize - 1].change.len()
         }) {
@@ -411,14 +422,27 @@ impl Custody {
                     .max(self.grant.grants[n.scope as usize - 1].change.len()),
             3,
             || {
-                prefix.format == "ck-ledger-member-prefix@4"
+                prefix.format == self.grant.selected.tag("prefix")
                     && prefix.custody == n.custody
                     && prefix.change == self.grant.grants[n.scope as usize - 1].change
             },
         ) {
             return Err(Failure::damage());
         }
-        let trace = n.read(&mut self.ctx, "trace.jsonl", T)?;
+        let trace = n.read(
+            &mut self.ctx,
+            "trace.jsonl",
+            self.grant.selected.trace_limit(),
+        )?;
+        if let (Profile::History, Some(accepted)) = (self.grant.selected, accepted) {
+            return self.history_member(
+                n,
+                prefix,
+                trace,
+                storage::present(&names, "checkpoint.tmp"),
+                accepted,
+            );
+        }
         let record = match prefix.generation {
             0 => {
                 work::test(B::Fields, 0, 1, || p.is_some());
@@ -512,7 +536,7 @@ impl Custody {
                     record.logical().max(expected_payload),
                     64,
                     || {
-                        record.v == 4
+                        record.v == self.grant.selected.version()
                             && record.custody == pair.custody
                             && record.ledger == self.grant.ledger
                             && record.workspace_id == self.grant.workspace_id
@@ -522,7 +546,7 @@ impl Custody {
                             && record.prev.is_none()
                             && record.kind == "created"
                             && record.input.key.as_deref() == Some(key)
-                            && record.result.v == 4
+                            && record.result.v == self.grant.selected.version()
                             && record.result.kind == "created"
                             && record.result.ledger == self.grant.ledger
                             && record.result.workspace_id == self.grant.workspace_id
@@ -534,6 +558,20 @@ impl Custody {
                     },
                 ) {
                     return Err(Failure::damage());
+                }
+                if let SelectedResult::History(result) = &record.result {
+                    if !work::test(
+                        B::Semantic,
+                        result
+                            .adoption
+                            .as_ref()
+                            .map_or(0, String::len)
+                            .max("authenticated_direct".len()),
+                        1,
+                        || result.adoption.as_deref() == Some("authenticated_direct"),
+                    ) {
+                        return Err(Failure::damage());
+                    }
                 }
                 if let Some(a) = accepted {
                     let input_digest = Owned::new(canonical_input.digest());
@@ -669,6 +707,7 @@ impl Custody {
             record,
             temporary,
             anchor_temporary,
+            history: None,
         })
     }
     // Accepted input is obtained from independently selected bytes, not from the

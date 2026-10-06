@@ -153,6 +153,9 @@ fn permission(op: &str) -> LedgerCollectionPermission {
     }
 }
 pub(crate) fn authorize(guard: &dyn LedgerGuard, p: LedgerPermission) -> Result<(), OpeningError> {
+    if ledger::work::history_mode() {
+        return super::ledger_history::authorize(|| guard.principal(), p);
+    }
     ledger::schema(0, 1, || p == LedgerPermission::Allow);
     match p {
         LedgerPermission::Unavailable => Err(OpeningError::Unavailable),
