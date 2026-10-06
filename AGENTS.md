@@ -39,6 +39,7 @@ Direct notifications must be identified as peer messages and point to exact assi
 - Run `npm test` only for retained TypeScript adapter changes, their dependencies or a changed integration boundary. It typechecks the narrow Pi adapter closure and runs its tests; Rust-only slices do not require Node, npm or a legacy TypeScript build.
 - Test observable behavior and consequential failure boundaries. Retain regressions for authorization, exact source identity, recovery/idempotency and cleanup; do not test compiler guarantees, file inventories, documentation wording or duplicate implementations for parity. No test-count target, blanket coverage quota, mandatory mutation ritual or extra testing framework.
 - Independent review may use focused disposable probes. Add a tool or a permanent test only for a concrete risk not already covered. Release qualification is separate from routine source checks; see the [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy).
+- When analyzer and native results disagree, compare exact source, worktree, toolchain, targets/features and Cargo-cache provenance before changing code. Preserve failing cache/log evidence before scoped invalidation; verify rebuilds against unchanged source bytes. Cold workspace findings, Cargo push diagnostics and semantic pull results are distinct signals: wait for the relevant work to complete, and do not treat an empty pull or Cargo's `Fresh` label as proof of the whole subject.
 
 ## TypeSafe development
 
