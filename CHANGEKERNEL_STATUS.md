@@ -10,11 +10,11 @@ R30's bounded source acceptance remains recorded at `e4c7711805e15d15ca6a2acffc2
 
 The manager owns routine decisions to reuse or create sessions. Reuse is appropriate when verified context, source checkpoint and worktree fit the next task. A fresh session is appropriate when a task needs independent context, the worktree changes or retained state would confound evidence; changing conversation alone never relocates the native process. This procedure is recorded in [AGENTS.md](AGENTS.md#project-manager).
 
-For R31, reuse the former R30-A **worker slot**, but retire its completed review process and launch a **fresh session in a new exact-baseline worktree**. Its old worktree contains the provisional predecessor rather than the integrated source and its context is a completed custody/accounting review. Preserve its session and checkpoint; do not reset or erase the integration manager's live analyzer state. Only one worker is released for the new investigation; the other three remain parked. The current four-worker pool does not grow.
+For R31, the manager reused the former R30-A **worker slot**, verified and retired its completed review process, confirmed its exit and the foreground shell, then launched a **fresh session in a new exact-baseline worktree**. Its old worktree contains the provisional predecessor rather than the integrated source and its context is a completed custody/accounting review. Its session/checkpoint and the integration manager's live analyzer state remain preserved. Only one worker is released for the new investigation; the other three remain parked. The current four-worker pool did not grow.
 
 ## Assignment — R31-D: reconcile pi-lens and Rust feedback
 
-**Assignment state:** prepared; execution starts only after manager verifies the new native process, session header/tool cwd, branch, exact checkpoint and clean Git, then sends the exact committed assignment. Dispatch is not acceptance.
+**Assignment state:** dispatched and acknowledged against `41034e6e63a9e78cfaf32419ef3dc279c73c42b6:CHANGEKERNEL_STATUS.md`. The manager independently verified the new native process, session header/tool cwd, branch, exact checkpoint, clean Git and current recipient before the single dispatch, then correlated its acknowledgment outside Git. Investigation is in progress; no findings or remedy have been accepted. Dispatch is not acceptance.
 
 - **Branch:** `work/r31-diagnostic-provenance`.
 - **Worktree:** `/home/canina7/Projects/changekernel-workers/r31-diagnostic-provenance`.
