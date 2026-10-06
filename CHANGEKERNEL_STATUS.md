@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## R33 review verdict — C accepted; P prepared suite accepted; runtime gate CLOSED
+## R33 runtime release — C accepted; P prepared suite accepted; ACK/START gate
 
 **R33-C accepted, bounded to the declared cooperative scenario.** Latest corrected report `93c8a6ae3144f7e3317a84d9fece553b9fd1a391:CHANGEKERNEL_STATUS.md` corrects the original `45570c515d2a298c78e65c9a15ceae245a8bf0f5` slot/lifetime wording without rewriting frozen artifacts or raw metrics. Report-only assignment `492b4d149:CHANGEKERNEL_STATUS.md` is satisfied. Manager reviewed the complete report/consumer/orchestration, verified selected 145/frozen 28/source 127 identities, archived snapshots/blobs/ordering/replies, report-only Git delta and external supplement SHA-256 `6710bbe03cbe8c585136df499c842fa285c62d5a7b515538f72f01841e67b590`.
 
@@ -28,7 +28,11 @@ Measurement interpretation must say **fresh-process first sequence with custody 
 
 ### Next action / explicit gate
 
-**P runtime remains CLOSED. This verdict accepts readiness, not SDK execution.** Next manager action: commit a separate exact runtime-release decision after confirming no C/control native work remains; verify P native/session/tool cwd, branch, clean prepared checkpoint and current recipient. Send an ACK-only release notice, correlate its response externally, then send the single correlated START authorization. Preparation/idle/dispatch labels and this verdict are not permission to seed/sample. Preserve fixed schedule/inputs and first unexpected failure; no hidden retries, reduction or fixture reset.
+**This separately committed revision releases exactly one frozen R33-P SDK phase, conditional on verified ACK followed by a single correlated START.** C report is accepted at `24c0091b6:CHANGEKERNEL_STATUS.md`; C/control owned children are confirmed exited/reaped and no further C native work is assigned. P current native/session/tool cwd, branch, clean prepared checkpoint `6d74e201a89ec9a174a944a8458183445da78767` and recipient are verified externally. The earlier manager idle-only check rejected C's `done` label before any notice was sent; disposition preserves that overstrict preflight, accepts idle/done only as routing state, not intent or acceptance.
+
+Only after the manager correlates P's ACK-only receipt may a separate START message authorize `python3 /home/canina7/.local/state/changekernel-source-review/r33-workloads.r6iz2ro8/successor-86f4308aa/phase.py <full SHA of this release commit>`. Until that START, SDK calls/seeds/samples remain zero. Run only the exact frozen sixteen-step/821-call schedule once, with the fixed binary, source, inputs, oracles, sample count and caps identified above. No rebuild, extra samples, metadata repair, original-custody reopening, scope change or best-result selection. Report first/fresh and warm measurements with deliberate snapshot pre-touch, full process elapsed/cost distinctions and all refusals/errors. Stop on the first unexpected error/timeout/uncertain acceptance/ceiling violation, preserve partial bytes/logs/custody, confirm/reap owned children, never retry or reset; retain expected false Checks, material limit, stale/denied/count refusals without resampling.
+
+P writes only its own status and external execution evidence. Return code revision, actual result/accounting paths/hashes, process closure, preserved identities, limitations and gaps; park without self-acceptance or another task. Acceptance and any Phase advancement remain later manager/user gates. The ACK-only notice is explicitly not START; commit, dispatch, idle or process exit alone does not authorize execution.
 
 After authorized P execution, independently review original results/accounting/custody and report actual backend limits and [Phase-1 gaps](.changekernel/wiki/items/product/plan.md#phase-1--standalone-no-effects-change-tracing). No optimization, new evaluator, application effect, Phase advancement or qualification/deployment is released.
 
