@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## Manager verdict — R31 diagnosis accepted; bounded cache repair authorized
+## Manager verdict — R31 diagnosis accepted; integration cache repaired
 
 The manager independently reviewed and reproduced `d7e6a40e3e356b3ae71799709cdd62d34bea7f57:CHANGEKERNEL_STATUS.md`, submitted under assignment `41034e6e63a9e78cfaf32419ef3dc279c73c42b6:CHANGEKERNEL_STATUS.md`. **Accepted as a scoped diagnostic explanation and remedy proposal**, not proof of universal analyzer reliability or a historical account of how the cache became inconsistent. The worker changed only its status report and is parked.
 
@@ -26,17 +26,19 @@ The first manager preflight incorrectly required `.pi-lens.json`'s archive mtime
 
 Manager evidence is `/home/canina7/.local/state/changekernel-source-review/r31-manager-review.7gchr42d/`, including `worker-report.md`, first-preflight failure, preserved snapshots, reproducer logs, `independent-control-summary.json` and authoritative `raw-recount-corrected.json`. Worker evidence is `/home/canina7/.local/state/changekernel-source-review/r31-diagnostic.cnSvZRNc/`; independent unchanged-worker-script rerun is `/home/canina7/.local/state/changekernel-source-review/r31-cache-reproduction.fsf7as6h/`. Raw routing/session identities remain outside Git.
 
-## Authorized next action — manager-owned integration cache repair
+## Completed manager-owned integration cache repair
 
-**Execution pending.** The manager may apply the independently reproduced, minimal local repair in the integration worktree only:
+The exact bounded action was authorized before execution at `0cc72aef38c3fefddf8f25c52f077c80504bcb0d:CHANGEKERNEL_STATUS.md` and completed without widening scope:
 
-1. Reverify source/configuration byte identities, clean Git and the preserved bad artifacts. Keep the original snapshots intact.
-2. Update only `src/lib.rs`'s filesystem mtime to invalidate the incorrect freshness decision. Do not change its bytes, alter settings, remove caches, install packages or change compiler versions.
-3. Run bounded locked/offline all-target Cargo checking against the active target, retaining structured output, stderr, actual exit and proof of library rebuild. This repairs/checks compiler metadata for tooling; it does not pack or run ChangeKernel as its controller.
-4. Recheck the affected paths through the actual live pi-lens session. Preserve the first response, distinguish cold/load/check progress from completed findings, and inspect both Cargo and semantic results. If state remains contradictory, stop and report it; do not repeat until green, suppress diagnostics or change source to satisfy stale findings.
-5. Verify unchanged source/config bytes and Git scope, record the actual result and any remaining readiness/pipeline limits. No further remedy is implied if this bounded action fails.
+1. Reverified integration native cwd, clean Git, exact source/configuration bytes and unchanged bad artifacts. Original cache snapshots remain intact.
+2. Changed only `src/lib.rs`'s filesystem mtime, then ran `cargo check --locked --all-targets --message-format=json -vv` with offline dependencies against the active target. **Exit 0, zero compiler errors, 2.88 seconds, no timeout.** Structured output proves both ordinary and test library artifacts were actually rebuilt (`fresh:false`), not merely reused. All **127 tracked file hashes** were unchanged after the intervention and verification; Git stayed clean. No cache deletion, source-byte edit, settings change, compiler/package upgrade or controller invocation occurred.
+3. Queried the actual live pi-lens session with an active primary-server probe on `src/lib.rs`, `tests/ledger_history_work.rs`, `tests/ledger_history.rs`, `tests/ledger_history_failures.rs` and `tests/ledger_selection.rs`. The **first post-repair response confirmed all five clean**, with zero diagnostics and zero inconclusive paths. The original import, macro and unlinked-file findings were absent at this scoped observation.
+4. Ran a broader active all-server probe over all **22 imported R30 source/test paths**. It returned **zero primary errors** and the same **nine auxiliary informational Rust-2024 let-chain suggestions**: 15 files confirmed clean, five with informational findings, and **two unconfirmed** (`tests/ledger_history.rs`, `tests/ledger_history_failures.rs`). The earlier primary-only probe confirmed those two clean; the broader all-server result does not confirm every participating server. Do not relabel it workspace-clean or erase the incompleteness. No edition/style/source change was made to satisfy these advisories.
+5. Verified byte-identical source/configuration, preserved original bad-cache artifacts and no surviving review subprocess observed under the manager's disposable evidence root. This process inspection is bounded, not a guarantee about arbitrary escaped processes.
 
-The worker stays parked; this authorization does not give it write access to another worktree or installed tooling. No pi-lens patch, server-ID change, global configuration edit or upstream publication is approved by the diagnostic verdict.
+Actual live results, first-response tool records, structured compiler output, stderr, pre/post hashes and metadata are retained as `active-remedy-*`, `live-post-repair-diagnostics.json` and `live-remedy-final-checks.json` in the manager evidence root. The final status/procedure commits are documentation-only; product source remains exactly the tested R30 subject. No eight-minute suite rerun is claimed for this metadata-only repair.
+
+R31-D remains parked at its submitted report. No pi-lens patch, server-ID change, global configuration edit, broader cache reset or upstream publication was approved or performed. [AGENTS.md](AGENTS.md#source-testing) now records how to compare source/cache provenance and distinguish cold, pushed and pulled diagnostic evidence before changing code.
 
 ## Retained limits and later gates
 
