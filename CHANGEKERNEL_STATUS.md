@@ -1,6 +1,6 @@
 # ChangeKernel temporary status
 
-## R34 — continuity proposal changes requested
+## R34 — corrected continuity proposal under review
 
 The user selected **trusted local Linux/btrfs**, continuity across ordinary restart/reboot/supported remount at the same configured namespace, and **read-only sharing initially**. Active borrowing/ownership transfer and comparative performance work remain deferred. Requirements: **`43505fface48f9380142e9e1d424a9ea05900150`**, [target](.changekernel/wiki/items/product/plan.md#first-dogfood-target-and-initial-sharing-scope), [continuity](.changekernel/wiki/items/system/components/ledger-continuity.md), [disclosure](.changekernel/wiki/items/system/components/state.md#git-sharing-and-encryption). No identity mechanism, successor profile/API/control schema, implementation or host qualification has been adopted.
 
@@ -16,7 +16,19 @@ Accepted corrected report **`59e93bd96e6a8faed43e475b89e3d6f677d87455:CHANGEKERN
 
 **Acceptance releases contract drafting only.** Installed-host primitive support, full successor representation/accounting, real reboot/remount and power-loss evidence remain absent. Whole-image clone/complete protected-state rollback cannot be distinguished from identical surviving local evidence. Earlier device30→58 cause remains unproved. C is parked after acceptance; it may review P's later proposal only under a new assignment.
 
-### R34 proposal manager verdict — changes requested
+### R34-C assignment — independent successor-contract review
+
+P submitted corrected proposal **`486d5adb08945caa8ce38bce2c59b41b8677b475`**, still pending adoption. Manager verified clean P subject, two owned changed paths and Git diff check; no proposal has been integrated.
+
+- **Outcome:** Review the full exact successor `.changekernel/wiki/items/system/components/ledger-continuity.md`, its delta from `9e414cdb8642aadb93048dd19992971aad4621a5`, and the finding-by-finding P handoff. Decide whether F1–F3 and manager clarifications are resolved without contradictions, omitted refused work, unsafe proof reuse or new unreviewed guarantees. Assess interactions with unchanged sections, not only arithmetic totals. Return an independent recommendation; only manager adopts.
+- **Worker/base:** Same branch `work/r34-custody-source-study`, worktree `/home/canina7/Projects/changekernel-workers/r34-custody-source-study`, clean report base **`1c4b53134b256a88916e2264a7b78470449f5b86`**. Reverify native/tool/session cwd, branch and checkpoint before ACK/work. Read exact proposal/assignment through Git without switching branch or merging handoffs.
+- **Owned writes:** C's own `CHANGEKERNEL_STATUS.md` plus newly named external successor-review artifacts only. P is sole Wiki contract owner; no source/test/Wiki/manifest/lockfile edits, implementation, SDK/native probes, builds/tests, host/mount events, old-custody access, credentials/inference, package/cache/cleanup work, failed-URL retries or delegation.
+- **Focus:** Verify first-use versus refusal-aftermath promises;34-token rejected/temporary/field-order decode and emit paths; per-round acquisition freshness, initial/bootstrap/retention cuts and control/read budgets including early failures; raw equality/format/name operand coefficients; concrete decoder/buffer reuse changes; H/P/R/V and twoL simultaneous capacity schedules, actual source ownership/disposal and enlarged headers; retention receipt invalidation/current anchor/live shared-chain checks; size-only pre-reservation versus actual post-enrollment pair emission. Audit derived site counts, not just sums or claims that future source must fit them. Separate design feasibility from measured implementation/host evidence. Keep16 slots and all frozen capacities/guarantees.
+- **Inputs/checks:** Accepted prior review/verdict below; P successor evidence `/home/canina7/.local/state/changekernel-source-review/r34-p-corrections.CeA3b3Mg/`; accepted Rust source `3aeabda651fb7f44fe86394aa82be30a18f07164`. Source/navigation, retained documentation, inspected pure arithmetic, Markdown/link and Git checks only. Preserve all prior subject/evidence/failures; do not execute author scripts in their original output directory. Report exact review revision, F1/F2/F3 dispositions, any new concrete blocker, actual checks and remaining native qualification gaps, then wait.
+
+Manager reviews independently in parallel. External subject/routing evidence: `/home/canina7/.local/state/changekernel-source-review/r34-contract-successor-review._3rzevj_/`. P stays parked pending consolidated verdict. Source implementation/host experiments remain unreleased.
+
+### R34 prior proposal manager verdict — changes requested
 
 Subject **`9e414cdb8642aadb93048dd19992971aad4621a5`** is not adopted or integrated. Independent review **`1c4b53134b256a88916e2264a7b78470449f5b86:CHANGEKERNEL_STATUS.md`** is **accepted as review evidence**, not acceptance of the proposal. Manager independently confirms these blockers in `.changekernel/wiki/items/system/components/ledger-continuity.md`:
 
@@ -62,9 +74,9 @@ Manager review is complete for this subject and consolidated above. P remains so
 
 ### Retained pool and next action
 
-Same integration manager worktree/branch/session and four retained slots retained; no relaunch or new agent. P reverified clean at proposal `9e414cdb8642aadb93048dd19992971aad4621a5`; C reverified clean at review `1c4b53134b256a88916e2264a7b78470449f5b86`; R parked `73b2d11405f3791054681986d04489c77343f0e3`; S parked `88b93fe6a8d454673707f63daf272ede34f49f04`, still reuse-blocked by old session-header/native-worktree mismatch. Routing/native/session/ACK evidence stays outside Git, most recently `r34-contract-review.d9dq9it6/correction-pool-before.json` under the external review root. Verify recipients again at dispatch and correlate ACKs; never retry uncertain delivery blindly.
+Same integration manager worktree/branch/session and four retained slots retained; no relaunch or new agent. P reverified clean at successor proposal `486d5adb08945caa8ce38bce2c59b41b8677b475`; C reverified clean at review `1c4b53134b256a88916e2264a7b78470449f5b86`; R parked `73b2d11405f3791054681986d04489c77343f0e3`; S parked `88b93fe6a8d454673707f63daf272ede34f49f04`, still reuse-blocked by old session-header/native-worktree mismatch. Routing/native/session/ACK evidence stays outside Git, most recently `r34-contract-successor-review._3rzevj_/pool-before.json` under the external review root. Verify recipients again at dispatch and correlate ACKs; never retry uncertain delivery blindly.
 
-Next: deliver the consolidated correction assignment to P, correlate its ACK, and re-review its successor before any adoption. C remains parked pending a separate successor-review assignment. No proposal has been integrated. Source execution, SDK trials, host reboot/remount/mount/VM/namespace/loop/snapshot setup, privileged actions, migration/repair, application effects and release/controller actions are **not released**. No full-suite/build/npm/cache reset, installations/audit fixes, credentials, extra Jev calls, cleanup deletion or additional delegation. Never load this mutable checkout as its controller.
+P and C acknowledged the prior correction/review verdict. P completed corrections and is parked. Next: dispatch C's exact successor-review assignment above, correlate its ACK and consolidate independent findings before any adoption. No proposal has been integrated. Source execution, SDK trials, host reboot/remount/mount/VM/namespace/loop/snapshot setup, privileged actions, migration/repair, application effects and release/controller actions are **not released**. No full-suite/build/npm/cache reset, installations/audit fixes, credentials, extra Jev calls, cleanup deletion or additional delegation. Never load this mutable checkout as its controller.
 
 ## Closed evidence retained
 
