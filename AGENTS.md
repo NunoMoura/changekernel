@@ -18,6 +18,7 @@ Direct notifications must be identified as peer messages and point to exact assi
 - Keep the managed developer-worker pool at or below 15 agents, including delegated workers and parked sessions retained for reuse. This is a ceiling, not a target or a product-runtime limit. Choose the active count from ready independent work, bottlenecks and review/integration capacity; do not invent assignments to occupy workers. Pause dependent work when its baseline fails review.
 - Decide when to reuse a session or start a fresh one. Reuse verified sessions when their context and worktree remain suitable; prefer fresh sessions for a different worktree, independent investigation or stale/confounding state. A new conversation does not relocate the native process: relaunch from the assigned worktree when it changes. Preserve retired session/checkpoint evidence, and count every retained parked worker toward the pool limit.
 - Drive routine assignment, review and integration within the approved scope without seeking approval for every scheduling decision. Bring unresolved product intent, safety guarantees and separately gated experiments or deployment back to the user; more workers do not waive those gates.
+- On a worker submission or blocker notification, acknowledge the exact report and drive the next review, correction or ready assignment without waiting for the user to relay completion. Do not acknowledge acknowledgments or treat notification as acceptance. Pause only for a real dependency, unavailable authority or a user-owned decision.
 - Independently review each submitted revision and run relevant checks. Verify the combined result after integration before final acceptance. Return fixes to the worker.
 - Record the verdict (`accepted`, `changes requested`, or `blocked`), findings with paths, checks run and gaps, and next action; summarize to the user. Only you accept or advance slices.
 
@@ -30,7 +31,8 @@ Direct notifications must be identified as peer messages and point to exact assi
 
 - Verify the assigned branch, worktree and Pi process cwd before editing. If the session is rooted elsewhere, stop for manager-led relaunch rather than relying on absolute paths or `git -C`. Commit only assigned changes there; do not switch branches, merge, rebase, or push without the project manager's instruction.
 - Implement only the assigned slice and tests within owned paths. Report missing assignments, unclear requirements, or newly discovered overlap/dependencies before affected work continues. Do not change scope, shared interfaces, requirements, or acceptance criteria without coordination.
-- Return the code revision, changes, actual check results, and gaps. Address findings and resubmit; never self-approve or start another slice. Do not spawn or reassign workers without the project manager's instruction.
+- Return the code revision, changes, actual check results, and gaps. After committing a submission, or recording a material blocker, send the manager one direct peer notification with the assignment, exact report revision/path, source revision when applicable, and completion or blocker summary. Follow the recipient-verification and acknowledgment rules above; do not send completion notifications for acknowledgment-only turns or blindly retry uncertain delivery. Remain parked until the manager responds.
+- Address findings and resubmit; never self-approve or start another slice. Do not spawn or reassign workers without the project manager's instruction.
 
 ## Source testing
 
