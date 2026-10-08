@@ -12,13 +12,15 @@ One fresh application-owned notice resource; one conditional revision update; on
 
 The fixture is an ordinary native application test resource, not a mock engine, second Change ledger, generic adapter framework or public protocol. Original-instance custody and complete receipt retention are prerequisites for using receipt absence; missing/replaced/uncertain evidence must not silently create or repair a resource. Neither lane may manufacture JSONL attempts/outcomes or claim the missing engine path exists. Private test-helper names and storage fields are not frozen product APIs. Any conflict between the lanes must be reported before affected work proceeds; the manager owns the consumed interface.
 
-### P — R37-P reviewed; combined integration verification pending
+### P — R37-P accepted and integrated
 
 Source `dbb35e0b22e2f10403f4db90e8b2e75ef8f27b58`, report `d256b798d6e0bfe485838f225d966f88a1bde084`, has passed manager review and independent candidate checks. The manager read both complete files and checked actual CAS/receipt SQL, retry-before-edit rights, real pinned/named custody, complete live-owner snapshot checks, transaction quarantine, close order, owned-fixture cleanup and bounded child correlation/reaping. The helper handles the raw-fd lock and uncommitted-receipt hazards. Its bounded scans,256-byte text/32-receipt limits, lack of before-value in the receipt, continuously held custody and absent settlement API are explicit; none is silently adopted as C's richer engine interface.
 
 On an immutable exact-source snapshot with fresh external target and short btrfs TMPDIR, Rust1.88 fmt, all-target clippy and focused tests exited0 without timeout:11 parents passed, one ignored child entry was invoked twice and both children exited0 (BUSY then AVAILABLE). All104 input identities remained unchanged. Evidence: `/home/canina7/.local/state/changekernel-source-review/r37-manager-fixture-review.lux57szz/`. Initial active diagnostics had one clean file and one timeout; no clean claim for the timeout. No engine-suite, standalone phase or qualification execution occurred.
 
-Only the two owned test files are being integrated; no worker handoff is imported. **Final source acceptance awaits combined verification.** P is parked. The assignment below records completed scope, not permission to start another slice.
+**Manager verdict: accepted for native fixture source only.** The two exact test files are integrated at `47f5885578be9d904f05e006e64a02fb41dd5110`; no worker handoff was imported. Combined archive verification again matched all104 identities and ran fmt, all-target clippy and the focused suite: all exit0,11 parent passes, both child probes exit0, no timeout. Its target was reused only from the just-verified fresh external candidate target, with provenance recorded; actual tests ran, not a `Fresh` inference. Final active LSP probe confirmed both changed files clean after the earlier partial timeouts. This does not resolve unrelated historical integration-analyzer findings.
+
+The source still does not provide JSONL effect attempts/outcomes, explicit native settlement, persistent resource-owner custody, reboot qualification or controller authority. P remains parked until the independently owned consumed contract is adopted and a cohesive source slice is assigned. The assignment below records completed scope, not permission to start another slice.
 
 - **Outcome:** implement the minimal reusable test-only SQLite notice resource and prove its primitive semantics with ordinary Cargo integration tests. This is substantive fixture code, not a standalone SDK experiment or full Phase2 implementation.
 - **Worktree/branch:** reuse `/home/canina7/Projects/changekernel-workers/r35-ledger-continuity-source`, `work/r35-ledger-continuity-source`; clean base `35c3e563af376c06600e64c9be98a232e2a3fa31`. Its102 engine/test/example/Cargo identities match the accepted integration. Existing source context and native cwd remain suitable; no branch switch.
@@ -61,7 +63,7 @@ The pinned-executable continuity example is ready as source, **not executed or q
 
 ## Coordination and authority
 
-P/C assigned; R parked; S reuse-blocked until correct-cwd relaunch. Four retained slots count toward the15-agent ceiling. Add workers only for independent ready work. Verified completion/blocker peer notifications drive manager review/dispatch; acknowledgments do not loop, self-accept or create authority. Routing identities and receipts stay outside Git.
+P accepted/parked; C working on the acknowledged R37-C1 correction; R parked; S reuse-blocked until correct-cwd relaunch. Four retained slots count toward the15-agent ceiling. Add workers only for independent ready work. Verified completion/blocker peer notifications drive manager review/dispatch; acknowledgments do not loop, self-accept or create authority. Routing identities and receipts stay outside Git.
 
 Requirements: [Phase2](.changekernel/wiki/items/product/plan.md#phase-2--one-guarded-effect-and-honest-reconciliation), [native authority and guarded publication](.changekernel/wiki/items/system/components/state.md), [testing/qualification](.changekernel/wiki/items/system/components/package.md). Durable adopted design belongs in Wiki; execution state belongs here/Git.
 
