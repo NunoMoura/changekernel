@@ -43,6 +43,12 @@ Direct notifications must be identified as peer messages and point to exact assi
 - Independent review may use focused disposable probes. Add a tool or a permanent test only for a concrete risk not already covered. Release qualification is separate from routine source checks; see the [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy).
 - When analyzer and native results disagree, compare exact source, worktree, toolchain, targets/features and Cargo-cache provenance before changing code. Preserve failing cache/log evidence before scoped invalidation; verify rebuilds against unchanged source bytes. Cold workspace findings, Cargo push diagnostics and semantic pull results are distinct signals: wait for the relevant work to complete, and do not treat an empty pull or Cargo's `Fresh` label as proof of the whole subject.
 
+## Pi-native tooling
+
+- Prefer Codemode for tool composition, independent batches and reducing large results before they enter context. Preserve the source bodies and evidence needed for the decision, inspect each nested result, and do not treat script completion as operation success or cancellation as rollback. Use direct tools when Codemode is unavailable or adds no benefit.
+- Verify Codemode is exposed before manager/worker dispatch. Pi supports `defaultTools: ["+codemode"]`; existing sessions need `/reload`. Launches using `--no-extensions` must explicitly include `-e builtin:codemode`, and explicit tool allowlists must include `codemode`. Use the installed built-in capability, not a duplicate project-local plugin.
+- Use other available Pi capabilities where they help the assigned work. Tool availability does not expand scope, resume paused implementation, authorize separately gated inference/experiments or transfer controller authority.
+
 ## TypeSafe development
 
 For TypeSafe/Jev design, experiments and integration work, load the globally installed `typesafe-ai` skill and follow its current documentation index, relevant API/primitive guidance and closest cookbook. Keep the skill outside this checkout; do not add project-local copies or package links. Project contracts, authorized experiment scope, credential handling and controller boundaries still govern; provider examples do not authorize extra calls or change frozen APIs.
