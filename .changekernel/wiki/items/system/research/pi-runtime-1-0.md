@@ -18,14 +18,14 @@ The subsequent [capability matrix](pi-capability-matrix.md) applies the user's r
 
 **The pause is justified. Pi now supplies enough execution infrastructure that ChangeKernel should reassess what it needs to implement, not merely add another adapter after finishing the current plan.** Durable is the strategically important part: it has an actual transactional state/task substrate, not just a saved conversation.
 
-There are two credible reuse boundaries:
+The initial inspection considered two reuse boundaries:
 
 1. Keep the Rust engine and its authoritative Change JSONL; use Pi/Durable for optional orchestration, model/session mechanics and delivery.
-2. Build more of the engine over Durable's Session/Task/storage substrate while retaining ChangeKernel's domain rules and native bindings.
+2. Build more of the engine over Durable's Session/Task/storage substrate, potentially changing its physical Trace representation.
 
-The second option deserves a real comparison. It could eliminate more custom persistence and recovery machinery, including mechanisms resembling the current preparation-reservation work. It also changes current Rust distribution and Trace-representation choices and cannot inherit the existing profiles' guarantees by declaration. Neither option makes a task completion, tool result, model judgment or transcript into accepted Change authority automatically.
+**The user's subsequent clarification fixes the integration boundary:** preserve existing ledger/Change-file structures, JSONL schemas and supported typed-operation contracts while integrating that work with improved Pi infrastructure. The first boundary fits that direction. The second is outside it wherever it replaces lifecycle storage or changes the domain format. Internal implementation reuse remains possible only where it preserves the consumed contracts; no task completion, tool result, model judgment or transcript becomes accepted Change authority automatically.
 
-This is consistent with the [product boundary](../../product/changekernel.md#product-boundary): ChangeKernel is not a harness or database engine, and replaceable mechanisms should be reused when the consumed guarantees fit. Existing implementation cost is not a reason to exclude the deeper option; an attractive upstream abstraction is not evidence that its defaults satisfy our contracts.
+This is consistent with the [product boundary](../../product/changekernel.md#product-boundary): ChangeKernel is not a harness or database engine, and compatible mechanisms should be reused when their guarantees fit. Avoid duplicate runtime infrastructure without treating either sunk cost or upstream novelty as proof of suitability.
 
 ## What is actually available
 
@@ -97,7 +97,7 @@ Durable is also usable below a chat-agent workflow: deterministic task/document 
 
 The R38 blocker concerned losing historical S1 observation while only input+actor survived in pending control. Durable explicitly supports retaining derived values in task input, checkpoints or memos, and atomically advancing those with entries/documents. This is the class of mechanism we were implementing ourselves.
 
-A Durable composition could retain the observation and its interpretation in one atomic state transition rather than invent another application-level partial-append protocol. But it must actually capture S1; replay cannot reconstruct it from today's S2. It also does not make the later native effect atomic with the journal:
+Durable can retain observations and interpretation in its private task/document checkpoints. Under the preserved-format direction, however, the original S1 preparation evidence still belongs in the unchanged authoritative ledger protocol; a runtime memo cannot replace that evidence or reconstruct it from today's S2. A Durable commit does not atomically append the existing Change files. It also does not make the later native effect atomic with the journal:
 
 ```text
 commit admitted intent and stable evidence
@@ -130,7 +130,7 @@ The supplied Node SQLite adapter selects WAL and `synchronous = NORMAL`. The REA
 
 The JSONL backend is **not** our per-Change Trace format. It has `main.jsonl` commit markers plus document/task sidecars, its own decoding and reclamation rules, and recovery that removes torn lines and unconfirmed tails. Its `fsync` option defaults to false. Importantly, **even `fsync: true` flushes affected sidecars before ordinary marker append, not the main marker after every accepted commit**. Main-file flushing authorizes later destructive reclamation; it is not a general acknowledge-after-marker-fsync contract. This is explicit in the specification and implementation and is asserted by the [flush-order test][jsonl-tests]. [JSONL source][jsonl-source]
 
-Consequently, neither backend is an automatic substitution for the frozen acceptance/custody/barrier contract. A new profile could deliberately choose different supported guarantees, or qualify a suitable storage composition. It must not quietly inherit the old claim or build a new custom backend before showing why an existing one is insufficient.
+Consequently, neither backend is a substitution for the frozen acceptance/custody/barrier contract in the selected integration direction. Evaluate them for private runtime state under an explicit failure model, without migrating Change lifecycle authority. A future format or guarantee change would require separate explicit adoption and qualification; this research does not authorize it. Do not build a custom runtime backend before showing why an existing one is insufficient.
 
 The previous [Pi 0.87.1 SessionManager comparison](../research.md#pi-jsonl-sessions-as-a-trace-design-reference) cannot be applied wholesale to Durable. Durable directly addresses several earlier concerns with commit-before-publication, atomic state changes and durable admission. It is genuinely different code, not the old session file with a stronger marketing label.
 
@@ -153,11 +153,11 @@ No end-to-end cost, performance, compatibility, confidentiality, reboot durabili
 | Option | What we reuse or retire | What stays ours | Main cost or unresolved question |
 | --- | --- | --- | --- |
 | **A. Optional Durable host around the Rust/JSONL engine** | Session mechanics, queues, subagent coordination, model calls, context management and delivery can move to upstream facilities. | Authoritative Change acceptance, exact-input identity, policy/Checks, native bindings, outcome reconciliation and existing formats. | Less disruption, but most current engine persistence machinery remains. Keep runtime state distinct from Change authority rather than dual-writing lifecycle decisions. |
-| **B. ChangeKernel domain layer on a Durable substrate** | More atomic persistence, task transitions, projections and recovery machinery could be reused instead of maintained as custom engine infrastructure. | User intent/adoption, typed domain progression, native authorization/guards, attributable receipts, uncertainty, exact version/subject binding and release/controller authority. | Requires reopening Rust-only distribution and canonical physical Trace choices, supported storage guarantees, API churn and migration. Generic task receipts are not enough. |
+| **B. Durable-backed lifecycle-storage replacement — outside current direction** | The initial comparison considered more atomic persistence and recovery machinery being reused as engine infrastructure. | Domain accountability would still remain ours. | Changing the canonical physical Trace or replacing lifecycle authority conflicts with the user's preserved-format integration boundary. This option was not adopted. |
 
-**Recommendation:** compare both boundaries before resuming R38. Do not automatically finish the old custom protocol first, and do not assume a wholesale TypeScript/Durable rewrite is already justified. Retain the existing source as a control and extract its proven domain obligations from its current implementation choices.
+**Current recommendation:** integrate the existing ledger/Change-operation work with reliable Pi infrastructure, evaluating compatible runtime reuse through the [capability matrix](pi-capability-matrix.md). Preserve domain formats, accepted history and operation semantics; do not turn a Pi task store into a replacement lifecycle database. Internal implementation can improve, but a wholesale rewrite, format migration or weakened contract is not implied.
 
-If Rust and the current per-Change authoritative JSONL representation remain non-negotiable product requirements, A is the straightforward fit. If they are replaceable mechanisms, B deserves an equal evaluation. That is a user-owned product decision; this report does not make it implicitly.
+This compatibility boundary is user-directed. Specific runtime selections and their guarantees remain unproven, and it does not resume R38 or authorize a Durable experiment.
 
 ## Questions that require evidence beyond this inspection
 
