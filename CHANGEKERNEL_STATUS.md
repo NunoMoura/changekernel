@@ -1,5 +1,13 @@
 # ChangeKernel temporary status
 
+## User-directed pause — Pi release reassessment
+
+All R38 implementation progress, new tests/builds, dispatch and acceptance are paused by the user while the manager examines Pi's new Codemode, MCP, virtual-model routing and Durable capabilities. Only preservation/checkpointing of existing worker WIP is authorized. Prior implementation-resume instructions below are historical and do not authorize continued work during this pause.
+
+The installed Pi binary reports 1.0.4. Research is read-only documentation/source inspection; it does not authorize installing or activating Durable, starting MCP servers, changing model routing, making experimental inference calls, migrating storage or using this checkout as its controller. The manager will distinguish released features, experimental APIs and verified guarantees before proposing a revised direction. The user's pi-lens update is tooling maintenance, not source acceptance.
+
+Pause and research evidence: `/home/canina7/.local/state/changekernel-source-review/pi-release-reassessment.o5dcgo5m/`. The worker's exact WIP checkpoint/report will be recorded when received. No submitted R38 source has been accepted or integrated.
+
 ## R37-C1 — contract accepted; implementation pending
 
 **Manager verdict: accepted as the source implementation contract**, not executable acceptance, runtime qualification, release activation or controller handoff. Adopted [guarded-effect fixture contract](.changekernel/wiki/items/system/components/guarded-effect-fixture.md) consumes exact C1 proposal/report `68014ede459528985676bddf0e708135e9207c7e` with reviewed Rust naming/signature and View-prefix clarifications. The original proposal matches the preserved proposal SHA-256 `cbf7974a9e453a8f8061aa7f53c10702a91b65f081723596a9f79ef7ac56b019`.
