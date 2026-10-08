@@ -15,7 +15,9 @@ The plan owns tests for the current core hypotheses. The research below is retai
 
 ## Pi 1.0.4 runtime reassessment
 
-The [pinned-source reassessment](research/pi-runtime-1-0.md) examines Codemode, built-in MCP, virtual-model routing and the separately published experimental Durable library after the user paused implementation. Durable is a materially different transactional task/document substrate from the older SessionManager studied below. The report compares an optional Durable host around the Rust/JSONL engine with a deeper Durable-backed engine composition, including replay authorization, exact-input identity, storage barriers and native-effect uncertainty. It adopts neither architecture and authorizes no experiment, migration, installation, inference or controller change.
+The [pinned-source reassessment](research/pi-runtime-1-0.md) examines Codemode, built-in MCP, virtual-model routing and the separately published experimental Durable library after the user paused implementation. Durable is a materially different transactional task/document substrate from the older SessionManager studied below. The report compares an optional Durable host around the Rust/JSONL engine with a deeper Durable-backed engine composition, including replay authorization, exact-input identity, storage barriers and native-effect uncertainty.
+
+The [capability matrix](research/pi-capability-matrix.md) applies the user's reuse-first direction: reuse Pi, adapt Durable, own ChangeKernel semantics, or delegate to native systems. Each row identifies evidence, the local mechanism that could disappear, residual obligations and the decisive reliability gap. Existing Rust/JSONL mechanisms are evaluated rather than protected by sunk cost; a missing Pi feature does not automatically justify a new ChangeKernel framework. Neither document adopts a replacement architecture or authorizes an experiment, migration, installation, inference or controller change.
 
 ## Pi JSONL sessions as a Trace-design reference
 

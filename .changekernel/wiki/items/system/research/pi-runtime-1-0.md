@@ -12,6 +12,8 @@ The installed `pi --version` reports **1.0.4**. Upstream tag `v1.0.4` resolves t
 
 The release subject matters: the inspected `main` README additionally advertises a Cloudflare Durable Object backend that the 1.0.4 README and package exports do not contain. That later capability is not included in this assessment's released-feature claims.
 
+The subsequent [capability matrix](pi-capability-matrix.md) applies the user's reuse-first direction to specific replacement decisions. It also distinguishes the installed CLI from this repository's supporting TypeScript bridges: `package.json` still pins Pi 0.85.1. Compatibility with the researched 1.0.4 SDK and Durable is unproven; an installed CLI update did not migrate those dependencies.
+
 ## Executive conclusion
 
 **The pause is justified. Pi now supplies enough execution infrastructure that ChangeKernel should reassess what it needs to implement, not merely add another adapter after finishing the current plan.** Durable is the strategically important part: it has an actual transactional state/task substrate, not just a saved conversation.
