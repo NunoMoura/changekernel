@@ -2,7 +2,8 @@
 use super::super::{members::MemberState, *};
 use super::{projection, sequential};
 use crate::application::ledger_history::{
-    self as auth, LedgerHistoryGuard as Guard, LedgerHistoryMemberPermission as P, SharedGuard,
+    self as auth, LedgerHistoryGuard as Guard, LedgerHistoryMemberPermission as Permission,
+    SharedGuard,
 };
 fn disclosure(
     guard: &mut dyn Guard,
@@ -11,9 +12,9 @@ fn disclosure(
     metadata: bool,
 ) -> Result<(), OpeningError> {
     if metadata {
-        auth::member(guard, ledger, change, P::Metadata)?;
+        auth::member(guard, ledger, change, Permission::Metadata)?;
     }
-    auth::member(guard, ledger, change, P::History)
+    auth::member(guard, ledger, change, Permission::History)
 }
 fn mutation_gate(
     guard: &mut dyn Guard,
@@ -28,13 +29,13 @@ fn mutation_gate(
         ledger,
         change,
         if op == "revise_intent" {
-            P::AdoptIntent
+            Permission::AdoptIntent
         } else {
-            P::RunCheck
+            Permission::RunCheck
         },
     )
 }
-impl Custody {
+impl<P: Layout> Custody<P> {
     pub(crate) fn history_dispatch(
         &mut self,
         input: &Request,
@@ -85,7 +86,7 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn Guard,
-        state: State,
+        state: State<P>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         let change = input.change.as_deref().unwrap();
         let a = state
@@ -135,9 +136,9 @@ impl Custody {
                 self.ledger(),
                 change,
                 if input.op == "revise_intent" {
-                    P::AdoptIntent
+                    Permission::AdoptIntent
                 } else {
-                    P::RunCheck
+                    Permission::RunCheck
                 },
             )?;
         }
@@ -147,8 +148,8 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn Guard,
-        n: &Node,
-        a: &Association,
+        n: &Node<P>,
+        a: &Association<P>,
         mut m: MemberState,
         needs_mutation: &mut bool,
     ) -> Result<Result<Owned<Vec<u8>>, OpeningError>, Failure> {
@@ -390,7 +391,7 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn Guard,
-        state: State,
+        state: State<P>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         if let Some(Some(cursor)) = &input.cursor {
             if !state.control.entries.0.iter().any(|a| {

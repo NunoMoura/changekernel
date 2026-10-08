@@ -176,7 +176,10 @@ impl<'a> Parser<'a> {
         }
         Ok(n)
     }
-    fn container<'de, V: Visitor<'de>>(&mut self, v: V, map: bool) -> Result<V::Value, Error> {
+    fn container<'de, V: Visitor<'de>>(&mut self, v: V, map: bool) -> Result<V::Value, Error>
+    where
+        'a: 'de,
+    {
         if self.depth >= 16 {
             return Err(Error);
         }
@@ -220,7 +223,7 @@ impl Access<'_, '_> {
         Ok(true)
     }
 }
-impl<'de> MapAccess<'de> for &mut Access<'_, '_> {
+impl<'de, 'a: 'de> MapAccess<'de> for &mut Access<'_, 'a> {
     type Error = Error;
     fn next_key_seed<K: DeserializeSeed<'de>>(&mut self, k: K) -> Result<Option<K::Value>, Error> {
         if self.value {
@@ -245,7 +248,7 @@ impl<'de> MapAccess<'de> for &mut Access<'_, '_> {
         v.deserialize(&mut *self.p)
     }
 }
-impl<'de> SeqAccess<'de> for &mut Access<'_, '_> {
+impl<'de, 'a: 'de> SeqAccess<'de> for &mut Access<'_, 'a> {
     type Error = Error;
     fn next_element_seed<T: DeserializeSeed<'de>>(
         &mut self,
@@ -257,7 +260,7 @@ impl<'de> SeqAccess<'de> for &mut Access<'_, '_> {
         t.deserialize(&mut *self.p).map(Some)
     }
 }
-impl<'de> de::Deserializer<'de> for &mut Parser<'_> {
+impl<'de, 'a: 'de> de::Deserializer<'de> for &mut Parser<'a> {
     type Error = Error;
     fn deserialize_any<V: Visitor<'de>>(self, v: V) -> Result<V::Value, Error> {
         self.ws();
@@ -327,5 +330,53 @@ impl<'de> de::Deserializer<'de> for &mut Parser<'_> {
     ) -> Result<V::Value, Error> {
         self.container(v, true)
     }
-    serde_core::forward_to_deserialize_any! {i8 i16 i32 i64 u8 u16 u32 f32 f64 char bytes byte_buf unit unit_struct newtype_struct tuple_struct enum identifier ignored_any}
+    fn deserialize_newtype_struct<V: Visitor<'de>>(
+        self,
+        name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Error> {
+        if super::work::continuity_mode() && name.starts_with("ck_identity_") {
+            if name == "ck_identity_integer" {
+                return match self.number() {
+                    Ok(n) => visitor.visit_u64(n),
+                    Err(e) => {
+                        super::continuity::identity::format(0, 1, true, || false);
+                        Err(e)
+                    }
+                };
+            }
+            let limit = match name {
+                "ck_identity_mechanism" => 15,
+                "ck_identity_fsid" => 32,
+                "ck_identity_handle" => 40,
+                _ => return Err(Error),
+            };
+            self.take(b'"')?;
+            let start = self.pos;
+            let available = self.bytes.len() - start;
+            for offset in 0..=limit {
+                match self.bytes.get(start + offset) {
+                    Some(b'"') => {
+                        self.pos = start + offset + 1;
+                        let s = std::str::from_utf8(&self.bytes[start..start + offset]).map_err(
+                            |_| {
+                                super::continuity::identity::format(offset, 1, false, || false);
+                                Error
+                            },
+                        )?;
+                        return visitor.visit_borrowed_str(s);
+                    }
+                    Some(b'\\' | 0..=31) | None => {
+                        super::continuity::identity::format(available, 1, false, || false);
+                        return Err(Error);
+                    }
+                    _ => {}
+                }
+            }
+            super::continuity::identity::format(available, 1, false, || false);
+            return Err(Error);
+        }
+        self.deserialize_any(visitor)
+    }
+    serde_core::forward_to_deserialize_any! {i8 i16 i32 i64 u8 u16 u32 f32 f64 char bytes byte_buf unit unit_struct tuple_struct enum identifier ignored_any}
 }

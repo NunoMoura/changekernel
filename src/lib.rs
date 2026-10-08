@@ -10,6 +10,8 @@ mod kernel {
         pub mod intent_trace;
         pub mod ledger;
         #[cfg(target_os = "linux")]
+        pub mod ledger_continuity;
+        #[cfg(target_os = "linux")]
         pub mod ledger_history;
         pub mod opening;
     }
@@ -33,6 +35,8 @@ mod application {
     pub mod intent_trace;
     #[cfg(target_os = "linux")]
     pub mod ledger;
+    #[cfg(target_os = "linux")]
+    pub mod ledger_continuity;
     #[cfg(target_os = "linux")]
     pub mod ledger_history;
     #[cfg(target_os = "linux")]
@@ -124,4 +128,18 @@ pub use kernel::changes::ledger_history::{
 #[cfg(target_os = "linux")]
 pub use application::ledger_history::{
     LedgerHistoryGuard, LedgerHistoryHost, LedgerHistoryMemberPermission,
+};
+
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::ledger::continuity::{
+    LedgerContinuityCall, LedgerContinuityIoEvent, LedgerContinuityIoFault, LedgerContinuityIoHook,
+    LedgerContinuityWork, LedgerIdentityObject, LedgerIdentityStep,
+};
+#[cfg(target_os = "linux")]
+pub use application::ledger_continuity::{
+    LedgerContinuityGuard, LedgerContinuityHost, LedgerContinuityMemberPermission,
+};
+#[cfg(target_os = "linux")]
+pub use kernel::changes::ledger_continuity::{
+    LedgerContinuityGrant, LedgerContinuityGrantSpec, LedgerContinuityInput,
 };

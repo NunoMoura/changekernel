@@ -8,8 +8,22 @@ pub(super) struct MemberState {
     pub(super) anchor_temporary: bool,
     pub(super) history: Option<history::sequential::HistoryState>,
 }
-impl Custody {
-    pub(super) fn member_node(&mut self, slot: u64, fresh: bool) -> Result<Node, Failure> {
+// Scalar/presence guards have no physical-identity operands.
+fn accepted_prefix_bounds(prefix: &Prefix, trace_len: usize) -> bool {
+    work::test(B::Fields, 0, 4, || {
+        prefix.pending.is_none()
+            && prefix.end > 0
+            && prefix.end <= C as u64
+            && prefix.end <= trace_len as u64
+    })
+}
+fn provisional_anchor_clear(prefix: &Prefix, temporary: bool, trace_empty: bool) -> bool {
+    work::test(B::Fields, 0, 4, || {
+        !(temporary || prefix.generation != 0 || prefix.pending.is_some() || !trace_empty)
+    })
+}
+impl<P: Layout> Custody<P> {
+    pub(super) fn member_node(&mut self, slot: u64, fresh: bool) -> Result<Node<P>, Failure> {
         let name = Owned::new(format!("m-{slot}"));
         if fresh {
             if let Err(e) = storage::mkdir(&self.members, &name) {
@@ -43,6 +57,7 @@ impl Custody {
             custody: custody.into_inner(),
             justified: Cell::new(false),
             passes: Cell::new(0),
+            receipt: Default::default(),
         };
         work::buffered_capacity(node.heap(), false);
         Ok(node)
@@ -51,7 +66,7 @@ impl Custody {
         &mut self,
         slot: u64,
         fresh: bool,
-        f: impl FnOnce(&mut Self, &Node) -> Result<R, Failure>,
+        f: impl FnOnce(&mut Self, &Node<P>) -> Result<R, Failure>,
     ) -> Result<R, OpeningError> {
         work::update(|w| w.member_passes += 1);
         if !work::test(B::Fields, 0, 2, || {
@@ -64,7 +79,8 @@ impl Custody {
             Err(e) => {
                 if e.observed {
                     if self.ctx.failure_scope == Some(0) {
-                        self.root.retain(&mut self.ctx, &e);
+                        self.root
+                            .retain_with_grants(&mut self.ctx, &e, Some(&self.grant.grants));
                     } else {
                         self.ctx.latched[slot as usize] = true;
                         work::attempt(B::Retention, 0, 1);
@@ -79,21 +95,53 @@ impl Custody {
             Ok(v) => Ok(v),
             Err(e) => {
                 if self.ctx.failure_scope == Some(0) {
-                    self.root.retain(&mut self.ctx, &e);
+                    self.root
+                        .retain_with_grants(&mut self.ctx, &e, Some(&self.grant.grants));
                 } else {
-                    node.retain(&mut self.ctx, &e);
+                    if !e.observed {
+                        node.receipt.set(None);
+                    }
+                    node.retain_member(
+                        &mut self.ctx,
+                        &e,
+                        continuity::receipt::SharedGrounds {
+                            root: &self.root,
+                            members: &self.members,
+                            directory: &self.grant.directory,
+                        },
+                    );
                 }
                 Err(OpeningError::Unavailable)
             }
         }
     }
+    fn capture_member(&mut self, n: &Node<P>) -> Result<P::Member, Failure> {
+        if self.grant.selected != Profile::Continuity {
+            return Ok(P::Member::from_value(None));
+        }
+        use continuity::{identity::acquire, LedgerIdentityObject as O};
+        let value = continuity::identity::Pair {
+            directory: acquire(&mut self.ctx, n.scope, O::MemberDirectory, &n.dir)?,
+            lock: acquire(&mut self.ctx, n.scope, O::MemberLock, &n.lock)?,
+        };
+        value.common(
+            &self
+                .anchor
+                .identity
+                .value()
+                .ok_or_else(Failure::damage)?
+                .directory,
+        )?;
+        Ok(P::Member::from_value(Some(value)))
+    }
     pub(super) fn member_anchor(
         &self,
-        n: &Node,
+        n: &Node<P>,
         key: &str,
         stage: &str,
-    ) -> Result<MemberAnchor, Failure> {
-        let p = n.physical()?;
+        proof: &P::Member,
+    ) -> Result<MemberAnchor<P>, Failure> {
+        let p = n.physical(proof.value().as_ref())?;
         let pair = &self.grant.grants[n.scope as usize - 1];
         let mut path = Owned::new(self.grant.directory.clone());
         path.push("members");
@@ -118,6 +166,7 @@ impl Custody {
                 lock_inode: p.lock_inode,
                 stage: stage.into(),
             },
+            identity: *proof,
             adoption: self.grant.adoption.clone(),
         };
         // The raw aggregate and path scratch really overlap before adoption.
@@ -126,11 +175,12 @@ impl Custody {
     }
     fn matches_member_anchor(
         &self,
-        n: &Node,
-        a: &MemberAnchor,
+        n: &Node<P>,
+        a: &MemberAnchor<P>,
         key: &str,
+        proof: &P::Member,
     ) -> Result<bool, Failure> {
-        let physical = n.physical()?;
+        let physical = n.physical(proof.value().as_ref())?;
         let pair = &self.grant.grants[n.scope as usize - 1];
         let mut path = Owned::new(self.grant.directory.clone());
         path.push("members");
@@ -149,11 +199,12 @@ impl Custody {
             + key.len()
             + path.len()
             + self.grant.adoption.logical()
-            + 9;
+            + 9
+            + proof.logical();
         Ok(work::test(
             B::Relationships,
             a.logical().max(expected_bytes),
-            if self.grant.selected == Profile::History {
+            if self.grant.selected != Profile::Ledger {
                 23
             } else {
                 18
@@ -169,37 +220,54 @@ impl Custody {
                     && a.adoption == self.grant.adoption
                     && a.key == key
                     && a.directory == path
-                    && a.directory_device == physical.directory_device
-                    && a.directory_inode == physical.directory_inode
-                    && a.lock_device == physical.lock_device
-                    && a.lock_inode == physical.lock_inode
+                    && (self.grant.selected == Profile::Continuity
+                        && a.identity.value() == proof.value()
+                        || self.grant.selected != Profile::Continuity
+                            && a.directory_device == physical.directory_device
+                            && a.directory_inode == physical.directory_inode
+                            && a.lock_device == physical.lock_device
+                            && a.lock_inode == physical.lock_inode)
                     && a.stage == "installed"
             },
         ))
     }
     fn justify_member(
         &mut self,
-        n: &Node,
+        n: &Node<P>,
         key: &str,
-        p: Option<&Reservation>,
-        accepted: Option<&Association>,
-    ) -> Result<Owned<MemberAnchor>, Failure> {
-        let a = n.anchor::<MemberAnchor>(&mut self.ctx)?;
-        if !self.matches_member_anchor(n, &a, key)? {
+        p: Option<&Reservation<P>>,
+        accepted: Option<&Association<P>>,
+        proof: &P::Member,
+    ) -> Result<Owned<MemberAnchor<P>>, Failure> {
+        let a = n.anchor::<MemberAnchor<P>>(&mut self.ctx)?;
+        if !self.matches_member_anchor(n, &a, key, proof)? {
             return Err(Failure::damage());
         }
-        let physical = n.physical()?;
-        if !work::test(B::Fields, 0, 4, || {
-            p.and_then(|p| p.physical.as_ref())
-                .or_else(|| accepted.map(|a| &a.physical))
-                == Some(&physical)
-        }) {
+        let physical = n.physical(proof.value().as_ref())?;
+        if !work::test(
+            if self.grant.selected == Profile::Continuity {
+                B::Relationships
+            } else {
+                B::Fields
+            },
+            physical.logical(),
+            4,
+            || {
+                p.and_then(|p| p.physical.as_ref())
+                    .or_else(|| accepted.map(|a| &a.physical))
+                    == Some(&physical)
+            },
+        ) {
             return Err(Failure::damage());
         }
         n.justified.set(true);
+        if self.grant.selected == Profile::Continuity {
+            n.receipt
+                .set(Some(continuity::receipt::Receipt::member(&a)?));
+        }
         Ok(a)
     }
-    pub(super) fn initial_prefix(&self, n: &Node) -> Prefix {
+    pub(super) fn initial_prefix(&self, n: &Node<P>) -> Prefix {
         Prefix {
             format: self.grant.selected.tag("prefix").into(),
             custody: n.custody.clone(),
@@ -210,7 +278,39 @@ impl Custody {
             pending: None,
         }
     }
-    pub(super) fn initial_member(&mut self, n: &Node, complete: bool) -> Result<(), Failure> {
+    fn initial_member_proof(
+        &mut self,
+        n: &Node<P>,
+        enrolled: &MemberAnchor<P>,
+    ) -> Result<P::Member, Failure> {
+        if self.grant.selected != Profile::Continuity {
+            return Ok(P::Member::from_value(None));
+        }
+        n.binding(&self.members)?;
+        let proof = self.capture_member(n)?;
+        let current: Owned<MemberAnchor<P>> = n.anchor(&mut self.ctx)?;
+        if !work::test(B::Relationships, 72, 6, || {
+            current.identity.value() == proof.value()
+        }) || !work::test(
+            B::Relationships,
+            current.logical().max(enrolled.logical()),
+            64,
+            || *current == *enrolled,
+        ) {
+            return Err(Failure::damage());
+        }
+        n.receipt
+            .set(Some(continuity::receipt::Receipt::member(&current)?));
+        Ok(proof)
+    }
+    pub(super) fn initial_member(
+        &mut self,
+        n: &Node<P>,
+        complete: bool,
+        enrolled: &MemberAnchor<P>,
+    ) -> Result<P::Member, Failure> {
+        let _proof_charge = P::charge(std::mem::size_of::<P::Member>());
+        let proof = self.initial_member_proof(n, enrolled)?;
         let names = storage::inventory(&n.dir, 6, |s| {
             storage::allowed(
                 s,
@@ -245,9 +345,12 @@ impl Custody {
                 return Err(Failure::damage());
             }
         }
-        Ok(())
+        Ok(proof)
     }
-    pub(super) fn provision_member(&mut self, p: &Reservation) -> Result<Physical, OpeningError> {
+    pub(super) fn provision_member(
+        &mut self,
+        p: &Reservation<P>,
+    ) -> Result<Physical<P>, OpeningError> {
         let name = Owned::new(format!("m-{}", p.slot));
         let anchor = Owned::new(format!("m-{}.anchor.json", p.slot));
         let dir = storage::exists_at(&self.members, &name).map_err(|e| self.shared_failure(e))?;
@@ -258,21 +361,28 @@ impl Custody {
         }
         self.ctx.phase = "provision";
         self.member_run(p.slot, !dir, |s, n| {
-            let a = if !dir {
+            let _proof_charge = P::charge(std::mem::size_of::<P::Member>());
+            if !dir {
                 n.sync(&mut s.ctx, &n.lock, "writer.lock")?;
                 n.sync(&mut s.ctx, &n.dir, "directory")?;
                 n.sync(&mut s.ctx, &n.parent, "anchor_parent")?;
+            }
+            if s.grant.selected == Profile::Continuity {
+                n.binding(&s.members)?;
+            }
+            let proof = s.capture_member(n)?;
+            let mut a = if !dir {
                 let a = Owned::try_constructed(|| {
-                    s.member_anchor(n, p.input.key.as_deref().unwrap(), "preparing")
+                    s.member_anchor(n, p.input.key.as_deref().unwrap(), "preparing", &proof)
                 })?;
                 let bytes = codec::emit(&*a, C).map_err(|_| Failure::damage())?;
                 n.create_anchor(&mut s.ctx, &bytes)?;
                 a
             } else {
-                n.anchor::<MemberAnchor>(&mut s.ctx)?
+                n.anchor::<MemberAnchor<P>>(&mut s.ctx)?
             };
             let expected = Owned::try_constructed(|| {
-                s.member_anchor(n, p.input.key.as_deref().unwrap(), &a.stage)
+                s.member_anchor(n, p.input.key.as_deref().unwrap(), &a.stage, &proof)
             })?;
             if !work::test(
                 B::Relationships,
@@ -283,18 +393,28 @@ impl Custody {
                 return Err(Failure::damage());
             }
             n.justified.set(true);
+            if s.grant.selected == Profile::Continuity {
+                n.receipt
+                    .set(Some(continuity::receipt::Receipt::member(&a)?));
+            }
             let complete = work::test(B::Fields, a.stage.len().max("installed".len()), 1, || {
                 a.stage == "installed"
             });
-            s.initial_member(n, complete)?;
+            s.initial_member(n, complete, &a)?;
             if storage::exists_at(&n.parent, "anchor.tmp")? {
-                s.initial_member(n, true)?;
+                s.initial_member(n, true, &a)?;
                 let bytes =
                     n.read_at(&mut s.ctx, &n.parent, "anchor.tmp", "anchor.tmp", C, false)?;
-                let t: Owned<MemberAnchor> =
+                let t: Owned<MemberAnchor<P>> =
                     codec::retained(&bytes, B::Controls).map_err(|_| Failure::damage())?;
                 let installed = Owned::try_constructed(|| {
-                    s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed")
+                    if s.grant.selected == Profile::Continuity {
+                        let mut value = (*a).clone();
+                        value.base.stage = "installed".into();
+                        Ok(value)
+                    } else {
+                        s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed", &proof)
+                    }
                 })?;
                 if !work::test(B::Relationships, t.logical().max(a.logical()), 64, || {
                     *t == *a || (a.stage == "preparing" && *t == *installed)
@@ -302,7 +422,7 @@ impl Custody {
                     return Err(Failure::damage());
                 }
                 n.cleanup(&mut s.ctx, "anchor.tmp", true)?;
-                s.initial_member(n, true)?;
+                s.initial_member(n, true, &a)?;
             }
             if work::test(B::Fields, a.stage.len().max("preparing".len()), 1, || {
                 a.stage == "preparing"
@@ -320,18 +440,44 @@ impl Custody {
                 }
                 drop(prefix);
                 drop(clear);
-                s.initial_member(n, true)?;
+                s.initial_member(n, true, &a)?;
                 n.barriers(&mut s.ctx)?;
+                if s.grant.selected == Profile::Continuity {
+                    s.initial_member_proof(n, &a)?;
+                }
                 let installed = Owned::try_constructed(|| {
-                    s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed")
+                    if s.grant.selected == Profile::Continuity {
+                        let mut value = (*a).clone();
+                        value.base.stage = "installed".into();
+                        Ok(value)
+                    } else {
+                        s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed", &proof)
+                    }
                 })?;
                 n.replace(&mut s.ctx, "anchor.json", "anchor.tmp", &*installed, true)?;
+                a = installed;
+                if s.grant.selected == Profile::Continuity {
+                    n.receipt
+                        .set(Some(continuity::receipt::Receipt::member(&a)?));
+                }
             }
             n.barriers(&mut s.ctx)?;
-            s.initial_member(n, true)?;
-            let actual: Owned<MemberAnchor> = n.anchor(&mut s.ctx)?;
+            let final_proof = s.initial_member(n, true, &a)?;
+            let actual: Option<Owned<MemberAnchor<P>>> = if s.grant.selected == Profile::Continuity
+            {
+                None
+            } else {
+                Some(n.anchor(&mut s.ctx)?)
+            };
+            let actual = actual.as_deref().unwrap_or(&a);
             let installed = Owned::try_constructed(|| {
-                s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed")
+                if s.grant.selected == Profile::Continuity {
+                    let mut value = (*a).clone();
+                    value.base.stage = "installed".into();
+                    Ok(value)
+                } else {
+                    s.member_anchor(n, p.input.key.as_deref().unwrap(), "installed", &proof)
+                }
             })?;
             if !work::test(
                 B::Relationships,
@@ -341,22 +487,22 @@ impl Custody {
             ) {
                 return Err(Failure::damage());
             }
-            n.physical()
+            n.physical(final_proof.value().as_ref())
         })
     }
     pub(super) fn member(
         &mut self,
-        n: &Node,
-        p: Option<&Reservation>,
-        accepted: Option<&Association>,
+        n: &Node<P>,
+        p: Option<&Reservation<P>>,
+        accepted: Option<&Association<P>>,
     ) -> Result<MemberState, Failure> {
         self.member_mode(n, p, accepted, false)
     }
     pub(super) fn member_mode(
         &mut self,
-        n: &Node,
-        p: Option<&Reservation>,
-        accepted: Option<&Association>,
+        n: &Node<P>,
+        p: Option<&Reservation<P>>,
+        accepted: Option<&Association<P>>,
         barriers: bool,
     ) -> Result<MemberState, Failure> {
         // Acquisition counted the first pass; another validation on the same
@@ -369,16 +515,17 @@ impl Custody {
             .and_then(|p| p.input.key.as_deref())
             .or_else(|| accepted.map(|a| a.key.as_str()))
             .ok_or_else(Failure::damage)?;
+        let _proof_charge = P::charge(std::mem::size_of::<P::Member>());
         if barriers {
-            // Newly pinned handles need current independent grant/anchor/tuple
-            // proof before any barrier. Earlier closed sweep handles grant none.
             if !n.justified.get() {
-                self.justify_member(n, key, p, accepted)?;
+                let bootstrap = self.capture_member(n)?;
+                self.justify_member(n, key, p, accepted, &bootstrap)?;
             }
             n.barriers(&mut self.ctx)?;
         }
-        let a = self.justify_member(n, key, p, accepted)?;
-        let physical = n.physical()?;
+        let proof = self.capture_member(n)?;
+        let a = self.justify_member(n, key, p, accepted, &proof)?;
+        let physical = n.physical(proof.value().as_ref())?;
         let anchor_temporary = accepted.is_none() && storage::exists_at(&n.parent, "anchor.tmp")?;
         let names = storage::inventory(&n.dir, 6, |s| {
             storage::allowed(
@@ -434,13 +581,16 @@ impl Custody {
             "trace.jsonl",
             self.grant.selected.trace_limit(),
         )?;
-        if let (Profile::History, Some(accepted)) = (self.grant.selected, accepted) {
+        if let (Profile::History | Profile::Continuity, Some(accepted)) =
+            (self.grant.selected, accepted)
+        {
             return self.history_member(
                 n,
                 prefix,
                 trace,
                 storage::present(&names, "checkpoint.tmp"),
                 accepted,
+                &physical,
             );
         }
         let record = match prefix.generation {
@@ -477,12 +627,7 @@ impl Custody {
                 None
             }
             1 => {
-                if !work::test(B::Fields, 0, 4, || {
-                    prefix.pending.is_none()
-                        && prefix.end > 0
-                        && prefix.end <= C as u64
-                        && prefix.end <= trace.len() as u64
-                }) {
+                if !accepted_prefix_bounds(&prefix, trace.len()) {
                     return Err(Failure::damage());
                 }
                 if !work::test(B::Fields, 0, 1, || {
@@ -673,12 +818,7 @@ impl Custody {
             }
         }
         if anchor_temporary {
-            if !work::test(B::Fields, 0, 4, || {
-                !(temporary
-                    || prefix.generation != 0
-                    || prefix.pending.is_some()
-                    || !trace.is_empty())
-            }) {
+            if !provisional_anchor_clear(&prefix, temporary, trace.is_empty()) {
                 return Err(Failure::damage());
             }
             let bytes = n.read_at(
@@ -689,7 +829,7 @@ impl Custody {
                 C,
                 false,
             )?;
-            let candidate: Owned<MemberAnchor> =
+            let candidate: Owned<MemberAnchor<P>> =
                 codec::retained(&bytes, B::Controls).map_err(|_| Failure::damage())?;
             if !work::test(
                 B::Relationships,
@@ -714,30 +854,31 @@ impl Custody {
     // association digest. The normal member pass then proves the whole conjunction.
     pub(super) fn accepted_member(
         &mut self,
-        n: &Node,
-        a: &Association,
+        n: &Node<P>,
+        a: &Association<P>,
     ) -> Result<MemberState, Failure> {
         self.member(n, None, Some(a))
     }
 
     pub(super) fn accepted_member_barrier(
         &mut self,
-        n: &Node,
-        a: &Association,
+        n: &Node<P>,
+        a: &Association<P>,
     ) -> Result<MemberState, Failure> {
         self.member_mode(n, None, Some(a), true)
     }
     pub(super) fn shared_failure(&mut self, e: Failure) -> OpeningError {
-        self.root.retain(&mut self.ctx, &e);
+        self.root
+            .retain_with_grants(&mut self.ctx, &e, Some(&self.grant.grants));
         OpeningError::Unavailable
     }
-    pub(super) fn read_shared(&mut self) -> Result<State, OpeningError> {
+    pub(super) fn read_shared(&mut self) -> Result<State<P>, OpeningError> {
         self.shared().map_err(|e| self.shared_failure(e))
     }
     pub(super) fn shared_sync(&mut self) -> Result<(), OpeningError> {
         self.shared_barriers().map_err(|e| self.shared_failure(e))
     }
-    pub(super) fn replace_shared(&mut self, c: &Creations) -> Result<(), OpeningError> {
+    pub(super) fn replace_shared(&mut self, c: &Creations<P>) -> Result<(), OpeningError> {
         self.root
             .replace(&mut self.ctx, "creation.json", "creation.tmp", c, false)
             .map_err(|e| self.shared_failure(e))
@@ -793,5 +934,55 @@ impl Custody {
         };
         work::complete(B::Constructions, true);
         Ok(metadata)
+    }
+}
+
+#[cfg(test)]
+mod repair_tests {
+    use super::*;
+    use crate::adapters::jsonl::ledger::continuity::LedgerContinuityCall;
+
+    #[test]
+    fn scalar_guards_report_no_physical_operands_on_acceptance_or_refusal() {
+        let mut prefix = Prefix {
+            format: String::new(),
+            custody: String::new(),
+            change: String::new(),
+            generation: 1,
+            end: 17,
+            sha256: None,
+            pending: None,
+        };
+        for accepted in [true, false] {
+            work::continuity_begin(LedgerContinuityCall::InspectHistory, 0);
+            assert_eq!(
+                accepted_prefix_bounds(&prefix, if accepted { 17 } else { 16 }),
+                accepted
+            );
+            let snapshot = work::continuity_seal();
+            assert_eq!(snapshot.fields.attempts, 1);
+            assert_eq!(snapshot.fields.matches, u64::from(accepted));
+            assert_eq!(snapshot.fields.operand_bytes, 0);
+            assert_eq!(snapshot.fields.schema_words, 4);
+            assert_eq!(snapshot.relationships.attempts, 0);
+            assert_eq!(snapshot.relationships.operand_bytes, 0);
+            assert_eq!(snapshot.relationships.schema_words, 0);
+            assert_eq!(snapshot.identity_raw_operand_bytes, 0);
+        }
+        prefix.generation = 0;
+        for refused in [false, true] {
+            work::continuity_begin(LedgerContinuityCall::CreateChange, 0);
+            assert_eq!(provisional_anchor_clear(&prefix, refused, true), !refused);
+            let snapshot = work::continuity_seal();
+            assert_eq!(snapshot.fields.attempts, 1);
+            assert_eq!(snapshot.fields.matches, u64::from(!refused));
+            assert_eq!(snapshot.fields.operand_bytes, 0);
+            assert_eq!(snapshot.fields.schema_words, 4);
+            assert_eq!(snapshot.relationships.attempts, 0);
+            assert_eq!(snapshot.relationships.operand_bytes, 0);
+            assert_eq!(snapshot.relationships.schema_words, 0);
+            assert_eq!(snapshot.identity_raw_operand_bytes, 0);
+        }
+        work::begin(0);
     }
 }

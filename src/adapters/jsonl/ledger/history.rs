@@ -31,7 +31,7 @@ pub(crate) fn reply(result: Result<Owned<Vec<u8>>, OpeningError>) -> Vec<u8> {
                 OpeningError::Unavailable => "unavailable",
             };
             let v = Owned::constructed(|| codec::ErrorReply {
-                v: 5,
+                v: work::version(),
                 kind: "error".into(),
                 code: code.into(),
             });

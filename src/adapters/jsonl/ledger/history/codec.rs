@@ -1,4 +1,5 @@
 //! Concrete v5 shapes on the shared bounded parser and canonical formatter.
+use super::super::layout::{Layout, Value};
 use super::super::{
     codec::{field_key, required},
     work::{self, Boundary as B, Heap, Owned},
@@ -332,7 +333,7 @@ pub(crate) fn reference(s: &str) -> Option<(&str, u64)> {
 
 impl HistoryRequest {
     fn valid(&self) -> bool {
-        if !scalar(self.v == 5, 1)
+        if !scalar(self.v == work::version(), 1)
             || !identifier(&self.ledger)
             || !identifier(&self.workspace_id)
             || !scalar(self.op.len() <= 15, 1)
@@ -412,7 +413,7 @@ impl HistoryRequest {
             return false;
         }
         if let Some(c) = self.cursor.as_ref().and_then(Option::as_ref) {
-            if !(scalar(c.v == 5, 1)
+            if !(scalar(c.v == work::version(), 1)
                 && identifier(&c.ledger)
                 && identifier(&c.workspace_id)
                 && identifier(&c.after)
@@ -448,7 +449,7 @@ impl HistoryRequest {
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::adapters::jsonl::ledger) struct Evidence {
+pub(crate) struct Evidence {
     pub intent: String,
     pub field: String,
     pub utf8_bytes: u64,
@@ -461,7 +462,7 @@ shape!(Evidence {
     limit: u64
 });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::adapters::jsonl::ledger) struct HistoryResult {
+pub(crate) struct HistoryResult {
     pub base: BaseResult,
     pub intent: Option<String>,
     pub previous_intent: Option<String>,
@@ -791,7 +792,7 @@ impl HistoryResult {
         .enumerate()
         .fold(0u16, |m, (i, p)| m | if *p { 1 << i } else { 0 });
         work::test(B::Fields, self.kind.len().max(15), 12, || {
-            self.v == 5
+            self.v == work::version()
                 && match self.kind.as_str() {
                     "created" => mask == 4,
                     "intent_revised" => mask == 7,
@@ -832,7 +833,7 @@ impl HistoryResult {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::adapters::jsonl::ledger) struct MemberAnchorWire {
+pub(crate) struct MemberAnchorWire {
     pub format: String,
     pub custody: String,
     pub ledger: String,
@@ -872,9 +873,10 @@ shape!(MemberAnchorWire {
     evaluator: String,
     adopter: String
 });
-impl From<MemberAnchorWire> for super::super::codec::MemberAnchor {
+impl<P: Layout> From<MemberAnchorWire> for super::super::codec::MemberAnchor<P> {
     fn from(a: MemberAnchorWire) -> Self {
         Self {
+            identity: P::Member::from_value(None),
             base: super::super::codec::MemberAnchorBase {
                 format: a.format,
                 custody: a.custody,
@@ -901,7 +903,7 @@ impl From<MemberAnchorWire> for super::super::codec::MemberAnchor {
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::adapters::jsonl::ledger) struct ErrorReply {
+pub(crate) struct ErrorReply {
     pub v: u64,
     pub kind: String,
     pub code: String,

@@ -1,12 +1,15 @@
 //! Concrete fresh collection custody. No public raw controls or append API.
 #[macro_use]
 pub(crate) mod codec;
+pub(crate) mod continuity;
 pub(crate) mod history;
+pub(crate) mod layout;
 mod members;
 mod operations;
 mod parser;
 mod selection;
 mod storage;
+use layout::{Layout, Legacy, Slot, Value};
 pub(crate) mod work;
 use crate::{
     adapters::jsonl::opening::{
@@ -31,15 +34,24 @@ pub use storage::{LedgerIoEvent, LedgerIoFault, LedgerIoHook};
 use work::{Boundary as B, Heap, Owned};
 pub use work::{LedgerBoundary, LedgerWork};
 
-pub(crate) struct Custody {
+pub(crate) struct Custody<P: Layout = Legacy> {
     grant: Owned<Installation>,
-    root: Owned<Node>,
+    root: Owned<Node<P>>,
     members: File,
-    anchor: Owned<Anchor>,
-    ctx: Context,
+    anchor: Owned<Anchor<P>>,
+    ctx: Context<P>,
     deferred: Option<Owned<Vec<u8>>>,
 }
-impl Custody {
+impl Custody<Legacy> {
+    pub fn connect(
+        grant: LedgerGrant,
+        mode: OpeningMode,
+        hook: Option<LedgerIoHook>,
+    ) -> Result<Self, OpeningError> {
+        Self::connect_inner(grant.into(), mode, hook).map_err(|_| OpeningError::Unavailable)
+    }
+}
+impl<P: Layout> Custody<P> {
     pub fn payload(&self) -> usize {
         self.anchor.heap()
             + self.grant.adoption.heap()
@@ -72,19 +84,19 @@ impl Custody {
     pub fn ledger(&self) -> &str {
         &self.grant.ledger
     }
-    pub fn connect(
-        grant: LedgerGrant,
-        mode: OpeningMode,
-        hook: Option<LedgerIoHook>,
-    ) -> Result<Self, OpeningError> {
-        Self::connect_inner(grant.into(), mode, hook).map_err(|_| OpeningError::Unavailable)
-    }
     fn connect_inner(
         grant: Installation,
         mode: OpeningMode,
-        hook: Option<LedgerIoHook>,
+        hook: P::Hook,
     ) -> Result<Self, Failure> {
-        let grant = if grant.selected == Profile::History {
+        Self::connect_context(grant, mode, hook)
+    }
+    fn connect_context(
+        grant: Installation,
+        mode: OpeningMode,
+        hook: P::Hook,
+    ) -> Result<Self, Failure> {
+        let grant = if grant.selected != Profile::Ledger {
             Owned::new(grant)
         } else {
             Owned::from_baseline(grant)
@@ -128,7 +140,7 @@ impl Custody {
         let parent = storage::directory(parent_path)?;
         let root_parent =
             storage::directory(grant.directory.parent().ok_or_else(Failure::damage)?)?;
-        let mut ctx = Context {
+        let mut ctx = Context::<P> {
             profile: grant.selected,
             hook,
             phase: if mode == OpeningMode::Reopen {
@@ -170,7 +182,7 @@ impl Custody {
             },
         )?;
         storage::lock(&lock)?;
-        let root = Owned::new(Node {
+        let root = Owned::new(Node::<P> {
             dir,
             lock,
             parent,
@@ -180,6 +192,7 @@ impl Custody {
             custody: grant.custody.clone(),
             justified: Cell::new(false),
             passes: Cell::new(0),
+            receipt: Default::default(),
         });
         let prepared = (|| {
             if fresh {
@@ -187,8 +200,26 @@ impl Custody {
                 ctx.event(0, "members", "created")?;
             }
             let members = storage::subdir(&root.dir, "members")?;
+            let _proof_charge = P::charge(std::mem::size_of::<P::Shared>());
+            let capture = if grant.selected == Profile::Continuity {
+                if fresh {
+                    root.sync(&mut ctx, &root.lock, "writer.lock")?;
+                    root.sync(&mut ctx, &members, "members")?;
+                    root.sync(&mut ctx, &root.dir, "directory")?;
+                    root.sync(&mut ctx, &root_parent, "directory_parent")?;
+                }
+                let v = Self::capture_shared(&root, &members, &mut ctx)?;
+                Some(v)
+            } else {
+                None
+            };
             let anchor = if fresh {
-                let physical = root.physical()?;
+                let physical = root.physical(
+                    capture
+                        .as_ref()
+                        .map(continuity::identity::Shared::pair)
+                        .as_ref(),
+                )?;
                 let (members_device, members_inode) = raw::id(&members)?;
                 Owned::try_constructed(|| {
                     Ok::<_, Failure>(Anchor {
@@ -203,8 +234,9 @@ impl Custody {
                         directory_inode: physical.directory_inode,
                         lock_device: physical.lock_device,
                         lock_inode: physical.lock_inode,
-                        members_device,
-                        members_inode,
+                        members_device: if capture.is_some() { 0 } else { members_device },
+                        members_inode: if capture.is_some() { 0 } else { members_inode },
+                        identity: P::Shared::from_value(capture),
                         stage: "preparing".into(),
                         adoption: grant.adoption.clone(),
                     })
@@ -212,7 +244,20 @@ impl Custody {
             } else {
                 read_anchor(&root, &mut ctx, &grant.grants)?
             };
-            Self::anchor_matches(&grant, &root, &members, &anchor)?;
+            if grant.selected == Profile::Continuity
+                && !work::test(B::Relationships, 108, 9, || {
+                    anchor.identity.value() == capture
+                })
+            {
+                return Err(Failure::damage());
+            }
+            Self::anchor_matches(
+                &grant,
+                &root,
+                &members,
+                &anchor,
+                &P::Shared::from_value(capture),
+            )?;
             if !fresh {
                 root.justified.set(true);
             }
@@ -230,21 +275,28 @@ impl Custody {
                 return Err(Failure::damage());
             }
             if fresh {
-                root.sync(&mut ctx, &root.lock, "writer.lock")?;
-                root.sync(&mut ctx, &members, "members")?;
-                root.sync(&mut ctx, &root.dir, "directory")?;
-                root.sync(&mut ctx, &root_parent, "directory_parent")?;
+                if grant.selected != Profile::Continuity {
+                    root.sync(&mut ctx, &root.lock, "writer.lock")?;
+                    root.sync(&mut ctx, &members, "members")?;
+                    root.sync(&mut ctx, &root.dir, "directory")?;
+                    root.sync(&mut ctx, &root_parent, "directory_parent")?;
+                }
                 let bytes = codec::emit(&AnchorWire(&anchor, &grant.grants), C)
                     .map_err(|_| Failure::damage())?;
                 root.create_anchor(&mut ctx, &bytes)?;
                 root.justified.set(true);
+            }
+            if grant.selected == Profile::Continuity {
+                root.receipt.set(Some(continuity::receipt::Receipt::shared(
+                    &anchor, &members,
+                )?));
             }
             Ok((members, anchor))
         })();
         let (members, anchor) = match prepared {
             Ok(v) => v,
             Err(e) => {
-                root.retain(&mut ctx, &e);
+                root.retain_with_grants(&mut ctx, &e, Some(&grant.grants));
                 return Err(e);
             }
         };
@@ -272,18 +324,26 @@ impl Custody {
             Ok(())
         })();
         if let Err(e) = result {
-            s.root.retain(&mut s.ctx, &e);
+            s.root
+                .retain_with_grants(&mut s.ctx, &e, Some(&s.grant.grants));
             return Err(e);
         }
         Ok(s)
     }
     fn anchor_matches(
         grant: &Installation,
-        root: &Node,
+        root: &Node<P>,
         members: &File,
-        a: &Anchor,
+        a: &Anchor<P>,
+        proof: &P::Shared,
     ) -> Result<(), Failure> {
-        let p = root.physical()?;
+        let p = root.physical(
+            proof
+                .value()
+                .as_ref()
+                .map(continuity::identity::Shared::pair)
+                .as_ref(),
+        )?;
         let m = raw::id(members)?;
         if !work::test(
             B::Relationships,
@@ -296,7 +356,8 @@ impl Custody {
                     + grant.owner.len()
                     + grant.directory.as_os_str().len()
                     + grant.adoption.logical()
-                    + "preparing".len(),
+                    + "preparing".len()
+                    + proof.logical(),
             ),
             64,
             || {
@@ -309,10 +370,11 @@ impl Custody {
                     && a.adoption == grant.adoption
                     && Some(a.directory.as_str()) == grant.directory.to_str()
                     && matches!(a.stage.as_str(), "preparing" | "installed")
-                    && (a.directory_device, a.directory_inode)
-                        == (p.directory_device, p.directory_inode)
-                    && (a.lock_device, a.lock_inode) == (p.lock_device, p.lock_inode)
-                    && (a.members_device, a.members_inode) == m
+                    && (grant.selected == Profile::Continuity
+                        || ((a.directory_device, a.directory_inode)
+                            == (p.directory_device, p.directory_inode)
+                            && (a.lock_device, a.lock_inode) == (p.lock_device, p.lock_inode)
+                            && (a.members_device, a.members_inode) == m))
             },
         ) {
             return Err(Failure::damage());
@@ -330,6 +392,8 @@ impl Custody {
         }
     }
     fn initial_shared(&mut self, complete: bool) -> Result<(), Failure> {
+        let _proof_charge = P::charge(std::mem::size_of::<P::Shared>());
+        self.initial_shared_proof()?;
         let names = storage::inventory(&self.root.dir, 6, |n| {
             storage::allowed(
                 n,
@@ -363,6 +427,36 @@ impl Custody {
             }
         }
         Ok(())
+    }
+    fn initial_shared_proof(&mut self) -> Result<P::Shared, Failure> {
+        if self.grant.selected != Profile::Continuity {
+            return Ok(P::Shared::from_value(None));
+        }
+        self.shared_binding()?;
+        let proof = P::Shared::from_value(Some(Self::capture_shared(
+            &self.root,
+            &self.members,
+            &mut self.ctx,
+        )?));
+        let current = read_anchor(&self.root, &mut self.ctx, &self.grant.grants)?;
+        Self::anchor_matches(&self.grant, &self.root, &self.members, &current, &proof)?;
+        if !work::test(B::Relationships, 108, 9, || {
+            current.identity.value() == proof.value()
+        }) || !work::test(
+            B::Relationships,
+            current.logical().max(self.anchor.logical()),
+            64,
+            || *current == *self.anchor,
+        ) {
+            return Err(Failure::damage());
+        }
+        self.root
+            .receipt
+            .set(Some(continuity::receipt::Receipt::shared(
+                &current,
+                &self.members,
+            )?));
+        Ok(proof)
     }
     fn install_shared(&mut self) -> Result<(), Failure> {
         self.initial_shared(false)?;
@@ -405,6 +499,8 @@ impl Custody {
         drop(clear);
         self.initial_shared(true)?;
         self.shared_barriers()?;
+        let _proof_charge = P::charge(std::mem::size_of::<P::Shared>());
+        self.initial_shared_proof()?;
         let mut installed = Owned::constructed(|| self.anchor.clone());
         installed.stage = "installed".into();
         self.root.replace(
@@ -415,28 +511,42 @@ impl Custody {
             true,
         )?;
         self.anchor = installed;
+        if self.grant.selected == Profile::Continuity {
+            self.root
+                .receipt
+                .set(Some(continuity::receipt::Receipt::shared(
+                    &self.anchor,
+                    &self.members,
+                )?));
+        }
         Ok(())
     }
     fn shared_barriers(&mut self) -> Result<(), Failure> {
         self.root.barriers(&mut self.ctx)?;
         self.root.sync(&mut self.ctx, &self.members, "members")
     }
-    fn shared(&mut self) -> Result<State, Failure> {
-        work::update(|w| w.shared_passes += 1);
-        let a = read_anchor(&self.root, &mut self.ctx, &self.grant.grants)?;
-        Self::anchor_matches(&self.grant, &self.root, &self.members, &a)?;
-        if !work::test(
-            B::Relationships,
-            a.logical().max(self.anchor.logical()),
-            64,
-            || *a == *self.anchor && a.stage == "installed",
-        ) {
-            return Err(Failure::damage());
+    fn capture_shared(
+        root: &Node<P>,
+        members: &File,
+        ctx: &mut Context<P>,
+    ) -> Result<continuity::identity::Shared, Failure> {
+        use continuity::{identity::acquire, LedgerIdentityObject as O};
+        let value = continuity::identity::Shared {
+            directory: acquire(ctx, 0, O::LedgerDirectory, &root.dir)?,
+            lock: acquire(ctx, 0, O::LedgerLock, &root.lock)?,
+            members: acquire(ctx, 0, O::MembersDirectory, members)?,
+        };
+        value.common()?;
+        Ok(value)
+    }
+    fn shared(&mut self) -> Result<State<P>, Failure> {
+        let result = self.shared_round();
+        if result.as_ref().is_err_and(|e| !e.observed) {
+            self.root.receipt.set(None);
         }
-        let anchor_temporary = storage::exists_at(&self.root.parent, "anchor.tmp")?;
-        if !work::test(B::Fields, 0, 1, || !anchor_temporary) {
-            return Err(Failure::damage());
-        }
+        result
+    }
+    fn shared_binding(&self) -> Result<(), Failure> {
         let held = raw::id(&self.root.dir)?;
         let named = raw::id(&*storage::directory(&self.grant.directory)?)?;
         if !work::test(B::Fields, 0, 2, || held == named) {
@@ -455,6 +565,58 @@ impl Custody {
         let named = raw::id(&*storage::subdir(&self.root.dir, "members")?)?;
         if !work::test(B::Fields, 0, 2, || held == named) {
             return Err(Failure::damage());
+        }
+        Ok(())
+    }
+    fn shared_round(&mut self) -> Result<State<P>, Failure> {
+        if self.grant.selected == Profile::Continuity
+            && !work::test(B::Fields, 0, 1, || !self.ctx.latched[0])
+        {
+            return Err(Failure::damage());
+        }
+        work::update(|w| w.shared_passes += 1);
+        if self.grant.selected == Profile::Continuity {
+            self.shared_binding()?;
+        }
+        let _proof_charge = P::charge(std::mem::size_of::<P::Shared>());
+        let fresh = if self.grant.selected == Profile::Continuity {
+            Some(Self::capture_shared(
+                &self.root,
+                &self.members,
+                &mut self.ctx,
+            )?)
+        } else {
+            None
+        };
+        let a = read_anchor(&self.root, &mut self.ctx, &self.grant.grants)?;
+        Self::anchor_matches(
+            &self.grant,
+            &self.root,
+            &self.members,
+            &a,
+            &P::Shared::from_value(fresh),
+        )?;
+        if self.grant.selected == Profile::Continuity
+            && !work::test(B::Relationships, 108, 9, || a.identity.value() == fresh)
+        {
+            return Err(Failure::damage());
+        }
+        if !work::test(
+            B::Relationships,
+            a.logical().max(self.anchor.logical()),
+            64,
+            || *a == *self.anchor && a.stage == "installed",
+        ) {
+            return Err(Failure::damage());
+        }
+        let anchor_temporary = storage::exists_at(&self.root.parent, "anchor.tmp")?;
+        if !work::test(B::Fields, 0, 1, || !anchor_temporary) {
+            return Err(Failure::damage());
+        }
+        // Frozen profiles prove the anchor and temporary absence before
+        // observing the current namespace. Only v6 selects binding-first.
+        if self.grant.selected != Profile::Continuity {
+            self.shared_binding()?;
         }
         let names = storage::inventory(&self.root.dir, 6, |n| {
             storage::allowed(
@@ -475,7 +637,7 @@ impl Custody {
             }
         }
         self.root.incident(&mut self.ctx)?;
-        let control: Owned<Creations> = self.root.control(&mut self.ctx, "creation.json")?;
+        let control: Owned<Creations<P>> = self.root.control(&mut self.ctx, "creation.json")?;
         self.valid_control(&control)?;
         let slots = control.entries.0.len() + usize::from(control.pending.is_some());
         let inventory = storage::inventory(&self.members, 33, |n| {
@@ -514,9 +676,17 @@ impl Custody {
         } else {
             None
         };
+        if self.grant.selected == Profile::Continuity {
+            self.root
+                .receipt
+                .set(Some(continuity::receipt::Receipt::shared(
+                    &a,
+                    &self.members,
+                )?));
+        }
         Ok(State { control, temp })
     }
-    fn valid_control(&self, c: &Creations) -> Result<(), Failure> {
+    fn valid_control(&self, c: &Creations<P>) -> Result<(), Failure> {
         if !work::test(B::Fields, 0, 3, || {
             c.format.len() == self.grant.selected.tag("creations").len()
                 && c.custody.len() == self.grant.custody.len()
@@ -637,7 +807,7 @@ impl Custody {
             },
         )
     }
-    fn origin(&self, p: &Reservation) -> Result<Owned<Origin>, Failure> {
+    fn origin(&self, p: &Reservation<P>) -> Result<Owned<Origin>, Failure> {
         work::attempt(B::Constructions, p.input.payload(), 32);
         let pair = self
             .grant
@@ -666,7 +836,7 @@ impl Custody {
             prev: None,
             kind: "created".into(),
             input: p.input.clone(),
-            result: if self.grant.selected == Profile::History {
+            result: if self.grant.selected != Profile::Ledger {
                 SelectedResult::History(Box::new(history::codec::HistoryResult::created(result)))
             } else {
                 SelectedResult::Ledger(result)
@@ -677,11 +847,11 @@ impl Custody {
     }
     fn association(
         &self,
-        p: &Reservation,
+        p: &Reservation<P>,
         origin: &Origin,
         bytes: &[u8],
         selected_digest: Option<&str>,
-    ) -> Result<Owned<Association>, Failure> {
+    ) -> Result<Owned<Association<P>>, Failure> {
         work::attempt(B::Constructions, 0, 32);
         let input = codec::emit_input(&p.input).map_err(|_| Failure::damage())?;
         let a = Owned::new(Association {
@@ -700,10 +870,10 @@ impl Custody {
     }
     fn classify(
         &self,
-        c: &Creations,
-        candidate: Owned<Temporary>,
+        c: &Creations<P>,
+        candidate: Owned<Temporary<P>>,
         names: &[String],
-    ) -> Result<Temp, Failure> {
+    ) -> Result<Temp<P>, Failure> {
         let equal = work::test(
             B::Relationships,
             candidate.logical().max(c.pending.logical()),
@@ -818,14 +988,14 @@ enum Kind {
     Ready,
     Accept,
 }
-struct Temp {
+struct Temp<P: Layout = Legacy> {
     kind: Kind,
-    candidate: Owned<Temporary>,
+    candidate: Owned<Temporary<P>>,
     bytes: Option<Owned<Vec<u8>>>,
 }
-struct State {
-    control: Owned<Creations>,
-    temp: Option<Temp>,
+struct State<P: Layout = Legacy> {
+    control: Owned<Creations<P>>,
+    temp: Option<Temp<P>>,
 }
 fn hex(s: &str) -> bool {
     s.len() == 64
@@ -880,7 +1050,7 @@ pub(crate) fn begin_connection(g: &LedgerGrant) {
 }
 pub(crate) fn begin_dispatch(_ingress: usize, persistent: usize) {
     work::begin(persistent + _ingress);
-    work::fixed_baseline(std::mem::size_of::<Custody>());
+    work::fixed_baseline(std::mem::size_of::<Custody<Legacy>>());
     work::descriptor_baseline(4);
 }
 pub(crate) fn schema(bytes: usize, words: usize, f: impl FnOnce() -> bool) -> bool {
@@ -916,11 +1086,11 @@ fn connection_path_work(directory: &std::path::Path, anchor: &std::path::Path) -
     )
 }
 
-fn read_anchor(
-    n: &Node,
-    ctx: &mut Context,
+fn read_anchor<P: Layout>(
+    n: &Node<P>,
+    ctx: &mut Context<P>,
     grants: &[crate::kernel::changes::ledger::LedgerPair; 16],
-) -> Result<Owned<Anchor>, Failure> {
+) -> Result<Owned<Anchor<P>>, Failure> {
     let bytes = n.read_at(ctx, &n.parent, &n.anchor_name, "anchor.json", C, false)?;
     codec::anchor(&bytes, grants).map_err(|_| Failure::damage())
 }

@@ -29,7 +29,7 @@ pub(in crate::adapters::jsonl::ledger) fn reference(change: &str, seq: u64) -> S
         format!("{change}:op:{seq}")
     }
 }
-fn subjects(c: &Custody, n: &Node, input: &Request) -> bool {
+fn subjects<P: Layout>(c: &Custody<P>, n: &Node<P>, input: &Request) -> bool {
     let pair = &c.grant.grants[n.scope as usize - 1];
     work::test(
         B::Fields,
@@ -42,7 +42,7 @@ fn subjects(c: &Custody, n: &Node, input: &Request) -> bool {
                 .max(pair.change.len()),
         4,
         || {
-            input.v == 5
+            input.v == work::version()
                 && input.ledger == c.grant.ledger
                 && input.workspace_id == c.grant.workspace_id
                 && (input.op == "create_change" && input.change.is_none()
@@ -50,10 +50,10 @@ fn subjects(c: &Custody, n: &Node, input: &Request) -> bool {
         },
     )
 }
-impl Custody {
+impl<P: Layout> Custody<P> {
     pub(in crate::adapters::jsonl::ledger) fn history_record(
         &self,
-        n: &Node,
+        n: &Node<P>,
         input: &Request,
         seq: u64,
         current: u64,
@@ -75,7 +75,7 @@ impl Custody {
         let id = Owned::new(reference(&pair.change, seq));
         let previous_intent = Owned::new(reference(&pair.change, current));
         let base = Created {
-            v: 5,
+            v: work::version(),
             kind: kind.into(),
             ledger: self.grant.ledger.clone(),
             workspace_id: self.grant.workspace_id.clone(),
@@ -123,7 +123,7 @@ impl Custody {
         scratch.resize(result.heap());
         let mut normalized = input.clone();
         if let Request::History(r) = &mut normalized {
-            r.base.v = 5;
+            r.base.v = work::version();
             r.base.ledger = self.grant.ledger.clone();
             r.base.workspace_id = self.grant.workspace_id.clone();
             r.base.change = if seq == 1 {
@@ -144,7 +144,7 @@ impl Custody {
         }
         scratch.resize(result.heap() + normalized.heap());
         let value = Origin {
-            v: 5,
+            v: work::version(),
             custody: pair.custody.clone(),
             ledger: self.grant.ledger.clone(),
             workspace_id: self.grant.workspace_id.clone(),
@@ -167,7 +167,7 @@ impl Custody {
     }
     fn feasible_pending(
         &self,
-        n: &Node,
+        n: &Node<P>,
         prefix: &Prefix,
         trace: &[u8],
         state: &HistoryState,
@@ -254,11 +254,12 @@ impl Custody {
     }
     pub(in crate::adapters::jsonl::ledger) fn history_member(
         &mut self,
-        n: &Node,
+        n: &Node<P>,
         prefix: Owned<Prefix>,
         trace: Owned<Vec<u8>>,
         temporary: bool,
-        association: &Association,
+        association: &Association<P>,
+        physical: &Physical<P>,
     ) -> Result<MemberState, Failure> {
         let pair = &self.grant.grants[n.scope as usize - 1];
         if !work::test(B::Fields, 0, 5, || {
@@ -326,12 +327,14 @@ impl Custody {
             if seq == 1 {
                 let input_hash = Owned::new(canonical_input.digest());
                 let origin_hash = Owned::new(hash(&accepted[..end], false));
-                let physical = n.physical()?;
                 if !work::test(
                     B::Relationships,
-                    association
-                        .logical()
-                        .max(record.logical() + input_hash.len() + origin_hash.len()),
+                    association.logical().max(
+                        record.logical()
+                            + input_hash.len()
+                            + origin_hash.len()
+                            + physical.logical(),
+                    ),
                     32,
                     || {
                         association.slot == u64::from(n.scope)
@@ -342,7 +345,7 @@ impl Custody {
                             && association.input_sha256 == *input_hash
                             && association.origin_end == end as u64
                             && association.origin_sha256 == *origin_hash
-                            && association.physical == physical
+                            && association.physical == *physical
                     },
                 ) {
                     return Err(Failure::damage());

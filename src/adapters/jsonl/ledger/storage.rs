@@ -1,4 +1,5 @@
 //! Descriptor-relative collection I/O over the existing opening syscall primitives.
+use super::layout::{Layout, Legacy, Slot};
 use super::{
     codec::{self, Incident},
     work::{self, Boundary as B, Heap, Owned},
@@ -90,15 +91,23 @@ pub struct LedgerIoEvent {
     pub step: &'static str,
 }
 pub type LedgerIoHook = Box<dyn FnMut(LedgerIoEvent) -> LedgerIoFault>;
-pub(super) struct Context {
-    pub hook: Option<LedgerIoHook>,
+pub(super) struct Context<P: Layout = Legacy> {
+    pub hook: P::Hook,
     pub profile: super::selection::Profile,
     pub phase: &'static str,
     pub latched: [bool; 17],
     // Original failing syscall scope; retention must not reinterpret it.
     pub failure_scope: Option<u8>,
 }
-impl Context {
+impl<P: Layout> Context<P> {
+    pub(super) fn identity_event(
+        &mut self,
+        scope: u8,
+        object: super::continuity::LedgerIdentityObject,
+        step: super::continuity::LedgerIdentityStep,
+    ) -> Result<super::continuity::LedgerContinuityIoFault, Failure> {
+        Ok(P::identity(&mut self.hook, scope, object, step))
+    }
     fn scoped<T>(&mut self, scope: u8, result: Result<T, Failure>) -> Result<T, Failure> {
         if result.as_ref().is_err_and(|e| e.observed) {
             self.failure_scope.get_or_insert(scope);
@@ -111,15 +120,16 @@ impl Context {
         object: &'static str,
         step: &'static str,
     ) -> Result<LedgerIoFault, Failure> {
-        let fault = self.hook.as_mut().map_or(LedgerIoFault::Continue, |h| {
-            h(LedgerIoEvent {
+        let fault = P::file(
+            &mut self.hook,
+            LedgerIoEvent {
                 scope,
                 phase: self.phase,
                 object,
                 step,
-            })
-        });
-        if self.profile == super::selection::Profile::History {
+            },
+        )?;
+        if self.profile != super::selection::Profile::Ledger {
             let supported = match fault {
                 LedgerIoFault::Continue | LedgerIoFault::Refuse => true,
                 LedgerIoFault::ShortWrite => step == "before_write",
@@ -164,7 +174,7 @@ impl Context {
         }
     }
 }
-pub(super) struct Node {
+pub(super) struct Node<P: Layout = Legacy> {
     pub dir: File,
     pub lock: File,
     pub parent: File,
@@ -174,8 +184,9 @@ pub(super) struct Node {
     pub custody: String,
     pub justified: Cell<bool>,
     pub passes: Cell<u64>,
+    pub receipt: P::ReceiptSlot,
 }
-impl Heap for Node {
+impl<P: Layout> Heap for Node<P> {
     fn heap(&self) -> usize {
         self.anchor_name.capacity() + self.custody.capacity()
     }
@@ -344,7 +355,7 @@ pub(super) fn inventory(
     Ok(names)
 }
 
-impl Node {
+impl<P: Layout> Node<P> {
     pub fn binding(&self, members: &File) -> Result<(), Failure> {
         let path = Owned::new(format!("m-{}", self.scope));
         let named = raw::id(&*subdir(members, &path)?)?;
@@ -362,7 +373,7 @@ impl Node {
 
     pub fn read_at(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         dir: &File,
         name: &str,
         object: &'static str,
@@ -413,7 +424,7 @@ impl Node {
     }
     pub fn read(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         name: &'static str,
         limit: usize,
     ) -> Result<Owned<Vec<u8>>, Failure> {
@@ -421,7 +432,7 @@ impl Node {
     }
     pub fn control<T: for<'de> Deserialize<'de> + Serialize + Heap>(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         name: &'static str,
     ) -> Result<Owned<T>, Failure> {
         let bytes = self.read(ctx, name, C)?;
@@ -429,7 +440,7 @@ impl Node {
     }
     pub fn anchor<T: for<'de> Deserialize<'de> + Serialize + Heap>(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
     ) -> Result<Owned<T>, Failure> {
         let bytes = self.read_at(
             ctx,
@@ -441,7 +452,12 @@ impl Node {
         )?;
         codec::retained(&bytes, B::Controls).map_err(|_| Failure::damage())
     }
-    pub fn sync(&self, ctx: &mut Context, f: &File, object: &'static str) -> Result<(), Failure> {
+    pub fn sync(
+        &self,
+        ctx: &mut Context<P>,
+        f: &File,
+        object: &'static str,
+    ) -> Result<(), Failure> {
         let scope = if object == "anchor_parent" {
             0
         } else {
@@ -450,7 +466,12 @@ impl Node {
         let result = self.sync_inner(ctx, f, object);
         ctx.scoped(scope, result)
     }
-    fn sync_inner(&self, ctx: &mut Context, f: &File, object: &'static str) -> Result<(), Failure> {
+    fn sync_inner(
+        &self,
+        ctx: &mut Context<P>,
+        f: &File,
+        object: &'static str,
+    ) -> Result<(), Failure> {
         let fault = ctx.event(self.scope, object, "before_sync")?;
         if fault == LedgerIoFault::Io {
             // SAFETY: invalid fd produces a genuine failed barrier syscall.
@@ -464,10 +485,10 @@ impl Node {
         }
         Ok(())
     }
-    pub fn sync_name(&self, ctx: &mut Context, name: &'static str) -> Result<(), Failure> {
+    pub fn sync_name(&self, ctx: &mut Context<P>, name: &'static str) -> Result<(), Failure> {
         self.sync(ctx, &regular(&self.dir, name, libc::O_RDONLY)?, name)
     }
-    pub fn barriers(&self, ctx: &mut Context) -> Result<(), Failure> {
+    pub fn barriers(&self, ctx: &mut Context<P>) -> Result<(), Failure> {
         self.sync(
             ctx,
             &regular(&self.parent, &self.anchor_name, libc::O_RDONLY)?,
@@ -485,7 +506,7 @@ impl Node {
     }
     fn write_file(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         mut f: File,
         bytes: &[u8],
         object: &'static str,
@@ -513,7 +534,7 @@ impl Node {
         }
         self.sync(ctx, &f, object)
     }
-    fn create_fault(&self, ctx: &mut Context, name: &'static str) -> Result<(), Failure> {
+    fn create_fault(&self, ctx: &mut Context<P>, name: &'static str) -> Result<(), Failure> {
         if ctx.event(self.scope, name, "before_create")? == LedgerIoFault::Io {
             let n = Owned::new(CString::new(name).unwrap());
             // SAFETY: invalid dirfd with a relative basename produces EBADF.
@@ -533,7 +554,7 @@ impl Node {
     }
     pub fn create(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         name: &'static str,
         bytes: &[u8],
     ) -> Result<(), Failure> {
@@ -546,7 +567,7 @@ impl Node {
         ctx.event(self.scope, name, "created")?;
         self.write_file(ctx, f, bytes, name)
     }
-    pub fn create_anchor(&self, ctx: &mut Context, bytes: &[u8]) -> Result<(), Failure> {
+    pub fn create_anchor(&self, ctx: &mut Context<P>, bytes: &[u8]) -> Result<(), Failure> {
         let fault = self.create_fault(ctx, "anchor.json");
         ctx.scoped(0, fault)?;
         let f = ctx.scoped(
@@ -563,17 +584,29 @@ impl Node {
     }
     pub fn replace<T: Serialize + Heap>(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         target: &'static str,
         temp: &'static str,
         value: &T,
         parent: bool,
+    ) -> Result<(), Failure> {
+        self.replace_bound(ctx, target, temp, value, parent, || Ok(()))
+    }
+    fn replace_bound<T: Serialize + Heap>(
+        &self,
+        ctx: &mut Context<P>,
+        target: &'static str,
+        temp: &'static str,
+        value: &T,
+        parent: bool,
+        binding: impl FnOnce() -> Result<(), Failure>,
     ) -> Result<(), Failure> {
         let bytes = codec::emit(value, C).map_err(|_| Failure::damage())?;
         let dir = if parent { &self.parent } else { &self.dir };
         let namespace_scope = if parent { 0 } else { self.scope };
         let fault = self.create_fault(ctx, temp);
         ctx.scoped(namespace_scope, fault)?;
+        binding()?;
         let f = ctx.scoped(
             namespace_scope,
             regular(dir, temp, libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL),
@@ -594,7 +627,7 @@ impl Node {
         ctx.event(self.scope, temp, "renamed")?;
         self.sync(ctx, dir, if parent { "anchor_parent" } else { "directory" })
     }
-    pub fn append(&self, ctx: &mut Context, bytes: &[u8]) -> Result<(), Failure> {
+    pub fn append(&self, ctx: &mut Context<P>, bytes: &[u8]) -> Result<(), Failure> {
         self.write_file(
             ctx,
             regular(&self.dir, "trace.jsonl", libc::O_WRONLY | libc::O_APPEND)?,
@@ -604,7 +637,7 @@ impl Node {
     }
     pub fn cleanup(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Context<P>,
         temp: &'static str,
         parent: bool,
     ) -> Result<(), Failure> {
@@ -641,7 +674,7 @@ impl Node {
             issue: None,
         }
     }
-    pub fn incident(&self, ctx: &mut Context) -> Result<(), Failure> {
+    pub fn incident(&self, ctx: &mut Context<P>) -> Result<(), Failure> {
         if !work::test(B::Fields, 0, 1, || !ctx.latched[self.scope as usize]) {
             return Err(Failure::damage());
         }
@@ -661,13 +694,47 @@ impl Node {
         }
         Ok(())
     }
-    pub fn retain(&self, ctx: &mut Context, e: &Failure) {
+    pub fn retain_member(
+        &self,
+        ctx: &mut Context<P>,
+        e: &Failure,
+        shared: super::continuity::receipt::SharedGrounds<'_, P>,
+    ) {
+        self.retain_grounded(ctx, e, None, Some(shared))
+    }
+    pub fn retain_with_grants(
+        &self,
+        ctx: &mut Context<P>,
+        e: &Failure,
+        grants: Option<&[crate::LedgerPair; 16]>,
+    ) {
+        self.retain_grounded(ctx, e, grants, None)
+    }
+    fn retain_grounded(
+        &self,
+        ctx: &mut Context<P>,
+        e: &Failure,
+        grants: Option<&[crate::LedgerPair; 16]>,
+        shared: Option<super::continuity::receipt::SharedGrounds<'_, P>>,
+    ) {
         if !e.observed {
             return;
         }
+        let _ground_charge = P::charge(std::mem::size_of::<
+            super::continuity::receipt::SharedGrounds<'_, P>,
+        >());
         ctx.latched[self.scope as usize] = true;
         work::attempt(B::Retention, 0, 1);
-        if !self.justified.get() {
+        if self.profile == super::selection::Profile::Continuity {
+            let receipt = self.receipt.take();
+            let allowed = (self.scope == 0 || shared.as_ref().is_some_and(|s| s.binding().is_ok()))
+                && receipt.is_some_and(|r| r.grounds(self, ctx, grants).is_ok());
+            if !allowed {
+                work::complete(B::Retention, false);
+                return;
+            }
+            self.receipt.set(receipt);
+        } else if !self.justified.get() {
             work::complete(B::Retention, false);
             return;
         }
@@ -693,18 +760,53 @@ impl Node {
                 format: clear.format.clone(),
                 custody: clear.custody.clone(),
             });
-            self.replace(ctx, "incident.json", "incident.tmp", &*blocked, false)
+            self.replace_bound(
+                ctx,
+                "incident.json",
+                "incident.tmp",
+                &*blocked,
+                false,
+                || {
+                    if self.profile == super::selection::Profile::Continuity {
+                        if let Some(shared) = &shared {
+                            shared.binding()?;
+                        }
+                        self.receipt
+                            .get()
+                            .ok_or_else(Failure::damage)?
+                            .binding(self)
+                    } else {
+                        Ok(())
+                    }
+                },
+            )
         })();
+        if result.is_err() && self.profile == super::selection::Profile::Continuity {
+            self.receipt.set(None);
+        }
         work::complete(B::Retention, result.is_ok());
     }
-    pub fn physical(&self) -> Result<super::codec::Physical, Failure> {
-        let (directory_device, directory_inode) = raw::id(&self.dir)?;
-        let (lock_device, lock_inode) = raw::id(&self.lock)?;
-        Ok(super::codec::Physical {
-            directory_device,
-            directory_inode,
-            lock_device,
-            lock_inode,
-        })
+    pub fn physical(
+        &self,
+        proof: Option<&super::continuity::identity::Pair>,
+    ) -> Result<super::codec::Physical<P>, Failure> {
+        let legacy = if self.profile == super::selection::Profile::Continuity {
+            super::codec::LegacyPhysical {
+                directory_device: 0,
+                directory_inode: 0,
+                lock_device: 0,
+                lock_inode: 0,
+            }
+        } else {
+            let (directory_device, directory_inode) = raw::id(&self.dir)?;
+            let (lock_device, lock_inode) = raw::id(&self.lock)?;
+            super::codec::LegacyPhysical {
+                directory_device,
+                directory_inode,
+                lock_device,
+                lock_inode,
+            }
+        };
+        P::physical(legacy, proof.copied()).map(super::codec::Physical)
     }
 }

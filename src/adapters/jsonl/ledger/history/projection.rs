@@ -191,7 +191,7 @@ impl Serialize for Adopted<'_> {
         o.end()
     }
 }
-impl Custody {
+impl<P: Layout> Custody<P> {
     pub(super) fn selected_position(
         input: Option<&str>,
         change: &str,
@@ -288,12 +288,19 @@ impl Custody {
             };
             output(Q, bytes, |out| {
                 let mut o = Object::new(out)?;
-                o.field("v", &5u64)?;
+                o.field("v", &work::version())?;
                 o.field("kind", "history_view")?;
                 o.field("ledger", &self.grant.ledger)?;
                 o.field("workspace_id", &self.grant.workspace_id)?;
                 o.field("change", change)?;
-                o.field("projection", "ck-ledger-history-range@1")?;
+                o.field(
+                    "projection",
+                    if work::continuity_mode() {
+                        "ck-ledger-history-range@2"
+                    } else {
+                        "ck-ledger-history-range@1"
+                    },
+                )?;
                 o.field("origin", origin.as_str())?;
                 o.field("tip", tip.as_str())?;
                 o.field("cursor", cursor.as_str())?;
@@ -347,12 +354,19 @@ impl Custody {
             };
             output(Q, if fits { selected_end } else { 0 }, |out| {
                 let mut o = Object::new(out)?;
-                o.field("v", &5u64)?;
+                o.field("v", &work::version())?;
                 o.field("kind", "change_context")?;
                 o.field("ledger", &self.grant.ledger)?;
                 o.field("workspace_id", &self.grant.workspace_id)?;
                 o.field("change", change)?;
-                o.field("projection", "ck-ledger-understanding@1")?;
+                o.field(
+                    "projection",
+                    if work::continuity_mode() {
+                        "ck-ledger-understanding@2"
+                    } else {
+                        "ck-ledger-understanding@1"
+                    },
+                )?;
                 o.field("purpose", "understanding")?;
                 o.field("origin", origin.as_str())?;
                 o.field("tip", tip.as_str())?;
@@ -386,7 +400,7 @@ impl Custody {
         let metadata = Owned::new(metadata(m)?);
         output(L, metadata.logical(), |out| {
             let mut o = Object::new(out)?;
-            o.field("v", &5u64)?;
+            o.field("v", &work::version())?;
             o.field("kind", "selection")?;
             o.field("ledger", &self.grant.ledger)?;
             o.field("workspace_id", &self.grant.workspace_id)?;
@@ -401,7 +415,7 @@ impl Custody {
         after: Option<&str>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         let cursor = after.map(|s| crate::kernel::changes::ledger::Cursor {
-            v: 5,
+            v: work::version(),
             ledger: self.grant.ledger.clone(),
             workspace_id: self.grant.workspace_id.clone(),
             after: s.into(),
@@ -411,7 +425,7 @@ impl Custody {
         _capacity.resize(cursor.heap());
         output(L, members.iter().map(Heap::logical).sum(), |out| {
             let mut o = Object::new(out)?;
-            o.field("v", &5u64)?;
+            o.field("v", &work::version())?;
             o.field("kind", "change_page")?;
             o.field("ledger", &self.grant.ledger)?;
             o.field("workspace_id", &self.grant.workspace_id)?;

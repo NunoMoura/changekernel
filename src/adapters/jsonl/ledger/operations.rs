@@ -1,6 +1,6 @@
 use super::*;
 
-impl Custody {
+impl<P: Layout> Custody<P> {
     pub fn finish_connect(&mut self, guard: &mut dyn LedgerGuard) -> Result<(), OpeningError> {
         let mut state = self.read_shared()?;
         if let Some(temp) = state.temp.as_mut() {
@@ -92,7 +92,7 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn LedgerGuard,
-        state: State,
+        state: State<P>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         let change = input.change.as_ref().unwrap();
         let a = state
@@ -179,7 +179,7 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn LedgerGuard,
-        state: State,
+        state: State<P>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         if let Some(Some(cursor)) = &input.cursor {
             if !state.control.entries.0.iter().any(|a| {
@@ -290,7 +290,7 @@ impl Custody {
     }
     fn proof_member(
         &mut self,
-        p: &Reservation,
+        p: &Reservation<P>,
         kind: Kind,
         barriers: bool,
     ) -> Result<(), OpeningError> {
@@ -309,7 +309,7 @@ impl Custody {
             Ok(())
         })
     }
-    fn proof_state(&mut self, p: &Reservation, kind: Kind) -> Result<State, OpeningError> {
+    fn proof_state(&mut self, p: &Reservation<P>, kind: Kind) -> Result<State<P>, OpeningError> {
         let state = self.read_shared()?;
         let original = state
             .control
@@ -343,11 +343,11 @@ impl Custody {
     }
     fn deferred(
         &mut self,
-        p: &Reservation,
+        p: &Reservation<P>,
         kind: Kind,
         input: &Request,
         guard: &mut dyn LedgerGuard,
-    ) -> Result<State, OpeningError> {
+    ) -> Result<State<P>, OpeningError> {
         self.ctx.phase = "recover";
         self.proof_state(p, kind)?;
         self.proof_member(p, kind, false)?;
@@ -375,7 +375,7 @@ impl Custody {
         &mut self,
         input: &Request,
         guard: &mut dyn LedgerGuard,
-        mut state: State,
+        mut state: State<P>,
     ) -> Result<Owned<Vec<u8>>, OpeningError> {
         let key = input.key.as_ref().unwrap();
         if let Some(a) = state.control.entries.0.iter().find(|a| {
@@ -531,7 +531,13 @@ impl Custody {
                 physical: None,
             });
             let origin = self.origin(&p).map_err(|_| OpeningError::Unsupported)?;
-            codec::emit_origin(&origin).map_err(|_| OpeningError::Unsupported)?;
+            let prospective = codec::emit_origin(&origin).map_err(|_| OpeningError::Unsupported)?;
+            if self.grant.selected == Profile::Continuity
+                && !continuity::size::fits(self, &state.control, prospective.len())
+            {
+                return Err(OpeningError::Unsupported);
+            }
+            drop(prospective);
             drop(origin);
             self.ctx.phase = "reserve";
             state.control.pending = Some(Owned::constructed(|| (*p).clone()).into_inner());

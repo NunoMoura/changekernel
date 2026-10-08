@@ -1,3 +1,4 @@
+use super::layout::{Layout, Legacy, SharedFields, Value};
 use super::selection::{Adoption, Operation as Origin, SelectedRequest as Request, SelectedResult};
 use super::work::{self, Boundary as B, Heap, Owned};
 use crate::kernel::changes::ledger::{
@@ -53,15 +54,15 @@ pub(super) fn required<T, E: de::Error>(value: Option<T>, name: &'static str) ->
     value.ok_or_else(|| E::missing_field(name))
 }
 macro_rules! shape {
-    ($ty:ident { $($field:ident : $ft:ty),+ $(,)? }) => {
-        impl<'de> Deserialize<'de> for $ty {
+    ($ty:ident $(<$layout:ident>)? { $($field:ident : $ft:ty),+ $(,)? }) => {
+        impl<'de $(, $layout: Layout)?> Deserialize<'de> for $ty $(<$layout>)? {
             fn deserialize<D:Deserializer<'de>>(d:D)->Result<Self,D::Error> {
-                struct Fixed;
-                impl<'de> Visitor<'de> for Fixed {
-                    type Value=$ty;
+                struct Fixed $(<$layout>)? ($(std::marker::PhantomData<$layout>)?);
+                impl<'de $(, $layout: Layout)?> Visitor<'de> for Fixed $(<$layout>)? {
+                    type Value=$ty $(<$layout>)?;
                     fn expecting(&self,f:&mut fmt::Formatter)->fmt::Result {f.write_str(stringify!($ty))}
-                    fn visit_map<M:MapAccess<'de>>(self,mut m:M)->Result<$ty,M::Error> {
-                        let _header=work::Fixed::new(std::mem::size_of::<$ty>());
+                    fn visit_map<M:MapAccess<'de>>(self,mut m:M)->Result<$ty $(<$layout>)?,M::Error> {
+                        let _header=work::Fixed::new(std::mem::size_of::<$ty $(<$layout>)?>());
                         $(let mut $field:Option<Owned<$ft>>=None;)+
                         while let Some(k)=m.next_key::<String>()? {
                             let k=Owned::new(k);
@@ -81,16 +82,16 @@ macro_rules! shape {
                         Ok(value.into_inner())
                     }
                 }
-                d.deserialize_struct(stringify!($ty),&[$(stringify!($field)),+],Fixed)
+                d.deserialize_struct(stringify!($ty),&[$(stringify!($field)),+],Fixed($(std::marker::PhantomData::<$layout>)?))
             }
         }
-        impl Serialize for $ty {
+        impl $(<$layout: Layout>)? Serialize for $ty $(<$layout>)? {
             fn serialize<S:Serializer>(&self,s:S)->Result<S::Ok,S::Error> {
                 let mut o=s.serialize_struct(stringify!($ty),[$(stringify!($field)),+].len())?;
                 $(o.serialize_field(stringify!($field),&self.$field)?;)+ o.end()
             }
         }
-        impl Heap for $ty {fn role(&self)->work::Role{role!($ty,self)}fn vector_role(n:usize)->work::Role{let _=n;vector_role!($ty,n)}fn heap(&self)->usize {0 $(+self.$field.heap())+}fn logical(&self)->usize {0 $(+self.$field.logical())+}}
+        impl $(<$layout: Layout>)? Heap for $ty $(<$layout>)? {fn role(&self)->work::Role{role!($ty,self)}fn vector_role(n:usize)->work::Role{let _=n;vector_role!($ty,n)}fn heap(&self)->usize {0 $(+self.$field.heap())+}fn logical(&self)->usize {0 $(+self.$field.logical())+}}
     };
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -171,20 +172,51 @@ shape!(Created {
 shape!(LegacyOrigin { v: u64, custody: String, ledger: String, workspace_id: String, binding: String, change: String, seq: u64, prev: Option<String>, kind: String, input: LegacyRequest, result: Created });
 shape!(Origin {v:u64,custody:String,ledger:String,workspace_id:String,binding:String,change:String,seq:u64,prev:Option<String>,kind:String,input:Request,result:SelectedResult});
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Physical {
+pub(crate) struct LegacyPhysical {
     pub directory_device: u64,
     pub directory_inode: u64,
     pub lock_device: u64,
     pub lock_inode: u64,
 }
-shape!(Physical {
+shape!(LegacyPhysical {
     directory_device: u64,
     directory_inode: u64,
     lock_device: u64,
     lock_inode: u64
 });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Anchor {
+pub(super) struct Physical<P: Layout = Legacy>(pub P::Physical);
+impl<P: Layout> std::ops::Deref for Physical<P> {
+    type Target = LegacyPhysical;
+    fn deref(&self) -> &LegacyPhysical {
+        P::legacy(&self.0)
+    }
+}
+impl<P: Layout> Heap for Physical<P> {
+    fn heap(&self) -> usize {
+        self.0.heap()
+    }
+    fn logical(&self) -> usize {
+        self.0.logical()
+    }
+}
+impl<P: Layout> Serialize for Physical<P> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(s)
+    }
+}
+impl<'de, P: Layout> Deserialize<'de> for Physical<P> {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        P::Physical::deserialize(d).map(Self)
+    }
+}
+use super::continuity::identity::Pair;
+shape!(Pair {
+    directory: super::continuity::identity::Identity,
+    lock: super::continuity::identity::Identity
+});
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct Anchor<P: Layout = Legacy> {
     pub format: String,
     pub ledger: String,
     pub custody: String,
@@ -198,6 +230,7 @@ pub(super) struct Anchor {
     pub lock_inode: u64,
     pub members_device: u64,
     pub members_inode: u64,
+    pub identity: P::Shared,
     pub stage: String,
     pub adoption: Option<Adoption>,
 }
@@ -235,25 +268,26 @@ shape!(MemberAnchorBase {
     stage: String
 });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct MemberAnchor {
+pub(super) struct MemberAnchor<P: Layout = Legacy> {
     pub base: MemberAnchorBase,
+    pub identity: P::Member,
     pub adoption: Option<Adoption>,
 }
-impl std::ops::Deref for MemberAnchor {
+impl<P: Layout> std::ops::Deref for MemberAnchor<P> {
     type Target = MemberAnchorBase;
     fn deref(&self) -> &MemberAnchorBase {
         &self.base
     }
 }
-impl Heap for MemberAnchor {
+impl<P: Layout> Heap for MemberAnchor<P> {
     fn heap(&self) -> usize {
         self.base.heap() + self.adoption.heap()
     }
     fn logical(&self) -> usize {
-        self.base.logical() + self.adoption.logical()
+        self.base.logical() + self.adoption.logical() + self.identity.logical()
     }
 }
-impl Serialize for MemberAnchor {
+impl<P: Layout> Serialize for MemberAnchor<P> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         if self.adoption.is_none() {
             return self.base.serialize(s);
@@ -268,10 +302,15 @@ impl Serialize for MemberAnchor {
         o.serialize_field("owner", &self.owner)?;
         o.serialize_field("key", &self.key)?;
         o.serialize_field("directory", &self.directory)?;
-        o.serialize_field("directory_device", &self.directory_device)?;
-        o.serialize_field("directory_inode", &self.directory_inode)?;
-        o.serialize_field("lock_device", &self.lock_device)?;
-        o.serialize_field("lock_inode", &self.lock_inode)?;
+        if let Some(id) = self.identity.value() {
+            o.serialize_field("directory_identity", &id.directory)?;
+            o.serialize_field("lock_identity", &id.lock)?;
+        } else {
+            o.serialize_field("directory_device", &self.directory_device)?;
+            o.serialize_field("directory_inode", &self.directory_inode)?;
+            o.serialize_field("lock_device", &self.lock_device)?;
+            o.serialize_field("lock_inode", &self.lock_inode)?;
+        }
         o.serialize_field("stage", &self.stage)?;
         let a = self.adoption.as_ref().unwrap();
         o.serialize_field("policy", &a.policy)?;
@@ -281,20 +320,24 @@ impl Serialize for MemberAnchor {
         o.end()
     }
 }
-impl<'de> Deserialize<'de> for MemberAnchor {
+impl<'de, P: Layout> Deserialize<'de> for MemberAnchor<P> {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        if work::continuity_mode() {
+            return super::continuity::MemberAnchorWire::deserialize(d).map(Into::into);
+        }
         if work::history_mode() {
             super::history::codec::MemberAnchorWire::deserialize(d).map(Into::into)
         } else {
             MemberAnchorBase::deserialize(d).map(|base| Self {
                 base,
+                identity: P::Member::from_value(None),
                 adoption: None,
             })
         }
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Association {
+pub(super) struct Association<P: Layout = Legacy> {
     pub slot: u64,
     pub key: String,
     pub change: String,
@@ -303,9 +346,9 @@ pub(super) struct Association {
     pub input_sha256: String,
     pub origin_end: u64,
     pub origin_sha256: String,
-    pub physical: Physical,
+    pub physical: Physical<P>,
 }
-shape!(Association {
+shape!(Association<P> {
     slot: u64,
     key: String,
     change: String,
@@ -314,27 +357,27 @@ shape!(Association {
     input_sha256: String,
     origin_end: u64,
     origin_sha256: String,
-    physical: Physical
+    physical: Physical<P>
 });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Reservation {
+pub(super) struct Reservation<P: Layout = Legacy> {
     pub slot: u64,
     pub input: Request,
     pub actor: String,
     pub phase: String,
-    pub physical: Option<Physical>,
+    pub physical: Option<Physical<P>>,
 }
-shape!(Reservation { slot: u64, input: Request, actor: String, phase: String, physical: Option<Physical> });
+shape!(Reservation<P> { slot: u64, input: Request, actor: String, phase: String, physical: Option<Physical<P>> });
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct Creations {
+pub(super) struct Creations<P: Layout = Legacy> {
     pub format: String,
     pub custody: String,
     pub ledger: String,
     pub generation: u64,
-    pub entries: Items<Association>,
-    pub pending: Option<Reservation>,
+    pub entries: Items<Association<P>>,
+    pub pending: Option<Reservation<P>>,
 }
-shape!(Creations { format: String, custody: String, ledger: String, generation: u64, entries: Items<Association>, pending: Option<Reservation> });
+shape!(Creations<P> { format: String, custody: String, ledger: String, generation: u64, entries: Items<Association<P>>, pending: Option<Reservation<P>> });
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Pending {
     pub input: Request,
@@ -758,12 +801,12 @@ pub(super) fn retained<T: for<'de> Deserialize<'de> + Serialize + Heap>(
 
 // Decode temporary entries sequentially against installed entries. Never own a
 // second accepted-association vector. The possible final successor is one value.
-pub(super) struct Temporary {
+pub(super) struct Temporary<P: Layout = Legacy> {
     pub generation: u64,
-    pub pending: Option<Reservation>,
-    pub last: Option<Association>,
+    pub pending: Option<Reservation<P>>,
+    pub last: Option<Association<P>>,
 }
-impl Heap for Temporary {
+impl<P: Layout> Heap for Temporary<P> {
     fn logical(&self) -> usize {
         self.pending.logical() + self.last.logical()
     }
@@ -771,23 +814,26 @@ impl Heap for Temporary {
         self.pending.heap() + self.last.heap()
     }
 }
-pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Temporary>, ()> {
+pub(super) fn temporary<P: Layout>(
+    bytes: &[u8],
+    installed: &Creations<P>,
+) -> Result<Owned<Temporary<P>>, ()> {
     use serde_core::de::DeserializeSeed;
-    struct Entries<'a>(&'a [Association]);
-    impl<'de> DeserializeSeed<'de> for Entries<'_> {
-        type Value = Option<Owned<Association>>;
+    struct Entries<'a, P: Layout>(&'a [Association<P>]);
+    impl<'de, P: Layout> DeserializeSeed<'de> for Entries<'_, P> {
+        type Value = Option<Owned<Association<P>>>;
         fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
             d.deserialize_seq(self)
         }
     }
-    impl<'de> Visitor<'de> for Entries<'_> {
-        type Value = Option<Owned<Association>>;
+    impl<'de, P: Layout> Visitor<'de> for Entries<'_, P> {
+        type Value = Option<Owned<Association<P>>>;
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.write_str("unchanged accepted entries and at most one successor")
         }
         fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
             for expected in self.0 {
-                let entry = Owned::new(required(a.next_element::<Association>()?, "entry")?);
+                let entry = Owned::new(required(a.next_element::<Association<P>>()?, "entry")?);
                 if !work::test(
                     B::Relationships,
                     entry.logical().max(expected.logical()),
@@ -810,7 +856,7 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
                 }
                 None
             } else {
-                a.next_element::<Association>()?.map(Owned::new)
+                a.next_element::<Association<P>>()?.map(Owned::new)
             };
             if last.is_some() && a.next_element::<Extra>()?.is_some() {
                 return Err(de::Error::custom("extra entry"));
@@ -818,9 +864,9 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
             Ok(last)
         }
     }
-    struct Control<'a>(&'a Creations);
-    impl<'de> DeserializeSeed<'de> for Control<'_> {
-        type Value = Temporary;
+    struct Control<'a, P: Layout>(&'a Creations<P>);
+    impl<'de, P: Layout> DeserializeSeed<'de> for Control<'_, P> {
+        type Value = Temporary<P>;
         fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
             d.deserialize_struct(
                 "creations",
@@ -836,8 +882,8 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
             )
         }
     }
-    impl<'de> Visitor<'de> for Control<'_> {
-        type Value = Temporary;
+    impl<'de, P: Layout> Visitor<'de> for Control<'_, P> {
+        type Value = Temporary<P>;
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.write_str("creation temporary")
         }
@@ -881,7 +927,7 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
                     4 => ledger = Some(Owned::new(m.next_value::<String>()?)),
                     8 => generation = Some(Owned::new(m.next_value::<u64>()?)),
                     16 => entries = Some(m.next_value_seed(Entries(&self.0.entries.0))?),
-                    32 => pending = Some(Owned::new(m.next_value::<Option<Reservation>>()?)),
+                    32 => pending = Some(Owned::new(m.next_value::<Option<Reservation<P>>>()?)),
                     _ => unreachable!(),
                 }
             }
@@ -919,11 +965,11 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
     d.end().map_err(|_| ())?;
     work::complete(B::Controls, true);
     work::complete(B::Constructions, true);
-    struct Ref<'a> {
-        installed: &'a Creations,
-        temp: &'a Temporary,
+    struct Ref<'a, P: Layout> {
+        installed: &'a Creations<P>,
+        temp: &'a Temporary<P>,
     }
-    impl Heap for Ref<'_> {
+    impl<P: Layout> Heap for Ref<'_, P> {
         fn heap(&self) -> usize {
             0
         }
@@ -936,10 +982,10 @@ pub(super) fn temporary(bytes: &[u8], installed: &Creations) -> Result<Owned<Tem
                 + self.temp.pending.logical()
         }
     }
-    impl Serialize for Ref<'_> {
+    impl<P: Layout> Serialize for Ref<'_, P> {
         fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-            struct Entries<'a>(&'a [Association], Option<&'a Association>);
-            impl Serialize for Entries<'_> {
+            struct Entries<'a, P: Layout>(&'a [Association<P>], Option<&'a Association<P>>);
+            impl<P: Layout> Serialize for Entries<'_, P> {
                 fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
                     use serde_core::ser::SerializeSeq;
                     let mut o =
@@ -1106,7 +1152,7 @@ pub(super) fn retained_origin(bytes: &[u8]) -> Result<(Owned<Origin>, CanonicalI
     Ok((record, CanonicalInput(&bytes[start..end])))
 }
 
-impl Heap for Anchor {
+impl<P: Layout> Heap for Anchor<P> {
     fn heap(&self) -> usize {
         self.format.heap()
             + self.ledger.heap()
@@ -1140,13 +1186,14 @@ impl Heap for Anchor {
             + self.members_inode.logical()
             + self.adoption.logical()
             + self.stage.logical()
+            + self.identity.logical()
     }
 }
 
-// The independent grant is the sole 16-pair owning vector. Anchor grants are
+// The independent grant is the sole 16-pair owning vector. Anchor<P> grants are
 // compared sequentially at decode, then canonical re-emission borrows that grant.
-pub(super) struct AnchorWire<'a>(pub &'a Anchor, pub &'a [LedgerPair; 16]);
-impl Heap for AnchorWire<'_> {
+pub(super) struct AnchorWire<'a, P: Layout>(pub &'a Anchor<P>, pub &'a [LedgerPair; 16]);
+impl<P: Layout> Heap for AnchorWire<'_, P> {
     fn heap(&self) -> usize {
         0
     }
@@ -1154,7 +1201,7 @@ impl Heap for AnchorWire<'_> {
         self.0.logical() + self.1.logical()
     }
 }
-impl Serialize for AnchorWire<'_> {
+impl<P: Layout> Serialize for AnchorWire<'_, P> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut o = s.serialize_struct("anchor", 15)?;
         o.serialize_field("format", &self.0.format)?;
@@ -1164,12 +1211,18 @@ impl Serialize for AnchorWire<'_> {
         o.serialize_field("binding", &self.0.binding)?;
         o.serialize_field("owner", &self.0.owner)?;
         o.serialize_field("directory", &self.0.directory)?;
-        o.serialize_field("directory_device", &self.0.directory_device)?;
-        o.serialize_field("directory_inode", &self.0.directory_inode)?;
-        o.serialize_field("lock_device", &self.0.lock_device)?;
-        o.serialize_field("lock_inode", &self.0.lock_inode)?;
-        o.serialize_field("members_device", &self.0.members_device)?;
-        o.serialize_field("members_inode", &self.0.members_inode)?;
+        if let Some(id) = self.0.identity.value() {
+            o.serialize_field("directory_identity", &id.directory)?;
+            o.serialize_field("lock_identity", &id.lock)?;
+            o.serialize_field("members_identity", &id.members)?;
+        } else {
+            o.serialize_field("directory_device", &self.0.directory_device)?;
+            o.serialize_field("directory_inode", &self.0.directory_inode)?;
+            o.serialize_field("lock_device", &self.0.lock_device)?;
+            o.serialize_field("lock_inode", &self.0.lock_inode)?;
+            o.serialize_field("members_device", &self.0.members_device)?;
+            o.serialize_field("members_inode", &self.0.members_inode)?;
+        }
         o.serialize_field("grants", self.1)?;
         o.serialize_field("stage", &self.0.stage)?;
         if let Some(a) = &self.0.adoption {
@@ -1181,7 +1234,10 @@ impl Serialize for AnchorWire<'_> {
         o.end()
     }
 }
-pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<Anchor>, ()> {
+pub(super) fn anchor<P: Layout>(
+    bytes: &[u8],
+    grants: &[LedgerPair; 16],
+) -> Result<Owned<Anchor<P>>, ()> {
     use serde_core::de::DeserializeSeed;
     struct Grants<'a>(&'a [LedgerPair; 16]);
     impl<'de> DeserializeSeed<'de> for Grants<'_> {
@@ -1220,19 +1276,19 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
             Ok(())
         }
     }
-    struct Header<'a>(&'a [LedgerPair; 16]);
-    impl<'de> DeserializeSeed<'de> for Header<'_> {
-        type Value = Anchor;
-        fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Anchor, D::Error> {
+    struct Header<'a, P: Layout>(&'a [LedgerPair; 16], std::marker::PhantomData<P>);
+    impl<'de, P: Layout> DeserializeSeed<'de> for Header<'_, P> {
+        type Value = Anchor<P>;
+        fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Anchor<P>, D::Error> {
             d.deserialize_map(self)
         }
     }
-    impl<'de> Visitor<'de> for Header<'_> {
-        type Value = Anchor;
+    impl<'de, P: Layout> Visitor<'de> for Header<'_, P> {
+        type Value = Anchor<P>;
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.write_str("ledger anchor")
         }
-        fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<Anchor, M::Error> {
+        fn visit_map<M: MapAccess<'de>>(self, mut m: M) -> Result<Anchor<P>, M::Error> {
             let mut format: Option<Owned<String>> = None;
             let mut ledger: Option<Owned<String>> = None;
             let mut custody: Option<Owned<String>> = None;
@@ -1251,6 +1307,8 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
             let mut check: Option<Owned<String>> = None;
             let mut evaluator: Option<Owned<String>> = None;
             let mut adopter: Option<Owned<String>> = None;
+            let _identity_fields = P::charge(std::mem::size_of::<P::SharedFields>());
+            let mut identities = P::SharedFields::default();
             let mut mask = 0u32;
             while let Some(k) = m.next_key::<String>()? {
                 let k = Owned::new(k);
@@ -1274,16 +1332,38 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                     "check",
                     "evaluator",
                     "adopter",
+                    "directory_identity",
+                    "lock_identity",
+                    "members_identity",
                 ];
                 field_key(
                     &k,
-                    if work::history_mode() {
+                    if work::continuity_mode() {
                         &keys[..]
+                    } else if work::history_mode() {
+                        &keys[..19]
                     } else {
                         &keys[..15]
                     },
                 );
+                if work::continuity_mode()
+                    && matches!(
+                        k.as_str(),
+                        "directory_device"
+                            | "directory_inode"
+                            | "lock_device"
+                            | "lock_inode"
+                            | "members_device"
+                            | "members_inode"
+                    )
+                {
+                    work::complete(B::Fields, false);
+                    return Err(de::Error::custom("legacy physical"));
+                }
                 let bit = match k.as_str() {
+                    "directory_identity" if work::continuity_mode() => 524288,
+                    "lock_identity" if work::continuity_mode() => 1048576,
+                    "members_identity" if work::continuity_mode() => 2097152,
                     "format" => 1,
                     "ledger" => 2,
                     "custody" => 4,
@@ -1335,11 +1415,20 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                     65536 => check = Some(Owned::new(m.next_value()?)),
                     131072 => evaluator = Some(Owned::new(m.next_value()?)),
                     262144 => adopter = Some(Owned::new(m.next_value()?)),
+                    524288 => identities.put(0, m.next_value()?),
+                    1048576 => identities.put(1, m.next_value()?),
+                    2097152 => identities.put(2, m.next_value()?),
                     _ => unreachable!(),
                 }
             }
             if !work::test(B::Fields, 0, 1, || {
-                mask == if work::history_mode() { 524287 } else { 32767 }
+                mask == if work::continuity_mode() {
+                    4186239
+                } else if work::history_mode() {
+                    524287
+                } else {
+                    32767
+                }
             }) {
                 return Err(de::Error::custom("missing field"));
             }
@@ -1351,12 +1440,37 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
                 binding: binding.unwrap().into_inner(),
                 owner: owner.unwrap().into_inner(),
                 directory: directory.unwrap().into_inner(),
-                directory_device: directory_device.unwrap().into_inner(),
-                directory_inode: directory_inode.unwrap().into_inner(),
-                lock_device: lock_device.unwrap().into_inner(),
-                lock_inode: lock_inode.unwrap().into_inner(),
-                members_device: members_device.unwrap().into_inner(),
-                members_inode: members_inode.unwrap().into_inner(),
+                directory_device: if work::continuity_mode() {
+                    0
+                } else {
+                    directory_device.unwrap().into_inner()
+                },
+                directory_inode: if work::continuity_mode() {
+                    0
+                } else {
+                    directory_inode.unwrap().into_inner()
+                },
+                lock_device: if work::continuity_mode() {
+                    0
+                } else {
+                    lock_device.unwrap().into_inner()
+                },
+                lock_inode: if work::continuity_mode() {
+                    0
+                } else {
+                    lock_inode.unwrap().into_inner()
+                },
+                members_device: if work::continuity_mode() {
+                    0
+                } else {
+                    members_device.unwrap().into_inner()
+                },
+                members_inode: if work::continuity_mode() {
+                    0
+                } else {
+                    members_inode.unwrap().into_inner()
+                },
+                identity: P::Shared::from_value(identities.finish()),
                 stage: stage.unwrap().into_inner(),
                 adoption: if work::history_mode() {
                     Some(Adoption {
@@ -1378,7 +1492,11 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
     }
     let _parser_header = work::Fixed::new(std::mem::size_of::<super::parser::Parser<'_>>());
     let mut d = super::parser::Parser::new(bytes);
-    let v = Owned::new(Header(grants).deserialize(&mut d).map_err(|_| ())?);
+    let v = Owned::new(
+        Header::<P>(grants, std::marker::PhantomData)
+            .deserialize(&mut d)
+            .map_err(|_| ())?,
+    );
     d.end().map_err(|_| ())?;
     work::complete(B::Controls, true);
     work::complete(B::Constructions, true);
@@ -1389,4 +1507,20 @@ pub(super) fn anchor(bytes: &[u8], grants: &[LedgerPair; 16]) -> Result<Owned<An
         return Err(());
     }
     Ok(v)
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn legacy_accepted_capacity_is_charged_as_unexpanded_rows() {
+        work::begin(0);
+        let entries = Owned::new(Vec::<Association<Legacy>>::with_capacity(16));
+        // Frozen six-String, two-u64, four-scalar rows consume 192 bytes.
+        // This checks actual observed capacity, not adjusted accounting.
+        assert_eq!(work::LedgerWork::last_call().named_payload_peak, 16 * 192);
+        assert_eq!(entries.capacity(), 16);
+        drop(entries);
+    }
 }

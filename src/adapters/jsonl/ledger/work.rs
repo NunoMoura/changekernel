@@ -139,6 +139,18 @@ pub(crate) struct Measures {
     pub span_entries_peak: u64,
     pub key_entries_peak: u64,
     pub assessment_entries_peak: u64,
+    pub identity_acquisitions: LedgerBoundary,
+    pub native_fstype: LedgerBoundary,
+    pub native_fsinfo: LedgerBoundary,
+    pub native_handle: LedgerBoundary,
+    pub identity_format: LedgerBoundary,
+    pub identity_comparisons: LedgerBoundary,
+    pub native_buffer_bytes: u64,
+    pub identity_raw_operand_bytes: u64,
+    pub identity_text_operand_bytes: u64,
+    pub identity_scratch_bytes_peak: u64,
+    pub identity_io_failures: u64,
+    pub identity_refusals: u64,
 }
 #[derive(Clone, Copy)]
 pub(crate) enum Boundary {
@@ -174,11 +186,18 @@ pub(crate) enum Boundary {
     EvaluatorCalculations,
     Projection,
     Applicability,
+    IdentityAcquisitions,
+    NativeFstype,
+    NativeFsinfo,
+    NativeHandle,
+    IdentityFormat,
+    IdentityComparisons,
 }
 #[derive(Default)]
 struct Active {
     work: Measures,
     call: Option<super::history::LedgerHistoryCall>,
+    continuity_call: Option<super::continuity::LedgerContinuityCall>,
     live: usize,
     fixed: usize,
     traces: usize,
@@ -191,6 +210,9 @@ struct Active {
     stack: usize,
 }
 thread_local! {
+    static CONTINUITY_ACTIVE: RefCell<Active> = RefCell::new(Active::default());
+    static CONTINUITY_LAST: std::cell::Cell<super::continuity::LedgerContinuityWork> = std::cell::Cell::new(super::continuity::LedgerContinuityWork::default());
+    static CONTINUITY_MODE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
     static LEGACY_ACTIVE: RefCell<Active> = RefCell::new(Active::default());
     static HISTORY_ACTIVE: RefCell<Active> = RefCell::new(Active::default());
     static HISTORY_LAST: std::cell::Cell<super::history::LedgerHistoryWork> = std::cell::Cell::new(super::history::LedgerHistoryWork::default());
@@ -198,7 +220,9 @@ thread_local! {
     static NEXT_EPOCH: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 fn active<R>(f: impl FnOnce(&RefCell<Active>) -> R) -> R {
-    if HISTORY_MODE.get() {
+    if CONTINUITY_MODE.get() {
+        CONTINUITY_ACTIVE.with(f)
+    } else if HISTORY_MODE.get() {
         HISTORY_ACTIVE.with(f)
     } else {
         LEGACY_ACTIVE.with(f)
@@ -259,6 +283,7 @@ impl LedgerWork {
     }
 }
 pub(crate) fn begin(ingress: usize) {
+    CONTINUITY_MODE.set(false);
     HISTORY_MODE.set(false);
     reset(ingress);
 }
@@ -319,6 +344,12 @@ fn boundary(w: &mut Measures, b: Boundary) -> &mut LedgerBoundary {
         Boundary::EvaluatorCalculations => &mut w.evaluator_calculations,
         Boundary::Projection => &mut w.projection,
         Boundary::Applicability => &mut w.applicability,
+        Boundary::IdentityAcquisitions => &mut w.identity_acquisitions,
+        Boundary::NativeFstype => &mut w.native_fstype,
+        Boundary::NativeFsinfo => &mut w.native_fsinfo,
+        Boundary::NativeHandle => &mut w.native_handle,
+        Boundary::IdentityFormat => &mut w.identity_format,
+        Boundary::IdentityComparisons => &mut w.identity_comparisons,
     }
 }
 pub(crate) fn attempt(b: Boundary, bytes: usize, words: usize) {
@@ -740,6 +771,7 @@ pub(crate) fn epoch() -> u64 {
 }
 
 pub(crate) fn history_begin(call: super::history::LedgerHistoryCall, payload: usize) {
+    CONTINUITY_MODE.set(false);
     HISTORY_MODE.set(true);
     reset(payload);
     active(|a| a.borrow_mut().call = Some(call));
@@ -824,7 +856,7 @@ pub(crate) fn history_seal() -> super::history::LedgerHistoryWork {
 }
 
 pub(crate) fn history_mode() -> bool {
-    HISTORY_MODE.get()
+    HISTORY_MODE.get() || CONTINUITY_MODE.get()
 }
 
 pub(crate) fn finish_history_output(ok: bool) {
@@ -878,4 +910,112 @@ impl Heap for str {
     fn logical(&self) -> usize {
         self.len()
     }
+}
+
+pub(crate) fn continuity_seal() -> super::continuity::LedgerContinuityWork {
+    active(|a| {
+        let a = a.borrow();
+        let w = &a.work;
+        let snapshot = super::continuity::LedgerContinuityWork {
+            call: a.continuity_call,
+            grant_admission: w.grant_admission,
+            input_admission: w.input_admission,
+            supplied_input_bytes: w.supplied_input_bytes,
+            supplied_input_capacity: w.supplied_input_capacity,
+            permissions: w.permissions,
+            principals: w.principals,
+            permission_denied: w.permission_denied,
+            permission_unavailable: w.permission_unavailable,
+            shared_passes: w.shared_passes,
+            member_passes: w.member_passes,
+            reads: w.reads,
+            buffered_bytes: w.buffered_bytes,
+            trace_bytes: w.trace_bytes,
+            accepted_hash_bytes: w.accepted_hash_bytes,
+            candidate_hash_bytes: w.candidate_hash_bytes,
+            ingress: w.ingress,
+            controls: w.controls,
+            records: w.records,
+            constructions: w.constructions,
+            emissions: w.emissions,
+            control_emissions: w.control_emissions,
+            record_emissions: w.record_emissions,
+            input_emissions: w.input_emissions,
+            candidate_emissions: w.candidate_emissions,
+            reply_emissions: w.reply_emissions,
+            canonical: w.canonical,
+            semantic: w.semantic,
+            typed_input: w.typed_input,
+            relationships: w.relationships,
+            identifiers: w.identifiers,
+            key_uniqueness: w.key_uniqueness,
+            key_lookup: w.key_lookup,
+            key_feasibility: w.key_feasibility,
+            ordering: w.ordering,
+            fields: w.fields,
+            evaluator_calculations: w.evaluator_calculations,
+            check_attempts: w.check_attempts,
+            check_acceptances: w.check_acceptances,
+            projection: w.projection,
+            applicability: w.applicability,
+            copied_record_bytes: w.copied_record_bytes,
+            cleanup: w.cleanup,
+            retention: w.retention,
+            outputs: w.outputs,
+            errors: w.errors,
+            records_peak: w.records_peak,
+            metadata_vectors_peak: w.metadata_vectors_peak,
+            accepted_vectors_peak: w.accepted_vectors_peak,
+            metadata_entries_peak: w.metadata_entries_peak,
+            accepted_entries_peak: w.accepted_entries_peak,
+            grant_vectors_peak: w.grant_vectors_peak,
+            span_entries_peak: w.span_entries_peak,
+            key_entries_peak: w.key_entries_peak,
+            assessment_entries_peak: w.assessment_entries_peak,
+            descriptor_handles_peak: w.descriptor_handles_peak,
+            stack_bindings_peak: w.stack_bindings_peak,
+            inventory_visits: w.inventory_visits,
+            inventory_buffer_peak: w.inventory_buffer_peak,
+            named_payload_peak: w.named_payload_peak,
+            named_fixed_bytes_peak: w.named_fixed_bytes_peak,
+            hash_state_bytes_peak: w.hash_state_bytes_peak,
+            trace_buffers_peak: w.trace_buffers_peak,
+            trace_capacity_peak: w.trace_capacity_peak,
+            accounting_updates: w.accounting_updates,
+            identity_acquisitions: w.identity_acquisitions,
+            native_fstype: w.native_fstype,
+            native_fsinfo: w.native_fsinfo,
+            native_handle: w.native_handle,
+            identity_format: w.identity_format,
+            identity_comparisons: w.identity_comparisons,
+            native_buffer_bytes: w.native_buffer_bytes,
+            identity_raw_operand_bytes: w.identity_raw_operand_bytes,
+            identity_text_operand_bytes: w.identity_text_operand_bytes,
+            identity_scratch_bytes_peak: w.identity_scratch_bytes_peak,
+            identity_io_failures: w.identity_io_failures,
+            identity_refusals: w.identity_refusals,
+        };
+        CONTINUITY_LAST.set(snapshot);
+        snapshot
+    })
+}
+
+pub(crate) fn continuity_begin(call: super::continuity::LedgerContinuityCall, payload: usize) {
+    CONTINUITY_MODE.set(true);
+    HISTORY_MODE.set(false);
+    reset(payload);
+    active(|a| a.borrow_mut().continuity_call = Some(call));
+}
+pub(crate) fn continuity_mode() -> bool {
+    CONTINUITY_MODE.get()
+}
+pub(crate) fn version() -> u64 {
+    if continuity_mode() {
+        6
+    } else {
+        5
+    }
+}
+pub(crate) fn continuity_last() -> super::continuity::LedgerContinuityWork {
+    CONTINUITY_LAST.get()
 }

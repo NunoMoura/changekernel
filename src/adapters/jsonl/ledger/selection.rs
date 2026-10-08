@@ -14,12 +14,14 @@ use std::{ops::Deref, path::PathBuf};
 pub(super) enum Profile {
     Ledger,
     History,
+    Continuity,
 }
 impl Profile {
     pub fn version(self) -> u64 {
         match self {
             Self::Ledger => 4,
             Self::History => 5,
+            Self::Continuity => 6,
         }
     }
     pub fn tag(self, object: &str) -> &'static str {
@@ -38,19 +40,26 @@ impl Profile {
             (Self::History, "incident") => "ck-ledger-history-incident@5",
             (Self::Ledger, "member-incident") => "ck-ledger-member-incident@4",
             (Self::History, "member-incident") => "ck-ledger-history-member-incident@5",
+            (Self::Continuity, "profile") => "ck-ledger-continuity@6",
+            (Self::Continuity, "anchor") => "ck-ledger-continuity-anchor@6",
+            (Self::Continuity, "creations") => "ck-ledger-continuity-creations@6",
+            (Self::Continuity, "member-anchor") => "ck-ledger-continuity-member-anchor@6",
+            (Self::Continuity, "prefix") => "ck-ledger-continuity-member-prefix@6",
+            (Self::Continuity, "incident") => "ck-ledger-continuity-incident@6",
+            (Self::Continuity, "member-incident") => "ck-ledger-continuity-member-incident@6",
             _ => unreachable!("closed custody object"),
         }
     }
     pub fn compared_tag(self, object: &str, legacy: usize) -> usize {
         match self {
             Self::Ledger => legacy,
-            Self::History => self.tag(object).len(),
+            Self::History | Self::Continuity => self.tag(object).len(),
         }
     }
     pub fn trace_limit(self) -> usize {
         match self {
             Self::Ledger => crate::kernel::changes::ledger::T,
-            Self::History => 17_825_792,
+            Self::History | Self::Continuity => 17_825_792,
         }
     }
 }
@@ -112,6 +121,28 @@ impl From<LedgerHistoryGrant> for Installation {
             anchor: g.anchor,
             grants: g.grants,
             selected: Profile::History,
+            adoption: Some(Adoption {
+                policy: g.policy,
+                check: g.check,
+                evaluator: g.evaluator,
+                adopter: g.adopter,
+            }),
+        }
+    }
+}
+impl From<crate::kernel::changes::ledger_continuity::LedgerContinuityGrant> for Installation {
+    fn from(g: crate::kernel::changes::ledger_continuity::LedgerContinuityGrant) -> Self {
+        Self {
+            profile: g.profile,
+            ledger: g.ledger,
+            custody: g.custody,
+            owner: g.owner,
+            workspace_id: g.workspace_id,
+            binding: g.binding,
+            directory: g.directory,
+            anchor: g.anchor,
+            grants: g.grants,
+            selected: Profile::Continuity,
             adoption: Some(Adoption {
                 policy: g.policy,
                 check: g.check,
