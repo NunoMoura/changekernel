@@ -1,8 +1,8 @@
 # ChangeKernel temporary status
 
-## R35 — source integrated for final combined verification
+## R35 — source accepted and integrated
 
-Manager review has resolved M1–M9 on source **`6b7f59a63797894dfb587945681286ce3122bd18`**, worker report **`efb9760bb05d8b34166b84db3e1abc93ff7b02f7`**. The24 owned source/test paths have been integrated byte-for-byte; no worker handoff was imported. **Final acceptance is pending combined verification.** This is ordinary source development, not release qualification or controller activation.
+**Manager verdict: accepted for ordinary source development.** M1–M9 are resolved on source **`6b7f59a63797894dfb587945681286ce3122bd18`**, worker report **`efb9760bb05d8b34166b84db3e1abc93ff7b02f7`**. The24 owned source/test paths are integrated byte-for-byte at **`6d1851291e19c4a6bc06607f0634fd3f7701ec35`**; no worker handoff was imported. Combined verification passed. This accepted executable supersedes `3aeabda651fb7f44fe86394aa82be30a18f07164` for source development only, not release qualification or controller activation.
 
 The adopted requirements remain [ledger continuity](.changekernel/wiki/items/system/components/ledger-continuity.md), contract commit **`c929e93a327a6c4eb87cb8da2e639a93b9c7531d`**. Manager independently reviewed the complete implementation across the successive corrections, rather than accepting worker pass counts or relying on a reviewer gate.
 
@@ -17,12 +17,18 @@ Manager's immutable exact-source checks all exited0 without timeout: `cargo +1.8
 
 Evidence root: `/home/canina7/.local/state/changekernel-source-review/r35-manager-m9.xj9jouc0/` contains exact subject/worker report, native logs/exit records, independent sizing derivation, parent recount, scoped integration patch and precommit byte comparison. Prior manager review roots `r35-manager-successor.tedpuzfb/` and `r35-manager-candidate._gd_p0tq/`, M7/M9 failing probes, worker failures and separately named corrections remain preserved. See previous verdicts `35a78e43247f8f2993a84b82263027aa8fecaf3c` and `cbdbde60d` for the returned defects. Successful successors do not erase the earlier long-TMPDIR failure, missing-exit gap or preparation/recount mistakes.
 
-### Final verification and remaining gates
+### Combined verification and analyzer discrepancy
 
-Next: verify the committed combined subject against all reviewed executable hashes, run focused native/fmt/clippy checks on its disposable external snapshot, query active diagnostics and record the final manager acceptance/verdict. A full immutable suite already passed on these exact executable bytes; the combined check must establish identity and integration behavior, not infer success from worker status.
+The committed combined snapshot independently matched all101 reviewed source/test/Cargo hashes. A second fresh external target/short btrfs TMPDIR ran fmt, all-target clippy and `cargo +1.88.0 test --locked --offline --lib --test ledger_continuity --test ledger_continuity_repairs`: all exit0, no timeout,31 parent tests passed with one parent-invoked helper ignored. Exact source remained unchanged. Evidence is under `combined/` in the manager root above. Combined verification used the already passed full-suite byte identity plus these post-integration checks; it did not claim a second full-suite execution.
+
+**Tooling limitation remains explicit:** active integration diagnostics reported experimental rust-analyzer E0308 array-to-slice coercion findings in `src/adapters/jsonl/ledger/parser.rs`, and Cargo-push missing-v6-export errors in `tests/ledger_continuity.rs`. Both analyzers use pinned Rust1.88/all-target configuration, but the integration analyzer uses its existing `integration/target` cache, unlike the two fresh native targets. Source/test/Cargo hashes match both successful subjects; subsequent semantic definition navigation resolves `LedgerContinuityHost` to the new public implementation even while the missing-export push findings remain. These signals are distinct, not proof of a code defect or a clean analyzer. Preserved diagnostic output, actual process/workspace/toolchain/config and failing Cargo-push output live under `analyzer-disagreement/`. No source workaround, analyzer reset, cache invalidation, timestamp rewrite or historical R31 replay was performed. Cause remains unproved. Native full/all-target/combined results and direct source review support source acceptance; no analyzer-clean claim or default-cache health claim is made.
+
+### Next gate
+
+Prepare the separately scoped immutable Product/exact-host qualification plan against this accepted source. Keep its subject, operations, preservation, stop conditions and any user-assisted host events explicit; obtain approval before gated execution. No worker is dispatched to execute qualification by this verdict.
 
 No exact immutable Product/host/consumer release qualification, actual reboot/remount/power-loss, installation, activation, explicit controller handoff or application effects are accepted or released. Ordinary btrfs source fixtures are not that evidence. Native support/threat exclusions and finite identity/rollback limits remain unchanged. Before any separately gated host experiment, prepare its exact subject, allowed operations, user-assisted events, custody/evidence preservation and stop conditions for approval. Mutable checkout must never govern itself.
 
-Same manager worktree/branch/session; four retained worker slots. P returned its clean source/report and remains parked pending manager verdict. C/R remain parked; S remains reuse-blocked by its old session-header mismatch. No new worker assignment, relaunch or user session action is needed. Routing/ACK details stay outside Git.
+Same manager worktree/branch/session; four retained worker slots. P returned its clean source/report and remains parked; send this exact manager verdict after rechecking its current session/worktree and correlate acknowledgment. C/R remain parked; S remains reuse-blocked by its old session-header mismatch. No new worker assignment, relaunch or user session action is needed. Routing/ACK details stay outside Git.
 
 R33 one-shot release `de481b543aed494749c2e619bd8d8de9f9f2b971` remains consumed/CLOSED; no old custody reopening/repair, phase replay, extra Jev calls, credentials, host setup or evidence cleanup is authorized. R25–R34 completed/adopted dispositions remain in Git. This source integration does not transfer controller authority.
