@@ -22,6 +22,12 @@ This matrix evaluates the user's reuse-first direction. It is a research recomme
 
 No new operation type or format migration follows from adopting Pi facilities. Durable's SQLite/JSONL files are not replacements for the authoritative Change files, and a later export is not equivalent to authoritative acceptance. This narrows the earlier research alternatives; broader format-replacement options are outside this integration direction. Compatibility must still be checked rather than inferred from old qualifications.
 
+### Selected SDK-first consumer
+
+The user selected a [composable JavaScript/TypeScript SDK](../components/sdk.md) over the Rust engine as the first integration focus, followed by Pi tools/Codemode as consumers of that same path. A read-only navigator is the first composition example, not a separate backend or a reason to redesign native operations. The [Wiki plan](../../product/plan.md#sdk-first-integration-direction) owns the delivery order; this matrix retains mechanism evidence and unproven gaps rather than becoming an implementation roadmap.
+
+[Native bindings](../components/state.md#native-bindings-not-a-separate-state-subsystem) expose application observations and permitted operations with explicit guarantees. State remains a domain concept, not another independently managed object, universal CRUD surface or runtime store alongside Ledger and Change. Codemode can compose different typed interfaces without such a universal State schema; Pi/Durable mechanics do not establish native authority or attributable outcomes.
+
 ### How to read the matrix
 
 | Disposition | Meaning |
@@ -77,7 +83,7 @@ All six rows concern an **experimental** library. Source evidence makes them ser
 
 | ID / capability | Proper owner | Narrow ChangeKernel responsibility | Evaluation boundary |
 | --- | --- | --- | --- |
-| **E1 — Business State and transactions** | The application and its native DB/service/filesystem. | Bind exact observations, permitted operations, guards and receipts; retain enough history to explain governed changes. | Pi documents need not become a mirror of the whole application. Native COMMIT and Change journal acceptance are separate unless the actual composition establishes otherwise. [State](../components/state.md). |
+| **E1 — Business State and transactions** | The application and its native DB/service/filesystem. | Bind exact observations, permitted operations, guards and receipts at the boundary enforcing application rules; retain enough history to explain governed changes. | No separate managed State primitive or universal persistence API is needed. Pi documents do not become an application mirror. Native COMMIT and Change journal acceptance remain separate unless the actual composition establishes otherwise. [Native bindings](../components/state.md#native-bindings-not-a-separate-state-subsystem). |
 | **E2 — Identity, isolation and resource enforcement** | Native IAM, OS/container/VM, secret store and execution host. | Constrain delegated access, select a qualified boundary and report its actual guarantees. | Pi runs with its host permissions; `cwd`, project trust, hooks and usage totals are not confinement or hard aggregate limits. Do not create a replacement IAM or sandbox. [Pi security][security], [agent execution](../components/agent-execution.md). |
 | **E3 — Source history, code intelligence and tests** | Git, compiler/test tools, language servers and established extensions such as pi-lens. | Select the exact reviewed subject, retain consequential evidence and make the domain verdict. | Pi-lens is an extension, not Pi core or an automatic Durable facility. Reuse the tools; do not infer acceptance from a successful command, idle process or empty diagnostic cache. [Package testing policy](../components/package.md#testing-policy). |
 | **E4 — Artifact production and distribution** | Existing build, package and CI mechanisms; Pi packaging where appropriate. | Identify the exact released closure and apply qualification/activation/handoff policy. | An available package, successful update or installation is not qualified controller authority. Do not build another package manager. [Package policy](../components/package.md). |
@@ -98,6 +104,7 @@ No new runtime comparison was executed for this matrix. Routine source acceptanc
 
 | Current or contemplated area | Reuse-first implication |
 | --- | --- |
+| Composable SDK (selected design) | Establish a model-free ledger/Change client over accepted Rust operations, then expose it through Pi tools and Codemode. Share mappings and helpers; do not create a navigator backend, second engine or custom scripting language. Concrete SDK/transport support is not yet established. |
 | `src/adapters/pi/` | Already bridges to Pi. Audit for necessary exact authorization, usage, context and cleanup semantics before reducing it; do not replace the bridge with ambient SDK defaults. Version migration is still unproven. |
 | `src/adapters/jsonl/{opening,intent_trace,ledger}` | Preserve on-disk layouts, schemas and operation contracts. Reuse/refactor implementation machinery only where it demonstrably preserves authoritative append/recovery semantics; do not swap Change storage for Durable DB/JSONL files. A1/A6 primarily concern private runtime state. |
 | Native application/permission/effect bindings and SQLite fixture | Keep the observable authorization, effect-attribution and uncertainty requirements. Their tests remain useful comparisons even if a substrate changes. Keep only the adapters needed for the selected supported application profile. |

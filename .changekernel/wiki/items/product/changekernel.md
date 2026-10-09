@@ -56,7 +56,8 @@ A mechanism belongs behind a replaceable boundary when it can change without wea
 
 | Document | Responsibility |
 | --- | --- |
-| [State and persistence](../system/components/state.md) | Native State, evidence, JSONL acceptance, retries and recovery. |
+| [State and persistence](../system/components/state.md) | Native State, explicit bindings, evidence, JSONL acceptance, retries and recovery. |
+| [Composable SDK](../system/components/sdk.md) | Shared JavaScript/TypeScript access to the Rust engine, bounded composition and subsequent Pi integration without new lifecycle semantics. |
 | [Checks](../system/components/checks.md) | Engine invariants, configurable assessment policy, exact subjects and results. |
 | [Execution](../system/components/agent-execution.md) | Trusted-host integration first; later worker coordination and containment contracts. |
 | [Release and qualification](../system/components/package.md) | Supported capability claims, source tests, exact-release qualification and controller authority. |
@@ -87,8 +88,9 @@ This scope change does not relax existing frozen native APIs, authorize a privil
 | Concept | Meaning |
 | --- | --- |
 | Workspace | The persistent, identified subject with explicit resource boundaries and established authorities. Use `workspace_id` in the new contracts. It is not a mandatory process, database or directory. |
-| State | A scoped, version-/time-bound representation of a Workspace. Retained observations are evidence, not necessarily complete snapshots. |
+| State | Native reality within declared scope, represented by version-/time-bound observations. It is not a separately managed State object, store or lifecycle; retained observations are evidence, not necessarily complete snapshots. |
 | Change | One user-owned, accountable pursuit whose understanding can evolve, preserving original intent, adopted revisions and actual outcomes separately. A proposal is already a Change. |
+| Ledger | A user-owned collection of Changes with explicit identity and authorized navigation, not another lifecycle database. |
 | Kernel | A user's versioned governance policy and selected requirements/Checks. It may adopt a workflow; it is neither a universal stage sequence nor the engine implementation. |
 | Work | An attributable unit of pursuit belonging to one Change. The first effect path needs one precisely specified operation, not a mandatory planning stage or generalized scheduler. |
 
@@ -128,7 +130,11 @@ Future triggers consume authorized scoped observations and create or continue Ch
 
 ## Developer experience
 
-An application exposes observations and typed operations with native constraints, authority, version/concurrency semantics, result evidence and recovery limits. A small explicit binding is acceptable and preferred for the first witness. The same engine must remain useful without semantic inference.
+An application exposes observations and typed operations with native constraints, authority, version/concurrency semantics, result evidence and recovery limits. Prefer explicit bindings to concrete capabilities over a universal State interface. The same engine must remain useful without semantic inference.
+
+The selected client direction is a robust, efficient [composable JavaScript/TypeScript SDK](../system/components/sdk.md) over the Rust engine, serving both ledger and individual Change operations. Design the SDK around actual native guarantees and model-free consumers, then integrate Pi's existing capabilities through adapters using the same SDK path. A read-only navigator is the first consumer, not a special-purpose backend. Existing supported mutations remain typed operations; client composition does not introduce new lifecycle semantics.
+
+SDK ergonomics, transport and bounded helpers may improve without changing ledger/Change-file structures or operation contracts. Rust retains acceptance, authorization and recovery authority. No Pi session, model call or generic State subsystem is required for the deterministic path; direct Rust clients remain independent of JavaScript. Concrete SDK signatures and host/transport selection must be settled with the first consuming slice, not inferred from this design direction.
 
 ### Nothing exists
 
@@ -148,9 +154,11 @@ A fresh client can inspect retained intent, decisions, actual outcomes, unknowns
 
 ## Discovery and bindings
 
-ChangeKernel owns the **versioned integration contract**, not mandatory discovery machinery. A binding identifies supported queries/effects, input/output types, resource scope, native authority, version guards, outcome evidence and reconciliation limits. Preserve the exact binding interpretation needed to understand historical actions.
+ChangeKernel owns the **versioned integration contract**, not mandatory discovery machinery. A binding identifies supported queries/effects, input/output types, resource scope, native authority, version guards, outcome evidence and reconciliation limits. Preserve the exact binding interpretation needed to understand historical actions. [Native bindings are first-class integration contracts](../system/components/state.md#native-bindings-not-a-separate-state-subsystem); State does not become another independently managed primitive alongside Ledger and Change.
 
-Prefer authoritative native declarations and small explicit adapters. Automatic source analysis, semantic classification and binding synthesis are possible future developer conveniences. Generated bindings must satisfy the same contract and be independently validated; inferred concepts are not observed resources or new permissions. A compile-time synthesis pipeline, particular model or dynamic JavaScript artifact is not required by the core.
+Bind at the application boundary that enforces the required business rules. That may be a domain API or an appropriate direct persistence operation; database access alone does not justify bypassing application invariants. Read-only bindings need not pretend to support effects or recovery. Historical navigation does not acquire fresh native State merely to replace retained observations.
+
+Prefer authoritative native declarations and explicit adapters. Automatic source analysis, semantic classification and binding synthesis are possible future developer conveniences. Generated bindings must satisfy the same contract and be independently validated; inferred concepts are not observed resources or new permissions. A compile-time synthesis pipeline, particular model or dynamic JavaScript artifact is not required by the core.
 
 “Any system” means extensibility through qualified bindings. It does not mean universal CRUD, identical transactions, exact replay of arbitrary external systems or uniform rollback. A genuine capability gap may become a later development Change; lack of an autogenerated binding alone does not prove such a gap.
 
@@ -268,7 +276,7 @@ An application-use Change may expose a need for authorized development in anothe
 
 ## Hosting, distribution and evolution
 
-Distribute one Rust engine with library integration and a standard launcher/client path. No mandatory cloud account, Docker deployment or database service is implied. The first profile integrates with a trusted host; a standalone hardened service is a separate future deployment profile with additional evidence obligations.
+Distribute one Rust engine with library integration and a standard launcher/client path, complemented by the composable JavaScript/TypeScript SDK and optional Pi adapters. The SDK does not become another engine or make Node/Pi dependencies mandatory for direct native clients. No mandatory cloud account, Docker deployment or database service is implied. The first profile integrates with a trusted host; a standalone hardened service is a separate future deployment profile with additional evidence obligations.
 
 Release only supported capability/profile combinations. Adding a model, binding, worker, host or platform requires evidence for the claims it adds, not repeating every unrelated investigation. Supported updates preserve historical meanings and unresolved outcomes. [Release qualification](../system/components/package.md) is separate from source tests and from controller handoff.
 

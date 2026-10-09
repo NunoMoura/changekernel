@@ -36,6 +36,26 @@ The [consumed opening profile](#consumed-opening-profile), [consumed intent-revi
 
 Native values, desired obligations, observations, candidates and research claims have different meanings. State is scoped and version-/time-bound; it is not necessarily a complete snapshot. A failed or uncertain operation must not produce an invented after-State. Existing systems begin from an acknowledged baseline. Confirmed effects and reconciled external changes explain subsequent State without fabricating earlier intent.
 
+## Native bindings, not a separate State subsystem
+
+State remains a first-class domain concept: native reality within declared scope, represented by observations with explicit version/time, coverage and provenance. It is not a third independently managed object alongside Ledger and Change. The selected [SDK direction](sdk.md) adds no universal State registry, CRUD API, lifecycle, mirror, synchronization engine or monitoring service.
+
+Native bindings are explicit integration contracts with the user's application capabilities and persistence layer. Bind at the boundary that enforces the required business rules; use a domain API where appropriate rather than bypassing its invariants through direct database access. Each concrete binding identifies the capabilities it actually supports:
+
+| Concern | Required meaning for the supported capability |
+| --- | --- |
+| Subject | Exact resource identity, authorized scope, binding interpretation and supported version/continuity semantics. |
+| Observation | Who observed what, under which native authority, with what freshness, coverage, provenance and retained evidence. |
+| Operation | Admitted typed native action, constraints, point-of-use authorization and concurrency conditions. |
+| Outcome | Evidence for actual success, failure, partial effect or uncertainty; desired-value equality is not attribution. |
+| Recovery | Supported original-attempt lookup, retry/reconciliation and retention limits, or explicit lack of support. |
+
+A read-only binding does not need a fictional mutation or reconciliation method. Capabilities and limitations remain binding-specific; declaration alone is not qualification. Shared abstractions should follow concrete integrations rather than forcing every application into a common State schema or generic read/write/rollback interface. Missing effect or recovery guarantees keep the dependent operation unavailable, not silently best-effort.
+
+Historical ledger/Change navigation consumes accepted history and retained grounds; it must not replace historical observations with fresh State or require live native access merely to explain them. Current disclosure and the selected operation's actual source-access obligations still apply. Fresh native observations and effects use explicit bindings when their consuming capability needs them. Pi's tool composition/transport and private Durable runtime state can support integration mechanics, but do not establish resource identity, current native authority or effect evidence.
+
+These responsibilities clarify the existing evidence boundary. They add no fields or operations to frozen profiles and do not change current binding, host or recovery guarantees.
+
 ## One authoritative current representation
 
 Native resources remain authoritative in place. The engine can retain observations, versions and evidence needed for decisions and recovery, but does not maintain an independently writable mirror of all application State. Derived lifecycle views are reconstructed from accepted Change history. Cache lifetime and representation do not create authority.
