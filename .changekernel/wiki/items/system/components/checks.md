@@ -56,7 +56,7 @@ A **Check** defines a bounded read-only assessment of explicit inputs, an exact 
 
 Use subject-first terminology in new interfaces and explanations: “run Check” for evaluation and “Check assessment” for the retained evaluation/result. Definition, adoption and execution remain distinct operations. Existing wire names and historical contracts remain unchanged; the shortened “assessment” below retains this qualified meaning. A multiclass navigation recommendation is not automatically a Check assessment, and a human approval remains a distinct attributable decision.
 
-Checks support workflow-independent typed operations. Pre-effect assessment and observed-outcome assessment have distinct subjects; neither imposes a universal stage sequence. A Check definition may be reused inside or outside an adopted workflow. Checks do not dispatch Work, mutate native State or grant permissions. The authorized backend owns progression and acceptance.
+Checks support the [lifecycle's versioned commitment and execution boundaries](change-format.md#lifecycle-milestones-and-execution-admission). Pre-effect assessment and observed-outcome assessment have distinct subjects; semantic milestones do not impose a mandatory Stage field or separate ceremony. A Check definition may be reused inside or outside an adopted workflow. Checks do not dispatch Work, mutate native State or establish adoption. The authorized backend owns progression and acceptance; neither a decided pursuit nor a passing assessment approves every possible plan.
 
 ## Engine invariants and configurable policy
 
@@ -76,7 +76,7 @@ The earlier release-wide checklist of comparative justification, feasibility and
 Applicable requirements come from the actual subject and governing policies, not a producer's label. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.
 
 - **Intent and admission:** preserve the exact proposal and current authority; establish whatever criteria the selected Kernel and resource policy require. Recording a proposal is not admission to effects. Material intent, scope or authority changes require appropriate re-admission, not automatic reassessment on every query.
-- **Operation specification:** bind the pursuit to exact operations, subjects, preconditions, expected outcomes and recovery limits. This does not require a separate plan or Planning stage. Later decomposition, routing and aggregate commitments need their own supported coordination evidence.
+- **Operation specification:** bind the pursuit to exact operations, subjects, preconditions, expected outcomes and recovery limits. The planned milestone requires adequate operation specification, not necessarily a separate plan artifact or Planning ceremony. Later decomposition, routing and aggregate commitments need their own supported coordination evidence.
 - **Before effect:** assess the exact operation/candidate and current guards where required. An earlier planning or assessment result does not certify an unknown candidate or future permission.
 - **Observed outcome and conclusion:** distinguish intended benefit, actual effects and remaining uncertainty. Candidate success is not evidence of publication, deployment or fulfillment of the Change. Required outcomes cannot be hidden as optional follow-ups; a formal Review stage is not universally required.
 
@@ -86,7 +86,7 @@ Exact computation, current native validation and eligible retained results can s
 
 ## Internal intake feedback and classification
 
-Intake captures/refines intent without imposing a Decision stage. Validate shape, identity, scope and retry consistency without inventing missing intent. Retain original/rejected input and attributable revisions. Feedback names the exact revision, condition, grounds, uncertainty and next permitted action; advice and mandatory blockers remain distinct.
+Intake captures/refines proposals without implying the lifecycle's adopted decision or requiring a separate Decision ceremony. Validate shape, identity, scope and retry consistency without inventing missing intent. Retain original/rejected input and attributable revisions. Feedback names the exact revision, condition, grounds, uncertainty and next permitted action; advice and mandatory blockers remain distinct.
 
 A proposal can be recorded while unready. Missing information may permit bounded inquiry; missing authority requires permission or refusal. Repeated failure is not resampled until it passes. Changing input requires a distinct operation rather than conflicting reuse of an old key.
 

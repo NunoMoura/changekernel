@@ -59,7 +59,9 @@ source-history:
 ---
 # Agent Execution
 
-The engine owns admitted Work, attempt identity, bounded dispatch, accepted outcomes and continuation. Hosts and native bindings supply authenticated execution and effects; harnesses supply session/inference mechanics. [Typed operations and applicable policy](../../product/changekernel.md#intent-and-lifecycle) govern the pursuit without a universal workflow or mandatory sequence of model calls. A person or deterministic native operation can perform Work without an agent.
+The engine owns Work eligibility, attempt identity, dependency/continuation semantics and accepted outcomes. Hosts and native bindings supply authenticated execution and effects; Pi is the selected initial user interaction and agent runtime. The [lifecycle milestones](change-format.md#lifecycle-milestones-and-execution-admission) bind decisions, sufficiently specified Work, execution admission and evidenced conclusions without a mandatory Stage field or sequence of model calls. A person or deterministic native operation can perform Work without an agent.
+
+The [initial Pi-user distribution](package.md#user-distribution-and-deployment) follows supported native/client contracts; it does not make private sessions, task queues or checkpoints authoritative Change history. A durable Change can wait for months while agents stop or change. Reuse suitable scheduling/execution mechanisms rather than build a general-purpose scheduler, and do not treat ordinary session persistence as a durable work queue.
 
 This contract distinguishes the **first trusted-host profile** from **later untrusted-worker and standalone-host profiles**. [Research](../research.md) retains investigated mechanisms without making them dependencies. Existing [Linux packet ingress](native-profiles.md#linux-local-packet-ingress) and Pi adapters keep their unchanged narrower contracts.
 
@@ -109,11 +111,11 @@ Release-owned validators and adopted domain evaluators retain distinct identity 
 
 ## Model and harness boundaries
 
-Models and harnesses are optional adapters, integrated only after the [ledger/file/operation/backend foundation gate](../../product/plan.md#foundations-before-agent-integration) has evidence. They consume typed operations and [purpose-specific Change context Views](state.md#structured-history-access-and-context-projections), not a private conversation promoted to lifecycle authority. Human and deterministic clients must already be able to inspect and continue the supported core path. Bind authorized provider/model/settings, input disclosure, transport and resource limits before asynchronous execution. Keep credentials and public hashes of them out of portable records. A loopback URL does not establish local processing; unsupported redirects or fallback routes must not bypass disclosure policy.
+Pi supplies the selected initial agent/user host; models and harness mechanics remain replaceable adapters rather than mandatory dependencies of deterministic native access. Product integration consumes the [ledger/file/operation/backend foundation gate](../../product/plan.md#foundations-before-agent-integration) only after its claims have evidence. They consume typed operations and [purpose-specific Change context Views](state.md#structured-history-access-and-context-projections), not a private conversation promoted to lifecycle authority. Human and deterministic clients must already be able to inspect and continue the supported core path. Bind authorized provider/model/settings, input disclosure, transport and resource limits before asynchronous execution. Keep credentials and public hashes of them out of portable records. A loopback URL does not establish local processing; unsupported redirects or fallback routes must not bypass disclosure policy.
 
 Do not load ambient project extensions, tools, prompts or secrets implicitly. Explicitly qualify any compaction, retries, generated code and tool bindings. Missing usage is unknown, not zero cost; a completed prompt promise or idle session is not successful Work. Models used by read-only Checks do not inherit producer tools or conversation.
 
-Current Pi adapters remain bounded integrations with their existing identities and tests, not a complete native lifecycle or native Jev service. Do not replace an endpoint and infer equivalent semantic, authority or recovery guarantees. A future model adapter needs a concrete consuming capability and [bounded comparative evidence](../research.md#runtime-and-integration-research).
+Current Pi adapters remain bounded integrations with their existing identities and tests, not the selected end-user product, a complete native lifecycle or a native Jev service. Host tools can use the future shared SDK; Codemode composes exposed tools rather than importing that npm client inside QuickJS. A script's success is not proof of nested-call success, and its failure/cancellation does not roll back effects. The supporting package's Pi 0.85.1 dependency is distinct from later installed or inspected releases. Do not replace an endpoint and infer equivalent semantic, authority or recovery guarantees. A future model adapter needs a concrete consuming capability and [bounded comparative evidence](../research.md#runtime-and-integration-research).
 
 ## Programmable strategies and bounded delegation
 
@@ -125,9 +127,15 @@ Nested reasoning need not create a new Change or Work item; actual governed Work
 
 Self-improvement can propose revised procedures, prompts or policies, but adoption uses normal Change controls. A proposal cannot activate its own weaker evaluator or replace its controller. Useful runtime ideas and applicable license gates remain in [research](../research.md#runtime-selection-and-research-basis), not a new mandatory evolution layer.
 
+## Work selection and parallelism
+
+[Ledger priority](change-format.md#ledger-working-set-and-prioritization) guides allocation but does not override readiness, dependencies, authority or native guards. A blocked high-priority Change can wait while eligible lower-priority Work proceeds; reprioritization does not undo running work. Planning and assessment may overlap with independent execution, with each Work unit bound to its actual intent/plan grounds.
+
+Parallelism requires independently supported scopes and explicit conflict/aggregate limits. Calls sharing a custody-bearing native owner remain serialized, including reads; no fresh owner per method or competing continuation writer can evade that contract. A worker exit, queue exhaustion or successful API reply does not establish the Change's conclusion.
+
 ## Change handoff and continuation
 
-Multi-user borrowing and forks are later capabilities. A Change has one logical authoritative history and at most one active continuation custodian. Authenticate the exact checkpoint and parties, current rights, recipient admission, in-flight Work responsibility and interrupted transfer before supporting them. A pathname, copied file, timeout or encrypted transport does not establish exclusive custody.
+[Sharing, handoff, fork, consolidation and contribution acceptance](change-format.md#collaboration-and-composition-rules) have distinct desired semantics and separately qualified protocols. Multi-user borrowing and forks are later capabilities. A Change has one logical authoritative history and at most one active continuation custodian. Authenticate the exact checkpoint and parties, current rights, recipient admission, in-flight Work responsibility and interrupted transfer before supporting them. A pathname, copied file, timeout or encrypted transport does not establish exclusive custody.
 
 A recipient uses an exact Kernel version and current admission. Historical progress stays attributable; no portable effect-ready flag or folder placement bypasses new requirements. A fork has its own Change identity and does not repeat completed or uncertain effects. Result adoption preserves provenance without merging authoritative logs.
 

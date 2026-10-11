@@ -12,7 +12,7 @@ This matrix evaluates the user's reuse-first direction. It is a research recomme
 
 ### Fixed integration compatibility boundary
 
-**The user confirmed that Pi integration preserves the existing ledger and Change-file structure and the operations accepted on them.** The target is to integrate that work with improved Pi infrastructure, not redesign the Change language or migrate its authority to a different store.
+**Pi integration preserves existing ledger/Change structures, accepted history and supported operation meanings.** The later [format-first design](../components/change-format.md) explicitly adds successor lifecycle, coordination and composition requirements. It does not retroactively widen old profiles, select a new wire schema or move lifecycle authority into Pi storage. Separate successor adoption is distinct from compatible runtime integration.
 
 | Preserve | May improve or replace where compatible |
 | --- | --- |
@@ -22,9 +22,9 @@ This matrix evaluates the user's reuse-first direction. It is a research recomme
 
 No new operation type or format migration follows from adopting Pi facilities. Durable's SQLite/JSONL files are not replacements for the authoritative Change files, and a later export is not equivalent to authoritative acceptance. This narrows the earlier research alternatives; broader format-replacement options are outside this integration direction. Compatibility must still be checked rather than inferred from old qualifications.
 
-### Selected SDK-first consumer
+### Selected format-first and Pi-user direction
 
-The user selected a [composable JavaScript/TypeScript SDK](../components/sdk.md) over the Rust engine as the first integration focus, followed by Pi tools/Codemode as consumers of that same path. A read-only navigator is the first composition example, not a separate backend or a reason to redesign native operations. The [Wiki plan](../../product/plan.md#sdk-first-integration-direction) owns the delivery order; this matrix retains mechanism evidence and unproven gaps rather than becoming an implementation roadmap.
+The user selected owner-controlled, app-independent Ledgers and the [Change language](../components/change-format.md) as the primary design focus, followed by a narrow [JS/TS client](../components/sdk.md) of supported Rust contracts and a qualified [Pi-user integration](../components/package.md#user-distribution-and-deployment). The SDK serves software; users install the product integration. A navigator remains a useful consumer, not the primary design sequence or a separate backend. The [Wiki plan](../../product/plan.md#format-first-design-and-pi-first-delivery) owns dependencies; this matrix retains mechanism evidence and gaps rather than becoming an implementation roadmap.
 
 [Native bindings](../components/state.md#native-bindings-not-a-separate-state-subsystem) expose application observations and permitted operations with explicit guarantees. State remains a domain concept, not another independently managed object, universal CRUD surface or runtime store alongside Ledger and Change. Codemode can compose different typed interfaces without such a universal State schema; Pi/Durable mechanics do not establish native authority or attributable outcomes.
 
@@ -39,7 +39,7 @@ The user selected a [composable JavaScript/TypeScript SDK](../components/sdk.md)
 
 **Evidence notation:** **D** means inspected documentation/specification; **S** means relevant implementation or example bodies inspected; **T** means selected upstream test bodies inspected, **not executed**. None means runtime-qualified here. A documented absence or boundary is also evidence; an empty cell would mean unknown, not safe.
 
-The upstream subject is **Pi 1.0.4**, commit `7c10bd4337495ee613f2224843ecdf349b80d1df`, not moving `main`. Ordinary Pi and the separate experimental Durable library are different integration surfaces. Our supporting [`package.json`](../../../../../package.json) currently pins Pi **0.85.1**; installing CLI 1.0.4 did not upgrade or validate those bridges. Some rows are already delegated, some have accepted primitives, and others are desired capabilities rather than shipped features.
+The upstream subject is **Pi 1.0.4**, commit `7c10bd4337495ee613f2224843ecdf349b80d1df`, not moving `main`. Ordinary Pi and the separate experimental Durable library are different integration surfaces. Our supporting [`package.json`](../../../../../package.json) currently pins Pi **0.85.1**; installing a later CLI did not upgrade or validate those bridges. The [1.1.0 session-format follow-up](../research.md#pi-110-session-format-follow-up) is a separate scoped inspection, not an update of this matrix's Durable/runtime findings or selection of a qualified target version. Some rows are already delegated, some have accepted primitives, and others are desired capabilities rather than shipped features.
 
 ## 1. Reuse Pi rather than build another harness
 
@@ -104,14 +104,14 @@ No new runtime comparison was executed for this matrix. Routine source acceptanc
 
 | Current or contemplated area | Reuse-first implication |
 | --- | --- |
-| Composable SDK (selected design) | Establish a model-free ledger/Change client over accepted Rust operations, then expose it through Pi tools and Codemode. Share mappings and helpers; do not create a navigator backend, second engine or custom scripting language. Concrete SDK/transport support is not yet established. |
+| Change format, SDK and Pi-user integration | Design lifecycle/composition semantics from worked streams first; then expose supported Rust operations through a shared model-free client and qualified Pi tools/Views. Do not create another engine, navigator backend or scripting language. Successor schemas, SDK transport and end-user support remain unimplemented/unqualified. |
 | `src/adapters/pi/` | Already bridges to Pi. Audit for necessary exact authorization, usage, context and cleanup semantics before reducing it; do not replace the bridge with ambient SDK defaults. Version migration is still unproven. |
 | `src/adapters/jsonl/{opening,intent_trace,ledger}` | Preserve on-disk layouts, schemas and operation contracts. Reuse/refactor implementation machinery only where it demonstrably preserves authoritative append/recovery semantics; do not swap Change storage for Durable DB/JSONL files. A1/A6 primarily concern private runtime state. |
 | Native application/permission/effect bindings and SQLite fixture | Keep the observable authorization, effect-attribution and uncertainty requirements. Their tests remain useful comparisons even if a substrate changes. Keep only the adapters needed for the selected supported application profile. |
 | Proposed console, agent coordination and context machinery | Start with R1–R6 and A2–A5; do not commission another harness or console first. Normal Pi and Durable integration costs must be counted separately. |
 | Future monitoring, learning or automatic binding generation | Defer a generic platform until a concrete application need demonstrates a gap. Reuse existing schedulers, semantic primitives and tools; avoid speculative frameworks. |
 
-The integration direction is therefore **Pi for improved execution and interaction, existing native systems for application truth and enforcement, and ChangeKernel's existing ledger, Change files and typed operations for accountable change**. Durable is a candidate runtime substrate, not replacement lifecycle storage or a required rewrite. Evaluate compatible reuse capability by capability; no Change-language redesign or storage migration is implied.
+The division remains **Pi for execution/interaction, native applications for State and enforcement, and ChangeKernel for accountable Change semantics and accepted history**. Format-first successor design and initial Pi-user delivery are now explicit product decisions; this research neither freezes their protocols nor qualifies them. Durable remains an optional candidate for a demonstrated runtime need, not replacement lifecycle storage or a required rewrite. No migration follows from updating Pi.
 
 [pi-readme]: https://github.com/earendil-works/pi/blob/7c10bd4337495ee613f2224843ecdf349b80d1df/packages/coding-agent/README.md
 [sdk]: https://github.com/earendil-works/pi/blob/7c10bd4337495ee613f2224843ecdf349b80d1df/packages/coding-agent/docs/sdk.md

@@ -7,21 +7,21 @@ source-id: cw:component:sdk
 
 ## Selected direction and compatibility
 
-Design a robust, efficient JavaScript/TypeScript SDK over the existing Rust engine before integrating product-agent capabilities. The SDK serves ordinary applications and deterministic clients as well as Pi adapters. A read-only navigator is the first composition consumer, not a separate backend or the limit of the SDK's intended scope. The [Wiki plan](../../product/plan.md#sdk-first-integration-direction) owns delivery dependencies; the [temporary status note](../../../../../CHANGEKERNEL_STATUS.md) owns assignments and implementation permission.
+The robust, efficient JavaScript/TypeScript SDK is the software interface to supported Rust-engine operations, downstream of the [Change-format and lifecycle design](change-format.md). It serves Pi tool implementations, Ledger/Change interfaces, deterministic automation and optional application integrations. It is not the end-user distribution: the initial audience installs a [qualified Pi integration](package.md#user-distribution-and-deployment), not an SDK. A read-only navigator remains useful without becoming a separate backend or the primary design sequence. The [Wiki plan](../../product/plan.md#format-first-design-and-pi-first-delivery) owns dependencies; the [temporary status note](../../../../../CHANGEKERNEL_STATUS.md) owns implementation permission.
 
 This is adopted design direction, not a frozen JavaScript API, selected transport, implemented SDK or qualified release. Select the native profile, host lifetime, operation mappings and concrete client signatures with the first consuming slice. A contract or preserved implementation checkpoint alone does not establish accepted executable support.
 
 Preserve ledger/folder and Change-file structures, canonical JSONL schemas, accepted history, supported operation versions and their complete input/result, admission, authorization, retry, recovery, ownership, limits and accounting contracts. The SDK must not silently widen a profile or translate one profile into another. Existing operations remain the semantic units; client convenience does not introduce new accepted operation types. Format migration, new native operations and changed guarantees require separate adoption.
 
-There is no demonstrated storage-layout change required by this direction. Optimize access and composition within the existing contracts first. Rebuildable indexes or caches need a measured consumer and correct source/version and disclosure boundaries; acceptance controls and original creation/retry associations are not disposable caches.
+The successor-format design may require explicitly adopted new semantics; the SDK cannot invent or silently map them onto older profiles. No new physical layout or migration is selected here. Rebuildable indexes/caches need a measured consumer and correct source/version/disclosure boundaries; acceptance controls and original creation/retry associations are not disposable caches. Independent reading of the published format should remain possible without a proprietary SDK decoder.
 
 ## Responsibilities
 
 ```text
-Ordinary JavaScript/TypeScript application
+Ledger interface / automation / optional app integration
                   |
                   v
-          Shared composable SDK <--- Pi tool adapter <--- Codemode
+          Shared composable SDK <--- Pi tool adapter <--- User / agent / Codemode
                   |
           Selected native bridge
                   |
@@ -36,7 +36,9 @@ Ordinary JavaScript/TypeScript application
                     Application-owned State
 ```
 
-The diagram describes responsibilities, not a selected IPC mechanism or a required process per box. Direct Rust clients remain supported by their own native contracts without Node, Pi or a model. The JavaScript client must be usable without creating a Pi session or importing an agent runtime merely to invoke the engine.
+The diagram describes responsibilities, not a selected IPC mechanism, mandatory network proxy or process per box. Direct Rust clients remain supported by their own native contracts without Node, Pi or a model. The JavaScript client must be usable without creating a Pi session or importing an agent runtime merely to invoke the engine.
+
+An agent host can use this client for accountable Change operations while supported bindings use existing application APIs. Applications need not install ChangeKernel merely to participate; optional app-side integration can expose stronger capabilities or evidence. A generated UI is another client/View, not another lifecycle implementation. SDK ergonomics do not manufacture guarantees absent from an application's authority, effect or recovery contract.
 
 | Boundary | Responsibility |
 | --- | --- |
@@ -71,7 +73,7 @@ Results must remain programmatically usable without parsing explanatory prose. P
 - **Keep authority current.** A saved handle, cursor, result reference or successful earlier call grants no ongoing permission. Cached/private material needs its applicable current disclosure checks. Cleanup and native resource lifetime remain host obligations, not consequences of garbage collection alone.
 - **Preserve consequential evidence.** Result reduction must not hide required failures, unknown outcomes, applicable Check results, missing grounds or limited coverage. A summary is not an accepted record or a complete result merely because it is small.
 
-A useful first read composition lists an authorized bounded working set, inspects selected histories/contexts, and returns relevant records with exact references and coverage. A model-free mutation consumer then creates/selects a Change, revises intent and runs a supported deterministic Check, closes/reopens the supported host, and recovers the original result after a lost reply. These are consumer scenarios, not new compound native operations or claims that every existing profile supports the entire sequence.
+Candidate model-free compositions include bounded authorized listing and exact history/context inspection, or creation, intent revision, a supported deterministic Check and original-result recovery after a lost reply across a supported close/reopen. Select the actual consumer after the format work and native profile decision. These examples are not new compound operations, a mandatory navigator-first delivery sequence or claims that every profile supports the full path.
 
 ## State through explicit native bindings
 
@@ -87,7 +89,7 @@ Codemode supplies loops, independent batches, joins and output reduction. Its `s
 
 Integrate direct tools/Codemode first. Add MCP only for a concrete transport consumer, model routing only for a semantic task, and Durable only for demonstrated persistent execution needs. Do not implement duplicate discovery, model loops or task schedulers. Ordinary Pi and experimental Durable are separate APIs, not an automatically integrated runtime. Durable documents, transcripts and checkpoints remain private runtime state or derived aids; they neither replace JSONL authority nor supply native effect receipts.
 
-The [capability matrix](../research/pi-capability-matrix.md) retains pinned Pi 1.0.4 evidence and reliability gaps. The current supporting npm package exports Pi bridges and pins Pi 0.85.1; it is not this SDK. Dependency migration, runtime selection and qualification remain explicit work rather than consequences of the design.
+The [capability matrix](../research/pi-capability-matrix.md) retains pinned Pi 1.0.4 evidence and reliability gaps; the [Pi 1.1.0 follow-up](../research.md#pi-110-session-format-follow-up) is scoped session-format inspection, not qualification of the combined stack. The current supporting npm package exports Pi bridges and pins Pi 0.85.1; it is not this SDK. Exact runtime selection, dependency migration and qualification remain explicit work rather than consequences of an installed update or this design.
 
 ## Evidence required for a supported SDK slice
 

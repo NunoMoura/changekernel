@@ -49,7 +49,21 @@ source-history:
 
 The product is one redistributable Rust engine with host/binding integrations and clients. This contract distinguishes routine source checks, evidence for a capability, exact-release qualification, activation and controller handoff. None substitutes for the others.
 
-The first target is a useful **trusted-host engine release**, not a complete autonomous development platform. The [phased plan](../../product/plan.md) owns the single sequence of capability gates. Research, interfaces and documentation do not implement those capabilities.
+A useful **trusted-host engine release** is the foundation, not a complete autonomous platform or the end-user experience by itself. The selected initial user distribution is a local-first Pi integration for existing Pi users. The [format-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery) orders successor design, supported engine/client boundaries and qualified user delivery. Research, interfaces and documentation do not implement those capabilities.
+
+## User distribution and deployment
+
+End users install a product integration, not an SDK. The initial qualified release is intended to provide a Rust engine, matching JS/TS/native bridge, Pi tools/commands/Views and explicitly supported application connectors, with a declared compatible Pi runtime. Users manage Changes through conversation and structured controls rather than programming against the client library. This is a selected delivery direction, not a published package, installer or qualification claim.
+
+The first audience is **existing Pi users**, not every consumer expecting a standalone application. Reuse Pi's interaction and agent execution facilities; do not build a new agent stack, terminal renderer or generic scheduler first. Application embedding and additional agent-host adapters remain possible integration modes, not requirements for every app. Existing application APIs can participate through qualified bindings without installing ChangeKernel inside them. Nested-harness distribution is not the primary strategy.
+
+The default deployment is **local-first**: the engine runs on the user's device and uses explicitly selected owner-controlled Ledger storage independent of visited applications, project directories and Pi conversation files. The exact host process/transport, physical layout, supported platforms and custody lifetime remain to be selected and qualified. Multiple clients must use supported coordination, not independently open competing custody owners. Ledger identity and selection cannot rely on ambient cwd or hidden client state.
+
+Credentials remain outside portable Change records. Local storage is not whole-process isolation, and local-first does not imply local inference; model-bound context still requires authorized disclosure. Personal ownership does not grant export rights over every native artifact encountered, and portable history alone does not establish continuation custody on another host.
+
+A later packaged ChangeKernel client or launcher could include the supported runtime for users who do not already use Pi. Hosted/self-hosted deployment, shared services and multi-device access need concrete demand and separate tenancy, credential, synchronization, recovery and isolation contracts. Do not build every delivery mode at once. App-independent ownership is not itself a local-storage requirement or a hosted-service qualification.
+
+An installed release identifies the exact Rust artifact, bridge, Pi integration, supported runtime/dependency closure, connector capabilities and host/storage assumptions. Unsupported combinations remain explicit. Package availability, a successful extension update or an install-script approval is neither product qualification nor controller authority. Pack and qualify candidates only in disposable external projects with isolated Pi settings; never install or load this mutable checkout as its own controller.
 
 ## Versioning and historical interpretation
 
@@ -61,9 +75,9 @@ A supported migration needs exact scope/mapping, collision handling, backup and 
 
 ## SDK and adapter boundary
 
-The selected [composable SDK](sdk.md) is a JavaScript/TypeScript client of the Rust engine, not a revival of the retired TypeScript lifecycle implementation. Ordinary applications and Pi adapters should consume the same native operation mappings and bounded helpers. Direct Rust clients remain independent of Node and Pi; the JavaScript SDK must not require a Pi session or agent runtime merely to call the engine.
+The selected [composable SDK](sdk.md) is a JavaScript/TypeScript client of the Rust engine, downstream of [Change-format design](change-format.md), not a revival of the retired TypeScript lifecycle implementation or the user distribution itself. Pi adapters, interfaces, deterministic automation and optional app integrations share supported native mappings and bounded helpers. Direct Rust clients remain independent of Node and Pi; the JavaScript SDK must not require a Pi session or agent runtime merely to call the engine.
 
-Select package exports, native bridge/host deployment, compatible versions and the lossless request/result boundary with an actual SDK consumer. Do not infer a native transport, published SDK or compatible Pi upgrade from the current supporting npm package. The selected release must identify the client, bridge, Rust artifact and host/profile assumptions it actually supports; a version label shared by two packages is not that evidence. Ledger/Change formats and accepted native semantics remain unchanged.
+Select package exports, native bridge/host deployment, compatible versions and the lossless request/result boundary with an actual SDK consumer. Do not infer a native transport, published SDK or compatible Pi upgrade from the current supporting npm package. The selected release must identify the client, bridge, Rust artifact and host/profile assumptions it actually supports; a version label shared by two packages is not that evidence. Existing Ledger/Change formats and accepted native semantics remain unchanged. A successor format needs explicit contract adoption; its desired features are not supported merely because a client exposes similarly named methods.
 
 ## Testing policy
 

@@ -31,7 +31,9 @@ source-history:
 ---
 # ChangeKernel
 
-**ChangeKernel carries intent through accountable changes to the State of a system.** It is a redistributable State-and-Change engine: users choose goals, applications expose native abilities, and people, agents or automation perform authorized work. It is not an agent, a harness, a database engine or an operating-system security platform.
+**ChangeKernel provides owner-controlled continuity of accountable Change across applications, interfaces, agents and time.** It is a redistributable State-and-Change engine whose core is the representation of Change itself: intent, lifecycle, decisions, revisions, Work, consequences and collaborative relationships. JSONL is its durable language; [format and lifecycle semantics](../system/components/change-format.md), not line framing alone, make it useful.
+
+Ledger and Change remain the primary product primitives. A goal is the desired outcome expressed by a Change's intent, not a separate canonical object, store or lifecycle. ChangeKernel is agent-oriented but does not build another agent stack, generic scheduler, database engine or operating-system security platform. Pi supplies the initial user interaction and agent runtime; a qualified integration exposes the engine rather than replacing its authority.
 
 **Change carries intent. State describes observed reality within declared scope. History connects them with evidence.** Prior Changes explain how State evolved; they do not automatically justify its correctness. Rejected proposals have no intended effects, failed operations can have partial effects, and external changes need explicit reconciliation. Start an existing system from an acknowledged baseline rather than inventing its prehistory.
 
@@ -57,7 +59,8 @@ A mechanism belongs behind a replaceable boundary when it can change without wea
 | Document | Responsibility |
 | --- | --- |
 | [State and persistence](../system/components/state.md) | Native State, explicit bindings, evidence, JSONL acceptance, retries and recovery. |
-| [Composable SDK](../system/components/sdk.md) | Shared JavaScript/TypeScript access to the Rust engine, bounded composition and subsequent Pi integration without new lifecycle semantics. |
+| [Change format and lifecycle](../system/components/change-format.md) | Successor-format requirements: milestones, Work, prioritization, revision, composition and lossless navigation; no new frozen wire schema. |
+| [Composable SDK](../system/components/sdk.md) | Shared JavaScript/TypeScript access to supported Rust contracts for Pi tools, interfaces and deterministic clients; downstream of format design. |
 | [Checks](../system/components/checks.md) | Engine invariants, configurable assessment policy, exact subjects and results. |
 | [Execution](../system/components/agent-execution.md) | Trusted-host integration first; later worker coordination and containment contracts. |
 | [Release and qualification](../system/components/package.md) | Supported capability claims, source tests, exact-release qualification and controller authority. |
@@ -75,7 +78,7 @@ Use **subject identity + exact version** consistently, qualified as Change versi
 
 ## First supported scope
 
-The first target is a **trusted-host, single-user engine profile with one binding and one bounded typed operation**. Its useful witness is an intent-bearing transition that can be inspected, refused when unauthorized or stale, executed through the native binding, reconciled after interruption and reopened without repeating effects. It needs no agent, model, custom evaluator runtime or rich console.
+Engine qualification starts with a **trusted-host, single-user profile with one binding and one bounded typed operation**. Its useful witness is an intent-bearing transition that can be inspected, refused when unauthorized or stale, executed through the native binding, reconciled after interruption and reopened without repeating effects. That deterministic foundation needs no agent, model, custom evaluator runtime or rich console. The [initial user distribution](../system/components/package.md#user-distribution-and-deployment) adds a qualified Pi integration; selecting that audience does not expand the foundation's guarantees.
 
 The host supplies authenticated identity and a supported native operation context independently of request payloads. It must enforce its declared access/custody boundary. Input remains untrusted; host compromise and hostile processes sharing the host's storage/execution authority are outside this initial profile. Do not market this as protection against them. A standalone adversarial-client host, including faithful original calling-thread admission, is a **deferred stronger profile**, not a prerequisite and not satisfied by the narrower one.
 
@@ -89,12 +92,20 @@ This scope change does not relax existing frozen native APIs, authorize a privil
 | --- | --- |
 | Workspace | The persistent, identified subject with explicit resource boundaries and established authorities. Use `workspace_id` in the new contracts. It is not a mandatory process, database or directory. |
 | State | Native reality within declared scope, represented by version-/time-bound observations. It is not a separately managed State object, store or lifecycle; retained observations are evidence, not necessarily complete snapshots. |
-| Change | One user-owned, accountable pursuit whose understanding can evolve, preserving original intent, adopted revisions and actual outcomes separately. A proposal is already a Change. |
-| Ledger | A user-owned collection of Changes with explicit identity and authorized navigation, not another lifecycle database. |
+| Change | One owner-controlled, accountable pursuit whose understanding can evolve, preserving original intent, adopted revisions and actual outcomes separately. A proposal is already a Change. |
+| Ledger | An owned collection and coordination/disclosure context for Changes, with explicit identity and authorized navigation. It is independent of application hosting and is not a second copy of Change lifecycle history. |
 | Kernel | A user's versioned governance policy and selected requirements/Checks. It may adopt a workflow; it is neither a universal stage sequence nor the engine implementation. |
-| Work | An attributable unit of pursuit belonging to one Change. The first effect path needs one precisely specified operation, not a mandatory planning stage or generalized scheduler. |
+| Work | An attributable, schedulable unit within one Change. The first effect path needs one precisely specified operation, not a separate planning ceremony or generalized scheduler. |
 
-Each Change has one originating owner and one fixed Workspace. Contributions remain attributable to their actual actors; borrowing cannot rewrite earlier attribution. Original intent is not overwritten to fit eventual delivery. Owning a Change never grants rights over its target resources.
+Each Change has one originating owner and one fixed Workspace under the retained contracts. Contributions remain attributable to their actual actors; borrowing cannot rewrite earlier attribution. Original intent is not overwritten to fit eventual delivery. Owning a Change never grants rights over its target resources. Broader ownership, scope and continuation semantics need explicit successor contracts rather than reinterpretation of the fixed-owner fixtures.
+
+### Personal-first, app-independent Ledgers
+
+Personal pursuits belong in personal Ledgers; bands, teams and organizations may own shared Ledgers. Shared Ledgers are not unrestricted unions of members' personal histories. A personal View may reference an authorized shared Change without acquiring ownership or creating an independently writable copy. An application does not own an entire pursuit merely because its interface received the original request.
+
+Separate **ownership** of commitments and decisions, **hosting** of records and **custody** of supported continuation/acceptance. Local storage is the default deployment direction, not the definition of ownership. Moving or sharing records transfers none of those responsibilities or native permissions automatically. Personal control does not grant blanket rights to export employer documents, collaborator material or licensed artifacts. Selective disclosure, evidence retention and any ownership transfer need precise supported contracts.
+
+A Ledger may coordinate pursuits over different application surfaces. An app boundary need not be a Change boundary: one supported Workspace can name several resources and authorities. Where one supported scope cannot cover the pursuit, use explicitly linked Changes; app independence never authorizes scope widening. App-native agents can contribute proposals or observations, not declare the user's adoption or gain access to unrelated Ledger material.
 
 ### State access and Change authorization
 
@@ -132,9 +143,9 @@ Future triggers consume authorized scoped observations and create or continue Ch
 
 An application exposes observations and typed operations with native constraints, authority, version/concurrency semantics, result evidence and recovery limits. Prefer explicit bindings to concrete capabilities over a universal State interface. The same engine must remain useful without semantic inference.
 
-The selected client direction is a robust, efficient [composable JavaScript/TypeScript SDK](../system/components/sdk.md) over the Rust engine, serving both ledger and individual Change operations. Design the SDK around actual native guarantees and model-free consumers, then integrate Pi's existing capabilities through adapters using the same SDK path. A read-only navigator is the first consumer, not a special-purpose backend. Existing supported mutations remain typed operations; client composition does not introduce new lifecycle semantics.
+The [Change representation and composition rules](../system/components/change-format.md) are the primary design artifact. The robust, efficient [JavaScript/TypeScript SDK](../system/components/sdk.md) follows those contracts and actual native guarantees. Its consumers include Pi tools, Ledger interfaces, deterministic automation and optional application integrations. Users install a product integration, not an SDK. Applications can expose existing APIs without adopting ChangeKernel; app embedding is an integration mode, not the ownership model.
 
-SDK ergonomics, transport and bounded helpers may improve without changing ledger/Change-file structures or operation contracts. Rust retains acceptance, authorization and recovery authority. No Pi session, model call or generic State subsystem is required for the deterministic path; direct Rust clients remain independent of JavaScript. Concrete SDK signatures and host/transport selection must be settled with the first consuming slice, not inferred from this design direction.
+A read-only navigator remains useful but is not a separate backend or the primary design sequence. Client composition adds no native operations or authority. Rust retains validation, acceptance, authorization, custody and recovery responsibility. No Pi session, model call or generic State subsystem is required for deterministic engine access; direct Rust clients remain independent of JavaScript. Exact SDK signatures, host lifetime and transport remain unselected. Existing formats and operations stay frozen; successor semantics require their own adoption.
 
 ### Nothing exists
 
@@ -172,11 +183,11 @@ Sharing information and transferring active continuation are distinct. Git and f
 
 ## Ledger, Change files and derived context
 
-Build the foundations before integrating a product AI-agent layer: **user-owned Change ledger → individual Change file → typed lifecycle operations → efficient backend navigation, Views and context**. The engine must be useful through human and deterministic clients without an agent session. The [foundation gate](plan.md#foundations-before-agent-integration) selects the evidence needed before optional agents become consumers of this backend.
+Design the **owner-controlled Ledger and Change language** before SDK APIs or agent orchestration. The [format-first plan](plan.md#format-first-design-and-pi-first-delivery) derives lifecycle and composition rules from worked examples; the [foundation gate](plan.md#foundations-before-agent-integration) still requires a useful deterministic engine and bounded navigation before a product integration can claim support.
 
-A user's Changes folder provides their Change ledger for a system. The ledger is an owned collection of individual Changes, not a second lifecycle database or an automatically shared Workspace folder. Each Change has its own authoritative JSONL Trace; each accepted line is a bounded, attributable lifecycle-operation record. Recording an attempt and observing an effect's outcome remain distinct boundaries. Physical directory layout and transport do not establish ownership, authority or cross-file atomicity by themselves.
+Each Change has one authoritative JSONL Trace with typed records, one per line. A complete Change spans records, not one mutable snapshot. The Ledger is an owned collection and coordination context, not a second history of each Change or an automatically shared Workspace folder. Its logical identity must not depend on a Pi conversation, visited application or current project directory. Physical storage is selected explicitly; directory layout and transport establish neither ownership nor cross-file atomicity.
 
-Integration with improved Pi infrastructure preserves the existing ledger and Change-file structure, canonical JSONL schemas, supported typed operations and their admission, authorization and recovery semantics. Reuse compatible execution, tool/model access, context, presentation and generic task mechanisms rather than duplicate them. Pi conversations, task checkpoints and runtime storage remain private execution state or derived aids, not replacement lifecycle authority. Internal implementation changes must preserve the consumed contracts; format migration or new operation types require separate explicit adoption and are not part of this integration direction.
+The [successor-format requirements](../system/components/change-format.md) now make lifecycle, revision, collaboration and prioritization the design focus. This does not change existing ledger/Change layouts, closed schemas, accepted records or supported operation meanings. New records, ownership semantics or migration require an explicitly adopted successor; Pi integration alone introduces none. Reuse compatible runtime facilities, but keep Pi conversations, task checkpoints and runtime storage separate from authoritative Change history.
 
 The primary navigation model is **origin + accepted tip + navigable middle**. Origin preserves the pursuit's original intent; the tip identifies the latest accepted operation; a reader's cursor selects the point being inspected. Moving the cursor neither changes the accepted tip nor grants active continuation. Stable operation identities/references are distinct from physical byte offsets. Timelines, current lifecycle Views and contextual projections are different consumers of the same accepted records.
 
@@ -186,7 +197,9 @@ This gives a fresh person, deterministic executor or later agent continuity with
 
 ## Intent and lifecycle
 
-**The Change format is independent of a fixed pipeline.** Decision, Planning, Execution and Review may be activities or stage names in a selected workflow, but are not universal Change stages. A proposal, refusal or withdrawn pursuit is already a Change without execution. A direct authorized action need not manufacture a plan or separate approval artifact; a stricter workflow may require both. Removing ceremony never removes current authority, exact operation/subject binding, required evidence or honest outcome handling.
+The [default lifecycle](../system/components/change-format.md#lifecycle-milestones-and-execution-admission) distinguishes **proposed → decided → planned → executing → assessed/reviewed → concluded** as semantic milestones. It is not a universal Stage field, fixed tool-call sequence or requirement for a separate artifact per milestone. A proposal can be declined without execution; a direct authorized request can establish intent, adoption and its minimal operation specification in one interaction.
+
+Decision to pursue is not approval of every possible plan. Execution admission binds current authority, scope, applicable intent/plan versions, required Checks and native preconditions. A prior bounded delegation may suffice; otherwise further adoption is required. Planning, execution and assessment can repeat or overlap across different Work. Revisions preserve earlier decisions and effects and require reassessment of affected future admission. Formal independent review is required where policy promises it; evidence for a success claim is never replaced by a completed-stage label.
 
 ### Intent capture and refinement
 
@@ -218,7 +231,7 @@ Workflow definitions must not depend on stage folders in the Change ledger, and 
 
 The engine enforces authority, exact subject/version bindings, valid typed transitions, retained evidence and honest uncertainty. Selected Kernel and resource policies supply quality criteria and goal-specific passing conditions. Comparative value, feasibility judgments and engineering rigor may be useful defaults; they are not a universal release-owned verdict on which goals deserve pursuit.
 
-Checks are read-only assessments. Only the authorized backend admits progression and records authoritative outcomes. The [Checks contract](../system/components/checks.md) distinguishes completed true/false assessments from unavailable, canceled or failed evaluation. Planning and formal review are optional unless applicable policy requires them; knowing the concrete operation, scope, preconditions and supported outcome/recovery limits before effects is not optional.
+Checks are read-only assessments. Only the authorized backend admits progression and records authoritative outcomes. The [Checks contract](../system/components/checks.md) distinguishes completed true/false assessments from unavailable, canceled or failed evaluation. Separate planning and formal-review ceremonies are optional unless applicable policy requires them; knowing the concrete operation, scope, preconditions and supported outcome/recovery limits before effects, and supporting claimed outcomes with evidence, are not optional.
 
 ### Change granularity and native actions
 
@@ -226,7 +239,7 @@ A Change preserves one coherent accountable pursuit, not every file or incidenta
 
 A person's or agent's completion report remains an attributable claim unless the promised observation/evidence establishes more. External activity can be reconciled with honest provenance, not invented prior authorization. Retain consequential commitments, attempts and outcomes at their authority/recovery boundaries, with larger evidence referenced under retention/disclosure rules. Sharing one Change ID supplies neither a distributed transaction nor global rollback or exactly-once execution. Cross-Workspace work uses explicit coordination or linked Changes, not silently broadened scope.
 
-Ordinary typed input needs no natural-language routing. Later semantic routing may propose a query, clarification or Change, but cannot turn a read into an authorized effect or replace the owner's commitments.
+Ordinary typed input needs no natural-language routing, and ordinary queries need not create Changes. Optional interpretation may propose a query, clarification or Change, but cannot turn a read into an authorized effect, invent arbitrary arguments or replace the owner's commitments. Unknown requests clarify, report unsupported capability or decline rather than force dispatch.
 
 ### Completion and other conclusions
 
@@ -236,25 +249,31 @@ Distinguish fulfillment from stopping, declining or superseding a pursuit. Their
 
 ## Work coordination
 
-The first path has one operation and one durable attempt at a time. Work preserves inputs, authority, attempt identity, results and unresolved outcomes across process loss. A worker exit is not completion, and a retry is not a new opportunity to bypass an unresolved effect.
+A Change can contain one immediate operation or months of coordinated Work without requiring a continuously running agent. Work is an attributable, schedulable unit within the pursuit. Dependencies identify required results and evidence, not worker exit status. Make a portion a related Change when it becomes independently accountable, not merely because it takes time, uses several APIs or has a different executor. The [coordination rules](../system/components/change-format.md#work-granularity-and-coordination) retain the exact granularity and failure boundaries.
 
-Future parallel Work requires independently admissible scopes, explicit dependencies, conflict rules and aggregate outcome review. The engine owns dispatch/continuation semantics; a harness owns its session mechanics. Do not build a universal task scheduler before a concrete multi-Work capability needs it.
+The first path still has one operation and one durable attempt at a time. Parallel Work needs independently admissible scopes, dependencies, conflict rules and aggregate outcome review. Calls sharing a custody-bearing native owner, including reads, remain serialized under its contract. Reuse execution/queue mechanics; ChangeKernel owns eligibility, continuation and outcome semantics, not a new general-purpose scheduler.
+
+### Ledger working set and priority
+
+[Historical order, priority order and execution order](../system/components/change-format.md#ledger-working-set-and-prioritization) are distinct. Prefer a bounded, explicitly ordered active set rather than opaque scores or ranking every retained Change; no numerical cap is selected. Retain adopted selection/reprioritization decisions and their grounds without rewriting history. Priority is contextual, not a universally portable property of a Change. Deadlines, constraints, commitments and unknown effects survive lower rank, suspension and archive. The record/storage and concurrent-reordering contracts remain open.
 
 ## Routing, borrowing and forks
 
-These are intended later collaboration capabilities, not initial delivery dependencies. Borrowing transfers an individual Change's active continuation, not its ownership or native permissions. The recipient establishes current admission under its applicable Kernel. Returning a result requires attributable provenance and current acceptance; it does not merge arbitrary authoritative logs.
+[Collaboration rules](../system/components/change-format.md#collaboration-and-composition-rules) are central successor-format design requirements, not implemented operations or an obligation to ship every capability in the first release. Sharing, handoff, fork, consolidation, decomposition and contribution acceptance have distinct meanings. Borrowing transfers active continuation, not original ownership or native permissions; whole-pursuit ownership transfer needs its own contract. The recipient establishes current admission under its applicable Kernel. Returning a result requires attributable provenance and current acceptance, not merging arbitrary authoritative logs.
 
 The Rust borrowing analogy distinguishes inspection of an exact version from exclusive active continuation of an individual Change. A read snapshot is not a competing writer. Allowing readers of an immutable accepted prefix while a writer extends it is versioned-snapshot behavior, not an automatic consequence of Rust's same-value borrowing rules. Its actual custody, concurrency and interrupted-transfer protocol needs separate evidence; the first single-user file witness does not implement multi-user lending.
 
-Forking creates a new Change from an exact checkpoint for an alternative pursuit. Retained copies, encryption and file movement do not enforce single-custodian continuation, revoke plaintext or prove freshness. Their protocols must be qualified separately before use. Dependencies across Changes do not imply atomic cross-Workspace effects.
+Forking creates an independent Change from exact source grounds, with its own current admission. It does not restore native State to that checkpoint or replay historical effects. A handoff during execution needs a safe boundary or a specifically supported live-handoff protocol, preserving pending Work and unknown outcomes while preventing competing custodians.
+
+Consolidation explicitly adopts selected intentions, contributions and remaining objectives into a new pursuit. A combined View is not a new commitment. Preserve source histories; do not concatenate logs, merge away failures, silently stop source execution or automatically supersede source obligations. Retained copies, encryption and file movement enforce neither exclusive continuation nor plaintext recall. These protocols require separate evidence and confer no cross-Workspace transaction.
 
 ## Semantic operations and Jev
 
 Models can help interpret requests, propose plans, assess selected semantic criteria or discover useful bindings. They remain replaceable producers/evaluators with declared inputs, outputs, cost and authority boundaries. Typed core operations must not depend on them.
 
-When semantic judgment is needed, prefer a small constrained, JEV-like model before a general-purpose LLM. Use deterministic operations where the subject and requested operation are already explicit. Local open-weight models are candidates, not automatically qualified or assured to be faster end to end. Prefer bounded semantic ledger discovery as the first model consumer; broader reasoning or synthesis may justify an LLM, but ordinary navigation should often need none.
+When semantic judgment is needed, prefer a small constrained, JEV-like model before a general-purpose LLM. Use deterministic operations where the subject and requested operation are already explicit. Local open-weight models are candidates, not automatically qualified or assured to be faster end to end. Bounded semantic ledger discovery is a candidate consumer, not the primary product design sequence; broader investigation or synthesis may justify an LLM, while ordinary navigation should often need none.
 
-Jev itself is a potential integration, not a central mandatory service, frozen model choice or authority source. Select a model only against the [bounded discovery contract](../system/components/state.md#bounded-semantic-discovery) and measured total retrieval/inference/repair cost, wrong selections, missed pursuits, ambiguity and general-purpose LLM work avoided. Uncertainty does not automatically trigger a larger model: missing information, another bounded candidate page or a focused user clarification may be the correct next step. The [candidate research](../system/research.md#semantic-and-discovery-references) is separate from adoption, artifact acquisition, live inference and integration permission. No model recommendation creates an intent revision, relaxes a required Check or grants execution authority.
+Jev itself is a potential integration, not a central mandatory service, frozen model choice or authority source. Its inspected API is hosted; local alternatives require their own selection, calibration and disclosure assessment. A provider-selectable interpretation boundary must ground arbitrary arguments and preserve uncertainty rather than treat typed judgments as permission. Select a model against its exact consuming contract and measured total retrieval/inference/repair cost, incorrect results, ambiguity and general-purpose LLM work avoided. The [bounded discovery contract](../system/components/state.md#bounded-semantic-discovery) adds discovery-specific questions such as wrong selections and missed pursuits; it is not a universal interpretation interface. Uncertainty does not automatically trigger a larger model: missing information, another bounded candidate page or a focused user clarification may be the correct next step. The [candidate research](../system/research.md#semantic-and-discovery-references) is separate from adoption, artifact acquisition, live inference and integration permission. No model recommendation creates an intent revision, relaxes a required Check or grants execution authority.
 
 ## Change memory and procedural State
 
@@ -264,19 +283,25 @@ Procedures and reusable knowledge require provenance, visibility, applicable ver
 
 ## Frontend guidance and responsiveness
 
-Clients request typed operations and present current status, intended/actual differences, evidence, blockers and next permitted actions. Progress feedback cannot precede the acceptance it claims. Read-only inspection does not trigger execution. Responsiveness targets are capability-specific measurements, not untested latency promises or permission to bypass Checks.
+Clients request typed operations and present compact, telegraph-style Views of intent, decisions, applicable plans, progress, blockers and unknowns, with expandable exact references. Preserve full captured intent and consequential evidence underneath. Generated interfaces are clients/Views of the same contract; regenerating a screen cannot change what was approved. Progress feedback cannot precede acceptance, and read-only inspection does not trigger execution.
+
+Reason against current, applicable, authorized commitments rather than every historical intention. Preferences guide choices; adopted constraints bound them. Explain expected contribution, conflicts, assumptions and evidence before consequential work where needed, and retain actual outcomes separately. Missing context is not evidence of consistency with the entire Ledger. Responsiveness avoids unnecessary inference and proxy hops but does not bypass required validation/persistence or promise zero overhead.
 
 ## Operator console for development
 
-A thin inspection/operation client is enough for the first engine path. A richer ChangeKernel-owned Rust terminal console remains intended for later supported workflows, separate from backend authority. Pi is a source-development harness and retained adapter, not a mandatory engine dependency or the product's lifecycle owner. Console breadth does not gate core correctness.
+The initial user surface is a [qualified Pi integration](../system/components/package.md#user-distribution-and-deployment) for existing Pi users: conversation, tools, commands and structured Change/Ledger Views. Reuse Pi's interaction/runtime facilities rather than build a new Rust terminal console or agent stack first. This is a selected delivery direction, not shipped integration. Pi remains separate from lifecycle authority and is not required for deterministic native engine access. A later standalone client or launcher needs a concrete audience and justification.
 
 ## Cross-workspace development
 
-An application-use Change may expose a need for authorized development in another Workspace. Preserve the original unmet requirement and use explicit linked Changes, applicable actors, native rights and result adoption. User intent to improve an application does not itself authorize source edits or deployment. Cross-Workspace coordination is later scope and never an implicit global transaction.
+An application-use Change may expose a need for authorized development in another Workspace. Preserve the unmet requirement in an explicitly shared capability request linked to the origin. Developers may adopt separate development Changes and consolidate compatible requests with selected authorized context. Shipping support enables continuation, not automatic completion of the originating pursuit.
+
+Missing tool registration, permission denial and temporary failure do not prove missing functionality. User intent to improve an application does not itself authorize source edits or deployment. Cross-Workspace coordination retains explicit actors, native rights and contribution acceptance; it is never an implicit global transaction.
 
 ## Hosting, distribution and evolution
 
-Distribute one Rust engine with library integration and a standard launcher/client path, complemented by the composable JavaScript/TypeScript SDK and optional Pi adapters. The SDK does not become another engine or make Node/Pi dependencies mandatory for direct native clients. No mandatory cloud account, Docker deployment or database service is implied. The first profile integrates with a trusted host; a standalone hardened service is a separate future deployment profile with additional evidence obligations.
+The [selected initial distribution](../system/components/package.md#user-distribution-and-deployment) is an installable Pi integration for existing Pi users, with a qualified Rust engine, matching SDK/native bridge, tools/commands/Views and explicitly supported connectors. End users install a product integration, not an SDK. This is not yet a standalone general-consumer application or a qualified package.
+
+Deployment is local-first: an engine on the user's device and explicitly selected owner-controlled Ledger storage independent of applications, project directories and Pi sessions. Credentials stay separate from portable records; multiple clients use supported custody coordination. Local-first does not imply local inference. Later packaged clients, hosted/self-hosted deployments and multi-device support require their own evidence; do not build every channel at once. Native clients remain independent of Node/Pi, and no mandatory cloud account, Docker deployment or database service follows from this direction.
 
 Release only supported capability/profile combinations. Adding a model, binding, worker, host or platform requires evidence for the claims it adds, not repeating every unrelated investigation. Supported updates preserve historical meanings and unresolved outcomes. [Release qualification](../system/components/package.md) is separate from source tests and from controller handoff.
 
@@ -300,7 +325,7 @@ The retired TypeScript engine is historical evidence, not a feature-parity targe
 
 ### Dependency-gated implementation
 
-The [ChangeKernel plan](plan.md) owns the single phased capability plan. Resolve only contracts consumed by the next coherent slice, including its actual input/output producers and failure boundaries. Do not require speculative future host, collaboration, model or discovery protocols to be settled before a typed trusted-host transition can be tested.
+The [ChangeKernel plan](plan.md#format-first-design-and-pi-first-delivery) owns design and capability dependencies. First develop the successor-format specification from a trivial Change and an extended family exercising revisions, parallel Work, failures, uncertain outcomes, priorities and collaboration. The [open contract list](../system/components/change-format.md#successor-specification-work) separates adopted meaning from unselected grammar and guarantees. Existing bounded profiles remain evidence, not a reason to skip this design or a claim to implement it. Implementation slices later consume precise producers, results and failure boundaries; documentation does not resume paused work.
 
 ### First dogfood delivery sequence
 
