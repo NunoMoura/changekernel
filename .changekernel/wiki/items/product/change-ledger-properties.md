@@ -7,7 +7,7 @@ source-id: cw:design:change-ledger-properties
 
 ## Adopted product intent, not a wire schema
 
-**The user accepted the properties and opportunities below as product intent on 12 October 2026.** This does not claim implemented support, choose their exact protocols or authorize execution. The earlier workflow-first coding proposal is not the organizing principle. Start with user value, then derive the representations and access patterns that make it possible.
+**The user accepted the defining-property and accepted-opportunity sections as product intent on 12 October 2026.** Additional interaction refinements below remain proposals until explicitly adopted. This does not claim implemented support, choose their exact protocols or authorize execution. The earlier workflow-first coding proposal is not the organizing principle. Start with user value, then derive the representations and access patterns that make it possible.
 
 The central proposition is: **user intent becomes a durable, portable, collaboratively actionable pursuit rather than disposable chat or an application-local task.** A Change is one accountable pursuit; a Ledger is the owner's collection and coordination/disclosure context. Applications retain native State and rights, harnesses supply execution and context mechanics, and ChangeKernel owns the supported meaning and progression of these primitives. There is no additional canonical Goal store, general memory system or required new runtime.
 
@@ -46,6 +46,21 @@ Local-first storage is the selected deployment direction, not the definition of 
 | Owner-controlled continuity | Replacing an agent or host changes the means of work, not silently the owner's commitments, attribution, history or scope. Any policy, custody or ownership change remains explicit. |
 
 These opportunities do not create new top-level primitives. Relationships and accepted decisions in Changes, with Ledger-level coordination where appropriate, should explain them before any additional entity or subsystem is proposed.
+
+## Proposed interaction refinements — not yet adopted
+
+The next creative question is how independent pursuits cooperate without surrendering ownership. The [brainstorming witness](independent-pursuits.md) retains the ten experience ideas, tests the refinements below with three independent events and one shared contribution, and names what a fresh reader must be able to explain. This table is a proposal for discussion, not a change to the adopted property set or a selected schema/protocol.
+
+| Proposed property | User value | Concrete example | Necessary distinctions | Open question |
+| --- | --- | --- | --- | --- |
+| Owner-preserving cooperation | Collaborate without handing another party control of the entire pursuit. | Two organizers accept one venue assessment while retaining different event objectives. | Personal source pursuits, exact shared contribution, recipient adoption, disclosure and any independently owned shared Change. | When is a reference/contribution enough, and when is a separately accountable shared pursuit needed? |
+| Partial convergence | Combine the compatible part without pretending every objective agrees. | Several events share an accessibility survey but retain different dates, budgets and suppliers. | Adopted overlap, excluded/conflicting objectives and source treatment; similarity versus compatibility. | How can a compact explanation show the exact overlap and what was deliberately not adopted? |
+| Negotiable contribution commitments | Make cooperation understandable before either party relies on it. | A surveyor offers a specific inspection scope and delivery window; each recipient decides whether that is adequate. | Offered versus adopted contribution, exact conditions, required evidence, producer/recipient actors and independent completion conditions. | What reciprocal decisions are necessary, and how does interruption avoid invented mutual agreement? |
+| Dependency-impact visibility | Discover which commitments need reconsideration when a relied-on result changes. | A revised accessibility finding affects three venue decisions but not their unrelated catering choices. | Exact referenced version, declared applicability, historical acceptance and affected future admission. | What can be established from disclosed relationships without implying knowledge of every downstream user or automatic notifications? |
+| Graceful separation | Leave cooperation without erasing completed work or unresolved responsibility. | One event withdraws from a shared venue exploration after another has already incurred an admitted cost. | Withdrawal of future participation, existing adopted obligations/effects, retained contribution rights and unknowns. | What may the withdrawing owner change unilaterally, and what still requires other parties' agreement? |
+| Selective compatibility disclosure | Find adequate common ground without revealing irrelevant private intent. | Organizers disclose attendance/access needs but retain unrelated private budgets and negotiations. | Selected disclosure, sufficient decision grounds, omitted context and native rights; absent evidence versus evidence of compatibility. | When are disclosed grounds sufficient, and when must the interaction refuse or request more rather than guess? |
+
+The promising combination is partial convergence with independently accepted contributions, supported by negotiated commitments, selective disclosure, dependency-impact visibility and graceful separation. A shared contribution need not consolidate its recipients' whole pursuits. The hypothetical witness is not empirical validation or a claim of novel invention.
 
 ## Brainstorming method: value before representation
 
