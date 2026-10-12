@@ -105,6 +105,7 @@ These are **Ledger-level coordination facts**, not another history of each Chang
 | --- | --- |
 | Share | Disclose authorized individual material and necessary grounds with exact origin, coverage and omissions. Sharing does not confer continuation, native access or ownership. |
 | Handoff / borrow | Preserve Change identity, original ownership, history and attribution while explicitly transferring supported continuation responsibility. The recipient establishes current admission. |
+| Ownership transfer | Under a separately supported successor protocol, preserve pursuit identity, origin and history while explicitly changing governing ownership and accepted responsibilities. This is not disclosure, delegation or custody handoff; the exact protocol remains open. |
 | Fork | Create a new independent pursuit from exact source grounds. Source decisions are evidence, not automatic permission for the fork. |
 | Consolidate | Explicitly adopt selected intentions, contributions and remaining objectives into a new pursuit with its own scope, decisions, priority and applicable Checks. |
 | Accept a contribution | Evaluate the exact received result against the recipient's requirements before adopting it; the producer's completion label is insufficient. |
@@ -145,6 +146,36 @@ Explanations should precede consequential work where needed and name relevant in
 
 Structured commands bypass unnecessary inference. Ordinary queries need not create Changes. Ambiguous language may use selectable constrained interpretation; arbitrary arguments still need grounding and validation. Open-ended investigation/composition may use Pi. Unknown requests clarify, report unsupported capability or decline instead of forcing a dispatch. No mandatory model hop, zero-overhead promise or inference-based weakening of a required guard follows from the format.
 
+## Agent-facing structure and code use
+
+Design the Change/Ledger representation and its programmatic access together. An agent must be able to write a bounded script that navigates, compares and composes structured data, then returns only the useful explanation to its model. It must not need to parse prose, scan Git messages or reconstruct adoption from a private conversation. Direct tools, code-use adapters and model-free clients consume the same supported semantics; Pi Codemode is an initial consumer, not the canonical storage or a required execution language.
+
+The [three layers](#canonical-records-evidence-and-views) remain distinct. Accepted history preserves consequential facts; retained evidence supplies exact supporting material; compact Views expose applicable facts with expandable grounds. A View is not a separately writable current-State document or the only surviving decision evidence. Change is accountability data, not an executable script; inspection never replays effects.
+
+| Structural responsibility | Required distinctions; exact schema remains open |
+| --- | --- |
+| Change identity and authority | Logical Ledger/Change association, originating ownership and historical actors; current governing ownership, delegation and continuation custody where supported. A directory, Git author or session name is insufficient. |
+| Intent and decisions | Original expression versus proposed interpretation, adopted intent and attributable revisions. Accepted, refused, superseded and still-pending decisions must be distinguishable without model inference. |
+| Work and consequences | Applicable intent/Work/policy grounds, admission, original attempts, established results, uncertainty and conclusions. Proposed actions and successful script execution do not prove effects. |
+| Evidence | Exact reference, provenance, interpretation, capture coverage, availability and retention/disclosure obligations. Required missing material remains a gap. |
+| Ledger coordination | Attributable active-selection/priority decisions and their planning context; references and explicit relationships without another writable Change history. Priority is not permission. |
+| Navigation and context | Origin, selected accepted tip and reader cursor; purpose/version/coverage of projections, changes since an exact position and inspectable source grounds. |
+
+Use these agent questions as design witnesses, not a guessed public API catalogue:
+
+1. What decisions were actually adopted recently, by whom, against which expression and scope? Which recommendations remain proposals?
+2. What intent, constraints, policy and delegation currently apply, and which earlier decisions were superseded rather than erased?
+3. What changed since this exact accepted position, including failed assessments and unresolved outcomes?
+4. Which Work is pending, blocked or potentially eligible, and what exact grounds or additional admission does the next action require?
+5. Who owns this pursuit, who may act or continue, and what would change under an authorized share, handoff, transfer or fork?
+6. Which evidence supports this claim, what can the reader disclose, and what is absent, stale or outside coverage?
+
+Code-use access needs structured bounded results, stable logical references and explicit domain failures. Support selective fields/expansion and bounded paging or incremental access where the consuming contract establishes them. Local script filtering can reduce model context, but cannot silently omit mandatory blockers or label partial results complete. Queries must expose the selected version and coverage; live pages are not an atomic snapshot, and an old eligible-action View is not effect admission.
+
+Composed calls retain their own request/result identity and authorization. A script may report partial success: its completion is not aggregate fulfillment, exception/cancellation is not rollback, and a lookup miss must not start missing Work. Independent operations may batch only under the selected host/resource guarantees. Calls sharing a custody-bearing native owner remain serialized, including reads; code-use parallelism cannot evade this boundary. Authoritative writes remain explicit backend-validated transitions, never arbitrary JSONL append or caller-constructed approval.
+
+Optimize total cost: custody/authorization validation, bytes read/decoded/copied, projection work, script memory, calls and model context. Bounded native retrieval is preferable to repeatedly returning the entire history and filtering afterward. Scans, indexes, cached projections and batching are mechanisms to compare against representative consumers, not selected infrastructure or constant-cost promises. Harness-private stores and summaries are optional context support, never acceptance control or the sole source of user decisions.
+
 ## Successor specification work
 
 The [format-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery) uses the [worked Change streams](change-streams.md) as hypothetical design witnesses: a trivial Change completed in one interaction and an extended family of Changes covering parallel Work, plan revision, failure, uncertain outcome, reprioritization, handoff, fork and consolidation. Each step distinguishes retained facts, evidence, Views, unchanged grounds, reader knowledge and unknowns. The stated capability premises remain conditional; these examples select no real connector and are neither executed prototypes nor native qualification.
@@ -160,4 +191,4 @@ The successor specification must settle:
 7. Capacity, pagination, reconstruction and supported failure/recovery guarantees.
 8. Compatibility with old profiles and any explicitly selected migration.
 
-Select the first real application/capability consumer before implementing universal abstractions. The user-selected [Pi coding Change consumer proposal](pi-coding-change.md) now grounds the next narrow specification: exact candidate preparation, assessment and inspection, with artifact-only completion versus repository publication still an explicit scope decision. It is a draft, not successor adoption or supported execution. The [SDK](sdk.md) follows these semantics; [distribution](package.md#user-distribution-and-deployment) supplies an initial Pi-user experience. A read-only navigator remains useful but does not replace this design focus. Do not freeze guessed signatures, new persistent filenames or unsupported collaborative operations during documentation adoption.
+Select the first real application/capability consumer before implementing universal abstractions. The user-selected [Pi coding Change consumer proposal](pi-coding-change.md) is a worked consumer for the structure and code-use design, not a replacement delivery-first agenda. First compare how Change/Ledger structure retains user-owned decisions, revisions, relationships and evidence and supports the agent questions above. Artifact-only completion versus repository publication remains unresolved, but is not a prerequisite for this structural design work. The workflow proposal is a draft, not successor adoption or supported execution. The [SDK](sdk.md) follows these semantics; [distribution](package.md#user-distribution-and-deployment) supplies an initial Pi-user experience. A read-only navigator remains useful but does not replace this design focus. Do not freeze guessed signatures, new persistent filenames or unsupported collaborative operations during documentation adoption.

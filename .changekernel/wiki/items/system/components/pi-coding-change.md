@@ -7,7 +7,9 @@ source-id: cw:design:pi-coding-change
 
 ## Proposal boundary
 
-**Draft for product-scope and independent design review, not an adopted successor profile or execution assignment.** The user selected Pi coding Change as the consumer for this proposal. The proposed first outcome is a reviewed, exact local code candidate that a fresh authorized reader can understand without the producing conversation. Repository publication is a separate later capability, not silently included or reported as accomplished.
+**Draft workflow witness, not an adopted successor profile or execution assignment.** The user selected Pi coding Change as a consumer to test Change/Ledger requirements, then clarified that user-owned structure and agentic code use come first. This page's artifact-only workflow is one illustrative option, not a selected first delivery outcome or the agenda for the next design step. Repository publication versus candidate-only fulfillment remains unresolved; neither is implied by this proposal.
+
+The immediate design focus is the [agent-facing structure and code-use contract](change-format.md#agent-facing-structure-and-code-use) and [user-owned continuity](../../product/changekernel.md#user-owned-continuity-and-transferability). Use the coding example to compare representations and agent read/write patterns, including recent adopted decisions versus recommendations, revisions, exact evidence and current authority. Do not require a publication-scope decision before doing this work.
 
 This proposal consumes the [Change-format requirements](change-format.md), [worked streams](change-streams.md), [State contract](state.md), [Checks](checks.md) and [Pi-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery). It narrows the next specification questions; it does not replace existing profiles, choose a wire schema or bypass their capability dependencies. Documentation work authorizes no source implementation, candidate execution, inference, installation, migration or controller handoff. Current execution scope remains in the [temporary status note](../../../../../CHANGEKERNEL_STATUS.md).
 
@@ -84,13 +86,15 @@ These are proposed acceptance conditions for the eventual consumed path, not tes
 
 Before execution, select finite bounds for request/candidate/evidence bytes, history reads, command time/output, descendants, cleanup and retention, with an oversize/unavailable behavior for each. No performance or universal restart claim follows from this document; ordinary reboot/remount, adversarial containment and exact installed Pi/native closure still need their applicable qualification evidence.
 
-## Decisions for the next specification
+## Decisions before a consumed execution profile
 
-1. **Product outcome:** approve artifact-only delivery as the first increment, or require repository publication and its additional binding first. This is an explicit scope decision, not an implementation shortcut.
+These decisions apply if this workflow is selected for execution; they are not prerequisites for the immediate Change/Ledger structure design.
+
+1. **Product outcome:** approve artifact-only delivery as an increment, or require repository publication and its additional binding. This is an explicit scope decision, not an implementation shortcut.
 2. **Native fixture and execution trust:** select the exact repository fixture, capture/regular-file preparation contract, eligible executor, assessment observations and cleanup/reconciliation evidence. Specify which threats are excluded; do not substitute a prompt for missing enforcement.
 3. **Consumed successor grammar:** map only the facts above to exact bounded operation/result/record envelopes, references, request identity and atomic acceptance/recovery units. Reuse supported foundations where their exact semantics fit; do not append new operations to frozen profiles.
 4. **Evidence and read contract:** choose required originals, retention/disclosure, unavailable-reference behavior and minimal deterministic context/range consumption. A session link can help inspect runtime evidence but is never the sole authority or required private memory.
 
 No new Ledger ranking, collaboration protocol, universal scheduler, public SDK catalogue or migration is needed to answer this consumer's first question. Those remain deferred, not discarded. The [worked streams](change-streams.md) continue to test their desired meanings without making them prerequisites for this sequential artifact increment. Software publication and later ChangeKernel self-development retain the [separate controller gate](package.md#minimum-local-dogfood).
 
-The immediate deliverable is independent review of this proposal and an explicit outcome decision. Exact schema adoption, implementation assignments, native checks, runtime experiments and release activation remain later, separately authorized steps.
+The immediate deliverable is a Change/Ledger structure proposal with agentic code-use examples and ownership/transfer distinctions, using this workflow as one witness. Independent review and any execution-outcome decision follow at the corresponding scope. Exact schema adoption, implementation assignments, native checks, runtime experiments and release activation remain later, separately authorized steps.

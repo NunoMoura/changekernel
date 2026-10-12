@@ -107,6 +107,14 @@ Separate **ownership** of commitments and decisions, **hosting** of records and 
 
 A Ledger may coordinate pursuits over different application surfaces. An app boundary need not be a Change boundary: one supported Workspace can name several resources and authorities. Where one supported scope cannot cover the pursuit, use explicitly linked Changes; app independence never authorizes scope widening. App-native agents can contribute proposals or observations, not declare the user's adoption or gain access to unrelated Ledger material.
 
+### User-owned continuity and transferability
+
+User ownership is a product capability, not merely an author label. A Change belongs to an accountable owner rather than to the application, repository, harness or conversation through which it was expressed. Within established authority, the owner controls adoption and revision of intent, bounded delegation, disclosure, supported continuation and conclusions. These decisions and their grounds must remain understandable when the application or agent session changes; hosting records does not make the host their owner.
+
+The successor design must make owner-directed sharing, delegation, continuation handoff and ownership transfer expressible as distinct relationships and decisions. Sharing changes disclosure; delegation changes bounded acting authority; handoff changes continuation custody; ownership transfer changes who may govern the pursuit within the supported scope. A fork creates a separate pursuit. None is accomplished merely by copying files, changing a Git author, restoring a conversation or relabeling an owner field.
+
+A supported ownership transfer must preserve Change identity, originating ownership and historical attribution while explicitly establishing the new governing owner, accepted responsibilities and the treatment of prior delegation/custody. Existing effects, required constraints and unresolved outcomes remain visible and consequential; transfer cannot erase them or create two competing authorities. The exact party agreement, exclusion, disclosure, interruption and recovery protocol remains to be selected. This requirement neither adds transfer to retained fixed-owner profiles nor grants native resource rights, credentials, intellectual-property rights or permission to disclose third-party material.
+
 ### State access and Change authorization
 
 A permitted effect requires **native resource rights ∩ current delegated scope ∩ Change authorization**, plus applicable subject/freshness, Check, custody and outcome guards. A passing Check or user approval cannot override native denial. Native write access does not approve every transformation.
