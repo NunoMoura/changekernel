@@ -4,6 +4,14 @@ ChangeKernel is a [State-and-Change engine](.changekernel/wiki/items/product/cha
 
 Use your session's assigned role; ask if unclear. The user owns product intent.
 
+## Canonical checkout and branches
+
+The primary `changekernel/` checkout on `main` is the accepted development baseline. Read its Wiki for current adopted design and its source/tests for the integrated implementation; neither implies release qualification. Keep this checkout current when accepted work is integrated.
+
+Sibling `changekernel-workers/<assignment>/` directories are isolated Git worktrees for assigned changes or review, not additional canonical repositories or independently synchronized Wikis. Their contents belong to their exact branches/checkpoints. Integrate reviewed changes into `main`; do not maintain a permanently newer manager branch hidden among worker directories or copy Wiki files between checkouts to simulate synchronization.
+
+Preserve uncommitted work and unique commits before changing or retiring a checkout. Historical worktrees and their ignored artifacts may be archived outside the project, with checkpoint/path evidence retained; do not treat archival as acceptance, custody transfer or permission to reopen old runtime state. Relaunch the manager or worker when its working directory changes, then verify native cwd, session cwd, branch and checkpoint before continuing.
+
 ## Coordination
 
 Use [CHANGEKERNEL_STATUS.md](CHANGEKERNEL_STATUS.md) for all inter-agent handoffs; workers report in their own worktree copies. The project manager consolidates handoffs and integrates code; do not merge handoff files wholesale. Link Wiki requirements rather than copying them; Git preserves completed handoffs.
@@ -12,7 +20,7 @@ Direct notifications must be identified as peer messages and point to exact assi
 
 ## Project manager
 
-- Start in the integration worktree and verify its branch. Prepare next handoffs while workers run. Mark provisional baselines explicitly; dispatch is not acceptance.
+- Start in the primary `changekernel/` checkout on `main` and verify its branch. Use a separate temporary integration candidate only when explicitly identified; accepted work must return to the primary checkout. Prepare next handoffs while workers run. Mark provisional baselines explicitly; dispatch is not acceptance.
 - Create each worker's branch and external worktree from the agreed checkpoint. Record branch, worktree path, and base commit in its assignment. Launch or relaunch its Pi process from that worktree and verify the native process cwd, session cwd and Git checkpoint before dispatch; absolute paths or `git -C` do not relocate tool defaults, instructions or project-resource discovery.
 - Define each slice's outcome, dependencies, owned paths, requirement references, and acceptance checks. Parallelize only ready, independent slices with non-overlapping write scopes and agreed shared interfaces. Give shared contracts, manifests, and lockfiles one owner; serialize conflicting work. Resolve ambiguous product intent or safety guarantees with the user.
 - Keep the managed developer-worker pool at or below 15 agents, including delegated workers and parked sessions retained for reuse. This is a ceiling, not a target or a product-runtime limit. Choose the active count from ready independent work, bottlenecks and review/integration capacity; do not invent assignments to occupy workers. Pause dependent work when its baseline fails review.

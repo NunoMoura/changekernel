@@ -22,6 +22,7 @@ The ledger is a stable collection of intent-bearing Changes, not a workflow dire
 | --- | --- |
 | [Product](.changekernel/wiki/items/product/changekernel.md) | Intended responsibilities, core boundaries and explicitly later capabilities. |
 | [ChangeKernel plan](.changekernel/wiki/items/product/plan.md) | Small phases, falsifiable propositions, useful witnesses and evidence required to advance. |
+| [Change Format and Lifecycle](.changekernel/wiki/items/system/components/change-format.md), [Worked Change Streams](.changekernel/wiki/items/system/components/change-streams.md) | Adopted semantic requirements and conditional design witnesses, not a frozen successor wire schema or implemented capability. |
 | [State](.changekernel/wiki/items/system/components/state.md), [Checks](.changekernel/wiki/items/system/components/checks.md), [Execution](.changekernel/wiki/items/system/components/agent-execution.md), [Release](.changekernel/wiki/items/system/components/package.md) | Desired contracts and capability-specific qualification. |
 | [Research](.changekernel/wiki/items/system/research.md) | Inspected alternatives, counterexamples and unproven mechanisms—not an implementation queue. |
 | [Retained native profiles](.changekernel/wiki/items/system/components/native-profiles.md) | Existing frozen API/storage/packet contracts, their limits and known gaps. |
@@ -53,6 +54,8 @@ The continuation profile adds explicit `SqliteIntake::initialize_continuation`, 
 General ledger discovery/navigation, general Check definitions/evaluators, guarded effects and complete continuation remain unfinished. Broader discovery, model integration, worker coordination, rich clients, borrowing/forks, encrypted sharing and cross-Workspace dependencies are unsupported later capabilities, not initial release prerequisites. Draft persistence and passing source tests do not establish qualified adoption.
 
 ## Development and repository truth
+
+The primary `changekernel/` checkout on **`main`** is the accepted development baseline. Its Wiki and source are the versions to read for current adopted design and integrated implementation. Sibling `changekernel-workers/<assignment>/` folders are isolated Git worktrees, each with its own branch snapshot; they are not separately maintained products or automatically synchronized Wikis. Reviewed changes return to `main`. Archived task checkouts preserve history or unaccepted work, not another current source of truth. See [checkout and branch procedure](AGENTS.md#canonical-checkout-and-branches).
 
 Native builds require Rust 1.88.0 and a C compiler for bundled SQLite, but neither Node nor Pi. Use the standard Rust harness:
 
