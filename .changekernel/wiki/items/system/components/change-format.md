@@ -14,6 +14,8 @@ The [product](../../product/changekernel.md) owns positioning, ownership and aut
 
 Existing accepted records, ledger/Change layouts, closed inventories, schemas, operation versions, ownership, bounds, accounting and retry/recovery meanings remain unchanged. These requirements do not inject new fields into the retained profiles, repurpose their custody controls, reinterpret historical stages or add a new operation merely because its meaning is described here. New semantics require an explicitly adopted successor contract and, where needed, a separately supported migration. Documentation adoption, source acceptance, release qualification, activation and controller handoff remain distinct.
 
+Retained profile pages preserve contract-adoption evidence, including historical implementation-status labels; those labels are not a rolling executable-status verdict. Exact source/test revisions and their acceptance evidence in Git establish source acceptance. Neither a contract label nor source acceptance qualifies a release or changes the retained profile's semantics.
+
 ## Ledger and Change remain the primary primitives
 
 A **Ledger** is an owned collection and coordination/disclosure context for Changes. A **Change** is one accountable pursuit, including expressed intent, its adoption or refusal, decisions, Work and consequences. Its duration and number of operations do not determine its identity.
@@ -145,7 +147,7 @@ Structured commands bypass unnecessary inference. Ordinary queries need not crea
 
 ## Successor specification work
 
-The [format-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery) starts from two worked consumers: a trivial Change completed in one interaction and an extended family of Changes covering parallel Work, plan revision, failure, uncertain outcome, reprioritization, handoff, fork and consolidation. For each step, identify what is recorded, what remains unchanged, what another reader can establish and what remains unknown. These are design witnesses, not executed prototypes or native qualification.
+The [format-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery) uses the [worked Change streams](change-streams.md) as hypothetical design witnesses: a trivial Change completed in one interaction and an extended family of Changes covering parallel Work, plan revision, failure, uncertain outcome, reprioritization, handoff, fork and consolidation. Each step distinguishes retained facts, evidence, Views, unchanged grounds, reader knowledge and unknowns. The stated capability premises remain conditional; these examples select no real connector and are neither executed prototypes nor native qualification.
 
 The successor specification must settle:
 
