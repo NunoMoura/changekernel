@@ -18,6 +18,8 @@ Retained profile pages preserve contract-adoption evidence, including historical
 
 ## Ledger and Change remain the primary primitives
 
+The user-adopted [defining properties](../../product/change-ledger-properties.md) own the value proposition and brainstorming questions. Derive structure from owner-controlled continuity, transferable responsibility, collaborative composition and efficient agent access, not from a guessed envelope or a delivery workflow. The [initial gap research](../research/change-ledger-property-gaps.md) supports specific opportunity hypotheses and records prior art; it is not universal novelty or qualification evidence.
+
 A **Ledger** is an owned collection and coordination/disclosure context for Changes. A **Change** is one accountable pursuit, including expressed intent, its adoption or refusal, decisions, Work and consequences. Its duration and number of operations do not determine its identity.
 
 There is no separate canonical Goal object, Goal store or Goal lifecycle. A goal is the desired outcome expressed by a Change's intent and may be prominent in a user-facing View. Supporting concepts such as Work, plans, Checks, Workspace and State retain their distinct meanings; they are not competing pursuit histories.

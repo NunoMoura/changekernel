@@ -13,6 +13,10 @@ Separate four claims: **wanted** (the user selected an outcome), **hypothesized*
 
 The plan owns tests for the current core hypotheses. The research below is retained for future capability choices; none is a prerequisite merely because it was investigated. Do not repeat broad surveys or start privileged/runtime experiments without a concrete consuming capability and the required authorization.
 
+## Change and Ledger property gaps
+
+The [initial property-gap investigation](research/change-ledger-property-gaps.md) inspects four sources on A2A tasks/client artifact acceptance, MCP durable tasks/cooperative cancellation, code execution with MCP and portable agent memory. It supports brainstorming under the user-adopted [property/value map](../product/change-ledger-properties.md), distinguishing quoted source boundaries, relevant prior art and opportunity hypotheses. This is read-only research with independent review pending, not an exhaustive novelty survey, supported integration, benchmark or execution assignment. Values and concrete pursuit examples precede representation choices.
+
 ## Pi 1.1.0 session-format follow-up
 
 The later read-only follow-up inspected installed Pi **1.1.0** documentation and release source pinned to [`abe508e1b89912adde45528136c3221eb69acdd7`](https://github.com/earendil-works/pi/commit/abe508e1b89912adde45528136c3221eb69acdd7). The installed session-format, compaction, message-types, sessions and packages documents were byte-compared with that pinned source and matched. This is documentation/source correspondence, not installed-binary reproduction or qualification of the whole 1.1.0 stack. No upstream code, test, model call, migration or package install was executed for this comparison.
