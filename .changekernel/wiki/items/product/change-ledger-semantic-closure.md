@@ -7,7 +7,7 @@ source-id: cw:design:change-ledger-semantic-closure
 
 ## Scope and decision status
 
-This pass answers the [property map's open interaction questions](change-ledger-properties.md#adopted-interaction-refinements) before structural distillation. It reconciles existing adopted design and identifies two proposed defaults requiring a user decision. Authorization to investigate is not adoption of those defaults. The examples below are hypothetical, not executed tests or qualified capabilities; independent design review remains pending.
+This pass answers the [property map's interaction questions](change-ledger-properties.md#adopted-interaction-refinements) before structural distillation. It reconciles existing adopted design; the user has now explicitly approved both proposed defaults: “Yeah, I approve A and B”. Decisions A and B below are adopted product semantics, including their stated qualifications, not selected protocols or executable support. The examples remain hypothetical, not executed tests or qualified capabilities; independent design review is still pending.
 
 The [minimal lossless core](change-ledger-properties.md#minimal-lossless-core-derived-views) remains the criterion: preserve only essential facts and references; derive presentations as Views for agents or direct UI consumption. Prose and artifact payloads stay outside canonical records. None of the answers introduces a canonical Agreement object, a global optimizer, a new runtime or a frozen operation catalogue.
 
@@ -15,13 +15,13 @@ The [minimal lossless core](change-ledger-properties.md#minimal-lossless-core-de
 | --- | --- | --- |
 | Contribution versus separate Change | Reconciled from existing independent-accountability rule. | Exact representation and supported ownership/coordination protocols. |
 | Partial convergence | Reconciled from exact scoped adoption and preserved source histories. | Scope-reference encoding and explanatory Views. |
-| Reciprocal commitments | **Decision A proposed; user adoption required.** | Exact reciprocal acceptance, revision and interruption protocol. |
+| Reciprocal commitments | **Decision A adopted:** applicable authorized adoption of the exact shared terms by the parties whose consent they require. | Exact reciprocal acceptance, revision and interruption protocol. |
 | Dependency-impact visibility | Reconciled within known, authorized, version-bound relationships. | Query/index mechanics and any separately supported notifications. |
-| Graceful separation | Existing preservation rules apply; **Decision B proposed for unilateral withdrawal versus release.** | Concrete exit terms and supported cancellation/reconciliation mechanisms. |
+| Graceful separation | Existing preservation rules apply; **Decision B adopted:** withdrawal of future participation does not itself release existing responsibilities. | Concrete exit terms and supported cancellation/reconciliation mechanisms. |
 | Selective-context sufficiency | Reconciled by separating scoped explanation from consequential admission. | Purpose-specific input contracts, retrieval and coverage representation. |
 | Reference retention and availability | Reconciled from existing evidence, provenance and retention obligations. | Storage/resolution mechanisms and capability-specific retention periods. |
 
-“Reconciled” closes the general product-meaning question under existing rules, not every protocol detail or implementation claim. Decisions A and B below are proposals, not newly adopted requirements.
+“Reconciled” closes the general product-meaning question under existing rules, not every protocol detail or implementation claim. The separate approval of Decisions A and B closes their product-meaning questions too; it does not adopt the four further proposals or freeze a representation.
 
 ## 1. Contribution versus separate Change
 
@@ -47,7 +47,7 @@ The [minimal lossless core](change-ledger-properties.md#minimal-lossless-core-de
 
 **Existing boundary:** proposals, adoption, delegation, result production and recipient acceptance are distinct; one actor cannot manufacture another's authority. See [intent adoption](changekernel.md#intent-capture-and-refinement) and [collaboration rules](../system/components/change-format.md#collaboration-and-composition-rules).
 
-**Decision A — proposed default:** a decision establishes only commitments within its actor's authority. Claim a reciprocal agreement only when applicable adoption is established for every party whose consent the particular shared terms require, each bound to those exact terms and versions. This does not require unanimity among unrelated participants or identical completion conditions for every recipient. An authenticated direct instruction or established scoped delegation may supply adoption without an extra confirmation ceremony.
+**Decision A — adopted default:** a decision establishes only commitments within its actor's authority. Claim a reciprocal agreement only when applicable adoption is established for every party whose consent the particular shared terms require, each bound to those exact terms and versions. This does not require unanimity among unrelated participants or identical completion conditions for every recipient. An authenticated direct instruction or established scoped delegation may supply adoption without an extra confirmation ceremony.
 
 One party's decision can remain valid on its own terms without proving mutual agreement. An offer generated by an assistant, transport acknowledgment or missing reply does not supply another party's decision. A revision of shared terms does not inherit acceptance of an older version. Unilateral acceptance of an already available report under current rights is not a reciprocal undertaking and does not require a new producer vote merely because the report is reused.
 
@@ -71,7 +71,7 @@ One party's decision can remain valid on its own terms without proving mutual ag
 
 **Existing boundary:** stopping, cancellation and supersession do not undo effects or erase accepted responsibilities and unknown outcomes. See [lifecycle conclusions](../system/components/change-format.md#lifecycle-milestones-and-execution-admission) and [separation in the cooperation witness](independent-pursuits.md#worked-imagination-three-events-one-useful-contribution).
 
-**Decision B — proposed default:** an owner can decide to stop pursuing its own future participation and withdraw future delegation within its authority. This does not by itself release an existing accepted responsibility or change another owner's commitments. Release follows applicable, previously adopted exit terms; otherwise it requires the relevant affected parties' authorized decisions. If release is not established, retain the responsibility as unresolved rather than force continued participation or pretend settlement. Established fulfillment or settlement can separately discharge a responsibility under its applicable terms; an already discharged responsibility does not need an extra release ceremony.
+**Decision B — adopted default:** an owner can decide to stop pursuing its own future participation and withdraw future delegation within its authority. This does not by itself release an existing accepted responsibility or change another owner's commitments. Release follows applicable, previously adopted exit terms; otherwise it requires the relevant affected parties' authorized decisions. If release is not established, retain the responsibility as unresolved rather than force continued participation or pretend settlement. Established fulfillment or settlement can separately discharge a responsibility under its applicable terms; an already discharged responsibility does not need an extra release ceremony.
 
 A stop instruction, effective revocation, confirmed cessation and reconciliation of earlier effects remain different facts under their supported contracts. No promise is made that an executor has stopped merely because the owner asked. ChangeKernel records supported decisions and consequences; it does not determine legal enforceability, override native rights or recall disclosed plaintext.
 
@@ -114,10 +114,10 @@ These remain under consideration, not silently adopted by this closure pass. The
 
 ## What can close now and what comes next
 
-The five reconciled topics need no newly invented product rule. Decisions A and B require explicit user adoption or correction before their defaults are treated as settled. This page does not itself supply that adoption, an independent review verdict or a runtime guarantee.
+The five reconciled topics and the user's explicit adoption of Decisions A and B settle this pass's general product-meaning questions sufficiently for structural distillation. Independent design review remains pending; semantic adoption is not a runtime guarantee.
 
-The subsequently adopted [user-defined lifecycle Check requirements](../system/components/checks.md#user-defined-requirements-across-the-lifecycle) let users express additional requirements at these boundaries, including transfer. That capability does not adopt Decisions A or B or allow a Check result to stand in for an actual party decision, release or custody transition. Requirements may assess the relevant retained grounds; their authorship, adoption and evaluation remain distinct.
+The adopted [user-defined lifecycle Check requirements](../system/components/checks.md#user-defined-requirements-across-the-lifecycle) let users express additional requirements at these boundaries, including transfer. Their earlier adoption was separate from the later approval of Decisions A and B. A Check result still cannot stand in for an actual party decision, release or custody transition. Requirements may assess the relevant retained grounds; their authorship, adoption and evaluation remain distinct.
 
-After those decisions, the first structural draft can map each accepted use case to the indispensable fact/reference, its owning primitive, required reads/writes and derived Views. A field must identify the accountable distinction lost if removed. Reference grammar, operation envelopes, exact multi-party protocols, storage layout, indexes, caching, numeric bounds and View presentation remain design work; their deferral permits a draft, not a claim of supported execution. Ownership transfer and live handoff also retain their separately unresolved contracts rather than inheriting an answer from this pass.
+The [first structural draft](../system/components/change-ledger-structure.md) maps accepted use cases to indispensable facts/references, their owning structures, read/write responsibilities and derived Views. It is a proposal for review, not adopted by the approval of A and B. Each retained element must identify the accountable distinction lost if removed. Reference grammar, operation envelopes, exact multi-party protocols, storage layout, indexes, caching, numeric bounds and View presentation remain design work; their deferral permits a draft, not a claim of supported execution. Ownership transfer and live handoff retain their separately unresolved contracts rather than inheriting an answer from this pass.
 
 No implementation, experiment, migration, qualification, activation or controller handoff is authorized here. The mutable source checkout does not govern itself.
