@@ -62,7 +62,7 @@ The revision fact is the actual revision decision; a second generic â€œapprovedâ
 
 A revision request identifies the target Change, original request identity, expected previous intent, exact replacement, decision grounds and applicable submitted evidence. Caller-supplied evidence is input for validation, not a declaration that admission passed. The exact input-equivalence rule and request-identity namespace must be defined before retries are supported.
 
-The trusted backend must establish the following at admission:
+For new acceptance, rather than delivery of an already accepted result, the trusted backend must establish the following at admission:
 
 1. The caller and actual decision authority, independently of agent-authored attribution fields.
 2. The binding between the decision, exact replacement and governed scope.
@@ -75,7 +75,18 @@ A read neither runs missing Checks nor silently makes them optional. A revision 
 
 Concurrency follows semantic dependencies rather than every history-tip change. An unrelated Ledger priority change need not invalidate an assessment whose contract has no such dependency. Changed relevant requirements or inputs require the supported conflict/re-admission treatment; unknown dependencies cannot be assumed irrelevant. Current authority is always established separately. Exact dependency representation and the mechanism preventing a change between validation and acceptance remain review blockers.
 
-The proposed acceptance unit establishes the revision and its original-request/result association together. A client cannot implement this guarantee by two unprotected appends. Required material must already have supported custody when acceptance relies on it; this is not an atomic transaction across arbitrary external material providers. The underlying native protocol remains unselected and unqualified.
+[Requirements grounded in other Changes](checks.md#requirements-grounded-in-other-changes) also belong in the applicable admission basis. A dependency graph or another Change's generic status is not that basis. Establish the exact condition, source/version and evidence it actually requires. A historical-decision requirement differs from a condition that must still hold at admission; the latter needs its supported freshness/concurrency guarantees. Unknown or undisclosed grounds cannot silently satisfy either. This is an admission consequence of the adopted requirement direction, not a selected cross-history validation protocol.
+
+### Proposed acceptance boundary
+
+The following records the TUI acceptance-boundary proposal for review, not an adopted storage protocol:
+
+1. **Resolve the original request first.** Under the [request identity contract](state.md#record-replay-and-durability-requirements), a key within an existing Change names one original operation across kinds and actors. When an accepted exact-input match is established and disclosure is authorized, return its original result without a new revision, reassessment or attribution. A bound identity with different inputs conflicts. An absent lookup is not proof that admission is safe while native recovery remains unresolved.
+2. **Validate new acceptance against its actual basis.** Establish the authority, intent version, applicable requirements, material custody and eligible evidence above. Relevant concurrent change requires supported revalidation or conflict, not silent rebasing. No client-supplied checklist establishes completeness.
+3. **Establish one logical acceptance unit.** The revision fact and its retained grounds, original request/exact-input/result association, and acceptance control must agree. Do not acknowledge success before the supported native protocol establishes the required durability. This is not necessarily one physical write; two unprotected appends do not supply the guarantee.
+4. **Preserve the result's historical meaning.** A lost confirmation retrieves the original result even if a later revision changed current intent. Native storage uncertainty remains explicit. Routine validation refusal describes the attempt, not a permanent owner rejection or cancellation of every delayed delivery. Preserve accepted request associations with retained history; do not silently expire them so that an old identity becomes a new operation.
+
+Required material must already have supported custody when acceptance relies on it. This acceptance unit governs the receiving Change; references to other Changes or external material do not create a transaction across them, freeze their future changes or mutate their histories. If an adopted condition requires a guarantee the selected profile cannot establish, dependent acceptance remains unsupported or blocked. The underlying native protocol, exact input-equivalence encoding and refusal/in-flight behavior remain unselected and unqualified.
 
 Results preserve three distinctions without selecting enum spellings:
 

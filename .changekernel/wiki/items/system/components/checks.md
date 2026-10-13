@@ -104,6 +104,18 @@ Apply the [minimal lossless core](../../product/change-ledger-properties.md#mini
 
 The initial closed deterministic profiles remain unchanged. Exact authoring/adoption operations, applicability encoding, evaluator support and transfer protocols require separately selected successor contracts and qualification; this use case creates no generic workflow designer, evaluator registry or arbitrary-code runtime.
 
+### Requirements grounded in other Changes
+
+**User-adopted clarification:** a Change may adopt a requirement grounded in another Change's specific accepted decision, commitment, result or condition. The requirement says what is needed and where it applies; a Check can evaluate whether the available grounds satisfy it. Another Change is not itself a Check definition, and its existence or generic “done” label is not a substitute for the required meaning.
+
+For example, Change B may require accepted venue confirmation from Change A covering the dinner's date and capacity before sending invitations. A requirement for A's approval differs from one requiring A's actual outcome; accepted intent is not fulfillment. Retain the dependent owner's attributable requirement decision, exact condition/scope and relevant source/version references. Required expressions and evidence remain referenced material, not prose payloads in successor canonical records.
+
+Adopting B's requirement does not adopt A's entire history, impose a new commitment on A, acquire ownership or disclosure rights, or grant permission to send invitations. Producer completion does not replace any separately required recipient acceptance. Missing or undisclosed grounds mean satisfaction is not established, not that the condition passed.
+
+A relevant correction or source revision requires affected future admission to be reassessed under the adopted condition and supported coverage/freshness rules. It does not erase historical decisions, automatically undo downstream work, or establish a global notification or monitoring service. An unrelated source update need not invalidate independently supported grounds.
+
+The [dependency graph](change-ledger-structure.md#dependency-graph-as-a-view) and readiness displays derive from these retained decisions, references and eligible evidence. They are not a second writable requirement store. Exact dependency encoding, including how a pending requirement identifies a result that does not yet exist, remains successor-contract work; no future fact identity is fabricated and no new primitive or evaluator runtime is selected.
+
 ## Common assessment requirements
 
 Applicable requirements come from the actual subject and governing policies, not a producer's label. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.

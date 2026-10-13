@@ -7,7 +7,7 @@ source-id: cw:design:change-ledger-structure
 
 ## Status and design basis
 
-**Reduced structural proposal after an author/manager paper review, not an adopted schema or implemented capability.** The [defining properties](../../product/change-ledger-properties.md), [semantic closure including adopted Decisions A and B](../../product/change-ledger-semantic-closure.md), [lifecycle-wide Check requirements](checks.md#user-defined-requirements-across-the-lifecycle) and [format requirements](change-format.md) supply the requirements. Approval of A and B does not adopt the organization proposed here. The four further innovation directions remain under consideration.
+**Reduced structural proposal after an author/manager paper review, not an adopted schema or implemented capability.** The [defining properties](../../product/change-ledger-properties.md), [semantic closure including adopted Decisions A and B](../../product/change-ledger-semantic-closure.md), [lifecycle-wide Check requirements](checks.md#user-defined-requirements-across-the-lifecycle) and [format requirements](change-format.md) supply the requirements. Approval of A and B does not adopt the organization proposed here. The four further innovation directions remain under consideration. The cross-Change requirement and derived-graph distinction below is a user-adopted clarification; it does not adopt this page's overall organization or wire schema.
 
 The question is what must survive so that an authorized fresh consumer can understand the user's decided intent and its accountable evolution without the originating session. Start with necessary distinctions, not a delivery pipeline. The reduction rules and paper cases below tighten the first draft's ambiguities; this is not an independent review, executed consumer test or proof of globally minimal encoding.
 
@@ -26,6 +26,14 @@ The draft concerns logical structure and operation responsibilities. JSONL remai
 | Views | Derive bounded current intent, applicability, relationships, readiness, priority displays, progress and explanations for agents or direct UI consumption. | New authority, replacement decision evidence or the only surviving copy of required material. |
 
 One fact has one authoritative identity and interpretation under its supported contract, not necessarily one physical copy. Related histories reference that fact; qualified retained copies may be necessary for continuity or disclosure. Copies preserve origin, version, provenance and coverage without becoming independently writable histories or granting continuation. This does not prescribe a file per category or a cross-history transaction. Native State remains native. Non-rebuildable acceptance, custody and recovery controls remain required under their supported contracts; removing duplicate lifecycle facts does not remove those controls.
+
+### Dependency graph as a View
+
+**User-adopted clarification:** the dependency graph is a View over information retained by Changes, not a separately writable authority. Nodes identify Changes; edges express their actual adopted dependencies with exact source references. The [requirement contract](checks.md#requirements-grounded-in-other-changes) distinguishes requiring an accepted decision, commitment, result or condition. Readiness and blockers derive from applicable requirements and available eligible evidence, not node labels alone.
+
+Retain each requirement or relationship decision once under its governing authority. Derive reverse links and graph layout rather than keeping a second authoritative edge list synchronized. Cached graphs may be rebuilt; changing a dependency through a UI must invoke the supported authorized decision operation rather than make the graph authoritative.
+
+Views disclose only authorized information and expose their coverage limits without leaking hidden nodes or relations. An absent edge does not prove no dependency exists. Agent-suggested links remain visibly distinct from adopted dependencies. Reading the graph neither adopts suggestions, launches Work, runs missing Checks nor supplies a scheduler or cross-Change transaction.
 
 ### Conditional bindings, not a mandatory universal envelope
 
