@@ -69,7 +69,7 @@ The engine owns the invariants that make an accepted transition meaningful. It d
 | User's selected Kernel | Goal-specific admission, planning rigor, success criteria, approval requirements and optional quality assessments within native/resource constraints. |
 | Adopted domain Pack | Reusable evaluators and defaults for a domain, not permission to override the other owners. |
 
-The earlier release-wide checklist of comparative justification, feasibility and justification coherence is no longer mandatory engine policy. Such questions can be useful defaults in a selected Kernel or domain Pack. Intent preservation, no self-authorizing policy changes and honest evidence remain core requirements. A resource owner can require domain assurance; selecting a different personal Kernel cannot waive it.
+The earlier release-wide checklist of comparative justification, feasibility and justification coherence is no longer mandatory engine policy. Such questions can be useful defaults in a selected Kernel or domain Pack. The [approved grounded-admission direction](ledger-governance-and-admission.md#decision-and-execution-boundaries) requires a justified basis for the next bounded action and proportionate challenge of consequential assumptions before substantial commitment, not a universal questionnaire or mandatory model call. Decision and execution policy can impose different requirements; authorized investigation can address unresolved broader feasibility within its own limits. Intent preservation, no self-authorizing policy changes and honest evidence remain core requirements. A resource owner can require domain assurance; selecting a different personal Kernel or Ledger View cannot waive it.
 
 ## User-defined requirements across the lifecycle
 
@@ -128,6 +128,12 @@ Applicable requirements come from the actual subject and governing policies, not
 A Change promising a reviewed artifact can finish before a separately authorized deployment; one promising deployed behavior cannot. Intent and acceptance conditions determine which observation is needed. The engine preserves that contract rather than judging which goals should prevail.
 
 Exact computation, current native validation and eligible retained results can satisfy suitable requirements. No inference, interview or human prompt is mandatory at every boundary. The first core profile uses trusted deterministic checks and one fixed versioned policy.
+
+## System One semantic feedback direction
+
+**User-approved direction, not evaluator qualification:** investigate System One/Jev for focused semantic assessments with predefined feedback at the separate decision and execution boundaries. The [semantic-feedback contract direction](ledger-governance-and-admission.md#system-one-judgments-and-predefined-feedback) combines exact deterministic/native checks with bounded judgments over authorized inputs. A qualified evaluator may supply an adopted Check, but a typed answer or concentrated probability distribution does not establish truth, complete policy coverage, consent or native permission.
+
+Feedback distinguishes actual assessments from missing inputs, uncertainty, stale grounds, unsupported evaluation and service failure. Required unavailable evaluation blocks dependent admission, not ordinary authorized navigation. Concrete question/model/settings bindings, outcome interpretation, thresholds, disclosure, failure handling and measured end-to-end cost/latency require separately authorized selection and qualification. No live provider call, fixed feedback enum or required model hop is adopted here.
 
 ## Internal intake feedback and classification
 
