@@ -116,6 +116,8 @@ These remain under consideration, not silently adopted by this closure pass. The
 
 The five reconciled topics need no newly invented product rule. Decisions A and B require explicit user adoption or correction before their defaults are treated as settled. This page does not itself supply that adoption, an independent review verdict or a runtime guarantee.
 
+The subsequently adopted [user-defined lifecycle Check requirements](../system/components/checks.md#user-defined-requirements-across-the-lifecycle) let users express additional requirements at these boundaries, including transfer. That capability does not adopt Decisions A or B or allow a Check result to stand in for an actual party decision, release or custody transition. Requirements may assess the relevant retained grounds; their authorship, adoption and evaluation remain distinct.
+
 After those decisions, the first structural draft can map each accepted use case to the indispensable fact/reference, its owning primitive, required reads/writes and derived Views. A field must identify the accountable distinction lost if removed. Reference grammar, operation envelopes, exact multi-party protocols, storage layout, indexes, caching, numeric bounds and View presentation remain design work; their deferral permits a draft, not a claim of supported execution. Ownership transfer and live handoff also retain their separately unresolved contracts rather than inheriting an answer from this pass.
 
 No implementation, experiment, migration, qualification, activation or controller handoff is authorized here. The mutable source checkout does not govern itself.

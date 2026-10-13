@@ -71,6 +71,39 @@ The engine owns the invariants that make an accepted transition meaningful. It d
 
 The earlier release-wide checklist of comparative justification, feasibility and justification coherence is no longer mandatory engine policy. Such questions can be useful defaults in a selected Kernel or domain Pack. Intent preservation, no self-authorizing policy changes and honest evidence remain core requirements. A resource owner can require domain assurance; selecting a different personal Kernel cannot waive it.
 
+## User-defined requirements across the lifecycle
+
+**User-adopted successor product intent, not implemented capability:** authorized users can create Checks and adopt them as requirements at meaningful Change boundaries, including transfer. They can add, revise or retire those requirements as the pursuit evolves, subject to current authority and governing obligations. Applicability binds to exact subjects, scope and operations/transitions, not merely a stage label. A workflow or UI may group the requirements by lifecycle stage without introducing a mandatory Stage primitive or fixed pipeline.
+
+Keep four acts distinct; these are semantic responsibilities, not selected public operation names:
+
+1. **Define:** identify the versioned question, passing condition, input contract and supported evaluator contract. Definition and settings payloads remain referenced material.
+2. **Adopt:** establish who makes that exact Check/settings a requirement, where it applies and under which authority. An optional assessment or suggested requirement is not automatically a mandatory condition.
+3. **Run:** request an assessment of the exact applicable subject and inputs through supported execution. Eligible retained results may be reused under the existing coverage, version and freshness rules.
+4. **Record:** preserve attributable assessment facts and outcome distinctions, with detailed feedback and evidence referenced. A passing assessment does not itself adopt intent or perform the dependent transition.
+
+The following are illustrative places to attach a user requirement, not mandatory questions for every Change:
+
+| Boundary | Example of an adopted requirement |
+| --- | --- |
+| Intent adoption | The identified scope and completion-condition inputs satisfy the chosen completeness question. |
+| Revision | The required impact assessment covers the specifically named affected commitments. |
+| Before execution | Retained test evidence supports the exact candidate under the chosen question. Work obtains test evidence; the Check assesses authorized inputs. |
+| Handoff or ownership transfer | Required continuation references are resolvable by the designated recipient under the supported access/evidence contract. |
+| Conclusion | Evidence supports the applicable completion conditions of the exact intent revision. |
+
+Adding, changing or removing a requirement is an attributable decision under the currently governing rules. It is not a mutable checklist edit that erases earlier decisions or lets a candidate select its own exemption. A new definition/settings version does not reinterpret historical results. Re-establish affected future admission and handle affected in-flight Work explicitly; neither automatic reevaluation on every read nor blind reuse of an earlier pass is appropriate.
+
+Users may select an existing supported definition with settings or propose a new definition. Authoring or adopting a requirement does not make its evaluator available, qualify custom code or authorize provider calls. Missing required inputs or unsupported required evaluation remain explicit and block the dependent transition; they do not automatically block ordinary authorized navigation or unrelated work. A display of “pending” or “unavailable” must not be interpreted as a pass or silently make the requirement optional.
+
+Disclosure, continuation handoff and ownership transfer remain different operations. Source and recipient can have different applicable requirements within their respective authority. A Check can assess evidence required for a transfer, but cannot supply another party's consent, grant native rights, prove exclusive custody from a Boolean or replace the supported interruption/recovery protocol. Invariants and mandatory resource obligations are not optional user Checks. A user-added requirement can supplement them, not waive them.
+
+Apply the [minimal lossless core](../../product/change-ledger-properties.md#minimal-lossless-core-derived-views): retain only necessary definition/subject/input references, attributable requirement decisions, assessment identity/outcome facts and required uncertainty. Check definitions, prose feedback and evidence payloads remain outside successor canonical records. Computed applicability, pending/failed/satisfied lists, stage groupings and readiness explanations are derived Views with exact grounds and coverage, not independently writable authority; the adopted applicability scope itself remains a retained decision.
+
+**Hypothetical witness:** an owner adopts a requirement that the designated recipient can resolve the required continuation material before handoff. An unavailable reference leaves that requirement unready, not passed. Supported evidence for the exact material and recipient may later satisfy it, while recipient adoption and native custody guards remain separate. A pass for a different recipient or earlier material does not silently satisfy the new handoff. No Check or transfer was executed for this witness.
+
+The initial closed deterministic profiles remain unchanged. Exact authoring/adoption operations, applicability encoding, evaluator support and transfer protocols require separately selected successor contracts and qualification; this use case creates no generic workflow designer, evaluator registry or arbitrary-code runtime.
+
 ## Common assessment requirements
 
 Applicable requirements come from the actual subject and governing policies, not a producer's label. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.
