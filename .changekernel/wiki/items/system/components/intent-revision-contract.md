@@ -13,6 +13,29 @@ The user value is simple: change a plan without losing what was decided before, 
 
 Existing profiles, including exact UTF-8 What and nullable Why, remain unchanged. This page selects no migration, physical inventory or new native operation version. Candidate names below describe logical contracts, not published wire tags or callable tools.
 
+## Approved first prototype scope
+
+The user approved one person, one Ledger and one Change under a fixed authoritative revision policy, with direct approval of the exact intent revision through a thin Pi/host/Rust boundary. The prototype must support fresh-reader inspection without the originating conversation and recovery of an original result without overwriting newer intent: after Friday becomes Saturday and later Sunday, recovery of Saturday returns that original result while current intent remains Sunday. Referenced source and decision grounds remain resolvable; operation inspection does not mutate history.
+
+Organization execution, semantic models and external effects are deferred. This scope does not approve unseen authentication facilities, material encodings, storage protocols, bridge signatures or numeric bounds. The concrete contract still needs three consumed bindings: authentic exact approval and authoritative policy coverage; durable referenced material joined to revision acceptance; and genuinely read-only operation inspection with honest error/recovery semantics. Existing resumable mutation cannot simply be renamed inspection, and denial or unavailability of a reply does not prove non-acceptance. Independent review and adoption of the resulting concrete contract remain required before implementation authorization.
+
+## Approved diagnostic benchmark plan
+
+Benchmark the same prototype to surface early efficiency issues; do not expand its feature scope or create a separate benchmarking project. The user approved the following measurement plan, not benchmark execution before authorized implementation/testing.
+
+| Dimension | Approved measurement intent |
+| --- | --- |
+| Paths | Open/reopen, accept a new revision, read/resolve history, and recover an original result. |
+| Scale | Short, medium and near-limit histories/material sizes within the selected profile; distinguish cold and warm runs. Exact sizes and cold/warm setup remain to be specified. |
+| Latency | End-to-end p50/p95 latency, with native cost distinguished from Pi/host overhead. |
+| Resource use | CPU, peak memory, bytes read/written/returned, and bridge-call count. |
+| Operation semantics | Measure new acceptance separately from retrieval of an already accepted result; do not mistake a cheaper retry path for revision performance. |
+| Correctness | Validate the expected outcome for every run. Fast refusal, incomplete retrieval or weakened guarantees are not performance wins. |
+| Inputs and timing | Deterministic inputs, no model calls. Exclude human approval waiting but include approval validation. |
+| Interpretation | Diagnostic baseline, not initial performance pass/fail thresholds. Investigate expensive round trips, repeated scans, excessive copying and growth costs; select budgets after observing the baseline rather than inventing targets. |
+
+A later bounded executable assignment must name the exact subject, environment, measurement boundaries, sample counts and repeatable setup so the numbers are interpretable. Retain results and limitations under the [advancement rule](../../product/plan.md#advancement-rule); measured efficiency is not release qualification. No benchmark result or performance achievement is claimed by this plan.
+
 ## Approved walkthrough
 
 The hypothetical current intent is “Organize dinner Friday”; the owner's instruction is “Move dinner to Saturday”. The exact replacement proposal can be “Organize dinner Saturday”. The original instruction and replacement have distinct roles and remain preserved; the replacement becomes accepted only when the decision grounds establish its authorization. These sentences illustrate referenced material, not inline successor-record payloads.
