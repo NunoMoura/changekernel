@@ -4,6 +4,12 @@ ChangeKernel is a [State-and-Change engine](.changekernel/wiki/items/product/cha
 
 Use your session's assigned role; ask if unclear. The user owns product intent.
 
+## Design review and documentation
+
+Present proposed design choices and their key points in the TUI for user approval before recording them as adopted in the Wiki and plan. Distinguish approval of a direction from adoption of a concrete contract or permission to implement, experiment, qualify or deploy. Unapproved alternatives remain explicitly labeled proposals.
+
+The TUI approval format does not constrain documentation structure. Use the most efficient, lossless organization for the Wiki and plan, including tables where useful; these are working documents for preserving intent and guiding development, not transcripts of the TUI summary. Until ChangeKernel can govern this work, keep durable design in the Wiki, dependencies and sequencing in its plan, and current unfinished execution state in the temporary status note. Do not create a competing roadmap or governed state in this checkout.
+
 ## Canonical checkout and branches
 
 The primary `changekernel/` checkout on `main` is the accepted development baseline. Read its Wiki for current adopted design and its source/tests for the integrated implementation; neither implies release qualification. Keep this checkout current when accepted work is integrated.
