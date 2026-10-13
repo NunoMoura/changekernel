@@ -138,6 +138,8 @@ An unsupported pursuit may produce an explicitly shared capability request linke
 
 Agents should navigate current intent and applicable plans, compare revisions, expand claims into exact records/evidence, follow dependencies and contributions, find unresolved outcomes and propose the next supported operation. They should not reconstruct authority from prose scattered across a transcript.
 
+Ledger queries must also support deliberation about whether a proposed new Change or a revision makes sense against existing applicable intent, before adoption. The [product direction and fine-tuning questions](../../product/change-ledger-properties.md#ledger-supported-deliberation--direction-to-fine-tune) distinguish this user need from the still-proposed assessment dimensions. Expose exact grounds and coverage without treating a recommendation as adoption, a read as a write, or favorability as execution permission. No matching algorithm, mandatory whole-Ledger scan, query signature or automatic decision policy is selected.
+
 Use exact logical identities and references rather than local paths or conversation names as the sole identity. Retain origin, accepted tip and historical cursor as distinct concepts under the [read contract](state.md#structured-history-access-and-context-projections). Navigation is authorized and bounded, exposes coverage and unavailable grounds, and neither moves the accepted tip nor grants future execution permission. Live pagination is not an atomic snapshot.
 
 Telegraph-style, high-signal messages are derived Views with expandable references and explicit qualifications. Preserve full captured intent, exact inputs and consequential evidence underneath. Human, deterministic and agent readers consume the same semantics; no model or private conversation is required to explain a retained Change.
@@ -171,6 +173,7 @@ Use these agent questions as design witnesses, not a guessed public API catalogu
 4. Which Work is pending, blocked or potentially eligible, and what exact grounds or additional admission does the next action require?
 5. Who owns this pursuit, who may act or continue, and what would change under an authorized share, handoff, transfer or fork?
 6. Which evidence supports this claim, what can the reader disclose, and what is absent, stale or outside coverage?
+7. What existing intent and consequences are relevant when considering this new Change or exact proposed revision, and which parts of that assessment are retained facts versus interpretation or recommendation?
 
 Code-use access needs structured bounded results, stable logical references and explicit domain failures. Support selective fields/expansion and bounded paging or incremental access where the consuming contract establishes them. Local script filtering can reduce model context, but cannot silently omit mandatory blockers or label partial results complete. Queries must expose the selected version and coverage; live pages are not an atomic snapshot, and an old eligible-action View is not effect admission.
 

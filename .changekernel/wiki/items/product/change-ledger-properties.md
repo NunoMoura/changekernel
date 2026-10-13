@@ -62,6 +62,40 @@ The user accepted these six refinements as product intent: independent pursuits 
 
 The adopted combination is partial convergence with independently accepted contributions, supported by negotiated commitments, selective disclosure, dependency-impact visibility and graceful separation. A shared contribution need not consolidate its recipients' whole pursuits. The hypothetical witness is not empirical validation or a claim of novel invention.
 
+## Further innovation directions under consideration
+
+The user asked that the following four proposals be considered before distilling the properties. This is not their adoption as requirements. They may sharpen existing properties rather than become four additional ones; retain only distinctions that add user value or preserve accountability. The examples are hypothetical, not implemented or empirically validated.
+
+| Direction under consideration | User possibility | Example | Distinctions to preserve |
+| --- | --- | --- | --- |
+| Complementary intent discovery | Find cooperation between different wants, not only similar objectives. | A café wants afternoon customers while a teacher needs an affordable classroom; an arrangement might help both. | Inferred opportunity, proposed arrangement and independently adopted commitments; similarity is not the only relationship, and discovery is not consent. |
+| Conditional, reason-aware commitments | Cooperate on explicit conditions and reconsider commitments when their applicable grounds change. | An owner offers €100 if four others join before Friday, or accepts a venue only while its access conditions hold. | Explanation versus binding condition, conditional commitment versus active obligation, and satisfied condition versus permission to execute; no implied atomic group transaction or erased consequences. |
+| Whole-Ledger coherence | Expose how individually useful pursuits support or undermine the owner's broader intent. | Two €600 trips each meet an individual limit but exceed an adopted €1,000 combined budget. | Local success, cross-pursuit compatibility, preferences, adopted constraints and limited visibility; no universal priority score or new scheduler. |
+| Fulfillment without executing the plan | Recognize when further work is unnecessary without inventing causal credit or settlement. | An upstream release fixes a defect while an agent is still preparing a patch; applicability must be checked. | Desired condition holds, our Work caused it, the owner no longer wants it, and remaining obligations are settled are different facts. |
+
+## Ledger-supported deliberation — direction to fine-tune
+
+**User-expressed product direction:** an agent must be able to query the Ledger to understand whether a proposed new Change or a revision makes sense in the context of existing Changes' intent. This extends the Ledger's value before adoption, rather than treating it only as a record of work already chosen. It does not adopt all four proposals above or select a query schema, inference mechanism or autonomous decision policy.
+
+The questions below are a proposed way to fine-tune that direction, not a frozen result taxonomy or operation catalogue:
+
+| Deliberation question | Useful distinction |
+| --- | --- |
+| What would this advance? | Contribution to applicable intent versus superficial topic similarity. |
+| Does something already cover the need? | A genuinely new pursuit versus extending an existing one, reusing a contribution or recognizing an already satisfied condition. |
+| What new cooperation could it enable? | Complementary opportunities versus relationships and commitments already adopted. |
+| What would it compete or conflict with? | Preferences and tradeoffs versus adopted constraints, including combined commitments where relevant grounds are available. |
+| What does this revision change for others? | The candidate delta against an exact existing version, affected reliance and responsibilities that survive the revision. |
+| What cannot yet be established? | Missing, stale, undisclosed or unexamined grounds versus actual evidence of compatibility. |
+
+A useful design witness would compare a draft new pursuit or a proposed revision with a bounded, authorized view of current applicable intent. Revision assessment should compare the current and proposed meanings, not treat the revised text as unrelated new work. Relevant earlier consequences can remain applicable even when the intent that led to them has changed.
+
+Keep retrieved accepted facts separate from inferred relationships, evaluative judgments and recommendations. A fresh reader should be able to inspect why a finding is relevant through exact source versions and evidence, without treating a model's interpretation as an accepted relationship. Discovery and relevance selection may be incomplete; a bounded result is not proof that no other conflicts exist. Querying need not create a Change, adopt the candidate, reserve resources or start Work. The decision context is a derived View, not another writable authority or canonical Goal store.
+
+The useful result may support a new Change, a revision, a contribution, a deliberate alternative, a request for more context or no further work. These are possibilities to explain, not preselected public operations or automatic dispositions. A conflict does not give every old preference a permanent veto; changing an adopted constraint still needs the appropriate decision. Favorability is not authorization, and any later consequential transition must establish its then-applicable grounds under the supported contract.
+
+Before choosing representation, fine-tune what constitutes sufficient context, which candidate alternatives are worth comparing, how to expose partial coverage and changed grounds, and how to distinguish an owner decision from an authorized delegated one. No whole-Ledger scan, global optimization, automatic approval or matching algorithm is selected here.
+
 ## Brainstorming method: value before representation
 
 For each property, work through:
