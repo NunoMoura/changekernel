@@ -193,6 +193,8 @@ Optimize total cost: custody/authorization validation, reference-resolution fan-
 
 The [format-first plan](../../product/plan.md#format-first-design-and-pi-first-delivery) uses the [worked Change streams](change-streams.md) as hypothetical design witnesses: a trivial Change completed in one interaction and an extended family of Changes covering parallel Work, plan revision, failure, uncertain outcome, reprioritization, handoff, fork and consolidation. Each step distinguishes retained facts, evidence, Views, unchanged grounds, reader knowledge and unknowns. The stated capability premises remain conditional; these examples select no real connector and are neither executed prototypes nor native qualification.
 
+The [semantic closure pass](../../product/change-ledger-semantic-closure.md) reconciles existing product rules and separates two proposed defaults requiring user adoption from representation/protocol details. It supplies design witnesses, not a new accepted contract; the pending proposals do not amend the rules above.
+
 The successor specification must settle:
 
 1. Record grammar, envelope, reference encoding, operation identity and acceptance boundaries.
