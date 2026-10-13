@@ -89,15 +89,15 @@ A transport failure is not itself a native disposition. Definitive non-acceptanc
 
 ## Lost-reply and fresh-reader requirements
 
-- Preserve the original request identity and exact inputs through the supported recovery boundary. A temporary script variable, `Codemode.store()` or disposable originating transcript cannot be their only required copy.
+- The harness or consuming application preserves outgoing request identity and exact inputs if the integration claims recovery across sender failure. A temporary script variable, `Codemode.store()` or disposable originating transcript is insufficient for that claim. ChangeKernel preserves its own request/result associations at the supported native acceptance boundary; it does not own the sender's pending delivery.
 - Reuse of an established request identity with different inputs is a conflict, not a new operation. Exact request matching must not normalize away meaningful differences.
 - If the request was accepted, recovery returns the original result rather than performing a new revision. Historical result access needs current disclosure permission, not a new grant to mutate intent.
 - If acceptance is unresolved, neither a new key nor a plausible history tail makes repetition safe. Reconcile through the supported controls; missing controls block the recovery claim.
 - A fresh authorized reader must recover the accepted revision, previous intent, exact replacement, attribution/decision grounds, applicable admission evidence and remaining coverage gaps without originating-session replay.
 
-**Unresolved boundary exposed by this walkthrough:** retaining a proposal alone does not durably bind a future dispatch to its request identity. The contract still needs an explicit custody/lifetime rule for that association, including interruption before the backend receives the request. It must also define in-flight serialization, retention/expiry of retry associations and treatment of definitive refusals. No automatic resend or blanket exactly-once guarantee is selected here.
+**Responsibility correction:** retaining a proposal alone does not durably bind a later dispatch to its request identity, but pre-dispatch persistence is a harness/application concern, not a missing ChangeKernel subsystem. Follow the [harness responsibility boundary](sdk.md#harness-responsibility-boundary). The integration must identify the sender's actual capability or limit its recovery claim; do not add a kernel-owned outgoing queue, session checkpoint manager or retry scheduler to fill that gap.
 
-These are necessary recovery controls, not a second business history or an inbox whose replay executes commands. The minimal acceptance unit can avoid redundant lifecycle envelopes only after those controls and uncertain boundaries are specified.
+The kernel contract still needs its own acceptance point, request matching, native in-flight serialization, retention/expiry of request/result associations and treatment of definitive refusals. Required accepted facts, material custody and original-result recovery remain kernel/native contract obligations; moving delivery outside the kernel does not weaken them. These controls are not a second business history or an inbox whose replay executes commands. No automatic resend or blanket exactly-once guarantee is selected here.
 
 ## Proposed Pi-facing responsibilities
 
@@ -139,7 +139,7 @@ The candidate is ready to discuss, not ready to implement. Independent review mu
 - The reference/material interpretation and full intent shape, exact selector encoding, provenance and retention contract.
 - Which accepted context supplies every omitted binding, including authority and applicable assessment grounds.
 - The complete relevant-dependency basis and native compare/validate/accept boundary.
-- Durable pre-dispatch correlation, retry identity scope, exact input equality, refusal/in-flight handling, retention and recovery access.
+- Kernel-side request identity scope, exact input equality, acceptance point, refusal/in-flight handling, retention and recovery access; separately, the integration's supported sender-side correlation and delivery guarantees.
 - Structured result/error and coverage contracts that preserve uncertainty without leaking unauthorized information.
 
 New choices must return to the TUI before adoption. Independent review is still pending; current authorization and dispatch state belong in the [temporary status note](../../../../../CHANGEKERNEL_STATUS.md), not this desired-state page. No implementation, worker launch, native test/build, experiment, migration, qualification or controller handoff follows from this draft.

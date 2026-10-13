@@ -89,6 +89,21 @@ Results must remain programmatically usable without parsing explanatory prose. P
 
 Candidate model-free compositions include bounded authorized listing and exact history/context inspection, or creation, intent revision, a supported deterministic Check and original-result recovery after a lost reply across a supported close/reopen. Select the actual consumer after the format work and native profile decision. These examples are not new compound operations, a mandatory navigator-first delivery sequence or claims that every profile supports the full path.
 
+## Harness responsibility boundary
+
+ChangeKernel must not implement the harness's or agent runtime's responsibilities. The shared contract separates domain acceptance and recovery semantics from execution and delivery mechanics; it is not a reason to build another runtime inside the engine or disguise one as an adapter.
+
+| Owner | Responsibility |
+| --- | --- |
+| Harness or consuming application | Agent/model loops, sessions, scheduling, execution checkpoints, outgoing delivery, retry timing and cancellation signaling. If an integration promises recovery across sender failure, the sender's supported facilities must preserve the outgoing request identity and exact inputs. |
+| Thin adapter | Map supported calls, structured values and errors; carry established host context and original request identity without inventing authority or silently generating a replacement request. Reuse the host's delivery/lifetime facilities rather than duplicate a session manager, outbox or retry scheduler. |
+| ChangeKernel and its supported native host/bindings | Validate requests and governing authority/Checks, enforce accepted-history and native ownership rules, establish exact request/result associations at the contract's acceptance boundary, and expose authorized established outcomes or uncertainty. Native in-flight safety, custody and cleanup duties remain governed by their supported contracts. |
+| Integration profile | Declare the boundary, required host capabilities and actual end-to-end recovery limits; qualify the combined path before claiming it works across failures. Missing harness facilities limit the claim rather than create a kernel-owned runtime requirement. |
+
+Before ChangeKernel receives a request, preserving its pending delivery is a sender responsibility. Receipt alone is not durable acceptance; the native contract must still specify when request bindings and outcomes become recoverable. Kernel-side request matching and original-result recovery are not a harness retry loop. A missing result does not prove that a delayed request cannot arrive or that no earlier call was accepted.
+
+Harness cancellation is a signal, not an accepted stop decision, confirmed native cessation or rollback. Conversely, this boundary does not delegate authoritative history or required adoption evidence to disposable session state: exact consequential material must still meet its declared retention/resolution contract. ChangeKernel needs the relevant grounds, not a copy of the harness's entire conversation, checkpoint system or work queue.
+
 ## Authorization and disclosure boundary
 
 The trusted backend establishes the authenticated caller, current delegation, governing authorization, applicable native rights, exact subjects/versions, required Checks and retry/outcome identity. Caller-supplied actor, approval or pass fields cannot manufacture authority. Bypassing a client helper must not bypass validation, and a code-use client must not append authoritative records or edit Views as an alternative write path. Bounded delegation need not require a new human prompt for every call.
