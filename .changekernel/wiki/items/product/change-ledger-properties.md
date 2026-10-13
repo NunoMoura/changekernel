@@ -25,6 +25,16 @@ Complete pursuit context means the accepted structure **plus its resolvable requ
 
 High signal and low noise are design requirements, and improved efficiency over session-based reconstruction is the target, not an already measured result. Bounded selection, exact expansion, revision comparison and incremental access must consider reference-resolution and payload costs as well as model context. The [format boundary](../system/components/change-format.md#canonical-records-evidence-and-views) owns these distinctions; exact schemas, resolvers, storage and performance bounds remain unselected. This direction does not rewrite existing accepted profiles or adopt the four innovation proposals below.
 
+### Minimal lossless core; derived Views
+
+**User-directed minimality criterion:** retain only the essentials for lossless preservation of intent and the evolution of its pursuit. Everything that can be reconstructed from those retained grounds belongs in a derived View, consumed by any supported agent or directly by a UI. This is a minimal authoritative core, not a compressed conversation or a lossy summary of the user's decisions.
+
+For each proposed canonical fact or reference, identify the required distinction a supported use case would lose if it were removed. If nothing necessary is lost, omit it; if the same fact can be reconstructed exactly from retained authoritative grounds under the declared interpretation, derive it instead. Reconstruction must not depend on guessing consent, rerunning a model judgment, replaying a private session or assuming today's native reality is the historical one. Attribution, decision/version bindings, consequential history and required uncertainty are signal when their omission would change the account.
+
+Current-intent selections, status/progress presentations, timelines, dependency navigation, summaries and purpose-specific context are Views, not separately writable truths. An adopted priority change or decision to stop remains a consequential fact; its displayed ordering or stopped label is a projection. A View may be cached or tailored to an agent or UI without becoming authority or the only surviving copy of required grounds. Direct UI consumption of structured facts requires no model intermediary. Referenced source content and necessary acceptance/recovery controls are not disposable Views merely because they sit outside the compact records.
+
+This criterion guides the forthcoming use-case-to-structure distillation. It does not establish globally optimal encoding, eliminate reference-resolution cost or authorize deleting existing history. Exact structures and operations still require design and review.
+
 ## Defining properties and value
 
 These properties apply at the product-design level. Not every first supported profile needs to implement all of them, but its limitations must not silently redefine the long-term value.
