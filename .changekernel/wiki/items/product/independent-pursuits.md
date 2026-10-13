@@ -5,9 +5,9 @@ source-id: cw:design:independent-pursuits
 ---
 # Independent Pursuits and Cooperative Intent
 
-## Brainstorming proposal
+## Cooperation witness and proposal boundaries
 
-**Ideas for discussion, not adopted properties, selected protocols or a schema.** The question is: what becomes possible when many owner-controlled pursuits interact without surrendering their independence? This page extends the [adopted property/value map](change-ledger-properties.md), using the [initial research](../system/research/change-ledger-property-gaps.md) as bounded context rather than proof that these ideas are globally novel. No hypothetical example below has been executed.
+**The six interaction refinements are now user-adopted product intent; the earlier ten experience ideas remain proposals.** Neither adoption nor this hypothetical witness selects protocols, a schema or implementation. The question is: what becomes possible when many owner-controlled pursuits interact without surrendering their independence? This page illustrates the [adopted property/value map](change-ledger-properties.md), using the [initial research](../system/research/change-ledger-property-gaps.md) as bounded context rather than proof that these ideas are globally novel. No hypothetical example below has been executed.
 
 The central possibility is **cooperation without assimilation**. Owners can adopt a shared contribution, negotiate compatible objectives, reuse results or separate again while their original pursuits remain identifiable and accountable. A shared undertaking does not require everyone to transfer ownership, reveal a whole Ledger or accept the same definition of success.
 
@@ -30,12 +30,11 @@ The earlier ten ideas are retained here as proposals. Their names describe exper
 | Context compiler | Code-use efficiency and agent-independent understanding. | Assemble compact, purpose-specific grounded Views while preserving mandatory constraints, unknowns and coverage. |
 | Capability-independent pursuits | Capability decomposition and capability-gap feedback. | The pursuit survives an unavailable or changed application capability; its stored plan does not become current permission. |
 
-## Proposed interaction refinements
+## Adopted interaction refinements
 
-These refinements complement rather than replace the adopted properties. Each needs a concrete positive case and consequential counterexample before any representation is chosen.
+These user-adopted refinements complement rather than replace the original properties. Each still needs a concrete positive case and consequential counterexample before any representation is chosen.
 
-The candidate-property table lives in the [property map](change-ledger-properties.md#proposed-interaction-refinements--not-yet-adopted), with user value, example, necessary distinctions and open question for each refinement. It proposes owner-preserving cooperation, partial convergence, negotiable contribution commitments, dependency-impact visibility, graceful separation and selective compatibility disclosure. Their shared value is cooperation that exposes what was actually accepted without requiring complete convergence or surrender of the original pursuits.
-
+The adopted table lives in the [property map](change-ledger-properties.md#adopted-interaction-refinements), with user value, example, necessary distinctions and open question for each refinement. It establishes owner-preserving cooperation, partial convergence, negotiable contribution commitments, dependency-impact visibility, graceful separation and selective compatibility disclosure. Their shared value is cooperation that exposes what was actually accepted without requiring complete convergence or surrender of the original pursuits. The open questions remain unresolved; adoption is not implementation or acceptance of a particular answer.
 
 No refinement grants automatic native rights, enforceable legal obligations, an atomic multi-owner transaction, guaranteed outcome lookup or revocation of previously disclosed plaintext. The format can preserve the decisions and conditions; a supported host or binding must establish any corresponding enforcement claim.
 
@@ -68,6 +67,6 @@ A code-use consumer should be able to retrieve bounded selected pursuits and the
 
 ## Promising direction and remaining choices
 
-The strongest direction to discuss is **partial convergence with independently accepted contributions**. It combines owner control, practical cooperation and contribution reuse without requiring universal agreement or another top-level primitive. Negotiated commitments and impact visibility make that cooperation understandable; selective disclosure and graceful separation preserve independence.
+The adopted direction is **partial convergence with independently accepted contributions**. It combines owner control, practical cooperation and contribution reuse without requiring universal agreement or another top-level primitive. Negotiated commitments and impact visibility make that cooperation understandable; selective disclosure and graceful separation preserve independence.
 
-Next decide which proposed refinements deserve adoption, simplify redundant ones, and challenge this witness with incompatible scope, missing evidence, delayed results and unknown effects. Only then compare representation options. Independent design review, research expansion and any runtime hypothesis test remain separate steps; no experiment or implementation is authorized by this brainstorming page.
+Next consider whether any further innovation adds distinct user value, distill the adopted properties without losing their distinctions, and challenge this witness with incompatible scope, missing evidence, delayed results and unknown effects. New ideas remain proposals until separately adopted. Only then compare representation options. Independent design review, research expansion and any runtime hypothesis test remain separate steps; no experiment or implementation is authorized by this brainstorming page.
