@@ -15,6 +15,16 @@ Original source expressions on 9 October listed transferable, forkable, consolid
 
 The [product](changekernel.md#ownership-model-and-responsibilities) owns authority boundaries; the [format requirements](../system/components/change-format.md) own lifecycle and code-use semantics. [Research](../system/research/change-ledger-property-gaps.md) supports specific opportunity hypotheses without proving universal novelty or implementation.
 
+## Reference-based pursuit context
+
+**User-directed responsibility boundary:** different models, harnesses and applications help users in different ways. ChangeKernel tracks user-decided intent, attributable revisions and consequential operations, and exposes the context needed to continue that pursuit. It does not prescribe one assistant's reasoning, conversation style or way of helping. Recommendations and delegated decisions remain distinguishable from the user's own decisions and from each other.
+
+The successor Ledger, Changes and their operation records must be compact structured accountability data, **without embedded prose or artifact payloads**. Intent expressions, supporting acceptance passages, narrative plans or explanations, documents, code and detailed evidence are retained as exact referenced material, not copied into the canonical records. The records preserve the typed facts and relationships needed to establish what was decided, by whom, against which versions, and what happened. This is not a transcript archive or a collection of opaque links whose adoption meaning must be guessed.
+
+Complete pursuit context means the accepted structure **plus its resolvable required references**, within a declared scope. A fresh authorized agent supporting the relevant contracts should be able to retrieve the grounds needed to continue without replaying the originating session or depending on unrecorded harness-private state. It need not load every referenced byte at once. Exact source meaning must survive outside the records; excluding inline prose is not permission to discard it or replace it with lossy labels. Missing, undisclosed, stale or unsupported material remains an explicit gap, not apparently complete context or permission to proceed.
+
+High signal and low noise are design requirements, and improved efficiency over session-based reconstruction is the target, not an already measured result. Bounded selection, exact expansion, revision comparison and incremental access must consider reference-resolution and payload costs as well as model context. The [format boundary](../system/components/change-format.md#canonical-records-evidence-and-views) owns these distinctions; exact schemas, resolvers, storage and performance bounds remain unselected. This direction does not rewrite existing accepted profiles or adopt the four innovation proposals below.
+
 ## Defining properties and value
 
 These properties apply at the product-design level. Not every first supported profile needs to implement all of them, but its limitations must not silently redefine the long-term value.
@@ -75,7 +85,7 @@ The user asked that the following four proposals be considered before distilling
 
 ## Ledger-supported deliberation — direction to fine-tune
 
-**User-expressed product direction:** an agent must be able to query the Ledger to understand whether a proposed new Change or a revision makes sense in the context of existing Changes' intent. This extends the Ledger's value before adoption, rather than treating it only as a record of work already chosen. It does not adopt all four proposals above or select a query schema, inference mechanism or autonomous decision policy.
+**User-expressed product direction:** an agent must be able to query the Ledger to understand whether a proposed new Change or a revision makes sense in the context of existing Changes' intent. This extends the Ledger's value before adoption, rather than treating it only as a record of work already chosen. The Ledger supplies structured facts and retrievable grounds; different consuming agents and applications may reason about them differently. These are consumer questions, not a requirement for ChangeKernel to become a universal intent judge. This does not adopt all four proposals above or select a query schema, inference mechanism or autonomous decision policy.
 
 The questions below are a proposed way to fine-tune that direction, not a frozen result taxonomy or operation catalogue:
 
