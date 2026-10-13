@@ -16,6 +16,10 @@ This is the durable plan inside Wiki, not a standalone refactoring roadmap or an
 
 A proposition is **supported for stated conditions**, not universally proved by a passing test. Keep desired outcomes, proposed mechanisms, observed evidence and qualified capability claims distinct. User intent selects what matters; experiments cannot decide it on the user's behalf. Formal proof is claimed only when an actual proof exists.
 
+**Prototype-first iteration is user-directed.** Reach the first useful end-to-end prototype, then improve it through short evidence-driven increments. Independent review must separate concrete blockers to that prototype from safe deferrals and later qualification; it must not require the whole desired architecture to be perfected first. Each claimed blocker must identify a consequential failure in the proposed slice. Preserve essential intent, authority, exact-subject, uncertainty and recovery guarantees within its declared scope; exclude unsupported broader cases explicitly rather than pretending to support them or blocking all useful progress.
+
+The prototype must demonstrate a positive usable path, not only schemas, an unused framework or universal refusal. Prefer existing supported foundations and the fewest new contracts needed by a real consumer. Broader organization, cross-host and semantic-evaluator capabilities may follow when the slice can honestly operate without them. Prototype scope does not waive separate deployment, qualification or controller boundaries.
+
 For each small increment:
 
 1. State the user-relevant outcome and a falsifiable proposition. Name the exact subject, supported host/binding assumptions and excluded claims.
