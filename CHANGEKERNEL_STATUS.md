@@ -1,6 +1,12 @@
 # ChangeKernel temporary source status
 
-## Current handoff — disposition audits accepted; retirement boundary awaits approval
+## Current handoff — approved predecessor retirement
+
+The user approved the concrete retirement/support boundary presented after R82/R83. Durable adoption is in the [native-profile disposition](.changekernel/wiki/items/system/components/native-profiles.md#approved-executable-retirement-boundary) and [Wiki dependency sequence](.changekernel/wiki/items/product/plan.md#source-architecture-and-predecessor-retirement). Implementation, affected tests and documentation/tooling reconciliation are authorized within that boundary; no existing-custody operation, release qualification or controller handoff is authorized.
+
+Prepare independent owned slices: native helper extraction first; old TS/API retirement and current test ownership; documentation reconciliation. Native semantic retirement follows accepted helper extraction. Current `0.5.0-prototype.1` semantics and Pi 1.2 UI remain unchanged. Preserve historical contracts/checkpoints and the protected draft. Exact assignments follow below once native/session identity and external worktrees are verified.
+
+## Completed R82/R83 audits — evidence before adoption
 
 **Manager verdict: `accepted` for R82/R83 report-only audits after independent review.** Audited accepted subject: `30cb8b569e3af3cc983a9ecf8434296c55ff9401`. The user approved the investigation, not an unseen support withdrawal. No executable or Wiki change was integrated; **no deletion, move, migration or compatibility withdrawal is assigned yet**.
 
@@ -17,13 +23,13 @@
 - State attribution metadata and navigation mix predecessor structure with current design. Historical implementation labels, source-history provenance, research, archive bodies and frozen wire identifiers are evidence/contract meanings, not new governors or instructions to rebuild retired machinery. Domain State, Checks, authority, custody and recovery remain current requirements.
 - Public exports and test consumers do not prove deployed external users, nor a perpetual maintenance obligation. Explicit retained compatibility must be dispositioned, not silently withdrawn; no external-user or existing-custody census was performed.
 
-**Proposed target, not adopted:** keep the current prototype and required private supporting mechanisms as active product code; explicitly withdraw named predecessor executable APIs only after user approval, with historical source/contracts/checkpoints preserved and no old-custody migration/cleanup. Avoid a permanent legacy implementation tree or loss of useful domain requirements. R82's lowest-coupling first cut is the packet-only API, conditional on support withdrawal; the manager may sequence broader approved retirement around helper extraction rather than optimize for arbitrary file deletion. No new concrete package layout, frozen field rename or successor contract has been selected.
+**Audit proposal, subsequently approved by the user:** keep the current prototype and required private supporting mechanisms as active product code; explicitly withdraw named predecessor executable APIs, with historical source/contracts/checkpoints preserved and no old-custody migration/cleanup. Avoid a permanent legacy implementation tree or loss of useful domain requirements. R82's lowest-coupling first cut is the packet-only API, conditional on support withdrawal; the manager may sequence broader approved retirement around helper extraction rather than optimize for arbitrary file deletion. No new concrete package layout, frozen field rename or successor contract has been selected.
 
 ### Actual checks and limits
 
 Manager independently read consequential entry/host/storage/identity/candidate/continuation/TS bodies and current/compatibility documentation; cross-checked packet/candidate consumers across tracked source/tests/examples, archive Git blobs, report-only deltas, clean worker heads and protected hash. Whitespace checks passed. Only manager/worker status notes changed; source/tests/manifests/Wiki/archive bytes remain unchanged. No tests, builds, runtime/inference, installs, benchmark, release/controller or old-custody operations were run. Static inspection is not runtime conformance, external-consumer absence or qualification.
 
-External evidence/routing: `/home/canina7/.local/state/changekernel-source-review/r82-r83-disposition.y99fp25e/manager-audit-verdict.json` and the two worker routing/report channels. Preserve their exact checkpoints; do not merge worker status wholesale. Next: present concrete support/retirement choices to the user before adoption or implementation. Human TUI smoke and benchmarks remain outstanding, not supplied by this audit.
+External evidence/routing: `/home/canina7/.local/state/changekernel-source-review/r82-r83-disposition.y99fp25e/manager-audit-verdict.json` and the two worker routing/report channels. Preserve their exact checkpoints; do not merge worker status wholesale. The user subsequently approved the presented concrete boundary; the current handoff and Wiki now govern bounded implementation. Human TUI smoke and benchmarks remain outstanding, not supplied by this audit.
 
 ## R81 accepted TUI baseline
 

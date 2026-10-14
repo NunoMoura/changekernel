@@ -5,6 +5,16 @@ source-id: cw:component:native-profiles
 ---
 # Retained Native Profiles
 
+## Approved executable retirement boundary
+
+The user approved retiring predecessor executable support from future source builds: container/intake and SQLite continuation/candidate APIs, the committed Git-observer profile, Linux local-packet API, JSONL v1–v6 semantic hosts, and the Pi 0.85.1/root TypeScript API closure. Their public exports, dedicated tests and obsolete package/build surfaces retire with them. This is an explicit support disposition, not a reinterpretation of their frozen records or a statement that no external consumer exists. The exact pre-retirement source and contracts remain recoverable from accepted Git checkpoints; this page preserves historical meanings rather than requiring a permanent executable `legacy/` tree.
+
+Keep the current `0.5.0-prototype.1` referenced-intent native engine and Pi 1.2 host/TUI, together with consequential tests and the private filesystem, held-descriptor identity and accounting mechanisms they actually require. Extract and independently review those mechanisms before withdrawing predecessor semantic modules. Preserve current policy/approval identities, authority, exact subjects, original-result recovery, bounded disclosure, incident classification and custody protection. Ledger/Change, scoped native State observations and Checks remain domain requirements; this disposition retires implementations, not those responsibilities.
+
+No existing custody is deleted, migrated, reopened, repaired or cleaned by this retirement. Historical schemas, attribution, retries and raw record interpretation retain their meanings. Dedicated historical contracts and archive evidence remain labeled and navigable without presenting predecessor machinery as the current architecture. Source acceptance, actual human TUI smoke, release qualification, activation and controller handoff remain distinct. The [plan](../../product/plan.md#source-architecture-and-predecessor-retirement) owns sequencing; the temporary status note and Git own exact implementation state.
+
+## Historical compatibility reference
+
 This is a compatibility reference for bounded existing implementations and frozen, partly unintegrated contracts. It is not the desired file-first lifecycle, a migration specification or evidence that an operational host exists. Moving this documentation changes no public API, SQLite format, packet behavior, authorization assumption or known defect. The [product](../../product/changekernel.md), [State contract](state.md) and [phased plan](../../product/plan.md) describe the new path separately.
 
 Existing source/tests remain executable truth. Exact historical retries and their original attribution/access rules remain binding for these profiles; do not reuse their identifiers or receipts as implicit Workspace/Trace authority. The first trusted-host profile does not upgrade or relax these contracts. Qualification is distinct from source-test success.
