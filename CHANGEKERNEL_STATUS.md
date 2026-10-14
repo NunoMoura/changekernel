@@ -1,62 +1,45 @@
 # ChangeKernel temporary source status
 
-## Current handoff — requirements and authority alignment audit
+## Current handoff — alignment audit complete; corrections not adopted
 
-The user requested a check of documentation and code against the clarified separation: Checks express custom requirements at decision/execution boundaries; Ledger-associated AuthN/AuthZ governs identity and authority; native identity/version, concurrency, durability and retry safeguards remain internal integrity mechanics, not another user-facing policy layer. This is the audit criterion, not adoption of a replacement wire contract or permission to edit the implementation.
+**Manager verdict: `accepted` for the R78/R79 audit reports. Overall alignment is partial.** The user asked whether documentation and code follow the separation of custom decision/execution requirements (Checks), Ledger-associated AuthN/AuthZ, and internal integrity mechanics. The audits reviewed exact subject `c5083f496042c98e1c3ab3013485941b3c71c478`; this turn changes no Wiki, source, tests or manifests. Existing bounded prototype source acceptance remains unchanged, not extended to a general Check lifecycle.
 
-Two independent report-only audits use accepted subject `c5083f496042c98e1c3ab3013485941b3c71c478`:
-
-| Assignment | Branch / external worktree | Assignment checkpoint / scope |
-| --- | --- | --- |
-| R78 documentation | `work/r78-requirements-doc-audit` / `/home/canina7/Projects/changekernel-workers/r78-requirements-doc-audit` | `96185252da9dff3259cb649bfa11632b1ba091fd`; current Wiki semantics, proposals and frozen-profile distinctions |
-| R79 source/tests | `work/r79-requirements-code-audit` / `/home/canina7/Projects/changekernel-workers/r79-requirements-code-audit` | `35c30b0b57866fc1a545817d30b4d09b40754179`; actual Check/adoption/gating, authority and integrity paths |
-
-Each worker owns only its `CHANGEKERNEL_STATUS.md` report. Source, tests, Wiki and manifests are frozen. The manager separately checks the protected primary Wiki edit without altering or copying it. Findings must distinguish terminology drift, actual extra requirement semantics, missing desired capability and preserved historical/current profile contracts; names alone are not defects. Correction options remain proposals until reviewed and approved at the appropriate scope.
-
-Native/session cwd, branch/checkpoint, clean tree and working Codemode were verified before substantive dispatch. Current manager identity was reverified after detecting historical routing metadata; fresh routes and evidence are outside Git at `/home/canina7/.local/state/changekernel-source-review/r78-r79-requirements-audit.GxW6nbkp/`. The manager will inspect exact reports and consolidate findings before proposing corrections. No source acceptance, runtime experiment, schema migration or new implementation follows from dispatch. Human TUI smoke remains outstanding while this audit is addressed.
-
-## Accepted prerequisite — human TUI smoke remains open
-
-**Manager verdict: `accepted` for the bounded referenced-intent native and Pi host source.** Primary `main` contains the integrated host at `0a25702dc0ef7a50da4696b7a46b2dcb88565ef1`. This is source acceptance only: no real-human TUI smoke, release qualification, deployment or controller handoff has occurred.
-
-The frozen [referenced-intent contract](.changekernel/wiki/items/system/components/referenced-intent-prototype.md) and [plan](.changekernel/wiki/items/product/plan.md#format-first-design-and-pi-first-delivery) govern the next steps. Prepare a fresh disposable external supported instance for actual human TUI approval and Friday/Saturday/reopen/Sunday/original-Saturday retrieval/lifetime smoke. Human traversal and the separate affirmative action cannot be supplied by an automated fixture. Diagnostic measurements follow the smoke. No repeated general direction-approval gate is open; bring only genuinely new product intent or safety choices to the user.
-
-## R76 / R77 acceptance evidence
-
-| Subject | Exact evidence |
+| Report | Exact report and scope |
 | --- | --- |
-| R76 implementation | `7f2e07cd81e7985d98bb7d352280c3943327c6ff`; report `974ffe45abc3587793a859568bd4dffa3006d95d:CHANGEKERNEL_STATUS.md` |
-| Independent R77 review | `840ae296816635812622ce81955416f618c241b7:CHANGEKERNEL_STATUS.md`; recommendation accepted, no concrete supported-path blocker |
-| Integrated scope | The 19 new paths under `src/adapters/pi/referenced-intent/` and `tests/adapters/pi/referenced-intent/`, byte-identical to the reviewed subject; no Rust, existing adapter or root manifest/lockfile change |
-| Manager checks before integration | Fresh external locked native build with explicit Rust/Cargo 1.88.0, Pi 1.2 strict typecheck, 23 focused tests and retained typecheck/70 tests; all exit 0 |
-| Combined checks after integration | Fresh archive of `0a25702dc0ef7a50da4696b7a46b2dcb88565ef1`; new-closure typecheck, 23 focused tests and retained typecheck/70 tests pass, no skips/failures; all 191 tracked archive hashes unchanged |
-| Process evidence | Real disposable btrfs/native reopen and installed Pi RPC lifetime tests observe exits; manager process-group scans find no remaining check processes and no denied entries |
+| R78 documentation | `ffd3fcbb3e44b42520d706cded01aa487b527b81:CHANGEKERNEL_STATUS.md`; desired-state wording, proposals and frozen-profile distinctions |
+| R79 code/tests | `dbdf253f3ec19f44b000f4cb9f8f480482c03ba8:CHANGEKERNEL_STATUS.md`; actual assessment, authority, consent, integrity and capability boundaries |
 
-**F1 closed:** the author corrected per-call counters to shared composition budgets. R77's independently inspected actual installed Pi 1.2/builtin Codemode probe, with a deterministic provider and framed peer but no inference, verifies 64 successes, 65th refusal before dispatch, and one successful explicit continuation. The manager inspected the drivers and checked actual event parentage, 65 total native dispatches and observed exit. This is real runtime routing evidence, not human approval or real native custody in that probe; separate tests cover real native custody with simulated UI.
+### Consolidated findings
 
-**Diagnostics:** fresh strict tsc passes in the correct external Pi 1.2 closure. Active staged LSP is inconclusive for seven files, not clean; R77's probe was unavailable. The primary-path probe collected 47 auxiliary findings. Manager review dispositioned the fixed-schema RegExp audit warning and guarded boundary/style findings as non-blocking; no concrete defect was established and no suppressions/cache resets were added. No wholly-clean editor claim follows.
+- **Documentation has an extra governance layer.** `.changekernel/wiki/items/product/changekernel.md:89–97,126–136` gives a separately versioned Kernel responsibility for governance and selected Checks. `checks.md:65–72,148–152` and `README.md:5,17` retain that indirection. User-adopted Check requirements are already described at `checks.md:76–105`, so the desired-state descriptions are not consistently simplified.
+- **Some obligations need classification, not deletion.** Grounded-feasibility wording (`checks.md:72`; `ledger-governance-and-admission.md:60–62`) does not clearly distinguish an adopted substantive Check from honest-evidence mechanics or optional guidance. Native/resource obligations and release-owned evaluator “policy authority” (`checks.md:68,99,204`; `agent-execution.md:110`) must not create hidden goal-quality vetoes, but native permissions, business/data validity, consent and integrity cannot be waived or relabeled as Boolean assessment results. These pages contain earlier adopted direction; semantic correction needs explicit approval.
+- **General custom Check requirements are not implemented.** Native assessment fixes one optional notice-fit question (`src/kernel/changes/assessment.rs:3–5`; `src/adapters/jsonl/intent_trace.rs:352–395`). The inspected retained profiles have no general definition/adoption/revision/retirement/applicability or required-pass dependent-transition lifecycle. `tests/ledger_history.rs:289–327` intentionally permits revision after the optional Check reports false. This is a missing desired capability, not a demonstrated bypass of the consumed contract.
+- **Existing fixed descriptors are not a generic goal-policy engine.** `src/kernel/changes/referenced_intent.rs:14,163–176` pins the closed personal-plan scope, exact approval and absence of domain requirements/effects. Lease checks, Prepare/Confirm and storage guards separately enforce authority, consent and integrity. Removing `policy` fields would change retained contracts, not merely simplify terminology. Retained TypeScript role/stage and `policyDigest` identities also remain compatibility constraints, not the new native lifecycle.
+- **README inventory is stale.** It omits later bounded Ledger support and describes the launcher as non-operational (`README.md:9,42,48–54`), although `src/main.rs:12–17` exposes the opt-in trusted referenced-intent bridge. General Checks/effects and release qualification are still unfinished.
 
-**Provenance and gaps:** manager and reviewer artifacts were independently built with explicit Rust 1.88.0; the author's artifact used ambient 1.99.0 and retains that provenance. Retained dependencies remain Pi 0.85.1; the new host has a separate external Pi 1.2 closure, not a migration. Approval and time fixtures remain simulated; real-human TUI smoke and diagnostic benchmarks remain open. No terminal qualification, new pending-cut/larger-material crash-cut witness or unchanged-native fault campaign is claimed for this TypeScript-only slice.
+In the first two bullets, abbreviated Wiki paths are under `.changekernel/wiki/items/system/components/`. Full citations, aligned areas, coverage and limits are in the exact worker reports.
 
-Full commands, subjects, hashes, logs, diagnostic dispositions and cleanup:
-- Manager: `/home/canina7/.local/state/changekernel-source-review/r76-manager-checks.x4ICSDjG/EVIDENCE.md` (post-integration evidence under `combined/`).
-- Reviewer: `/home/canina7/.local/state/changekernel-source-review/r77-review.HXRsCfix/EVIDENCE.md`.
-- Author: `/home/canina7/.local/state/changekernel-source-review/r76-worker-checks.3qsWa6oA/EVIDENCE.md`.
-- Coordination/checkpoint evidence: `/home/canina7/.local/state/changekernel-source-review/r76-pi-host.XGkmccKy/`. Routing identities and acknowledgments remain outside Git; reverify before contact.
+### Next action and review evidence
 
-## Accepted native prerequisite and preserved boundaries
+**Proposed correction scope, not adopted or dispatched:** reconcile desired-state product/Checks/governance/plan/README wording around Checks and Ledger authority, without a separate owner of custom requirements; classify feasibility, native constraints and evaluator provenance explicitly; refresh bounded capability descriptions. If bundles/defaults remain useful, they must not gain independent authority. Preserve consent, exact evidence and all frozen profile bytes/guards. Any general Check-gated decision/execution implementation requires its own minimal consumed successor contract and assignment. No blanket rename, schema migration or guard deletion is authorized by this audit.
 
-Native integration is `47f51b5fe14fe9656bdbad00b1b5b0ca859c276b`; complete native acceptance is `f27d413404cc4a75a54b2f918bc43c04b9f41368:CHANGEKERNEL_STATUS.md`. Prior R75 fresh external checks under explicit Rust 1.88.0 passed `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings` and `cargo test --locked` (264 passes, five ignored helpers, referenced-intent 32/32). These are preserved native evidence, not newly repeated checks or human approval. Evidence remains at `/home/canina7/.local/state/changekernel-source-review/r75-native-integration.q20hq86d/`.
+The manager independently read both reports, inspected consequential document clauses and source/test bodies, and verified report-only deltas and clean worker trees. Static review only: no Cargo/npm tests, build, live inference or runtime probe was run. No supported-path authority/Check bypass was established in the inspected code; this is not an exhaustive security audit or whole-workspace diagnostic claim. Manager status Markdown active diagnostics and whitespace checks pass.
 
-Eight historical rust-analyzer E0308 array-to-slice findings in unchanged `src/adapters/jsonl/ledger/parser.rs` were dispositioned false positives against exact blob `ae3bcb7941b126158ab27a41600a8e1da7c60d74` and successful fresh pinned all-target compilation. Their analyzer/cache mechanism remains undiagnosed. Preserve evidence; do not alter valid source or reset caches to hide findings. Informational Rust2024 suggestions do not authorize migration.
+Evidence and fresh routing remain outside Git at `/home/canina7/.local/state/changekernel-source-review/r78-r79-requirements-audit.GxW6nbkp/`, including `manager-audit-verdict.json`. Historical manager routing was detected and corrected before substantive dispatch; verify current recipients before future contact. The manager separately inspected the protected primary draft: it adds no separate Kernel primitive, but its general policy wording inherits this clarification. Its publication-scope differences are outside this audit and were not adopted.
 
-Contract subject: `7b0f779f9ea16e50fcd602cd24e029b1dfef7aec`; focused review: `da01564f3cf51dec73a8ba4c44e024769fb0256f`; version `0.5.0-prototype.1`. Current source has the opt-in bridge; old CLI-stub wording describes the preimplementation state. Existing native test gaps and R69/R72 historical evidence limits remain in the accepted native handoff. Never reopen, repair, resume or clean old custody for this work.
+## Accepted source and remaining runtime gate
 
-R38 remains paused. No product-model/Jev call, dependency migration, other harness, external effect, power-loss/reboot qualification, hostile-same-account guarantee, release activation or controller transfer is authorized by this source acceptance. Candidate execution stays in disposable external projects with isolated Pi settings and explicit inspected resources. Never load this checkout as its controller or install project-local ChangeKernel resources.
+Referenced-intent native integration: `47f51b5fe14fe9656bdbad00b1b5b0ca859c276b`. Pi host integration: `0a25702dc0ef7a50da4696b7a46b2dcb88565ef1`. Full prior acceptance, exact tests/provenance/gaps and preserved native handoffs: `c5083f496042c98e1c3ab3013485941b3c71c478:CHANGEKERNEL_STATUS.md`. R77 independent source review is `840ae296816635812622ce81955416f618c241b7:CHANGEKERNEL_STATUS.md`; F1 aggregate-budget routing evidence is closed. Manager candidate/combined evidence remains at `/home/canina7/.local/state/changekernel-source-review/r76-manager-checks.x4ICSDjG/EVIDENCE.md`.
+
+Actual human TUI approval/reopen/lifetime smoke is still outstanding; component approvals and time fixtures remain simulated. Diagnostic benchmarks follow that smoke, not source acceptance alone. The frozen [referenced-intent contract](.changekernel/wiki/items/system/components/referenced-intent-prototype.md) and [plan](.changekernel/wiki/items/product/plan.md#format-first-design-and-pi-first-delivery) remain unchanged. No release qualification, deployment or controller handoff follows from either source acceptance or this audit.
+
+Historical rust-analyzer E0308 findings in unchanged `src/adapters/jsonl/ledger/parser.rs`, their pinned-compiler disposition and undiagnosed cache/analyzer mechanism remain in the prior handoff. Preserve evidence; do not change valid source or reset caches to hide findings. Prior native test gaps are not cleared by this static audit.
+
+R38 remains paused. No product-model/Jev call, dependency migration, other harness implementation, old-custody recovery/cleanup, external effect or source-controller loading is authorized. Candidate execution stays in fresh disposable external projects with isolated Pi settings and explicit resources. Do not install project-local ChangeKernel resources.
 
 ## Parked pool and protected work
 
-Seven managed workers are retained: R78 and R79 are active on the report-only audits above; these five prior workers remain parked with no new assignment. Preserve all worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Seven workers are parked; no further assignment is active. Preserve their worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
@@ -65,5 +48,7 @@ Seven managed workers are retained: R78 and R79 are active on the report-only au
 | `r75-native-comment` | `work/r75-native-comment` | `46439c3ebddecd52c063e61a5a780d2b1b622e12` |
 | `r76-referenced-intent-pi` | `work/r76-referenced-intent-pi` | `974ffe45abc3587793a859568bd4dffa3006d95d` |
 | `r77-referenced-intent-pi-review` | `work/r77-referenced-intent-pi-review` | `840ae296816635812622ce81955416f618c241b7` |
+| `r78-requirements-doc-audit` | `work/r78-requirements-doc-audit` | `ffd3fcbb3e44b42520d706cded01aa487b527b81` |
+| `r79-requirements-code-audit` | `work/r79-requirements-code-audit` | `dbdf253f3ec19f44b000f4cb9f8f480482c03ba8` |
 
-The protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
+Protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
