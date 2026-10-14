@@ -4,7 +4,17 @@
 
 The user approved the concrete retirement/support boundary presented after R82/R83. Durable adoption is in the [native-profile disposition](.changekernel/wiki/items/system/components/native-profiles.md#approved-executable-retirement-boundary) and [Wiki dependency sequence](.changekernel/wiki/items/product/plan.md#source-architecture-and-predecessor-retirement). Implementation, affected tests and documentation/tooling reconciliation are authorized within that boundary; no existing-custody operation, release qualification or controller handoff is authorized.
 
-Prepare independent owned slices: native helper extraction first; old TS/API retirement and current test ownership; documentation reconciliation. Native semantic retirement follows accepted helper extraction. Current `0.5.0-prototype.1` semantics and Pi 1.2 UI remain unchanged. Preserve historical contracts/checkpoints and the protected draft. Exact assignments follow below once native/session identity and external worktrees are verified.
+Adoption checkpoint: `738490f253cb1b9c716bfb44e075503cb28986d5`. Three independent slices use this baseline, with non-overlapping write scopes:
+
+| Slice | Branch/worktree under `/home/canina7/Projects/changekernel-workers/` | Exact assignment |
+| --- | --- | --- |
+| R84: extract current native raw I/O/held-fd identity; retain predecessors until review | `work/r84-native-helpers` / `r84-native-helpers` | `7d3c5d5186902171ec693e720c26fbd1a50ebcc6:CHANGEKERNEL_STATUS.md` |
+| R85: reconcile current docs/metadata with explicit historical support disposition | `work/r85-retirement-docs` / `r85-retirement-docs` | `fe1e5bbf8b124b24fa7bd163d9a9a65cf3d4c0ef:CHANGEKERNEL_STATUS.md` |
+| R86: retire old TS/API closure; root private npm checks target existing Pi 1.2 consumer | `work/r86-current-pi-tooling` / `r86-current-pi-tooling` | `5c72cd1a20847d3181c5dbe48703fa7628eb369c:CHANGEKERNEL_STATUS.md` |
+
+Native semantic retirement (R87) follows accepted R84 extraction; it is not dispatched yet. R84 owns extraction/native declarations and consequential helper/current regressions; R86 exclusively owns root npm manifests/lock/configs and retired TS source/tests; R85 owns current documentation/AGENTS reconciliation, excluding the protected draft, frozen prototype and immutable research/archive bodies. Shared current adapter bytes/pins remain unchanged. Docs may describe adopted intent but cannot claim pending source retirement complete. Root source npm checks target the existing current consumer closure, not a new release format/public SDK.
+
+Native workers are launched in their exact external worktrees; verify bootstrap Codemode, disk session header, native starttime/cwd and clean assigned checkpoint before dispatch. External evidence/routing: `/home/canina7/.local/state/changekernel-source-review/r84-r86-retirement.k0tpbxlw/`. Two manager bootstrap-preparation assertions were preserved and corrected before any implementation dispatch (lazy session-file persistence; substring versus exact command-ID guard); no source/runtime action followed those failed attempts. Three changed Markdown paths passed whitespace and active diagnostics (three clean, zero findings). No source acceptance yet. Current `0.5.0-prototype.1` semantics and Pi 1.2 UI remain unchanged; historical contracts/checkpoints and the protected draft remain preserved.
 
 ## Completed R82/R83 audits — evidence before adoption
 
@@ -66,7 +76,7 @@ R80 documentation integration: `153077b633d921f530ddc772692709c85b86d759`; conso
 
 ## Worker pool and protected work
 
-Ten workers are retained and parked; no audit or implementation assignment remains active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Thirteen workers are retained: R84/R85/R86 assigned for bounded retirement work, previous ten parked. Native semantic retirement is gated on accepted R84 extraction. Preserve all worktrees/checkpoints; pool remains below the fifteen-worker ceiling. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
@@ -80,5 +90,8 @@ Ten workers are retained and parked; no audit or implementation assignment remai
 | `r81-prototype-tui` | `work/r81-prototype-tui` | `2688412e504091d17912c6c5328f64842f881b29` |
 | `r82-source-disposition` | `work/r82-source-disposition` | `f54269476ab4c043a73e209b2c097676e2fc0e8a` |
 | `r83-doc-disposition` | `work/r83-doc-disposition` | `acead6fac70b9dc37162c44b08e921c07c4b43f5` |
+| `r84-native-helpers` | `work/r84-native-helpers` | assignment `7d3c5d5186902171ec693e720c26fbd1a50ebcc6` |
+| `r85-retirement-docs` | `work/r85-retirement-docs` | assignment `fe1e5bbf8b124b24fa7bd163d9a9a65cf3d4c0ef` |
+| `r86-current-pi-tooling` | `work/r86-current-pi-tooling` | assignment `5c72cd1a20847d3181c5dbe48703fa7628eb369c` |
 
 Protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
