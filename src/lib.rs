@@ -1,5 +1,13 @@
 //! Unqualified source library: native operations and trusted-fixture JSONL opening; no controller or application effects.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+#[cfg(target_os = "linux")]
+pub use adapters::jsonl::referenced_intent::{
+    ReferencedIntentIoEvent, ReferencedIntentIoFault, ReferencedIntentIoHook,
+};
+#[cfg(target_os = "linux")]
+pub use adapters::stdio::referenced_intent::run as referenced_intent_bridge;
+#[cfg(target_os = "linux")]
+pub use application::referenced_intent::ReferencedIntent;
 mod kernel {
     pub mod containers {
         pub mod intake;
@@ -14,6 +22,7 @@ mod kernel {
         #[cfg(target_os = "linux")]
         pub mod ledger_history;
         pub mod opening;
+        pub mod referenced_intent;
     }
     pub mod state {
         pub mod file_candidate;
@@ -41,6 +50,8 @@ mod application {
     pub mod ledger_history;
     #[cfg(target_os = "linux")]
     pub mod opening;
+    #[cfg(target_os = "linux")]
+    pub mod referenced_intent;
     pub mod source_observation;
 }
 mod adapters {
@@ -49,6 +60,11 @@ mod adapters {
         pub mod intent_trace;
         pub mod ledger;
         pub mod opening;
+        pub mod referenced_intent;
+    }
+    #[cfg(target_os = "linux")]
+    pub mod stdio {
+        pub mod referenced_intent;
     }
     pub mod sqlite {
         pub mod container_intake;

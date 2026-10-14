@@ -74,8 +74,8 @@ fn launcher_is_bounded_and_never_mutates_application_files() {
     let before = fixture.snapshot();
     let binary = env!("CARGO_BIN_EXE_changekernel");
     for (args, success, stdout, stderr) in [
-        (vec![], true, "Usage: changekernel [--help|--version]\nUnqualified bootstrap; no host or worker is available.\n".to_owned(), ""),
-        (vec!["--help"], true, "Usage: changekernel [--help|--version]\nUnqualified bootstrap; no host or worker is available.\n".to_owned(), ""),
+        (vec![], true, "Usage: changekernel [--help|--version|--referenced-intent-bridge]\nUnqualified source prototype; trusted host required.\n".to_owned(), ""),
+        (vec!["--help"], true, "Usage: changekernel [--help|--version|--referenced-intent-bridge]\nUnqualified source prototype; trusted host required.\n".to_owned(), ""),
         (vec!["--version"], true, format!("changekernel {}\n", changekernel::VERSION), ""),
         (vec!["start"], false, "".to_owned(), "Unsupported arguments; run changekernel --help for usage.\n"),
         (vec!["--help", "--version"], false, "".to_owned(), "Unsupported arguments; run changekernel --help for usage.\n"),
