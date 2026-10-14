@@ -7,19 +7,27 @@ source-id: cw:design:referenced-intent-prototype
 
 ## Adopted version terminology correction
 
-The user clarified: “we decided to use version for everything.” Use **ChangeKernel version** consistently. Do not introduce a separate “native profile” abstraction or the assistant-proposed split into independently versioned software and native contracts. The software, request/data interpretation and native behavior are described under the applicable ChangeKernel version. Historical accepted bytes keep their original meaning; this correction does not migrate or relabel them.
-
-The `ck-referenced-intent@1` profile designation and separate versioning explanation below are superseded proposals, not adopted machinery. The reviewed body is retained here pending a focused alignment of its identifiers/envelopes to the agreed version scheme. Do not implement its `profile:P` fields or independently advance its component `@1` markers as a new version system. This correction does not select the next ChangeKernel version number or change the current package version. The remaining prototype scope, safety boundaries and diagnostic plan are unchanged; their concrete packet still requires adoption after the version alignment.
+Use **ChangeKernel version** consistently, as the user clarified. There is no separately selected native profile or independently advancing contract, bridge, storage, policy or result version. Historical accepted bytes keep their original meaning; this correction does not migrate or relabel them.
 
 ## Status and review subject
 
-**R62 candidate, with the version correction above taking precedence: remaining concrete choices below are proposed/unadopted.** This is one implementation packet for the [approved first prototype](intent-revision-contract.md#approved-first-prototype-scope) and [diagnostic measurements](intent-revision-contract.md#approved-diagnostic-benchmark-plan), not adoption, executable support or qualification. Independent review and user adoption of this packet still precede source implementation. Conditional execution authority is tracked in [the status note](../../../../../CHANGEKERNEL_STATUS.md).
+**Version-aligned candidate; concrete packet still proposed/unadopted.** This is one implementation packet for the [approved first prototype](intent-revision-contract.md#approved-first-prototype-scope) and [diagnostic measurements](intent-revision-contract.md#approved-diagnostic-benchmark-plan), not executable support or qualification. Independent delta review and user adoption precede implementation. Conditional execution authority is tracked in [the status note](../../../../../CHANGEKERNEL_STATUS.md).
+
+Propose **ChangeKernel `0.5.0-prototype.1`**, abbreviated `V`, for this prototype. `V` is that exact JSON string, not another contract counter or a caller-selected configuration. On adoption and implementation, the native package/binary and this prototype's distributed host adapter must identify that same ChangeKernel version; their package/build version declarations must agree. Current package files remain unchanged at `0.4.0-sk3g.1` until that authorized implementation update. Pi's own version and third-party dependency versions are separate products, not ChangeKernel version axes.
+
+### One version, inherited interpretation
+
+Requests, accepted records, installation anchors and results use `version:V`; the first bridge grant and its acknowledgment pin the same V for the connected lifetime. The adapter checks the acknowledgment before exposing calls. Native validates its compiled ChangeKernel version, grant, installed anchor, requests and records against that single supported V before interpreting dependent content. An unknown/mismatched version is unsupported or a fail-closed protocol error as appropriate; no semver-range fallback or independent component negotiation exists. Later bridge frames inherit the pinned connection version.
+
+Unversioned strings such as `ck-ref-prefix`, `ck-intent-result`, `ck-intent-bridge`, `closed-personal-plan` and `utf8-exact` identify object families, policy or interpretation, not version selectors. Controls without a repeated version inherit the validated anchor's V. Policy material inherits it through its pinned anchor/reference; review material includes the versioned input; receipts bind that exact versioned input and presentation. Material/fact references must resolve in that established version-bound custody, never by guessing the current binary's interpretation. All these meanings are defined together by V. Do not append independently advancing `@1` suffixes to them.
+
+The new `btrfs-fsid-fh` label uses the unchanged held-fd identity mechanism historically named `btrfs-fsid-fh@1`; this is a new version's spelling, not weakened identity or a rewrite of old receipts. Later ChangeKernel releases may interpret retained data only with explicit support for its original ChangeKernel version, preserving exact original requests/results. They must not relabel old bytes or silently reinterpret them as the currently running release. This candidate supports only V for this new entry point; historical accepted v1–v6 contracts remain unchanged through their existing interfaces.
 
 The useful outcome is Friday → Saturday, fresh-reader explanation after closing the original Pi session, then Sunday and recovery of the original Saturday result without another revision. One person, one Ledger, one Change; no external effects, organization execution, model judgments or domain Check. Plan wording is an assertion/adopted intent, not proof that dinner is feasible or arranged. Changing it releases no reservation, expense or responsibility.
 
-Select the new, fresh-only native profile `ck-referenced-intent@1` (abbreviated P). Do not assign a v7 meaning to it, migrate v1–v6, change their inventory, or reinterpret their inline What/Why. An “existing Change” here means an accepted opening under P, not imported legacy custody. This packet also specifies the actual first provisioning/opening path. It excludes reboot/remount/power-loss claims, relocation, copies as continuing custody, hostile rollback detection, repair, all-sender-state-loss recovery and automatic retransmission. Clean process close/reopen and the specified interrupted process cuts are the prototype's recovery claim; stronger [State recovery obligations](state.md#first-local-recovery-profile) remain qualification gates.
+The proposed ChangeKernel version V supplies this fresh-only prototype entry point. Do not assign a v7 meaning to it, migrate v1–v6, change their inventory, or reinterpret their inline What/Why. An “existing Change” here means an accepted opening under V, not imported legacy custody. This packet also specifies the actual first provisioning/opening path. It excludes reboot/remount/power-loss claims, relocation, copies as continuing custody, hostile rollback detection, repair, all-sender-state-loss recovery and automatic retransmission. Clean process close/reopen and the specified interrupted process cuts are the prototype's recovery claim; stronger [State recovery obligations](state.md#first-local-recovery-profile) remain qualification gates.
 
-This packet consumes [State's acceptance/replay obligations](state.md#record-replay-and-durability-requirements), the [harness responsibility boundary](sdk.md#harness-responsibility-boundary) and [action-governed policy/admission](ledger-governance-and-admission.md#approved-identity-policy-and-feedback-choices). Narrow profile exclusions do not revise those wider requirements or qualify stronger hosts.
+This packet consumes [State's acceptance/replay obligations](state.md#record-replay-and-durability-requirements), the [harness responsibility boundary](sdk.md#harness-responsibility-boundary) and [action-governed policy/admission](ledger-governance-and-admission.md#approved-identity-policy-and-feedback-choices). Narrow version exclusions do not revise those wider requirements or qualify stronger hosts.
 
 ## 1. B1: supported authority and closed policy
 
@@ -34,41 +42,41 @@ The local operator deliberately starts the reviewed Pi host under their OS login
 | Rust child/native engine | Owns descriptors and lock; independently validates every typed request, installation grant, approval subject, complete fixed policy, exact material, prefix and request identity. It does not independently authenticate terminal keystrokes. |
 | Agent/Codemode/client fields | Proposals and references only. Cannot set actor, grant, policy, approval receipt, passing assessment, custody path, result or raw record. No other mutation endpoint is exposed. |
 
-Private stdin/stdout is the transport, **not hostile-same-account isolation**. Arbitrary extensions, subprocesses or unrestricted tools sharing the OS/storage privileges could bypass or compromise this host. The supported prototype instance loads only the inspected adapter and built-in Codemode, exposes only its bounded domain tools, disables MCP and arbitrary shell/file tools, and runs no untrusted native code while custody is owned. This narrows ordinary input routes; it does not turn Pi's allowlist, project trust, QuickJS or private pipes into an OS security perimeter. A deployment requiring hostile extension/process resistance is unsupported by P and needs a separately adopted host boundary. No remote/RPC/print/JSON approval fallback.
+Private stdin/stdout is the transport, **not hostile-same-account isolation**. Arbitrary extensions, subprocesses or unrestricted tools sharing the OS/storage privileges could bypass or compromise this host. The supported prototype instance loads only the inspected adapter and built-in Codemode, exposes only its bounded domain tools, disables MCP and arbitrary shell/file tools, and runs no untrusted native code while custody is owned. This narrows ordinary input routes; it does not turn Pi's allowlist, project trust, QuickJS or private pipes into an OS security perimeter. A deployment requiring hostile extension/process resistance is unsupported by V and needs a separately adopted host boundary. No remote/RPC/print/JSON approval fallback.
 
 Current host authorization is a serialized lease `{principal:"person-1", disclose:"allow|deny|unavailable", mutate:"allow|deny|unavailable"}`. The two enums are independent. The host freezes the lease for one native call and excludes relevant local grant changes until completion; Rust checks it at ingress and immediately before prefix installation. Changes requested during a call take effect for the next call. No stronger asynchronous external revocation guarantee is claimed. After receiving a result, the host freshly checks disclosure before forwarding it to Pi. It may suppress an accepted result. Reads and accepted retries need disclose, not mutate. Opening/new revision/pending resumption require both. If that lease serialization cannot be established, new acceptance is unavailable.
 
 ### Authoritative fixed policy
 
-A deliberate trusted first-use grant declares that this subject is only a personal plan-text edit, with **complete** policy coverage `closed-personal-plan@1`. It is not inferred from a context page or empty assessment array. The host must refuse configuration with unknown coverage, another policy, a relationship/resource obligation, a mandatory semantic/domain Check, or an external action. An operator requiring any such condition must not provision P. P cannot discover undisclosed real-world obligations; correctness of this closed-scope installation declaration is an explicit premise.
+A deliberate trusted first-use grant declares that this subject is only a personal plan-text edit, with **complete** policy coverage `closed-personal-plan`. It is not inferred from a context page or empty assessment array. The host must refuse configuration with unknown coverage, another policy, a relationship/resource obligation, a mandatory semantic/domain Check, or an external action. An operator requiring any such condition must not provision V. V cannot discover undisclosed real-world obligations; correctness of this closed-scope installation declaration is an explicit premise.
 
 The exact policy material is UTF-8 compact JSON followed by LF, with the following ordered fields and fixed values (it is material, not an additional lifecycle fact):
 
 ```json
-{"format":"ck-plan-policy@1","owner":"person-1","ledger":"ledger-1","change":"change-1","coverage":"closed-personal-plan@1","actions":["open_intent","revise_intent"],"approval":"local-tui-exact@1","domain_requirements":[],"relationships":[],"external_effects":false}
+{"format":"ck-plan-policy","owner":"person-1","ledger":"ledger-1","change":"change-1","coverage":"closed-personal-plan","actions":["open_intent","revise_intent"],"approval":"local-tui-exact","domain_requirements":[],"relationships":[],"external_effects":false}
 ```
 
-The native grant pins its material reference; native provisioning verifies bytes against this exact compiled descriptor. Opening approval adopts this policy for the slot. The installed anchor pins it forever; every accepted opening/revision inherits it. No policy-edit, relationship, assessment or Work operation exists in P. Foreign facts, unknown fields/tags, extra requirements or a descriptor mismatch are unsupported/damage, never optional. Native admission always checks current authority, exact approval, expected intent, material custody and limits. The empty domain-requirements array is a closed authoritative policy selection, not “no validation.”
+The native grant pins its material reference; native provisioning verifies bytes against this exact compiled descriptor. Opening approval adopts this policy for the slot. The installed anchor pins it forever; every accepted opening/revision inherits it. No policy-edit, relationship, assessment or Work operation exists in V. Foreign facts, unknown fields/tags, extra requirements or a descriptor mismatch are unsupported/damage, never optional. Native admission always checks current authority, exact approval, expected intent, material custody and limits. The empty domain-requirements array is a closed authoritative policy selection, not “no validation.”
 
 ### Exact approval presentation and retention
 
 Agent-visible `open_intent`/`revise_intent` tools accept only the request schema in §2. For a new key they ask the operator to review; reads, retention and accepted-result retrieval never prompt as a mutation approval. Non-TUI modes may inspect already accepted history but cannot adopt or resume pending mutations. A pending resumption requires a fresh affirmative UI review of the **same** request; it authorizes completion of the retained decision, not replacement of its historical approval receipt.
 
-Use `ctx.mode === "tui"` and `ctx.ui.custom()` with a fresh component per interaction, built from Pi's scrolling/layout/input components. Do not treat `ctx.hasUI` as sufficient: RPC has UI but cannot supply this local-terminal profile. Freeze a deep-copied validated request before review. Rust prepares the exact presentation from custody-resolved bytes; the host displays that supplied presentation, not a model-generated summary.
+Use `ctx.mode === "tui"` and `ctx.ui.custom()` with a fresh component per interaction, built from Pi's scrolling/layout/input components. Do not treat `ctx.hasUI` as sufficient: RPC has UI but cannot supply this version’s local-terminal approval boundary. Freeze a deep-copied validated request before review. Rust prepares the exact presentation from custody-resolved bytes; the host displays that supplied presentation, not a model-generated summary.
 
-Presentation material `ck-intent-review@1` is an ordered fixed JSON object with fields `format, input, policy_text, previous, instruction_text, what_text, why_text`. `input` is the entire typed request; `previous` is null for opening or `{fact,what_text,why_text}` for revision. Text values are exact decoded strings, not markdown. Policy text includes the exact material's terminal LF. The presentation's JSON bytes use §2's emitter, including one final LF; store them as whole-text material. The deterministic screen displays **every byte** of that presentation as printable ASCII: quotes/backslashes escaped; ASCII 0x20–0x7e otherwise literal; every non-ASCII UTF-8 byte and every control byte shown as lowercase `\xhh`. Hard-wrap between encoded byte tokens with explicit continuation marks outside the data. Never interpret ANSI, bidi controls, Markdown, hyperlinks or source instructions. Label encoding, byte length and material identity, null Why versus empty Why, target/key/expected fact, previous and replacement, instruction, and full fixed policy. This exact byte view is authoritative; any optional readable preview is not approval evidence.
+Presentation material `ck-intent-review` is an ordered fixed JSON object with fields `format, input, policy_text, previous, instruction_text, what_text, why_text`. `input` is the entire typed request; `previous` is null for opening or `{fact,what_text,why_text}` for revision. Text values are exact decoded strings, not markdown. Policy text includes the exact material's terminal LF. The presentation's JSON bytes use §2's emitter, including one final LF; store them as whole-text material. The deterministic screen displays **every byte** of that presentation as printable ASCII: quotes/backslashes escaped; ASCII 0x20–0x7e otherwise literal; every non-ASCII UTF-8 byte and every control byte shown as lowercase `\xhh`. Hard-wrap between encoded byte tokens with explicit continuation marks outside the data. Never interpret ANSI, bidi controls, Markdown, hyperlinks or source instructions. Label encoding, byte length and material identity, null Why versus empty Why, target/key/expected fact, previous and replacement, instruction, and full fixed policy. This exact byte view is authoritative; any optional readable preview is not approval evidence.
 
 No ellipsis/truncation is permitted. ScrollView bounds visible rows, not data. Affirmation is disabled until the operator has navigated all pages; then a separate explicit “Adopt this exact subject” selection is required. Escape, signal, timeout (120 seconds), close, render/layout failure, unsupported terminal mode or incomplete traversal cancels with no approval. Traversal is not proof of comprehension. The operator's affirmative selection adopts the displayed instruction and replacement now; it does not authenticate a quoted prior conversation or backdate its authorship. The instruction's exact bytes remain referenced separately from the replacement and from the host's actual affirmative adoption; no original transcript authorship is inferred.
 
 After affirmative return, the trusted host sends the prepared subject back with a host-only confirmation. Rust verifies exact equality with its prepared subject and constructs receipt material:
 
 ```text
-Receipt = {format:"ck-local-approval@1", principal:"person-1",
+Receipt = {format:"ck-local-approval", principal:"person-1",
            subject_sha256:H(canonical input including LF),
-           presentation:MaterialRef, decision:"adopt", ui:"local-tui-exact@1"}
+           presentation:MaterialRef, decision:"adopt", ui:"local-tui-exact"}
 ```
 
-Fields are ordered as shown; no timestamp, transcript pointer, session ID or nonce is necessary under the fixed lease/no-expiry policy. The receipt is a trusted-host assertion of the actual UI event, not a signature independently verifying a human. The presentation and receipt are retained before reservation/acceptance. Native validates the receipt's exact subject, presentation contents and installed principal; the ordinary agent tool schema rejects receipt/actor/approval fields. Host-only confirmation is reachable only inside the trusted adapter's approval continuation; it is not registered as a Pi tool. Exposing it or forwarding agent objects into it violates P. Raw wire forgery by a hostile same-privilege actor remains excluded, not “prevented by hidden fields.”
+Fields are ordered as shown; no timestamp, transcript pointer, session ID or nonce is necessary under the fixed lease/no-expiry policy. The receipt is a trusted-host assertion of the actual UI event, not a signature independently verifying a human. The presentation and receipt are retained before reservation/acceptance. Native validates the receipt's exact subject, presentation contents and installed principal; the ordinary agent tool schema rejects receipt/actor/approval fields. Host-only confirmation is reachable only inside the trusted adapter's approval continuation; it is not registered as a Pi tool. Exposing it or forwarding agent objects into it violates V. Raw wire forgery by a hostile same-privilege actor remains excluded, not “prevented by hidden fields.”
 
 ## 2. B2: closed native values, references and limits
 
@@ -78,31 +86,31 @@ All schemas below are closed: every listed field is required, other/duplicate/mi
 
 Installation identifiers are fixed ASCII `custody-1`, `ledger-1`, `change-1`, `person-1`; keys are `[A-Za-z0-9_-]{1,64}`. A key's namespace is the entire Change across opening/revision and callers. Never allocate a new Change or key on retry. Fact reference is `{ledger:"ledger-1",change:"change-1",seq:N}` with N in 1–128, identifying a record **in the established accepted prefix**, not a physical line or merely parseable tail. Result identity is that FactRef. Location is not identity.
 
-`MaterialRef = {custody:"custody-1",sha256:HEX,bytes:B,text:"utf8-exact@1"}`; HEX is lowercase 64-hex SHA-256 over raw bytes (no implicit LF), B is 0–65,536. It selects the whole bytes only. The material's identity is custody plus digest; byte length and interpretation must agree. A digest provides integrity under the trusted custody, not authorship. File names use only validated hex. All materials are valid UTF-8, including empty text; no normalization, trimming, newline conversion or model interpretation. Same bytes may be shared across roles but cannot change the consuming role. What must contain at least one scalar outside ASCII space/tab/CR/LF (and be nonempty); Why is null or any valid UTF-8, including empty. Instruction must be nonempty; it is a proposed source expression until the approval above adopts it. No ranges, remote locators, artifacts or source prose inline in canonical records.
+`MaterialRef = {custody:"custody-1",sha256:HEX,bytes:B,text:"utf8-exact"}`; HEX is lowercase 64-hex SHA-256 over raw bytes (no implicit LF), B is 0–65,536. It selects the whole bytes only. The material's identity is custody plus digest; byte length and interpretation must agree. A digest provides integrity under the trusted custody, not authorship. File names use only validated hex. All materials are valid UTF-8, including empty text; no normalization, trimming, newline conversion or model interpretation. Same bytes may be shared across roles but cannot change the consuming role. What must contain at least one scalar outside ASCII space/tab/CR/LF (and be nonempty); Why is null or any valid UTF-8, including empty. Instruction must be nonempty; it is a proposed source expression until the approval above adopts it. No ranges, remote locators, artifacts or source prose inline in canonical records.
 
 ### Agent-visible requests
 
-The following schema notation defines exact field order and alternatives; `P` is the literal profile tag and is emitted literally. It is not executable code.
+The following schema notation defines exact field order and alternatives; `V` is the exact ChangeKernel version string `"0.5.0-prototype.1"` and is emitted literally. It is not executable code.
 
 ```text
 Intent = {what:MaterialRef, why:MaterialRef|null}
-Open = {profile:P,op:"open_intent",ledger:"ledger-1",change:"change-1",
+Open = {version:V,op:"open_intent",ledger:"ledger-1",change:"change-1",
         key:Key,instruction:MaterialRef,replacement:Intent}
-Revise = {profile:P,op:"revise_intent",ledger:"ledger-1",change:"change-1",
+Revise = {version:V,op:"revise_intent",ledger:"ledger-1",change:"change-1",
           key:Key,expected:FactRef,instruction:MaterialRef,replacement:Intent}
-Retain = {profile:P,op:"retain_text",ledger:"ledger-1",change:"change-1",text:UTF8}
-Context = {profile:P,op:"read_context",ledger:"ledger-1",change:"change-1",
+Retain = {version:V,op:"retain_text",ledger:"ledger-1",change:"change-1",text:UTF8}
+Context = {version:V,op:"read_context",ledger:"ledger-1",change:"change-1",
            at:FactRef|null}
-History = {profile:P,op:"read_history",ledger:"ledger-1",change:"change-1",
+History = {version:V,op:"read_history",ledger:"ledger-1",change:"change-1",
            through:FactRef|null,after:Integer,limit:Integer}
-Resolve = {profile:P,op:"resolve_text",ledger:"ledger-1",change:"change-1",
+Resolve = {version:V,op:"resolve_text",ledger:"ledger-1",change:"change-1",
            material:MaterialRef}
-Query = {profile:P,op:"inspect_operation",ledger:"ledger-1",change:"change-1",key:Key}
+Query = {version:V,op:"inspect_operation",ledger:"ledger-1",change:"change-1",key:Key}
 ```
 
-`after` is 0–128, `limit` 1–8. `through:null` snapshots the current accepted tip for that call; a subsequent page supplies that returned FactRef. `after` must not exceed the selected tip. `at:null` selects current intent; a nonnull at selects context after that exact accepted record. Unknown operations/profile return unsupported without a fallback. Retention requires disclose and mutate but is not an intent adoption and has no original-key/result association. Rust computes a material reference after durable retention; clients cannot claim author/provenance there.
+`after` is 0–128, `limit` 1–8. `through:null` snapshots the current accepted tip for that call; a subsequent page supplies that returned FactRef. `after` must not exceed the selected tip. `at:null` selects current intent; a nonnull at selects context after that exact accepted record. Unknown operations/version return unsupported without a fallback. Retention requires disclose and mutate but is not an intent adoption and has no original-key/result association. Rust computes a material reference after durable retention; clients cannot claim author/provenance there.
 
-Open/Revise equality includes every typed field, operation/profile/key, exact fact selectors, material identities/length/interpretation, roles, and explicit null versus empty Why. Same text retained in other custody is different input. The approval receipt and current caller lease are **not client input**; original receipt remains bound to the original operation. Different receipt from a later fresh review cannot replace a retained pending/accepted receipt. Duplicate-key lookup precedes new approval generation, material retention for adoption, sequence allocation or new admission. Accepted exact match delivers its original result under current disclosure. Changed input conflicts even if text looks equivalent. A revision on the same text still creates a new fact for a new approved key, invalidating the old expected basis.
+Open/Revise equality includes every typed field, operation/version/key, exact fact selectors, material identities/length/interpretation, roles, and explicit null versus empty Why. Same text retained in other custody is different input. The approval receipt and current caller lease are **not client input**; original receipt remains bound to the original operation. Different receipt from a later fresh review cannot replace a retained pending/accepted receipt. Duplicate-key lookup precedes new approval generation, material retention for adoption, sequence allocation or new admission. Accepted exact match delivers its original result under current disclosure. Changed input conflicts even if text looks equivalent. A revision on the same text still creates a new fact for a new approved key, invalidating the old expected basis.
 
 ### Finite budgets
 
@@ -128,27 +136,27 @@ Stored material raw-byte totals and item count include all final objects, not ju
 ### Minimal accepted record and stable result
 
 ```text
-Record = {profile:P,custody:"custody-1",seq:N,prev:FactRef|null,
+Record = {version:V,custody:"custody-1",seq:N,prev:FactRef|null,
           input:Open|Revise,approval:MaterialRef}
 ```
 
-At N=1 input must be Open, prev null. At N>1 input must be Revise, prev and input.expected must equal the preceding FactRef; no intervening non-intent lifecycle kinds exist in P. Validate key uniqueness across all accepted records, inherited installation policy/owner, receipt subject/presentation, exact material and canonical bytes. Input supplies Ledger/Change and replacement; do not repeat these as another body. Approval is the decision grounds, presentation binds instruction and complete intended replacement. There is no extra “approved” lifecycle fact. Every sequence in P is an intent fact. Unknown facts block parsing/admission rather than establishing a partial apparently closed policy.
+At N=1 input must be Open, prev null. At N>1 input must be Revise, prev and input.expected must equal the preceding FactRef; no intervening non-intent lifecycle kinds exist in V. Validate key uniqueness across all accepted records, inherited installation policy/owner, receipt subject/presentation, exact material and canonical bytes. Input supplies Ledger/Change and replacement; do not repeat these as another body. Approval is the decision grounds, presentation binds instruction and complete intended replacement. There is no extra “approved” lifecycle fact. Every sequence in V is an intent fact. Unknown facts block parsing/admission rather than establishing a partial apparently closed policy.
 
-The **retained result binding** is fixed by P's immutable result interpretation `ck-intent-result@1`:
+The **retained result binding** is fixed by ChangeKernel version V; `ck-intent-result` names its result object family:
 
 ```text
-Result = {format:"ck-intent-result@1",profile:P,kind:"opened"|"intent_revised",
+Result = {format:"ck-intent-result",version:V,kind:"opened"|"intent_revised",
           key:record.input.key,actor:"person-1",fact:FactRef(record.seq),
           previous:record.prev}
 ```
 
-Kind follows the accepted input op. Actor comes from the pinned installation and validated approval receipt. Result is deterministic from the accepted record and this profile, not regenerated prose, current intent or a fresh actor. Do not persist a duplicate result object: record plus immutable profile definition permanently binds the exact original result. Reopen verifies reconstruction; unknown result interpretations are unavailable. A source upgrade must preserve this interpretation rather than alter old results. Accepted history/request/result associations and required material are retained for the slot's entire lifetime; P exposes no expiry/deletion.
+Kind follows the accepted input op. Actor comes from the pinned installation and validated approval receipt. Result is deterministic from the accepted record and this version, not regenerated prose, current intent or a fresh actor. Do not persist a duplicate result object: record plus immutable version definition permanently binds the exact original result. Reopen verifies reconstruction; unknown result interpretations are unavailable. A source upgrade must preserve this interpretation rather than alter old results. Accepted history/request/result associations and required material are retained for the slot's entire lifetime; V exposes no expiry/deletion.
 
 ## 3. B2: custody, provisioning and acceptance protocol
 
 ### Supported files and roles
 
-The intended first prototype/test host is the available development host reported by the manager's read-only inventory as **Linux `7.2.5-4-omarchy` x86_64 GNU/Linux**, with proposed little-endian LP64/local-btrfs support. Linux 6.12 is historical context for the retained `btrfs-fsid-fh@1` primitives, **not an exact kernel requirement or evidence that P works on this available host**. Reuse that held-fd identity mechanism without downgrading to pathname or device/inode alone. Compatibility of the actual kernel/filesystem/syscall combination and the new profile remains to be established by the later authorized native/bridge checks before diagnostic measurements; release/storage qualification is separate. No compatibility test has run for this proposal. No different kernel/VM, installation, privileges or handle-based reopening is requested. Securely open normal descriptors, reject symlinks/nonregular files, hard-linked files and foreign inventory, then acquire/compare fsid and file handle from those descriptors. If unavailable or a different filesystem/topology, refuse. Identity object I is exactly `{mechanism:"btrfs-fsid-fh@1",fsid:32_lower_hex,handle_type:77,handle_bytes:20,handle:40_lower_hex}` with nonzero fsid/handle; same filesystem for root, lock and materials directory.
+The intended first prototype/test host is the available development host reported by the manager's read-only inventory as **Linux `7.2.5-4-omarchy` x86_64 GNU/Linux**, with proposed little-endian LP64/local-btrfs support. Linux 6.12 is historical context for the retained held-fd identity primitives (historically `btrfs-fsid-fh@1`), **not an exact kernel requirement or evidence that V works on this available host**. Reuse that held-fd identity mechanism without downgrading to pathname or device/inode alone. Compatibility of the actual kernel/filesystem/syscall combination and the new version remains to be established by the later authorized native/bridge checks before diagnostic measurements; release/storage qualification is separate. No compatibility test has run for this proposal. No different kernel/VM, installation, privileges or handle-based reopening is requested. Securely open normal descriptors, reject symlinks/nonregular files, hard-linked files and foreign inventory, then acquire/compare fsid and file handle from those descriptors. If unavailable or a different filesystem/topology, refuse. Identity object I is exactly `{mechanism:"btrfs-fsid-fh",fsid:32_lower_hex,handle_type:77,handle_bytes:20,handle:40_lower_hex}` with nonzero fsid/handle; same filesystem for root, lock and materials directory.
 
 The native child exclusively owns this inventory; host JS does not append files:
 
@@ -164,11 +172,11 @@ slot/materials/material.tmp           at most one bounded retention temporary
 slot/checkpoint.tmp, slot/incident.tmp  bounded replacement remnants
 ```
 
-Anchor fields/order are `{format:"ck-ref-anchor@1",profile:P,custody:"custody-1",ledger:"ledger-1",change:"change-1",owner:"person-1",policy:MaterialRef,coverage:"closed-personal-plan@1",directory:AbsolutePath,root:I,lock:I,materials:I,stage:"preparing"|"installed"}`. AbsolutePath is an explicit UTF-8 path up to 4,096 bytes, no controls, symlinks or dot/parent components. An independent host grant pins the logical values, directory and anchor path before first use; it compares the anchor, never trusts discovery from a filename. Identity fields are established during explicit preparation and later checked through held descriptors. Anchor is protected by trusted-host premises, not client fields. Stage is internal installation state, not a Change stage.
+Anchor fields/order are `{format:"ck-ref-anchor",version:V,custody:"custody-1",ledger:"ledger-1",change:"change-1",owner:"person-1",policy:MaterialRef,coverage:"closed-personal-plan",directory:AbsolutePath,root:I,lock:I,materials:I,stage:"preparing"|"installed"}`. AbsolutePath is an explicit UTF-8 path up to 4,096 bytes, no controls, symlinks or dot/parent components. An independent host grant pins the logical values, directory and anchor path before first use; it compares the anchor, never trusts discovery from a filename. Identity fields are established during explicit preparation and later checked through held descriptors. Anchor is protected by trusted-host premises, not client fields. Stage is internal installation state, not a Change stage.
 
-Checkpoint fields/order are `{format:"ck-ref-prefix@1",custody:"custody-1",generation:G,end:E,sha256:H|null,pending:Pending|null}`. G=0 requires E=0 and H=null. Otherwise G=1–128 and H hashes exact trace bytes `[0,E)` including each LF. Pending is `{input:Open|Revise,approval:MaterialRef}`. Its prospective sequence is G+1; actor/policy derive from the anchor. The checkpoint does not repeat accepted requests/results. Installed controls, not arbitrary JSONL lines, choose acceptance.
+Checkpoint fields/order are `{format:"ck-ref-prefix",custody:"custody-1",generation:G,end:E,sha256:H|null,pending:Pending|null}`. G=0 requires E=0 and H=null. Otherwise G=1–128 and H hashes exact trace bytes `[0,E)` including each LF. Pending is `{input:Open|Revise,approval:MaterialRef}`. Its prospective sequence is G+1; actor/policy derive from the anchor. The checkpoint does not repeat accepted requests/results. Installed controls, not arbitrary JSONL lines, choose acceptance.
 
-Incident is `{format:"ck-ref-incident@1",custody:"custody-1",state:"clear"}` or `{format:"ck-ref-incident@1",custody:"custody-1",state:"blocked",phase:"provision"|"material"|"reserve"|"append"|"checkpoint"|"recover"|"close",issue:"io"|"short_write"|"barrier"|"inconsistent"}`. Missing/malformed permanent controls are unavailable, not an initial state. Blocked incident or any incident.tmp blocks delivery and mutation. No incident repair/reset endpoint.
+Incident is `{format:"ck-ref-incident",custody:"custody-1",state:"clear"}` or `{format:"ck-ref-incident",custody:"custody-1",state:"blocked",phase:"provision"|"material"|"reserve"|"append"|"checkpoint"|"recover"|"close",issue:"io"|"short_write"|"barrier"|"inconsistent"}`. Missing/malformed permanent controls are unavailable, not an initial state. Blocked incident or any incident.tmp blocks delivery and mutation. No incident repair/reset endpoint.
 
 One non-reentrant owner holds root/lock/materials descriptors and nonblocking exclusive flock for its connected lifetime. No forks or inherited custody descriptors; child spawns no children. Host starts no successor until it has confirmed the predecessor process exited and handles are excluded. Flock alone does not prove no inherited descriptors remain. The installed path is checked against held identities at call boundaries; copied/moved/replaced directories or locks refuse. Same-user attackers and consistent rollback of all evidence are not detectable guarantees.
 
@@ -181,7 +189,7 @@ Provisioning is a trusted explicit host command, never inferred from an empty di
 3. Replace anchor using exclusive same-parent temp, file sync, rename and parent sync to installed; validate installed anchor and complete initial inventory. Only now permit client calls. Loss after preparation still yields no accepted opening.
 4. Reopen requires installed anchor, permanent controls and identities. It initializes nothing, does no migration, creates no missing control and completes no pending operation. Validate prefix/schema/material/inventory; perform fresh required file/directory barriers before acceptance-bearing historical delivery.
 
-Anchor.tmp housekeeping is supported only under the pinned lock and complete valid initial inventory: preparing anchor with canonical temp identical or differing only to installed stage, or installed anchor with identical installed temp. Revalidate grant/identities; unlink the known abandoned temp, sync parent, then perform the normal procedure with a fresh exclusive temp. Never promote temp or let it replace a missing anchor. Installed/preparing reversed-stage, partial, foreign, malformed or noninitial temp refuses and preserves evidence. Unlink-before-parent-sync cuts revalidate absence/presence and sync parent; observed failure latches incident. This is the retained opening profile's restricted cleanup shape, not general storage repair.
+Anchor.tmp housekeeping is supported only under the pinned lock and complete valid initial inventory: preparing anchor with canonical temp identical or differing only to installed stage, or installed anchor with identical installed temp. Revalidate grant/identities; unlink the known abandoned temp, sync parent, then perform the normal procedure with a fresh exclusive temp. Never promote temp or let it replace a missing anchor. Installed/preparing reversed-stage, partial, foreign, malformed or noninitial temp refuses and preserves evidence. Unlink-before-parent-sync cuts revalidate absence/presence and sync parent; observed failure latches incident. This is the retained opening implementation's restricted cleanup shape, not general storage repair.
 
 The first `open_intent` request retains Friday/instruction/Why, reviews target plus policy with previous=null, and accepts sequence 1 under §4. An interrupted opening has the same durable original key/pending binding as a revision; retry does not allocate a second Change. A second opening with a different key in an occupied slot is unsupported; reusing an accepted revision key for opening conflicts.
 
@@ -215,7 +223,7 @@ The digest covers complete prefix, not merely the last record. Full validation s
 | Installed Pending, empty or exact partial prospective suffix | Read prefix/pending without writes. Only current-authorized exact resubmission with fresh completion approval may append missing bytes and commit. |
 | Installed Pending, full prospective record, acceptance temp | Still pending, not accepted. Exact resubmission may remove only the validated temp under lock, sync directory, and rerun commitment; never promote temp. |
 | No installed Pending, canonical reservation temp, exact accepted trace end | Read reports `blocked_control_temp`/no installed binding. Explicit exact resubmission matching temp may remove it after validation/barrier and run normal reservation. A different request does not clear it. |
-| Installed accepted checkpoint, exact accepted trace, matching obsolete checkpoint temp | Read and exact accepted retry deliver accepted history; readiness remains blocked. P does not clean this nonessential remnant or claim mutation readiness until separately authorized recovery outside P. |
+| Installed accepted checkpoint, exact accepted trace, matching obsolete checkpoint temp | Read and exact accepted retry deliver accepted history; readiness remains blocked. V does not clean this nonessential remnant or claim mutation readiness until separately authorized recovery outside V. |
 | Installed accepted checkpoint plus bounded unexplained extra suffix | Deliver intact accepted prefix with `blocked_unaccepted_tail`; no new mutation or tail removal. Extra parseable record is unaccepted. |
 | Pending mismatch/extra suffix; unexplained/partial checkpoint temp; missing control; accepted-prefix damage | Unavailable, preserve evidence. No guessed input, checkpoint, acceptance or repair. |
 | Installed accepted checkpoint after rename but before directory sync | On reopen, whichever installed checkpoint survives is authoritative only after matching all grounds and fresh barriers. It may establish acceptance although no acknowledgment was sent; earlier pending control permits only exact resumption. No universal power-loss claim. |
@@ -225,18 +233,18 @@ Checkpoint temp validation compares only these supported relationships: identica
 
 ## 5. B3: read-only query, historical navigation and delivery
 
-`inspect_operation` performs only authorization, secure reads, deterministic validation and required synchronization of already existing files/parents. **It does not write, reserve, append, clean temps, repair, run Checks, display an adoption UI or finish Pending.** A read failure quarantines the connected owner in memory without persisting an incident from that read; it returns unavailable. P's genuinely write-free reads deliberately do not claim retention of that unsaved observation across process loss. Missing/corrupt installed controls and retained incidents still refuse on reopen. This distinction from mutation incident retention is explicit, not reuse of a mutation dispatcher renamed “inspect.”
+`inspect_operation` performs only authorization, secure reads, deterministic validation and required synchronization of already existing files/parents. **It does not write, reserve, append, clean temps, repair, run Checks, display an adoption UI or finish Pending.** A read failure quarantines the connected owner in memory without persisting an incident from that read; it returns unavailable. V's genuinely write-free reads deliberately do not claim retention of that unsaved observation across process loss. Missing/corrupt installed controls and retained incidents still refuse on reopen. This distinction from mutation incident retention is explicit, not reuse of a mutation dispatcher renamed “inspect.”
 
 Structured tool responses are the following closed variants (field order as shown):
 
 ```text
-Accepted = {profile:P,kind:"accepted",result:Result}
-Operation = {profile:P,kind:"operation",key:Key,
+Accepted = {version:V,kind:"accepted",result:Result}
+Operation = {version:V,kind:"operation",key:Key,
              status:"accepted"|"pending"|"not_found_now",
              result:Result|null,tip:FactRef|null,readiness:Readiness}
-Error = {profile:P,kind:"error",code:"invalid_input"|"unsupported"|"conflict"|
+Error = {version:V,kind:"error",code:"invalid_input"|"unsupported"|"conflict"|
          "denied"|"unavailable",acceptance:"not_established"}
-TransportUnknown = {profile:P,kind:"transport_unknown",reason:"timeout"|"cancelled"|
+TransportUnknown = {version:V,kind:"transport_unknown",reason:"timeout"|"cancelled"|
                     "closed"|"protocol"|"cleanup_unconfirmed",acceptance:"not_established"}
 Readiness = [zero to four unique tokens in this fixed order:
              "blocked_pending","blocked_control_temp",
@@ -252,13 +260,13 @@ At ingestion and final delivery check current disclosure before exposing key exi
 Read outputs use these schemas:
 
 ```text
-Retained = {profile:P,kind:"retained",material:MaterialRef}
-Resolved = {profile:P,kind:"resolved",material:MaterialRef,text:UTF8}
-ContextResult = {profile:P,kind:"context",tip:FactRef|null,at:FactRef|null,
+Retained = {version:V,kind:"retained",material:MaterialRef}
+Resolved = {version:V,kind:"resolved",material:MaterialRef,text:UTF8}
+ContextResult = {version:V,kind:"context",tip:FactRef|null,at:FactRef|null,
                  intent:Intent|null,approval:MaterialRef|null,policy:MaterialRef,
                  coverage:{first:Integer,last:Integer,through:FactRef|null},
                  readiness:Readiness}
-HistoryResult = {profile:P,kind:"history",tip:FactRef|null,through:FactRef|null,
+HistoryResult = {version:V,kind:"history",tip:FactRef|null,through:FactRef|null,
                  records:[Record],coverage:{first:Integer,last:Integer},
                  next_after:Integer|null,readiness:Readiness}
 ```
@@ -271,37 +279,37 @@ Resolve returns exact whole text only, under current disclosure, verifying refer
 
 ### Proposed concrete framing
 
-Select one host-owned child running a new opt-in native bridge mode `changekernel --referenced-intent-bridge`. **It does not exist today:** `src/main.rs` implements help/version only. Startup never occurs in the extension factory; start on explicit trusted provision/connect or first tool use. Use Node child_process spawn with an explicit executable path, no shell, piped stdin/stdout/stderr, no inherited custody fd and no child descendants. Packaging is subordinate to P and separately qualified; retained Pi 0.85.1 adapter dependencies remain unchanged. An external disposable Pi 1.2.0 adapter can consume the installed host API without pretending to migrate that retained package.
+Select one host-owned child running a new opt-in native bridge mode `changekernel --referenced-intent-bridge`. **It does not exist today:** `src/main.rs` currently implements help/version only. Startup never occurs in the extension factory; start on explicit trusted provision/connect or first tool use. Use Node child_process spawn with an explicit executable path, no shell, piped stdin/stdout/stderr, no inherited custody fd and no child descendants. Packaging is subordinate to V and separately qualified; retained Pi 0.85.1 adapter dependencies remain unchanged. An external disposable Pi 1.2.0 adapter can consume the installed host API without pretending to migrate that retained package.
 
-Every frame is 4-byte unsigned big-endian byte length followed by that many UTF-8 JSON bytes, no framing LF. Length 1–262,144; bound before buffering. Payload is canonical JSON including its terminal LF on native-emitted frames; inbound client wrappers may use equivalent legal JSON. One request and one reply at a time, IDs 1–1,000,000 monotonically per child; no multiplex/reuse. A partial/oversized/bad-UTF8/duplicate-field/trailing/wrong-ID/wrong-profile frame closes the connection fail-closed. Stdout is protocol only; diagnostic text must stay on bounded stderr.
+Every frame is 4-byte unsigned big-endian byte length followed by that many UTF-8 JSON bytes, no framing LF. Length 1–262,144; bound before buffering. Payload is canonical JSON including its terminal LF on native-emitted frames; inbound client wrappers may use equivalent legal JSON. One request and one reply at a time, IDs 1–1,000,000 monotonically per child; no multiplex/reuse. A partial/oversized/bad-UTF8/duplicate-field/trailing/wrong-ID/wrong-version frame closes the connection fail-closed. Stdout is protocol only; diagnostic text must stay on bounded stderr.
 
 Startup host envelope fields/order:
 
 ```text
-Connect = {bridge:"ck-intent-bridge@1",id:1,kind:"connect",
+Connect = {bridge:"ck-intent-bridge",id:1,kind:"connect",
            mode:"fresh_provision"|"resume_provision"|"reopen",
-           grant:{profile:P,custody:"custody-1",ledger:"ledger-1",change:"change-1",
-                  owner:"person-1",coverage:"closed-personal-plan@1",
+           grant:{version:V,custody:"custody-1",ledger:"ledger-1",change:"change-1",
+                  owner:"person-1",coverage:"closed-personal-plan",
                   policy:MaterialRef,directory:AbsolutePath,anchor:AbsolutePath},
            authorization:Lease}
-Connected = {bridge:"ck-intent-bridge@1",id:1,kind:"connected",profile:P}
-Call = {bridge:"ck-intent-bridge@1",id:Integer,kind:"call",
+Connected = {bridge:"ck-intent-bridge",id:1,kind:"connected",version:V}
+Call = {bridge:"ck-intent-bridge",id:Integer,kind:"call",
         authorization:Lease,request:AgentRequest}
-Reply = {bridge:"ck-intent-bridge@1",id:Integer,kind:"reply",value:ToolResponse}
-Prepare = {bridge:"ck-intent-bridge@1",id:Integer,kind:"prepare",
+Reply = {bridge:"ck-intent-bridge",id:Integer,kind:"reply",value:ToolResponse}
+Prepare = {bridge:"ck-intent-bridge",id:Integer,kind:"prepare",
            authorization:Lease,request:Open|Revise}
-Prepared = {bridge:"ck-intent-bridge@1",id:Integer,kind:"prepared",
+Prepared = {bridge:"ck-intent-bridge",id:Integer,kind:"prepared",
             input:Open|Revise,presentation:UTF8}
-Confirm = {bridge:"ck-intent-bridge@1",id:Integer,kind:"confirm",
+Confirm = {bridge:"ck-intent-bridge",id:Integer,kind:"confirm",
            authorization:Lease,input:Open|Revise,confirmed:true}
-Discard = {bridge:"ck-intent-bridge@1",id:Integer,kind:"discard"}
-Close = {bridge:"ck-intent-bridge@1",id:Integer,kind:"close"}
-Closed = {bridge:"ck-intent-bridge@1",id:Integer,kind:"closed"}
+Discard = {bridge:"ck-intent-bridge",id:Integer,kind:"discard"}
+Close = {bridge:"ck-intent-bridge",id:Integer,kind:"close"}
+Closed = {bridge:"ck-intent-bridge",id:Integer,kind:"closed"}
 ```
 
-AgentRequest is exactly the seven request variants in §2; ToolResponse is exactly Accepted, Operation, Error, Retained, Resolved, ContextResult, HistoryResult or the host-only Discarded response `{profile:P,kind:"discarded"}`. TransportUnknown is adapter-generated when no trustworthy native reply is deliverable. No arbitrary payload variant is allowed.
+AgentRequest is exactly the seven request variants in §2; ToolResponse is exactly Accepted, Operation, Error, Retained, Resolved, ContextResult, HistoryResult or the host-only Discarded response `{version:V,kind:"discarded"}`. TransportUnknown is adapter-generated when no trustworthy native reply is deliverable. No arbitrary payload variant is allowed.
 
-Lease is §1's exact object; modes/grant/authorization/confirm are host-only. The child knows the configured owner from its independent grant, not a forwarded agent actor. Call allows retain/context/history/resolve/query and accepted exact Open/Revise retrieval only. New/pending Open/Revise through Call return unavailable with no mutation, forcing Prepare/Confirm. Prepare resolves key first: an accepted match returns Reply/Accepted directly; changed input Reply/Error; new/pending prepares the immutable review without reservation. It rejects another active prepared subject. Confirm compares complete frozen typed input and the active preparation, validates true literal and lease, constructs original receipt if new, then invokes native acceptance. A prepared pending subject (including a validated prospective reservation temp) uses its retained original receipt and **that receipt's exact retained presentation**, reviewed again. Confirm must reuse those original grounds: it cannot mint a different receipt when cleaning/re-reserving a prospective temp. Confirmation is not durable until native reserve/acceptance. Discard clears in-memory preparation and replies with `{profile:P,kind:"discarded"}` in Reply; creates no history. A host abort between Prepare and Confirm cannot create native Pending, though proposals already retained remain.
+Lease is §1's exact object; modes/grant/authorization/confirm are host-only. The child knows the configured owner from its independent grant, not a forwarded agent actor. Call allows retain/context/history/resolve/query and accepted exact Open/Revise retrieval only. New/pending Open/Revise through Call return unavailable with no mutation, forcing Prepare/Confirm. Prepare resolves key first: an accepted match returns Reply/Accepted directly; changed input Reply/Error; new/pending prepares the immutable review without reservation. It rejects another active prepared subject. Confirm compares complete frozen typed input and the active preparation, validates true literal and lease, constructs original receipt if new, then invokes native acceptance. A prepared pending subject (including a validated prospective reservation temp) uses its retained original receipt and **that receipt's exact retained presentation**, reviewed again. Confirm must reuse those original grounds: it cannot mint a different receipt when cleaning/re-reserving a prospective temp. Confirmation is not durable until native reserve/acceptance. Discard clears in-memory preparation and replies with `{version:V,kind:"discarded"}` in Reply; creates no history. A host abort between Prepare and Confirm cannot create native Pending, though proposals already retained remain.
 
 Connect/Prepare/Confirm/Call failures use Reply/Error with the matching ID; an invalid frame may instead close without a reply. Close/Discard are host lifetime operations and require no mutation grant, but do not disclose private data. Exhausted IDs require an explicit clean reconnect; never wrap them.
 
@@ -330,13 +338,13 @@ Illustrative aliases below stand for the fully expanded MaterialRef/FactRef obje
 For example, the fully expanded Saturday request is the following JSON. Hashes were calculated from the exact illustrative UTF-8 bytes above; they are byte-identity examples, not claims that any material is enrolled or a fact accepted:
 
 ```json
-{"profile":"ck-referenced-intent@1","op":"revise_intent","ledger":"ledger-1","change":"change-1","key":"saturday-1","expected":{"ledger":"ledger-1","change":"change-1","seq":1},"instruction":{"custody":"custody-1","sha256":"2f2a619fb0e22ff4fd7271d7b2653b15f7f7f241fcc509bb1550810a592ea59d","bytes":23,"text":"utf8-exact@1"},"replacement":{"what":{"custody":"custody-1","sha256":"cb615c78e42b51322fa47879b94efe8580ca0e631874efabac6e1f0d1fca7e7c","bytes":24,"text":"utf8-exact@1"},"why":null}}
+{"version":"0.5.0-prototype.1","op":"revise_intent","ledger":"ledger-1","change":"change-1","key":"saturday-1","expected":{"ledger":"ledger-1","change":"change-1","seq":1},"instruction":{"custody":"custody-1","sha256":"2f2a619fb0e22ff4fd7271d7b2653b15f7f7f241fcc509bb1550810a592ea59d","bytes":23,"text":"utf8-exact"},"replacement":{"what":{"custody":"custody-1","sha256":"cb615c78e42b51322fa47879b94efe8580ca0e631874efabac6e1f0d1fca7e7c","bytes":24,"text":"utf8-exact"},"why":null}}
 ```
 
 Its accepted original result, if acceptance is actually established, is exactly:
 
 ```json
-{"format":"ck-intent-result@1","profile":"ck-referenced-intent@1","kind":"intent_revised","key":"saturday-1","actor":"person-1","fact":{"ledger":"ledger-1","change":"change-1","seq":2},"previous":{"ledger":"ledger-1","change":"change-1","seq":1}}
+{"format":"ck-intent-result","version":"0.5.0-prototype.1","kind":"intent_revised","key":"saturday-1","actor":"person-1","fact":{"ledger":"ledger-1","change":"change-1","seq":2},"previous":{"ledger":"ledger-1","change":"change-1","seq":1}}
 ```
 
 1. Explicit provision (no accepted fact), retain I0/W0. Submit Open key `friday-1`, replacement What=W0/Why=null. Review includes policy and unopened previous=null; affirmative acceptance yields Result opened/F1. Read/retain alone never creates F1.
@@ -351,7 +359,7 @@ Its accepted original result, if acceptance is actually established, is exactly:
 
 | Check | Required observable outcome / actual boundary |
 | --- | --- |
-| Positive dinner and fresh reader | Real Pi TUI approval → real Rust acceptance, clean owner exit/new session reopen, exact instruction/What/Why/policy/review/receipt resolution. Sunday then original Saturday query leaves F3 current and trace unchanged. A human smoke confirms the supported local approval profile; simulated UI is not real-user adoption. |
+| Positive dinner and fresh reader | Real Pi TUI approval → real Rust acceptance, clean owner exit/new session reopen, exact instruction/What/Why/policy/review/receipt resolution. Sunday then original Saturday query leaves F3 current and trace unchanged. A human smoke confirms the supported local approval boundary; simulated UI is not real-user adoption. |
 | Exact-source and forged approval | Tool actor/approval/receipt/lease/unknown fields rejected; mutation Call cannot bypass Prepare/Confirm; altered text/ref/expected after Prepare cannot confirm. No native record; direct forged host pipe demonstrates excluded compromised-host premise, not a claimed isolation test. |
 | Stale subject and input equality | Two Friday-based keys cannot both replace F1; null/empty, non-ASCII, controls, escapes, same-text new fact, changed op/reference under existing key. Accepted original Result/actor stable across reopen. |
 | Closed policy and authority | Wrong/extra mandatory policy, unknown coverage/relationship/evaluator, unsupported filesystem/identity, unavailable/disallow mutate refuse. Disclosure allowed/mutate denied still permits accepted query, not pending completion. |
@@ -362,7 +370,7 @@ Its accepted original result, if acceptance is actually established, is exactly:
 
 ### Repeatable finite measurement setup
 
-Use deterministic ASCII fixtures only, no inference. Three paired scale points (history count includes accepted opening): **short 3 records with 32-byte What**, **medium 32 with 512-byte What**, **near-limit 127 with 4,096-byte What**. Instruction is 32 bytes, Why=null, unique monotonically numbered keys and ASCII suffixes; pad What with ASCII `x` to exact size. Each setup preserves real P approval receipts/presentations and stays within 768 items/16 MiB raw material/4 MiB trace. Native new-revision sample grows near-limit 127 → 128, never measures unsupported overflow as a “fast acceptance.” Also test an opening with instruction, What and nonnull Why each containing 4,096 U+0001 bytes outside timing: its escaped three-field presentation exceeds the 65,536-byte review-material budget and must refuse before approval/reservation. Report actual trace/material bytes/items at each point.
+Use deterministic ASCII fixtures only, no inference. Three paired scale points (history count includes accepted opening): **short 3 records with 32-byte What**, **medium 32 with 512-byte What**, **near-limit 127 with 4,096-byte What**. Instruction is 32 bytes, Why=null, unique monotonically numbered keys and ASCII suffixes; pad What with ASCII `x` to exact size. Each setup preserves real V approval receipts/presentations and stays within 768 items/16 MiB raw material/4 MiB trace. Native new-revision sample grows near-limit 127 → 128, never measures unsupported overflow as a “fast acceptance.” Also test an opening with instruction, What and nonnull Why each containing 4,096 U+0001 bytes outside timing: its escaped three-field presentation exceeds the 65,536-byte review-material budget and must refuse before approval/reservation. Report actual trace/material bytes/items at each point.
 
 For each scale/path/mode plan **exactly 100 measured attempts, never a target of 100 successes**. Each planned attempt consumes one slot even if setup fails, the call is refused, times out, returns an incorrect outcome or cannot be verified; never replace it, retry it for timing or append extra attempts. Retain attempted index, setup/dispatch/completion status, available timings and correctness evidence for every attempt. Report planned/attempted/successful/failed/unverified/unattempted counts and reasons; mark the cell incomplete if any of the 100 lacks a successful validated outcome or execution stops early. Stop early for blocked custody, unresolved cleanup or another safety condition; preserve the unfinished count, not inferred zeros. Existing per-call/composition deadlines apply. Publish headline p50/p95 only when all 100 planned attempts completed correctly, using nearest-rank 50th/95th ordered samples; otherwise quantiles are unavailable, not calculated from a success-only replacement pool. Report raw observations and min/max for any successful subset explicitly as incomplete diagnostics; failures/refusals are separate outcomes, not low-latency success samples.
 
@@ -385,21 +393,23 @@ Candidate execution, after the review/adoption gate, belongs to disposable exter
 
 ## 9. Reuse, missing support and implementation handoff proposal
 
+Version alignment does not change the reviewed authority, admission, custody, failure, cleanup or benchmark rules. Encoded bytes/digests for requests, generated policy/presentation/receipt material and controls change with the renamed fields/tags; calculate them under V, never reuse old proposal hashes. Raw Friday/Saturday text and their illustrative material digests are unchanged. Package-version metadata alignment belongs to the native implementation owner; no dependency update is implied.
+
 Inspected source/test text at base `85153b2773df9d9aa402911bb92c78eca6d110a9` is shape/evidence, not freshly executed behavior:
 
 | Existing path | Proposed reuse; what is not supplied |
 | --- | --- |
-| `src/application/ledger_continuity.rs` | Guard-owned bounded ingress/current disclosure/mutation distinction and one owner composition; fixed `owner-1` fixture is not person authentication or exact UI approval. P needs new closed host/types, not altered v6 semantics. |
+| `src/application/ledger_continuity.rs` | Guard-owned bounded ingress/current disclosure/mutation distinction and one owner composition; fixed `owner-1` fixture is not person authentication or exact UI approval. V needs new closed host/types, not altered v6 semantics. |
 | `src/adapters/jsonl/ledger/history/operations.rs` | Key-first exact accepted return, expected-intent conflicts, reserve/append/sync/checkpoint and final disclosure separation. Existing mutation can complete pending; cannot be reused as read-only query. |
-| `src/adapters/jsonl/ledger/history/sequential.rs` | Sequential prefix hash/schema/semantic validation and bounded spans/key lookup; existing inline normalized requests and built-in 80-byte Check are not P's references/policy. |
-| `src/adapters/jsonl/ledger/storage.rs`; `src/adapters/jsonl/opening/storage.rs` | Secure descriptor opens, exclusive flock, full writes/file+parent barriers, same-parent replacement and monotonic mutation incidents. New material directory/inventory and write-free reads require explicit new profile integration. |
-| `src/adapters/jsonl/ledger/continuity/identity.rs`, `receipt.rs` | Existing held-fd btrfs identity grammar/acquisition and live binding checks; apply to P root/lock/material directory without weakening identities or making receipt authority client-writable. |
+| `src/adapters/jsonl/ledger/history/sequential.rs` | Sequential prefix hash/schema/semantic validation and bounded spans/key lookup; existing inline normalized requests and built-in 80-byte Check are not V's references/policy. |
+| `src/adapters/jsonl/ledger/storage.rs`; `src/adapters/jsonl/opening/storage.rs` | Secure descriptor opens, exclusive flock, full writes/file+parent barriers, same-parent replacement and monotonic mutation incidents. New material directory/inventory and write-free reads require explicit new version integration. |
+| `src/adapters/jsonl/ledger/continuity/identity.rs`, `receipt.rs` | Existing held-fd btrfs identity grammar/acquisition and live binding checks; apply to V root/lock/material directory without weakening identities or making receipt authority client-writable. |
 | `tests/ledger_continuity.rs` (final authorization/pending/process-cut cases); `tests/ledger_history.rs` | Extend observable lost/denied accepted reply, prefix inspection and exact retry/fresh-reader patterns. None proves new material/UI/framing support. |
 | `Cargo.toml`; current manual codecs | Already pinned serde_core/serde_json/sha2/libc suffice for closed native codec, SHA-256 and local I/O; no dependency change proposed. |
 | `src/main.rs`; `package.json` | CLI is help/version stub; retained TS adapters pin Pi 0.85.1. Real bridge and isolated 1.2.0 consuming adapter are missing, not silently supplied by docs. |
 
 Installed Pi 1.2.0 `README.md`, `docs/extensions.md`, `tui.md`, `rpc-extension-ui.md`, `codemode.md`, `packages.md`, `configuration.md`, `settings.md`, `cli.md`, `security.md`, `environment-variables.md`, and complete `hello.ts`, `tools.ts`, `confirm-destructive.ts`, `timed-confirm.ts` examples were read as API feasibility evidence. Relevant guidance: custom UI in actual TUI only, structuredContent/outputSchema/isError for code-use, parallel tools need host serialization, factory must not start children, idempotent session_shutdown, isolated agent settings and explicit built-ins. They are not authentication, rendering qualification or proof cleanup always runs. No model primitive is selected.
 
-**Proposed cohesive native owner slice:** new P-specific kernel/application/JSONL modules and integration tests, with private shared storage/identity reuse kept behaviorally unchanged for old profiles. That owner controls schemas/material/prefix/query and bridge native dispatch together. After native contract tests, a thin external Pi-host owner implements the exact UI/lease/framing/lifetime mapping against those frozen messages; no shared-envelope parallel ownership. End-to-end review and approved diagnostic runs follow. Manager alone assigns actual paths/owners and integration sequence; this is not a competing roadmap or worker dispatch.
+**Proposed cohesive native owner slice:** new V-specific kernel/application/JSONL modules and integration tests, with private shared storage/identity reuse kept behaviorally unchanged for old versions. That owner controls schemas/material/prefix/query and bridge native dispatch together. After native contract tests, a thin external Pi-host owner implements the exact UI/lease/framing/lifetime mapping against those frozen messages; no shared-envelope parallel ownership. End-to-end review and approved diagnostic runs follow. Manager alone assigns actual paths/owners and integration sequence; this is not a competing roadmap or worker dispatch.
 
 **B1–B3 author disposition:** closed on paper by the precise trusted-local premise/policy/UI, referenced format/material-prefix protocol, and separate query/retry/error/bridge contracts above. All require independent challenge and user adoption; no self-acceptance. User-owned choices presented for that gate are the honest local-host trust limitation, closed personal-plan policy, fixed finite limits/whole-text encoding, fail-closed unsupported/torn-cut treatment, and deliberately limited clean/process recovery claim. If stronger authentication, policy coverage or repair/reboot guarantees are mandatory, this packet is blocked for that requirement rather than silently “ready” under a weaker premise. No further product scope decision is hidden behind a generic TODO.
