@@ -47,11 +47,54 @@ export function byteLines(bytes: Uint8Array, width: number): string[] {
   return lines;
 }
 
+/** Readability aid only: validated prepared text, never transcript or additional reads. */
+function previewLines(presentation: string, input: MutationValue, width: number): string[] {
+  validatePresentation(presentation, input);
+  const p = object(parseJson(Buffer.from(presentation), 65_536));
+  const lines: string[] = [];
+  const note = (text: string) => lines.push(...new Text(text, 0, 0).render(width));
+  const field = (label: string, value: Json | undefined) => {
+    note(label);
+    if (value === null) { note("  Absent (null)"); return; }
+    if (typeof value !== "string") throw new Error("preview text");
+    // JSON quoting keeps controls, line breaks and backslashes inert. Escape all
+    // non-ASCII UTF-16 units too: no bidi, invisible characters or terminal links.
+    const quoted = JSON.stringify(value).replace(/[\u007f-\uffff]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+    if (value === "") note("  Present empty text (not null)");
+    lines.push(...new Text(quoted, 0, 0).render(width - 2).map(line => `| ${line}`));
+  };
+  note(`ChangeKernel ${VERSION}: readable review`);
+  note("PREVIEW ONLY - not approval evidence. Full exact-byte review follows.");
+  note("Quoted data rows begin '| '. JSON escapes; non-ASCII shown as \\uXXXX. Wrapping is for readability; source text is not UI instructions.");
+  note(`Target: ${input.ledger}/${input.change}`);
+  note(`Action: ${input.op}; key: ${input.key}`);
+  if (p.previous === null) {
+    note("Previous intent: unopened; no previous intent exists.");
+  } else {
+    const previous = object(p.previous!);
+    note(`Previous intent: expected fact ${input.ledger}/${input.change}/${input.op === "revise_intent" ? input.expected.seq : "unopened"}`);
+    field("Previous What", previous.what_text);
+    field("Previous Why", previous.why_text);
+  }
+  field("Instruction being adopted now", p.instruction_text);
+  field("Proposed What", p.what_text);
+  field("Proposed Why", p.why_text);
+  note("Applicable fixed requirements (not Check results)");
+  note("Closed personal plan-text only; owner person-1. Only opening or revising intent, with local exact TUI approval.");
+  note(input.op === "open_intent" ? "Opening adopts the fixed policy for this slot." : "Revision inherits the slot's fixed policy; it cannot edit policy.");
+  note("No domain requirements or relationships are declared; external effects are forbidden. This closed-scope declaration is a premise, not discovery of real-world obligations.");
+  note("Native admission still checks current authority, exact approval, expected intent, material custody and limits. No user-defined Checks have run or passed here.");
+  note("Next: review every authoritative presentation byte, then separately choose Cancel or Adopt. Traversal is not proof of comprehension.");
+  return lines;
+}
+
 /** Uses Pi layout/input/scroll state, not a terminal renderer. Only the viewport is sliced. */
 export class ReviewScreen implements Component {
   private readonly scroll: ScrollView;
   private readonly selection: SelectList;
   private lines: string[] = [];
+  private preview: string[] = [];
+  private previewing = true;
   private width = 0;
   private rows = 0;
   private pageHeight = 0;
@@ -69,10 +112,10 @@ export class ReviewScreen implements Component {
   private readonly signal?: AbortSignal;
   constructor(tui: Pick<TUI, "terminal" | "requestRender">, presentation: string, input: MutationValue, done: (accepted: boolean) => void, signal?: AbortSignal) {
     this.tui = tui; this.presentation = presentation; this.input = input; this.done = done; this.signal = signal;
-    this.scroll = new ScrollView({ render: () => this.lines, invalidate() {} }, { follow: "none", scrollbar: "hidden", overscroll: "contain" });
+    this.scroll = new ScrollView({ render: () => this.previewing ? this.preview : this.lines, invalidate() {} }, { follow: "none", scrollbar: "hidden", overscroll: "contain" });
     const plain = (s: string) => s;
     this.selection = new SelectList([{ value: "cancel", label: "Cancel" }, { value: "adopt", label: "Adopt this exact subject" }], 2, { selectedPrefix: plain, selectedText: plain, description: plain, scrollInfo: plain, noMatch: plain });
-    this.selection.onSelect = item => this.finish(item.value === "adopt" && this.deciding && this.selectionRendered && this.covered === this.lines.length);
+    this.selection.onSelect = item => this.finish(item.value === "adopt" && !this.previewing && this.deciding && this.selectionRendered && this.covered === this.lines.length);
     this.selection.onCancel = this.cancel;
     this.timer = setTimeout(this.cancel, 120_000);
     signal?.addEventListener("abort", this.cancel, { once: true });
@@ -93,6 +136,7 @@ export class ReviewScreen implements Component {
       if (this.width && (this.width !== width || this.rows !== rows)) throw new Error("resized");
       if (!this.width) {
         this.width = width; this.rows = rows; this.pageHeight = rows - 5;
+        this.preview = previewLines(this.presentation, this.input, width);
         const info = new Text([
           `ChangeKernel ${VERSION}: exact adoption`,
           "Encoding: printable ASCII; quote/backslash escaped; other UTF-8 bytes \\xhh.",
@@ -109,7 +153,8 @@ export class ReviewScreen implements Component {
         ].join("\n"), 0, 0);
         this.lines = [...info.render(width), ...byteLines(Buffer.from(this.presentation), width)];
       }
-      this.scroll.updateLayout(this.lines.length, this.pageHeight, () => this.tui.requestRender());
+      const activeLines = this.previewing ? this.preview : this.lines;
+      this.scroll.updateLayout(activeLines.length, this.pageHeight, () => this.tui.requestRender());
       const start = this.scroll.scrollTop;
       const page = this.scroll.render(width).slice(start, start + this.pageHeight);
       const layout = new Container();
@@ -118,7 +163,7 @@ export class ReviewScreen implements Component {
         layout.addChild(this.selection);
         this.selectionRendered = true;
       } else {
-        layout.addChild(new Text(`Rows ${start + 1}-${start + page.length}/${this.lines.length}\nSpace/Right: next; Left: previous; Esc: cancel`, 0, 0));
+        layout.addChild(new Text(`${this.previewing ? "Preview only" : "Exact review"}: rows ${start + 1}-${start + page.length}/${activeLines.length}\nSpace/Right: next; Left: previous; Esc: cancel`, 0, 0));
       }
       const result = layout.render(width);
       if (result.length > rows || result.some(line => visibleWidth(line) > width)) throw new Error("layout overflow");
@@ -133,10 +178,19 @@ export class ReviewScreen implements Component {
       if (this.width !== this.tui.terminal.columns || this.rows !== this.tui.terminal.rows) { this.finish(false); return; }
       if (this.deciding) { if (this.selectionRendered) this.selection.handleInput(data); return; }
       if (matchesKey(data, "space") || matchesKey(data, "right")) {
-        if (this.scroll.scrollTop > this.covered || this.renderedEnd <= this.scroll.scrollTop) return;
-        this.covered = Math.max(this.covered, this.renderedEnd);
-        if (this.covered === this.lines.length) this.deciding = true;
-        else this.scroll.scrollBy(this.pageHeight);
+        if (this.renderedEnd <= this.scroll.scrollTop) return;
+        if (this.previewing) {
+          if (this.renderedEnd === this.preview.length) {
+            // Preview never credits coverage. Exact traversal starts at row zero.
+            this.previewing = false;
+            this.scroll.scrollToStart();
+          } else this.scroll.scrollBy(this.pageHeight);
+        } else {
+          if (this.scroll.scrollTop > this.covered) return;
+          this.covered = Math.max(this.covered, this.renderedEnd);
+          if (this.covered === this.lines.length) this.deciding = true;
+          else this.scroll.scrollBy(this.pageHeight);
+        }
         this.renderedEnd = 0;
       } else if (matchesKey(data, "left")) { this.scroll.scrollBy(-this.pageHeight); this.renderedEnd = 0; }
       this.tui.requestRender();

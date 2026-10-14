@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { IntentHost } from '../../../../src/adapters/pi/referenced-intent/host.ts';
-import { ReviewScreen } from '../../../../src/adapters/pi/referenced-intent/review.ts';
-import { root, fakeChild, configuration, request, lease, nonTui, material, VERSION } from './helpers.mjs';
+import { ReviewScreen, POLICY_TEXT } from '../../../../src/adapters/pi/referenced-intent/review.ts';
+import { root, fakeChild, configuration, request, lease, nonTui, material, VERSION, canonical } from './helpers.mjs';
 
 const accepted = `{version:'${VERSION}',kind:'accepted',result:{format:'ck-intent-result',version:'${VERSION}',kind:'opened',key:r.request.key,actor:'person-1',fact:{ledger:'ledger-1',change:'change-1',seq:1},previous:null}}`;
 const mutation = () => request('open_intent', { key:'friday',instruction:material('Friday'),replacement:{what:material('Friday'),why:null} });
@@ -53,6 +53,8 @@ test('unexpected result kind and noncurrent prepared subject fail closed',async(
 
 test('120 second UI deadline cancels without any affirmative event',t=>{
   t.mock.timers.enable({apis:['setTimeout']});let answer;
-  const screen=new ReviewScreen({terminal:{columns:80,rows:20},requestRender(){}},'data',mutation(),v=>{answer=v});
+  const input=mutation();
+  const presentation=canonical({format:'ck-intent-review',input,policy_text:POLICY_TEXT,previous:null,instruction_text:'Friday',what_text:'Friday',why_text:null})+'\n';
+  const screen=new ReviewScreen({terminal:{columns:80,rows:20},requestRender(){}},presentation,input,v=>{answer=v});
   screen.render(80);t.mock.timers.tick(119_999);assert.equal(answer,undefined);t.mock.timers.tick(1);assert.equal(answer,false);screen.dispose();
 });

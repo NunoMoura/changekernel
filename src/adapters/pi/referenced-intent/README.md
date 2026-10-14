@@ -12,6 +12,14 @@ Do not load this directory from the development checkout. Copy/pack candidate by
 
 Only seven closed domain tools are registered. Grant, lease, Prepare, Confirm and lifetime envelopes remain private. Non-TUI modes can retrieve accepted results, never approve/resume adoption. Approval uses a fresh Pi custom component, complete ASCII-encoded byte traversal, then a separate selection defaulting to Cancel. Resize cancels rather than transferring traversal coverage to a new layout. Terminals below 40 columns/12 rows (or above the bounded layout ceiling) refuse. Timeout is 120 seconds. No production approval bypass exists.
 
+## Review interaction
+
+The first phase is a **non-authoritative readable preview** of the same validated native prepared presentation: target/action/key, previous intent (or unopened), instruction, proposed What/Why and the fixed closed personal-plan requirements. Absent Why (`null`) and present empty text (`""`) are labeled separately. The policy explanation is not an assessment: no user-defined Checks have run or passed, and native admission still checks authority, exact approval, expected intent, custody and limits.
+
+Source fields are quoted inert data in Pi `Text`, never Markdown or terminal instructions. Every wrapped data row has a `| ` prefix; JSON escapes expose controls/newlines/backslashes, and non-ASCII UTF-16 units appear as `\uXXXX` (including surrogate pairs). This word-wrapped preview is only a readability aid, not exact-byte evidence or a claim about transcript authorship.
+
+Use Space/Right to advance and Left to revisit pages; Esc cancels. At the end of the preview, exact review starts at its first row with **zero traversal credit**. The unchanged authoritative byte encoding, material digest, byte length and entire prepared presentation follow. Only complete exact traversal enables the separate Pi selection: **Cancel** by default, or explicitly select **Adopt this exact subject** and confirm. The same 120-second deadline covers both phases; switching phases does not restart it. Resize, abort, close and unsupported layout still cancel. No preview content changes input, policy, presentation or receipt bytes.
+
 ## Compositions and coverage
 
 Pi's trusted `tool_call.parentToolCallId` links every nested call to the enclosing Codemode invocation. One shared budget covers that entire script and is retired at its `tool_execution_end`; caller parameters cannot select/reset it. A standalone direct tool invocation has its own composition. Missing parent provenance refuses rather than guessing an ID prefix. Scope bookkeeping is bounded and session-local.
