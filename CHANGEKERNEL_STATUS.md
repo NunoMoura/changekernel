@@ -1,15 +1,29 @@
 # ChangeKernel temporary source status
 
-## Current handoff — R82/R83 concept disposition audit
+## Current handoff — disposition audits accepted; retirement boundary awaits approval
 
-The user approved auditing deprecated concepts and real consumers before proposing surgical retirement. **No deletion, move, contract change or compatibility withdrawal is assigned yet.** Two independent report-only audits use accepted baseline `30cb8b569e3af3cc983a9ecf8434296c55ff9401`:
+**Manager verdict: `accepted` for R82/R83 report-only audits after independent review.** Audited accepted subject: `30cb8b569e3af3cc983a9ecf8434296c55ff9401`. The user approved the investigation, not an unseen support withdrawal. No executable or Wiki change was integrated; **no deletion, move, migration or compatibility withdrawal is assigned yet**.
 
-| Assignment | Branch/worktree under `/home/canina7/Projects/changekernel-workers/` | Exact assignment |
-| --- | --- | --- |
-| R82: executable concepts, current consumer closure and retirement dependencies | `work/r82-source-disposition` / `r82-source-disposition` | `b9c0fba56cce62cf53ca7d3243514e3492e4e1df:CHANGEKERNEL_STATUS.md` |
-| R83: desired design, retained contract obligations, terminology and documentation placement | `work/r83-doc-disposition` / `r83-doc-disposition` | `a97b3fbdb3faf46e891df3cb93fa1198cdbcac9b:CHANGEKERNEL_STATUS.md` |
+| Audit | Exact accepted report |
+| --- | --- |
+| R82: current executable closure, predecessor consumers and retirement dependencies | `f54269476ab4c043a73e209b2c097676e2fc0e8a:CHANGEKERNEL_STATUS.md` |
+| R83: current design versus retained contracts, terminology, metadata and navigation | `acead6fac70b9dc37162c44b08e921c07c4b43f5:CHANGEKERNEL_STATUS.md` |
 
-Workers own only their worktree status reports. Source/tests/manifests/Wiki remain frozen; the manager consolidates findings and presents concrete disposition choices for user approval before implementation. Distinguish current semantics, supporting mechanisms, retained profiles, unintegrated predecessors and historical evidence; no permanent legacy museum, field-name purge or invented external-consumer absence. Static inspection needs no runtime/build/test/inference campaign. External routing/evidence: `/home/canina7/.local/state/changekernel-source-review/r82-r83-disposition.y99fp25e/`. Human TUI smoke and benchmarks remain outstanding, not supplied by this audit.
+### Findings and pending decision
+
+- Current `0.5.0-prototype.1` native/Pi 1.2 path is semantically separate from older intake/SQLite, candidate/continuation, packet, JSONL v1–v6 and root Pi 0.85.1 surfaces. However, current native custody imports raw opening I/O and Ledger held-fd identity, with deeper legacy accounting dependencies. Extract those required mechanisms before removing predecessor semantic modules.
+- Generic file-candidate preparation has no discovered concrete in-repo store implementation, but its SQL schema is actively installed/validated by retained continuation. Removing generic API glue is not permission to remove that schema. Retiring production SQLite would still leave the standalone effect fixture as a `rusqlite` consumer unless separately dispositioned.
+- Root TS codecs/identity/ports have real retained-adapter consumers, but no use by the current Pi 1.2 host. Root npm build/test/pack targets that older closure, not current user delivery. They must be dispositioned together rather than purged by old directory names or silently upgraded.
+- State attribution metadata and navigation mix predecessor structure with current design. Historical implementation labels, source-history provenance, research, archive bodies and frozen wire identifiers are evidence/contract meanings, not new governors or instructions to rebuild retired machinery. Domain State, Checks, authority, custody and recovery remain current requirements.
+- Public exports and test consumers do not prove deployed external users, nor a perpetual maintenance obligation. Explicit retained compatibility must be dispositioned, not silently withdrawn; no external-user or existing-custody census was performed.
+
+**Proposed target, not adopted:** keep the current prototype and required private supporting mechanisms as active product code; explicitly withdraw named predecessor executable APIs only after user approval, with historical source/contracts/checkpoints preserved and no old-custody migration/cleanup. Avoid a permanent legacy implementation tree or loss of useful domain requirements. R82's lowest-coupling first cut is the packet-only API, conditional on support withdrawal; the manager may sequence broader approved retirement around helper extraction rather than optimize for arbitrary file deletion. No new concrete package layout, frozen field rename or successor contract has been selected.
+
+### Actual checks and limits
+
+Manager independently read consequential entry/host/storage/identity/candidate/continuation/TS bodies and current/compatibility documentation; cross-checked packet/candidate consumers across tracked source/tests/examples, archive Git blobs, report-only deltas, clean worker heads and protected hash. Whitespace checks passed. Only manager/worker status notes changed; source/tests/manifests/Wiki/archive bytes remain unchanged. No tests, builds, runtime/inference, installs, benchmark, release/controller or old-custody operations were run. Static inspection is not runtime conformance, external-consumer absence or qualification.
+
+External evidence/routing: `/home/canina7/.local/state/changekernel-source-review/r82-r83-disposition.y99fp25e/manager-audit-verdict.json` and the two worker routing/report channels. Preserve their exact checkpoints; do not merge worker status wholesale. Next: present concrete support/retirement choices to the user before adoption or implementation. Human TUI smoke and benchmarks remain outstanding, not supplied by this audit.
 
 ## R81 accepted TUI baseline
 
@@ -46,7 +60,7 @@ R80 documentation integration: `153077b633d921f530ddc772692709c85b86d759`; conso
 
 ## Worker pool and protected work
 
-Ten workers are retained: two report-only audits assigned, previous eight parked. No implementation assignment remains active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Ten workers are retained and parked; no audit or implementation assignment remains active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
@@ -58,7 +72,7 @@ Ten workers are retained: two report-only audits assigned, previous eight parked
 | `r78-requirements-doc-audit` (R80) | `work/r78-requirements-doc-audit` | `7e6a26d2cd7578b4c3d36377a7b2d4a574e907c6` |
 | `r79-requirements-code-audit` | `work/r79-requirements-code-audit` | `dbdf253f3ec19f44b000f4cb9f8f480482c03ba8` |
 | `r81-prototype-tui` | `work/r81-prototype-tui` | `2688412e504091d17912c6c5328f64842f881b29` |
-| `r82-source-disposition` | `work/r82-source-disposition` | assignment `b9c0fba56cce62cf53ca7d3243514e3492e4e1df` |
-| `r83-doc-disposition` | `work/r83-doc-disposition` | assignment `a97b3fbdb3faf46e891df3cb93fa1198cdbcac9b` |
+| `r82-source-disposition` | `work/r82-source-disposition` | `f54269476ab4c043a73e209b2c097676e2fc0e8a` |
+| `r83-doc-disposition` | `work/r83-doc-disposition` | `acead6fac70b9dc37162c44b08e921c07c4b43f5` |
 
 Protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
