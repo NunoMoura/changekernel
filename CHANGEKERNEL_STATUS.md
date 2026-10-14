@@ -1,6 +1,14 @@
 # ChangeKernel temporary source status
 
-## Current handoff — R80 accepted; human TUI smoke remains outstanding
+## Current handoff — R81 Pi review TUI implementation
+
+The user approved implementing the minimal Pi-hosted TUI for `0.5.0-prototype.1` and explicitly deferred general Check implementation. The [approved UI](.changekernel/wiki/items/system/components/sdk.md#initial-pi-review-tui) and [sequence](.changekernel/wiki/items/product/plan.md#format-first-design-and-pi-first-delivery) are recorded at `2034e4e043d2de8c337c35b86d2f535b40a4a2f4`. This approval is implementation permission, not evidence that human runtime smoke has already happened.
+
+**R81 is assigned, not accepted.** One implementation owner works at `/home/canina7/Projects/changekernel-workers/r81-prototype-tui`, branch `work/r81-prototype-tui`, from base `2034e4e043d2de8c337c35b86d2f535b40a4a2f4`. Exact assignment: `29af5a78be4514d0a81f6b826ccd1e4beb035e14:CHANGEKERNEL_STATUS.md`. Owned source is `src/adapters/pi/referenced-intent/review.ts` and its README, focused host/review tests and worker status. No Rust, wire/profile, manifest, dependency or generic Check changes. The manager owns Wiki and integration. Reuse the accepted native/host foundation; make intent/grounds readable without replacing exact evidence or weakening adoption gates.
+
+Acceptance requires independent source review, active diagnostics with honest coverage, external consumer typecheck/focused real-boundary tests, retained external `npm test`, exact-byte/scope verification and observed cleanup. Actual human approval/reopen smoke follows source review; benchmarks follow that smoke. Candidate execution stays external and isolated. Coordination evidence: `/home/canina7/.local/state/changekernel-source-review/r81-prototype-tui.umyWJ0fd/`.
+
+## R80 accepted documentation baseline
 
 **Manager verdict: `accepted` for the documentation-only R80 slice after independent review and combined verification.** The approved responsibility split and Pack direction are now recorded in the [product](.changekernel/wiki/items/product/changekernel.md), [Checks](.changekernel/wiki/items/system/components/checks.md#engine-invariants-and-configurable-policy), [Pack section](.changekernel/wiki/items/system/components/checks.md#packs-and-first-party-software-development-checks), [property map](.changekernel/wiki/items/product/change-ledger-properties.md) and their dependent desired-state descriptions. The existing property/interaction tables, proposal status and frozen profile semantics remain intact. A possible marketplace is recorded only as a future opportunity, not an implementation assignment.
 
@@ -37,9 +45,9 @@ Historical rust-analyzer E0308 findings in unchanged `src/adapters/jsonl/ledger/
 
 R38 remains paused. No product-model/Jev call, dependency migration, other harness implementation, old-custody recovery/cleanup, external effect or source-controller loading is authorized. Candidate execution stays in fresh disposable external projects with isolated Pi settings and explicit resources. Do not install project-local ChangeKernel resources. Source/documentation acceptance grants no release qualification, deployment or controller handoff.
 
-## Parked pool and protected work
+## Worker pool and protected work
 
-Seven workers are retained and parked; no further assignment is active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Eight workers are retained: R81 is assigned; the previous seven remain parked. No other assignment is active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
@@ -50,5 +58,6 @@ Seven workers are retained and parked; no further assignment is active. Preserve
 | `r77-referenced-intent-pi-review` | `work/r77-referenced-intent-pi-review` | `840ae296816635812622ce81955416f618c241b7` |
 | `r78-requirements-doc-audit` (R80 reuse) | `work/r78-requirements-doc-audit` | `7e6a26d2cd7578b4c3d36377a7b2d4a574e907c6` |
 | `r79-requirements-code-audit` | `work/r79-requirements-code-audit` | `dbdf253f3ec19f44b000f4cb9f8f480482c03ba8` |
+| `r81-prototype-tui` | `work/r81-prototype-tui` | assignment `29af5a78be4514d0a81f6b826ccd1e4beb035e14` |
 
 Protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
