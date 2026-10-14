@@ -5,9 +5,15 @@ source-id: cw:design:referenced-intent-prototype
 ---
 # Referenced Intent Prototype Contract Candidate
 
+## Adopted version terminology correction
+
+The user clarified: “we decided to use version for everything.” Use **ChangeKernel version** consistently. Do not introduce a separate “native profile” abstraction or the assistant-proposed split into independently versioned software and native contracts. The software, request/data interpretation and native behavior are described under the applicable ChangeKernel version. Historical accepted bytes keep their original meaning; this correction does not migrate or relabel them.
+
+The `ck-referenced-intent@1` profile designation and separate versioning explanation below are superseded proposals, not adopted machinery. The reviewed body is retained here pending a focused alignment of its identifiers/envelopes to the agreed version scheme. Do not implement its `profile:P` fields or independently advance its component `@1` markers as a new version system. This correction does not select the next ChangeKernel version number or change the current package version. The remaining prototype scope, safety boundaries and diagnostic plan are unchanged; their concrete packet still requires adoption after the version alignment.
+
 ## Status and review subject
 
-**R62 candidate: every concrete choice below is proposed/unadopted.** This is one implementation packet for the [approved first prototype](intent-revision-contract.md#approved-first-prototype-scope) and [diagnostic measurements](intent-revision-contract.md#approved-diagnostic-benchmark-plan), not adoption, executable support or qualification. Independent review and user adoption of this packet still precede source implementation. Conditional execution authority is tracked in [the status note](../../../../../CHANGEKERNEL_STATUS.md).
+**R62 candidate, with the version correction above taking precedence: remaining concrete choices below are proposed/unadopted.** This is one implementation packet for the [approved first prototype](intent-revision-contract.md#approved-first-prototype-scope) and [diagnostic measurements](intent-revision-contract.md#approved-diagnostic-benchmark-plan), not adoption, executable support or qualification. Independent review and user adoption of this packet still precede source implementation. Conditional execution authority is tracked in [the status note](../../../../../CHANGEKERNEL_STATUS.md).
 
 The useful outcome is Friday → Saturday, fresh-reader explanation after closing the original Pi session, then Sunday and recovery of the original Saturday result without another revision. One person, one Ledger, one Change; no external effects, organization execution, model judgments or domain Check. Plan wording is an assertion/adopted intent, not proof that dinner is feasible or arranged. Changing it releases no reservation, expense or responsibility.
 
