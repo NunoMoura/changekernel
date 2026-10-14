@@ -1,6 +1,17 @@
 # ChangeKernel temporary source status
 
-## Current handoff — R81 TUI source accepted; human interaction remains next
+## Current handoff — R82/R83 concept disposition audit
+
+The user approved auditing deprecated concepts and real consumers before proposing surgical retirement. **No deletion, move, contract change or compatibility withdrawal is assigned yet.** Two independent report-only audits use accepted baseline `30cb8b569e3af3cc983a9ecf8434296c55ff9401`:
+
+| Assignment | Branch/worktree under `/home/canina7/Projects/changekernel-workers/` | Exact assignment |
+| --- | --- | --- |
+| R82: executable concepts, current consumer closure and retirement dependencies | `work/r82-source-disposition` / `r82-source-disposition` | `b9c0fba56cce62cf53ca7d3243514e3492e4e1df:CHANGEKERNEL_STATUS.md` |
+| R83: desired design, retained contract obligations, terminology and documentation placement | `work/r83-doc-disposition` / `r83-doc-disposition` | `a97b3fbdb3faf46e891df3cb93fa1198cdbcac9b:CHANGEKERNEL_STATUS.md` |
+
+Workers own only their worktree status reports. Source/tests/manifests/Wiki remain frozen; the manager consolidates findings and presents concrete disposition choices for user approval before implementation. Distinguish current semantics, supporting mechanisms, retained profiles, unintegrated predecessors and historical evidence; no permanent legacy museum, field-name purge or invented external-consumer absence. Static inspection needs no runtime/build/test/inference campaign. External routing/evidence: `/home/canina7/.local/state/changekernel-source-review/r82-r83-disposition.y99fp25e/`. Human TUI smoke and benchmarks remain outstanding, not supplied by this audit.
+
+## R81 accepted TUI baseline
 
 **Manager verdict: `accepted` for the bounded Pi review TUI after independent source review and combined verification.** The user approved this UI for `0.5.0-prototype.1` and explicitly deferred general Check implementation. The [approved UI](.changekernel/wiki/items/system/components/sdk.md#initial-pi-review-tui) and [sequence](.changekernel/wiki/items/product/plan.md#format-first-design-and-pi-first-delivery) are recorded at `2034e4e043d2de8c337c35b86d2f535b40a4a2f4`.
 
@@ -33,9 +44,9 @@ Prior accepted source: native `47f51b5fe14fe9656bdbad00b1b5b0ca859c276b`, initia
 
 R80 documentation integration: `153077b633d921f530ddc772692709c85b86d759`; consolidated acceptance: `8bdc7219b2d5d113d62ef78c9d831361802a74a4:CHANGEKERNEL_STATUS.md`. R78/R79 audit: `414af845f9e166ef20868e65f1e88c4084e6bf0e:CHANGEKERNEL_STATUS.md`. These preserve the approved Checks/engine/Ledger authority split and the separate missing implementation, not a completed general Check engine.
 
-## Parked pool and protected work
+## Worker pool and protected work
 
-Eight workers are retained and parked; no implementation assignment remains active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Ten workers are retained: two report-only audits assigned, previous eight parked. No implementation assignment remains active. Preserve worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
@@ -47,5 +58,7 @@ Eight workers are retained and parked; no implementation assignment remains acti
 | `r78-requirements-doc-audit` (R80) | `work/r78-requirements-doc-audit` | `7e6a26d2cd7578b4c3d36377a7b2d4a574e907c6` |
 | `r79-requirements-code-audit` | `work/r79-requirements-code-audit` | `dbdf253f3ec19f44b000f4cb9f8f480482c03ba8` |
 | `r81-prototype-tui` | `work/r81-prototype-tui` | `2688412e504091d17912c6c5328f64842f881b29` |
+| `r82-source-disposition` | `work/r82-source-disposition` | assignment `b9c0fba56cce62cf53ca7d3243514e3492e4e1df` |
+| `r83-doc-disposition` | `work/r83-doc-disposition` | assignment `a97b3fbdb3faf46e891df3cb93fa1198cdbcac9b` |
 
 Protected user edit `.changekernel/wiki/items/system/components/pi-coding-change.md` remains unstaged/uncommitted and unchanged: SHA256 `28342862c170012be9c2cb38a3136b1e9659233edddcffe3234c2057d26939fd`. Do not stage, overwrite or copy it into worker checkouts. Generated/runtime artifacts, sessions, credentials, caches and candidate packages remain outside source Git.
