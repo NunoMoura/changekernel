@@ -1,6 +1,21 @@
 # ChangeKernel temporary source status
 
-## Current handoff — human TUI smoke remains open
+## Current handoff — requirements and authority alignment audit
+
+The user requested a check of documentation and code against the clarified separation: Checks express custom requirements at decision/execution boundaries; Ledger-associated AuthN/AuthZ governs identity and authority; native identity/version, concurrency, durability and retry safeguards remain internal integrity mechanics, not another user-facing policy layer. This is the audit criterion, not adoption of a replacement wire contract or permission to edit the implementation.
+
+Two independent report-only audits use accepted subject `c5083f496042c98e1c3ab3013485941b3c71c478`:
+
+| Assignment | Branch / external worktree | Assignment checkpoint / scope |
+| --- | --- | --- |
+| R78 documentation | `work/r78-requirements-doc-audit` / `/home/canina7/Projects/changekernel-workers/r78-requirements-doc-audit` | `96185252da9dff3259cb649bfa11632b1ba091fd`; current Wiki semantics, proposals and frozen-profile distinctions |
+| R79 source/tests | `work/r79-requirements-code-audit` / `/home/canina7/Projects/changekernel-workers/r79-requirements-code-audit` | `35c30b0b57866fc1a545817d30b4d09b40754179`; actual Check/adoption/gating, authority and integrity paths |
+
+Each worker owns only its `CHANGEKERNEL_STATUS.md` report. Source, tests, Wiki and manifests are frozen. The manager separately checks the protected primary Wiki edit without altering or copying it. Findings must distinguish terminology drift, actual extra requirement semantics, missing desired capability and preserved historical/current profile contracts; names alone are not defects. Correction options remain proposals until reviewed and approved at the appropriate scope.
+
+Native/session cwd, branch/checkpoint, clean tree and working Codemode were verified before substantive dispatch. Current manager identity was reverified after detecting historical routing metadata; fresh routes and evidence are outside Git at `/home/canina7/.local/state/changekernel-source-review/r78-r79-requirements-audit.GxW6nbkp/`. The manager will inspect exact reports and consolidate findings before proposing corrections. No source acceptance, runtime experiment, schema migration or new implementation follows from dispatch. Human TUI smoke remains outstanding while this audit is addressed.
+
+## Accepted prerequisite — human TUI smoke remains open
 
 **Manager verdict: `accepted` for the bounded referenced-intent native and Pi host source.** Primary `main` contains the integrated host at `0a25702dc0ef7a50da4696b7a46b2dcb88565ef1`. This is source acceptance only: no real-human TUI smoke, release qualification, deployment or controller handoff has occurred.
 
@@ -41,7 +56,7 @@ R38 remains paused. No product-model/Jev call, dependency migration, other harne
 
 ## Parked pool and protected work
 
-Five managed workers are parked; none has a new assignment. Preserve all worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
+Seven managed workers are retained: R78 and R79 are active on the report-only audits above; these five prior workers remain parked with no new assignment. Preserve all worktrees, commits and evidence. Under `/home/canina7/Projects/changekernel-workers/`:
 
 | Worktree | Branch | Report/checkpoint |
 | --- | --- | --- |
