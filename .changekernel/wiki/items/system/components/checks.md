@@ -52,7 +52,7 @@ source-history:
 ---
 # Checks
 
-A **Check** defines a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. Running the Check produces a **Check assessment**, tied to the exact Check version and subject/version. A completed result reports the defined passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
+**Checks express users' custom policy:** the requirements that must be met for a decision to be accepted or executed. A Check defines a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. Authorized adoption makes it a requirement at a specified boundary; the engine enforces the applicable requirements. A definition can also be run for optional advice without becoming mandatory. Running it produces a **Check assessment**, tied to the exact Check version and subject/version. A completed result reports the defined passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
 
 Use subject-first terminology in new interfaces and explanations: “run Check” for evaluation and “Check assessment” for the retained evaluation/result. Definition, adoption and execution remain distinct operations. Existing wire names and historical contracts remain unchanged; the shortened “assessment” below retains this qualified meaning. A multiclass navigation recommendation is not automatically a Check assessment, and a human approval remains a distinct attributable decision.
 
@@ -60,16 +60,17 @@ Checks support the [lifecycle's versioned commitment and execution boundaries](c
 
 ## Engine invariants and configurable policy
 
-The engine owns the invariants that make an accepted transition meaningful. It does not own every judgment about whether a user's goal is worthwhile.
+ChangeKernel owns the engine enforcing applicable Checks, Ledger-associated authentication/authorization and the [adopted Ledger/Change properties](../../product/change-ledger-properties.md#defining-properties-and-value), including their [interaction refinements](../../product/change-ledger-properties.md#adopted-interaction-refinements). Its semantic responsibility includes owner-controlled continuity, revision, composition, contribution acceptance, supported transfer and truthful conclusions—not merely storage integrity. It does not impose a separate user Kernel policy-governor or a universal judgment of worthwhile goals.
 
-| Owner | Responsibility |
+| Responsibility | Owner and boundary |
 | --- | --- |
-| Engine | Valid typed transitions; exact relevant intent/operation/policy/subject and any adopted plan binding; current authorization and delegated scope; required assessment coverage; attributable retained results; truthful distinction between proposed, attempted, observed and uncertain outcomes. |
-| Native application/resource owner | Native permissions, schemas, business constraints and scoped mandatory obligations. |
-| User's selected Kernel | Goal-specific admission, planning rigor, success criteria, approval requirements and optional quality assessments within native/resource constraints. |
-| Adopted domain Pack | Reusable evaluators and defaults for a domain, not permission to override the other owners. |
+| Engine semantics and integrity | ChangeKernel preserves the adopted primitive properties and valid typed transitions, enforces applicable requirements and authority, and binds exact intent/operation/Check/subject and any adopted plan. It retains attributable decisions/results and distinguishes proposed, attempted, observed and uncertain outcomes. |
+| Ledger-associated authority | Authentication and authorization establish who may adopt or change scoped requirements, act, delegate and disclose. Qualified hosts establish the actual caller; a request field or Check pass supplies no authority. |
+| Native constraints | Applications/resource owners retain native permissions, schemas, business invariants and binding-specific concurrency/effect rules. These are not optional user Checks or all reducible to AuthN/AuthZ. |
+| Custom requirements | Authorized owners express goal-specific admission, feasibility, planning rigor, quality and success criteria through adopted Checks, including resource-owner assurance requirements within that owner's scope. Actual approval/consent remains a distinct attributable decision. |
+| Packs | Reusable collections of Checks, not independent governing authority. Obtaining a Pack neither adopts its requirements nor qualifies its evaluators. |
 
-The earlier release-wide checklist of comparative justification, feasibility and justification coherence is no longer mandatory engine policy. Such questions can be useful defaults in a selected Kernel or domain Pack. The [approved grounded-admission direction](ledger-governance-and-admission.md#decision-and-execution-boundaries) requires a justified basis for the next bounded action and proportionate challenge of consequential assumptions before substantial commitment, not a universal questionnaire or mandatory model call. Decision and execution policy can impose different requirements; authorized investigation can address unresolved broader feasibility within its own limits. Intent preservation, no self-authorizing policy changes and honest evidence remain core requirements. A resource owner can require domain assurance; selecting a different personal Kernel or Ledger View cannot waive it.
+The earlier release-wide checklist of comparative justification, feasibility and justification coherence is not mandatory engine policy. Such questions can be useful Check defaults in a Pack. Under the [grounded-admission direction](ledger-governance-and-admission.md#decision-and-execution-boundaries), substantive feasibility and proportionate challenge criteria belong in applicable Checks, not an unstated engine veto or mandatory model call. Decision and execution can have different adopted requirements; authorized investigation can address unresolved broader feasibility within its own limits. Supported operations, intent preservation, no self-authorizing requirement changes and honest evidence remain mandatory engine obligations. A personal requirement change or Ledger View cannot waive another owner's applicable requirements or native constraints.
 
 ## User-defined requirements across the lifecycle
 
@@ -118,9 +119,9 @@ The [dependency graph](change-ledger-structure.md#dependency-graph-as-a-view) an
 
 ## Common assessment requirements
 
-Applicable requirements come from the actual subject and governing policies, not a producer's label. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.
+Applicable custom requirements are the adopted Checks for the actual subject, scope and decision/execution boundary, not a producer's label or a second policy requirement layer. Required passing results, native rights, Change authorization and effect/custody guards must all hold. A passing Check cannot override native denial or prove an unobserved effect.
 
-- **Intent and admission:** preserve the exact proposal and current authority; establish whatever criteria the selected Kernel and resource policy require. Recording a proposal is not admission to effects. Material intent, scope or authority changes require appropriate re-admission, not automatic reassessment on every query.
+- **Intent and admission:** preserve the exact proposal and current authority; establish the applicable adopted Check requirements and native constraints. Recording a proposal is not admission to effects. Material intent, scope or authority changes require appropriate re-admission, not automatic reassessment on every query.
 - **Operation specification:** bind the pursuit to exact operations, subjects, preconditions, expected outcomes and recovery limits. The planned milestone requires adequate operation specification, not necessarily a separate plan artifact or Planning ceremony. Later decomposition, routing and aggregate commitments need their own supported coordination evidence.
 - **Before effect:** assess the exact operation/candidate and current guards where required. An earlier planning or assessment result does not certify an unknown candidate or future permission.
 - **Observed outcome and conclusion:** distinguish intended benefit, actual effects and remaining uncertainty. Candidate success is not evidence of publication, deployment or fulfillment of the Change. Required outcomes cannot be hidden as optional follow-ups; a formal Review stage is not universally required.
@@ -145,13 +146,13 @@ Natural-language classification is optional assistance under the [bounded semant
 
 ## Ownership, policy and activation
 
-Bind each assessment to the actual actor/context, exact Kernel/Check versions, relevant intent/operation/candidate and any adopted plan/workflow, State observations and applicable resource policy. Stage membership is neither a required Check field nor a source of authority. A default preference, matching hash, installed Pack or shared definition does not establish adoption or authority.
+Bind each assessment to the actual actor/context, exact adopted Check/settings and applicability grounds, relevant intent/operation/candidate and any adopted plan/workflow, and State observations. Ledger-associated authority governs adoption and revision; native resource rights and constraints still apply. Stage membership is neither a required Check field nor a source of authority. A default preference, matching hash, installed Pack or shared definition does not establish adoption or authority.
 
 A Check definition identifies its question, passing condition, inputs/outputs, applicability, dependencies, evaluator version and execution limits. An adoption record identifies who adopted that exact definition/settings, for which scope and under which current authority. Historical results keep their original interpretation after a definition changes.
 
-Applicability is established from actual scope/effects and governing rules. A candidate cannot activate its own exemption or weaker evaluator. Legitimate policy revision remains possible through the currently authorized transition; the engine does not freeze every old rule forever. Adopt executable policy by exact reference where appropriate instead of maintaining competing prose copies.
+Applicability is established from actual scope/effects and governing rules. A candidate cannot activate its own exemption or weaker evaluator. Legitimate custom-policy revision changes the applicable Check requirements through the currently authorized transition; the engine does not freeze every old rule forever. Adopt exact Check/settings references rather than maintaining a competing policy or checklist authority.
 
-Future borrowed or forked Changes establish applicable admission under their selected Kernel; retained evidence is not a portable approved flag. The initial single-user profile need not implement this transport to preserve exact version binding.
+Future borrowed or forked Changes establish applicable Check requirements and current authority at recipient admission; retained evidence is not a portable approved flag. The initial single-user profile need not implement this transport to preserve exact version binding.
 
 ## Typed Check requests
 
@@ -175,9 +176,9 @@ Expose input and passing conditions early. Presence, authenticity, relevance, ad
 
 Trusted deterministic validators are sufficient initially. Do not build a custom-code runtime or semantic service before a concrete supported Check requires one. A callback supplied by an untrusted client is not a trusted built-in validator.
 
-Later Packs can supply small functions through a qualified evaluator adapter. JavaScript/compiled TypeScript is a retained possible direction, not a required engine language. Custom evaluators execute outside authoritative host privileges under declared resource/disclosure/containment limits. A language library, Node permission flag or consistent receipt alone is not containment.
+A Pack is a reusable collection of Checks. Its Checks may use small functions through a qualified evaluator adapter; inclusion in a Pack does not make that execution supported or trusted. JavaScript/compiled TypeScript is a retained possible direction, not a required engine language. Custom evaluators execute outside authoritative host privileges under declared resource/disclosure/containment limits. A language library, Node permission flag or consistent receipt alone is not containment.
 
-Models used by read-only Checks receive no producer tools or inherited conversation. Missing observations return a collection need; authorized Work obtains them separately. The host owns input/result identity, policy selection, limits and retention. Evaluators cannot label themselves release-owned or submit their own authoritative acceptance records. See [Execution](agent-execution.md#producer-work-versus-check-execution).
+Models used by read-only Checks receive no producer tools or inherited conversation. Missing observations return a collection need; authorized Work obtains them separately. The host establishes input/result identity, applicable adopted Check/settings references, limits and retention under current authority. Evaluators cannot label themselves release-owned or submit their own authoritative acceptance records. See [Execution](agent-execution.md#producer-work-versus-check-execution).
 
 ## Results, feedback and progression
 
@@ -197,11 +198,13 @@ Retain false results as well as passes. Do not reconstruct historical judgments 
 
 Fine-grained automatic dependency tracking, model batching and cache optimization are later improvements driven by measured need. Any claimed savings must count total repair/review cost and incorrect acceptance/rejection, not merely number or price of model calls.
 
-## First-party software-development Pack
+## Packs and first-party software-development Checks
 
-The software Pack is a later domain integration, not universal policy or a prerequisite for one typed transition. It can assess compatibility, engineering/test methods, exact candidate quality and combined outcome evidence under adopted rules. Check evaluators inspect authorized tool observations; Work runs builds, tests and experiments.
+Packs collect reusable Checks; they add no canonical primitive or independent authority. Authors may distribute useful collections, but selection, requirement adoption and evaluator qualification remain distinct. A marketplace is a possible future distribution opportunity if ChangeKernel succeeds, not a selected service, registry, distribution format or commercial subsystem.
 
-Domain thresholds belong to the adopted Pack/Kernel/resource policy. A documentation label cannot suppress actual relevant effects, but every small edit need not invoke an expensive catalogue. Distinguish independent questions instead of hiding unrelated judgments under one Boolean.
+The first-party software Pack is a later collection of domain Checks, not universal policy or a prerequisite for one typed transition. Its Checks can assess compatibility, engineering/test methods, exact candidate quality and combined outcome evidence when adopted for the relevant boundary. Check evaluators inspect authorized tool observations; Work runs builds, tests and experiments.
+
+Domain thresholds belong to the exact adopted Check/settings, under the authority of the owner requiring them. A documentation label cannot suppress actual relevant effects, but every small edit need not invoke an expensive catalogue. Distinguish independent questions instead of hiding unrelated judgments under one Boolean.
 
 ## Qualification and compatibility
 
@@ -209,4 +212,4 @@ The [plan](../../product/plan.md) requires the smallest meaningful deterministic
 
 Later semantic families require independently reviewed good, defective, ambiguous and adversarial cases, exact model/settings identity and bounded acceptance thresholds. Test missed obligations and unsafe omissions, not only label agreement. Signatures and structural conformance prove neither judgment quality nor containment. A broadened capability requires additional evidence, not retrospective claims about the initial fixture.
 
-Retained Pi bridges and historical stage records retain their original meanings. This design does not migrate the former two-phase pipeline or `planning.evaluate` / `planning.admit` results, qualify a general Pack service, or change existing native persistence. See [release qualification](package.md#qualification).
+Existing fixed `policy`, `policyDigest`, Kernel and other historical identifiers retain their original meanings; they are not renamed or reinterpreted as new Check contracts. Retained Pi bridges and historical stage records retain their original meanings. This design does not migrate the former two-phase pipeline or `planning.evaluate` / `planning.admit` results, qualify a general Pack service, or change existing native persistence. See [release qualification](package.md#qualification).

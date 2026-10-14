@@ -43,7 +43,7 @@ This criterion guides the [first use-case-to-structure draft](../system/componen
 
 ## Defining properties and value
 
-These properties apply at the product-design level. Not every first supported profile needs to implement all of them, but its limitations must not silently redefine the long-term value.
+These properties and the [accepted interaction refinements](#adopted-interaction-refinements) are the engine's semantic contract, not just promises about storage integrity. ChangeKernel enforces the supported Ledger/Change meanings, applicable Check requirements and Ledger-associated AuthN/AuthZ. Custom policy belongs in adopted Checks; no separate user Kernel governor is required. Packs are reusable collections of Checks without independent authority. Not every first supported profile needs to implement all properties, but its limitations must not silently redefine the long-term value.
 
 | Property | Value to the owner | Necessary semantic distinction; not selected fields |
 | --- | --- | --- |

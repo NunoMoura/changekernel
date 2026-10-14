@@ -45,10 +45,12 @@ This page defines intended product responsibilities. A desired capability is not
 | --- | --- |
 | Change identity, intent, revisions, scope and attribution | Intent and accountability must survive tools, sessions and failures. |
 | Typed lifecycle operations and authoritative JSONL history | There must be one coherent account of accepted decisions, attempts and outcomes. |
-| Policy-governed typed progression and applicable Check enforcement | Approval, execution and success must have precise, distinct meanings without imposing a universal workflow. |
+| Typed progression and applicable Check enforcement | Approval, execution and success must have precise, distinct meanings without imposing a universal workflow. |
 | State references, observations and evidence lineage | Plans and worker claims must not become invented actual outcomes. |
 | Bounded execution coordination and reconciliation | Lost replies and partial effects must not cause blind repetition or false completion. |
 | Host and binding contracts, including authority and custody obligations | Integration must expose supported guarantees and refuse unsupported ones. |
+
+The engine's semantic contract includes all [adopted Ledger/Change properties](change-ledger-properties.md#defining-properties-and-value) and [interaction refinements](change-ledger-properties.md#adopted-interaction-refinements), not merely storage integrity. **Custom policy is expressed and enforced through adopted Checks; Ledger-associated AuthN/AuthZ governs who may adopt or change those requirements and act within their scope.** There is no separate user Kernel policy-governor. Packs are reusable collections of Checks, not governing authorities; obtaining one neither activates requirements nor qualifies evaluators.
 
 The user owns goals and accepted commitments. Resource owners and applications own native permissions, business rules and valid domain operations. Native systems retain their actual State. Qualified hosts supply authentication, native execution context and custody protection under a declared threat model. Harnesses supply session/inference mechanics. ChangeKernel validates and enforces the contracts it consumes; an interface declaration alone does not prove that a host meets them.
 
@@ -61,7 +63,7 @@ A mechanism belongs behind a replaceable boundary when it can change without wea
 | [State and persistence](../system/components/state.md) | Native State, explicit bindings, evidence, JSONL acceptance, retries and recovery. |
 | [Change format and lifecycle](../system/components/change-format.md) | Successor-format requirements: milestones, Work, prioritization, revision, composition and lossless navigation; no new frozen wire schema. |
 | [Composable SDK](../system/components/sdk.md) | Shared JavaScript/TypeScript access to supported Rust contracts for Pi tools, interfaces and deterministic clients; downstream of format design. |
-| [Checks](../system/components/checks.md) | Engine invariants, configurable assessment policy, exact subjects and results. |
+| [Checks](../system/components/checks.md) | Custom requirements and their adoption/applicability, exact assessment subjects/results, and the distinction from engine semantics and authority. |
 | [Execution](../system/components/agent-execution.md) | Trusted-host integration first; later worker coordination and containment contracts. |
 | [Release and qualification](../system/components/package.md) | Supported capability claims, source tests, exact-release qualification and controller authority. |
 | [Phased plan](plan.md) | Dependencies, falsifiable propositions and evidence required to advance. |
@@ -86,7 +88,7 @@ This scope change does not relax existing frozen native APIs, authorize a privil
 
 ## Ownership model and responsibilities
 
-**Users participate in Workspaces. Their Kernels govern Changes to those Workspaces. State represents a Workspace at particular versions and scope.**
+**Users own intent and adopt scoped Check requirements under Ledger-associated authority. ChangeKernel enforces those requirements and the adopted Ledger/Change semantics. State represents native reality within Workspace versions and scope.**
 
 | Concept | Meaning |
 | --- | --- |
@@ -94,7 +96,7 @@ This scope change does not relax existing frozen native APIs, authorize a privil
 | State | Native reality within declared scope, represented by version-/time-bound observations. It is not a separately managed State object, store or lifecycle; retained observations are evidence, not necessarily complete snapshots. |
 | Change | One owner-controlled, accountable pursuit whose understanding can evolve, preserving original intent, adopted revisions and actual outcomes separately. A proposal is already a Change. |
 | Ledger | An owned collection and coordination/disclosure context for Changes, with explicit identity and authorized navigation. It is independent of application hosting and is not a second copy of Change lifecycle history. |
-| Kernel | A user's versioned governance policy and selected requirements/Checks. It may adopt a workflow; it is neither a universal stage sequence nor the engine implementation. |
+| Check | A custom requirement when adopted for an exact scope and boundary; its definition, adoption and assessment remain distinct. Packs are reusable collections of Checks, not another canonical primitive or governor. |
 | Work | An attributable, schedulable unit within one Change. The first effect path needs one precisely specified operation, not a separate planning ceremony or generalized scheduler. |
 
 Each Change has one originating owner and one fixed Workspace under the retained contracts. Contributions remain attributable to their actual actors; borrowing cannot rewrite earlier attribution. Original intent is not overwritten to fit eventual delivery. Owning a Change never grants rights over its target resources. Broader ownership, scope and continuation semantics need explicit successor contracts rather than reinterpretation of the fixed-owner fixtures.
@@ -123,7 +125,7 @@ The host/binding must name and establish the authenticated acting subject and na
 
 ### Relationship cardinalities
 
-A user may own multiple Kernels and join multiple Workspaces. A Workspace may have multiple users and State representations; each representation has explicit coverage and visibility. A Change can reference multiple State observations and Work items; each Work item belongs to one Change. Kernel versions are immutable. A Change may use different Kernel versions in attributable continuation segments, not through retroactive replacement.
+A user has one logical Ledger and may join multiple Workspaces. A Workspace may have multiple users and State representations; each representation has explicit coverage and visibility. A Change can reference multiple State observations and Work items; each Work item belongs to one Change. Check definitions/settings and their adoption remain exactly version-bound. Applicable requirements may change through attributable authorized decisions, not retroactive replacement of earlier grounds.
 
 A Change has at most one active continuation custodian. Dependencies form a graph, not a mandatory tree. Fork lineage does not itself create a dependency. These are long-term logical relationships, not requirements to implement multi-user custody or a graph scheduler in the first profile.
 
@@ -131,9 +133,9 @@ Relationships use stable Change identities and explicit meanings, not directory 
 
 A relationship assertion is attributable in the asserting Change. It does not require an unqualified atomic update of both files; reverse links and graph navigation may be derived indexes. Required reciprocal agreement needs its own explicit contract. Shared-resource conflicts still require native concurrency guards even when no relationship was recorded.
 
-### User Kernels and version selection
+### Check requirements and version selection
 
-Bind progression to exact intent, Kernel, applicable Check, operation/subject and any adopted plan or workflow versions. New versions do not rewrite old decisions. Explicitly assess a continuation under changed policy before it authorizes new effects. The first profile can use one fixed, versioned policy; user authoring and distribution are later capabilities.
+Bind progression to exact intent, applicable Check/settings and adoption scope, operation/subject and any adopted plan or workflow versions. New versions do not rewrite old decisions. Re-establish affected continuation admission after requirement changes before new effects. General user definition/adoption/revision/retirement and required-pass dependent-transition support remain unimplemented. Existing fixed profile policies and historical Kernel identifiers retain their original meanings; this clarification does not migrate them.
 
 ## Workspaces, membership and boundaries
 
@@ -227,7 +229,7 @@ Pursuit-affecting operations are grounded in the relevant intent version, not re
 
 The backend identifies an operation before recording through its explicit supported type/version and validated contract, not through natural-language classification, a tool name, filename or inferred stage. Clients request operations; the host establishes identity/authority; the backend binds exact inputs/definitions, resolves retries, performs or refuses supported work, and constructs accepted records from the established grounds. The Trace is not a raw command inbox, and reading it does not execute instructions.
 
-A Check defines an assessment question; running one is a typed operation that produces a **Check assessment** bound to the exact definition, question and subject. Intent completeness, candidate behavior and observed outcomes are different assessment questions, not one universal validator of worthy goals. Checks may be requested directly or required by applicable policy. Callers cannot supply authoritative actor, approval or passing-result bytes. Unsupported definitions and missing inputs remain explicit rather than being guessed or accepted.
+A Check defines an assessment question; running one is a typed operation that produces a **Check assessment** bound to the exact definition, question and subject. Intent completeness, candidate behavior and observed outcomes are different assessment questions, not one universal validator of worthy goals. Checks may be requested directly for optional assessment or adopted as requirements under Ledger-associated authority. Callers cannot supply authoritative actor, approval or passing-result bytes. Unsupported definitions and missing inputs remain explicit rather than being guessed or accepted.
 
 Change is the unit of purpose; domain action is the unit of native work; a Trace record is the accepted lifecycle account. They need not be one-to-one. One action can require separate attempt and outcome records, while one native transaction can contain several statements without a record per statement. Candidate families such as opening, intent revision, assessment, decision, attempt, outcome and conclusion guide design; they are not a frozen universal opcode list. Each supported profile selects closed schemas and precise semantics with its consumer. Unknown semantics cannot count as understood success or permission.
 
@@ -239,7 +241,7 @@ Workflow definitions must not depend on stage folders in the Change ledger, and 
 
 ### Assessment responsibilities
 
-The engine enforces authority, exact subject/version bindings, valid typed transitions, retained evidence and honest uncertainty. Selected Kernel and resource policies supply quality criteria and goal-specific passing conditions. Comparative value, feasibility judgments and engineering rigor may be useful defaults; they are not a universal release-owned verdict on which goals deserve pursuit.
+The engine enforces applicable Check requirements, Ledger-associated authority and the adopted Ledger/Change semantics, including exact subject/version bindings, valid transitions, retained evidence and honest uncertainty. Substantive quality, feasibility and goal-specific passing conditions belong in applicable Checks, including assurance requirements adopted by a resource owner within its authority. Comparative value and engineering rigor may be useful Check defaults, not a hidden universal release-owned veto. Native permissions and business invariants remain binding-specific constraints, not optional Checks.
 
 Checks are read-only assessments. Only the authorized backend admits progression and records authoritative outcomes. The [Checks contract](../system/components/checks.md) distinguishes completed true/false assessments from unavailable, canceled or failed evaluation. Separate planning and formal-review ceremonies are optional unless applicable policy requires them; knowing the concrete operation, scope, preconditions and supported outcome/recovery limits before effects, and supporting claimed outcomes with evidence, are not optional.
 
@@ -269,7 +271,7 @@ The first path still has one operation and one durable attempt at a time. Parall
 
 ## Routing, borrowing and forks
 
-[Collaboration rules](../system/components/change-format.md#collaboration-and-composition-rules) are central successor-format design requirements, not implemented operations or an obligation to ship every capability in the first release. Sharing, handoff, fork, consolidation, decomposition and contribution acceptance have distinct meanings. Borrowing transfers active continuation, not original ownership or native permissions; whole-pursuit ownership transfer needs its own contract. The recipient establishes current admission under its applicable Kernel. Returning a result requires attributable provenance and current acceptance, not merging arbitrary authoritative logs.
+[Collaboration rules](../system/components/change-format.md#collaboration-and-composition-rules) are central successor-format design requirements, not implemented operations or an obligation to ship every capability in the first release. Sharing, handoff, fork, consolidation, decomposition and contribution acceptance have distinct meanings. Borrowing transfers active continuation, not original ownership or native permissions; whole-pursuit ownership transfer needs its own contract. The recipient establishes current admission under its applicable Checks, authority and native constraints. Returning a result requires attributable provenance and current acceptance, not merging arbitrary authoritative logs.
 
 The Rust borrowing analogy distinguishes inspection of an exact version from exclusive active continuation of an individual Change. A read snapshot is not a competing writer. Allowing readers of an immutable accepted prefix while a writer extends it is versioned-snapshot behavior, not an automatic consequence of Rust's same-value borrowing rules. Its actual custody, concurrency and interrupted-transfer protocol needs separate evidence; the first single-user file witness does not implement multi-user lending.
 
@@ -327,7 +329,7 @@ No proposed diagram or filename layout is a migration instruction. Do not load t
 
 ## Current implementation and historical meanings
 
-The current launcher is not an operational file-first host. Bounded native intake/revisions, committed-source observations and Linux packet ingress exist; candidate custody and the complete lifecycle remain unintegrated or unfinished. Their [retained contracts](../system/components/native-profiles.md) stay unchanged. No automatic SQLite migration, terminology reinterpretation, dual-writing or inferred qualification follows from the new design.
+Implemented bounded source capabilities include native intake/revisions, committed-source observations, Linux packet ingress, JSONL opening/intent/fixed assessment, ledger collection/history/continuity and the trusted referenced-intent native/Pi bridge. The Linux executable dispatches `--referenced-intent-bridge`; this is an unqualified closed personal-plan prototype, not general Check-gated execution or an operational release. General custom Check lifecycle/enforcement, application effects, concrete candidate custody and the complete lifecycle remain unfinished. See the [bounded capability inventory](../../../../README.md#executable-foundation) and [retained contracts](../system/components/native-profiles.md). No automatic migration, terminology reinterpretation, dual-writing or qualification follows from this correction.
 
 The retired TypeScript engine is historical evidence, not a feature-parity target. Retained Pi adapters do not implement the Rust lifecycle. Known defects do not disappear when scope changes.
 

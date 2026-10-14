@@ -22,7 +22,7 @@ The user-adopted [defining properties](../../product/change-ledger-properties.md
 
 A **Ledger** is an owned collection and coordination/disclosure context for Changes. A **Change** is one accountable pursuit, including expressed intent, its adoption or refusal, decisions, Work and consequences. Its duration and number of operations do not determine its identity.
 
-There is no separate canonical Goal object, Goal store or Goal lifecycle. A goal is the desired outcome expressed by a Change's intent and may be prominent in a user-facing View. Supporting concepts such as Work, plans, Checks, Workspace and State retain their distinct meanings; they are not competing pursuit histories.
+There is no separate canonical Goal object, Goal store or Goal lifecycle. A goal is the desired outcome expressed by a Change's intent and may be prominent in a user-facing View. Supporting concepts such as Work, plans, Checks, Workspace and State retain their distinct meanings; they are not competing pursuit histories. Custom policy is expressed through adopted Checks under Ledger-associated authority, without a separate user Kernel governor. Packs collect reusable Checks rather than own requirements. This clarification preserves every adopted Ledger/Change property and interaction refinement; the engine's semantic responsibility is not reduced to storage integrity.
 
 Preserve original expression, adopted intent and subsequent revisions separately from actual delivery. Topic similarity does not establish pursuit identity. The owner or a currently authorized delegate adopts whether clarification continues the same pursuit or warrants a related replacement. A model may recommend that distinction, not silently decide it.
 

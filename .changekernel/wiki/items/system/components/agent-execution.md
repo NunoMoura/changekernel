@@ -87,7 +87,7 @@ Containment, native source authority, result evidence and Trace acceptance are d
 
 ## Durable attempts and outcome delivery
 
-The Change Trace owns lifecycle history. Supporting attempt reservations, outputs and native receipts have explicit custody/recovery roles, not independent Work histories. Bind the relevant intent, Kernel, Check, operation/subject and any adopted plan/workflow versions, input, actor and retry identity before effects. These are accountability grounds, not a required Stage field.
+The Change Trace owns lifecycle history. Supporting attempt reservations, outputs and native receipts have explicit custody/recovery roles, not independent Work histories. Bind the relevant intent, adopted Check/settings and applicability grounds, operation/subject and any adopted plan/workflow versions, input, actor and retry identity before effects. These are accountability grounds, not a required Stage field.
 
 For the first effect path:
 
@@ -107,7 +107,7 @@ Producers prepare plans/content and gather observations through authorized tools
 
 Initially, trusted deterministic validation and existing native constraints are sufficient. A user-authored evaluator is not trusted merely because it implements the Check interface. Later custom code runs outside authoritative host privileges under qualified filesystem, network, credentials, process, time, memory and output limits. The previously proposed JavaScript/compiled-TypeScript runner is a possible adapter, not a prerequisite. Other languages require their own support, not a new universal execution language.
 
-Release-owned validators and adopted domain evaluators retain distinct identity and policy authority. A caller cannot label a Pack as built-in. A human approval is an attributable decision, not an invented passing evaluator result.
+Engine/native validators enforce supported semantics and integrity; custom domain criteria belong in adopted Checks. Release-owned and other supported evaluators retain distinct provenance and qualification, not independent authority to impose goal-quality vetoes. A Pack is a reusable collection of Checks: a caller cannot label it built-in, and obtaining it does not adopt requirements or trust its evaluators. A human approval is an attributable decision, not an invented passing evaluator result.
 
 ## Model and harness boundaries
 
@@ -137,7 +137,7 @@ Parallelism requires independently supported scopes and explicit conflict/aggreg
 
 [Sharing, handoff, fork, consolidation and contribution acceptance](change-format.md#collaboration-and-composition-rules) have distinct desired semantics and separately qualified protocols. Multi-user borrowing and forks are later capabilities. A Change has one logical authoritative history and at most one active continuation custodian. Authenticate the exact checkpoint and parties, current rights, recipient admission, in-flight Work responsibility and interrupted transfer before supporting them. A pathname, copied file, timeout or encrypted transport does not establish exclusive custody.
 
-A recipient uses an exact Kernel version and current admission. Historical progress stays attributable; no portable effect-ready flag or folder placement bypasses new requirements. A fork has its own Change identity and does not repeat completed or uncertain effects. Result adoption preserves provenance without merging authoritative logs.
+A recipient establishes current admission with exact applicable Check/settings and requirement-adoption grounds under current authority. Historical progress stays attributable; no portable effect-ready flag or folder placement bypasses new requirements. A fork has its own Change identity and does not repeat completed or uncertain effects. Result adoption preserves provenance without merging authoritative logs.
 
 Moving a file does not cancel active Work. Reconcile effects and cleanup or transfer responsibility through a qualified protocol before dependent continuation. Unknown outcomes cannot become assumed absence. Retained review copies remain evidence, not independent authority to resume.
 
