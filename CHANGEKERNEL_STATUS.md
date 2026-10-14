@@ -1,5 +1,29 @@
 # ChangeKernel temporary source status
 
+## R76 — thin Pi referenced-intent host
+
+**Manager assignment: implementation authorized; no source acceptance yet.** Native prerequisite is accepted. Implement one cohesive Pi 1.2.0 host against the frozen [referenced-intent contract](.changekernel/wiki/items/system/components/referenced-intent-prototype.md), especially §§1–2, 5–6 and 8. The [plan](.changekernel/wiki/items/product/plan.md#format-first-design-and-pi-first-delivery) orders host correctness, real-human approval/reopen smoke, then diagnostic measurement. No repeated general approval gate is open.
+
+| Assignment | Boundary |
+| --- | --- |
+| Branch / worktree | `work/r76-referenced-intent-pi` / `/home/canina7/Projects/changekernel-workers/r76-referenced-intent-pi` |
+| Accepted base | `f27d413404cc4a75a54b2f918bc43c04b9f41368`; only status differs from native integration `47f51b5fe14fe9656bdbad00b1b5b0ca859c276b`. An assignment-only commit may follow this base. |
+| Sole implementation owner | New `src/adapters/pi/referenced-intent/**`, `tests/adapters/pi/referenced-intent/**`, `tests/adapters/pi/referenced-intent*.test.mjs`, and this worktree's `CHANGEKERNEL_STATUS.md`. Keep any dedicated candidate package/test metadata within those new directories. |
+| Frozen / not owned | Rust, existing retained Pi adapters, root manifests/lockfiles/tsconfigs/exports, Wiki, AGENTS.md, project `.pi/**`, old custody and all other worktrees. Report a required overlap before changing it. |
+| Delivery | One ChangeKernel version `0.5.0-prototype.1`; isolated external Pi 1.2.0 consumer, not a migration of the retained 0.85.1 package. One host-envelope owner; no parallel writers or new native grammar. |
+
+**Outcome and acceptance:** register the seven exact typed tools with matching output schemas, structured results and truthful errors; keep grant/lease/Prepare/Confirm private. Validate and freeze complete input; serialize ingress without a hidden queue; preserve original-key semantics, accepted retries and current disclosure. Implement exact native-supplied byte presentation with complete traversal followed by a separate affirmative action, only in real TUI mode. Cancel on timeout, signal, layout/render failure or incomplete traversal. Use Pi's components, not a second renderer.
+
+Own one bounded framed child: explicit executable/grant, no shell or factory startup, pinned version acknowledgment, strict frames/UTF-8/IDs/closed values, bounded stderr, startup/call deadlines, truthful transport uncertainty, no automatic reconnect/resend. Apply the contract's current lease and final disclosure checks. Idempotent disconnect/reload/session-shutdown must observe actual predecessor exit before any successor; signal delivery alone is not cleanup. Keep composition budgets and remaining coverage explicit.
+
+**Required evidence:** ordinary focused tests for tool/schema/authority separation, exact bytes and traversal (including controls/non-ASCII, resize and cancellation), lease/disclosure changes, duplicate key and accepted retry behavior, malformed/partial/wrong-ID frames, concurrent ingress, post-dispatch uncertainty and cleanup/successor exclusion. Exercise the accepted native bridge with real disposable btrfs custody, including Friday/Saturday/reopen/Sunday/original Saturday retrieval and process lifetime. Simulated UI remains explicitly simulated; do not synthesize a human approval claim. Report exact checked source/binary/host identities, commands, exit codes, logs, cleanup and gaps. Run `npm test` for the changed integration boundary in an external staged candidate; separately check the new Pi 1.2 closure rather than treating the old narrow typecheck as coverage. Use active LSP diagnostics where available; empty cache is not a clean result. Native changes require a new coordinated assignment and applicable Cargo checks.
+
+**Preparation and limits:** read AGENTS.md, the complete governing contract and installed Pi 1.2.0 docs/examples before implementation. The installed documentation root is `/home/canina7/.local/share/mise/installs/pi/1.2.0/pi`; follow relevant extension/TUI/package/configuration/security/CLI/Codemode and API/example references. Candidate execution belongs only to fresh disposable external projects with isolated Pi settings/session storage and the contract's explicit extension/tool allowlist. Never load this source checkout as its controller, install project-local links/plugins, use live credentials in candidate runs, or reopen/repair/clean retained old custody. Product model calls, benchmarks, real-human smoke, release qualification, deployment, dependency migration and controller handoff are not part of this worker assignment. Preserve the protected user edit in primary main; do not copy it here.
+
+Commit only owned source/tests and your report. Report exact source and report revisions, checks and gaps, then send one identified peer completion/blocker notification to the verified manager through the assigned native Pi channel. A notification is not acceptance. Remain parked for independent review; no self-approval or worker spawning.
+
+**Dispatch state:** fresh worktree created; native Pi bootstrap and identity verification precede substantive dispatch. Three prior workers remain parked; the new owner brings the managed pool to four. Manager routing and evidence live outside Git in `/home/canina7/.local/state/changekernel-source-review/r76-pi-host.XGkmccKy/`.
+
 ## R75 — native accepted; fresh-manager handoff
 
 **Manager verdict: `accepted` for the bounded native referenced-intent source slice.** Reviewed code is integrated in the primary `/home/canina7/Projects/changekernel` checkout on `main` at `47f51b5fe14fe9656bdbad00b1b5b0ca859c276b`. Completed combined verification removed that integration’s provisional status. This is source acceptance, not release qualification, actual human approval or controller authority.
