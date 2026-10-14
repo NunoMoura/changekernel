@@ -20,6 +20,16 @@ R88 independent report-only documentation review uses exact R85 subject in branc
 
 Native workers are launched in their exact external worktrees; verify bootstrap Codemode, disk session header, native starttime/cwd and clean assigned checkpoint before dispatch. External evidence/routing: `/home/canina7/.local/state/changekernel-source-review/r84-r86-retirement.k0tpbxlw/`. Two manager bootstrap-preparation assertions were preserved and corrected before any implementation dispatch (lazy session-file persistence; substring versus exact command-ID guard); no source/runtime action followed those failed attempts. Three changed Markdown paths passed whitespace and active diagnostics (three clean, zero findings). No source acceptance yet. Current `0.5.0-prototype.1` semantics and Pi 1.2 UI remain unchanged; historical contracts/checkpoints and the protected draft remain preserved.
 
+## Latest review handoff
+
+R84 submitted source `236cbf966e7a81c6aaba862b1e089602dc0ebd02`, report `56386feb5026d78d4f504acc2c30948db5efb4f8:CHANGEKERNEL_STATUS.md`. Fresh pinned external fmt, all-target clippy and locked full tests passed (current suite 34/34); earlier failures remain preserved, including unexplained initial legacy reopen failure. This supersedes the earlier running-test snapshot, not the acceptance gate. Manager found a post-submission dirty codec idiom (`chunks_exact` to `as_chunks`) in the author worktree; receipt requested evidence preservation, cause and owned correction. No dirty bytes are included in review.
+
+R88 completed report `43065bc073d358b0a209d6b46eb986e8bcc325c7:CHANGEKERNEL_STATUS.md`, recommending bounded R85 documentation acceptance with no blocking finding; final manager consolidation remains pending. Integration follow-ups include obsolete root tsconfig metadata and remaining predecessor present-tense prose after removals. Report diagnostics unavailable; source document diagnostics clean. No combined/native acceptance follows.
+
+R89 now independently reviews exact R84 source in visible interactive Herdr Pi session. Branch `work/r89-native-helper-review`, worktree `/home/canina7/Projects/changekernel-workers/r89-native-helper-review`, assignment `1e1a383fa49c34a964bb5c155adfc377ade110b6:CHANGEKERNEL_STATUS.md`. Only tracked write is its report; independent pinned native checks run externally. Native/session/cwd/checkpoint and actual Codemode were independently verified before dispatch. External evidence is `r89-native-helper-review/` under the current retirement evidence root. R87 remains gated; no idle label is acceptance.
+
+Pool is now fifteen retained workers: R89 reviewing, R84 author follow-up requested, thirteen others parked. No more workers may be spawned without retiring a retained session or reusing an appropriate verified one. Source/docs implementation is still not integrated; preserve the protected user draft.
+
 ## Completed R82/R83 audits — evidence before adoption
 
 **Manager verdict: `accepted` for R82/R83 report-only audits after independent review.** Audited accepted subject: `30cb8b569e3af3cc983a9ecf8434296c55ff9401`. The user approved the investigation, not an unseen support withdrawal. No executable or Wiki change was integrated; **no deletion, move, migration or compatibility withdrawal is assigned yet**.
