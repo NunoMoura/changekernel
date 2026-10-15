@@ -6,6 +6,8 @@ ownership:
   sourcePatterns:
     - src/adapters/jsonl/referenced_intent.rs
     - src/adapters/jsonl/referenced_intent/**
+    - src/adapters/linux/custody_fs.rs
+    - src/adapters/linux/custody_identity.rs
   testPatterns:
     - tests/referenced_intent.rs
     - tests/referenced_intent/**
@@ -16,9 +18,9 @@ ownership:
 
 This contract defines the core State/evidence and JSONL custody obligations. [The plan](../../product/plan.md) selects when a capability must prove them. The first profile uses a trusted host, one authenticated user, one binding and a bounded operation. Multi-user sharing, autonomous workers and generalized discovery are later capabilities, not implicit prerequisites.
 
-The active concrete consumer is the [referenced-intent prototype](referenced-intent-prototype.md), through the [thin SDK/Pi boundary](sdk.md). The [opening v1](#consumed-opening-profile), [intent v2](intent-trace.md), [assessment v3](assessment-trace.md) and ledger v4–v6 contracts are historical profiles under the [approved support withdrawal](native-profiles.md#approved-executable-retirement-boundary), not parallel active State APIs. Their fresh-only boundaries and exact historical meanings remain intact. Executable retirement is implementation-pending until integration.
+The active concrete consumer is the [referenced-intent prototype](referenced-intent-prototype.md), through the [thin SDK/Pi boundary](sdk.md). The [opening v1](#consumed-opening-profile), [intent v2](intent-trace.md), [assessment v3](assessment-trace.md) and ledger v4–v6 contracts are historical profiles under the [approved support withdrawal](native-profiles.md#approved-executable-retirement-boundary), not parallel active State APIs. Their fresh-only boundaries and exact historical meanings remain intact. Their executable semantic hosts have been retired; historical interpretation is not a current API.
 
-Ownership metadata selects the current referenced-intent persistence/test closure and independent SQLite application-resource fixture; it is not a declaration of runtime State services or general effect support. Pre-retirement private filesystem/identity helpers still live under opening/ledger modules and must be extracted before those semantic hosts retire. Their exact historical locations remain in the [source reference](native-profiles.md#historical-compatibility-reference); no speculative replacement path, config or generated-View inventory is selected here.
+Ownership metadata selects the current referenced-intent persistence/test closure and independent SQLite application-resource fixture; it is not a declaration of runtime State services or general effect support. Required private filesystem and held-fd identity helpers live in `src/adapters/linux/custody_fs.rs` and `custody_identity.rs`, separate from the retired opening/ledger semantic modules. Their prior locations remain in the [source reference](native-profiles.md#historical-compatibility-reference); these helpers do not introduce a State registry, config subsystem or generated-View inventory.
 
 Native values, desired obligations, observations, candidates and research claims have different meanings. State is scoped and version-/time-bound; it is not necessarily a complete snapshot. A failed or uncertain operation must not produce an invented after-State. Existing systems begin from an acknowledged baseline. Confirmed effects and reconciled external changes explain subsequent State without fabricating earlier intent.
 
@@ -228,7 +230,7 @@ The [phased plan](../../product/plan.md) requires concrete positive paths and fa
 
 ## Consumed opening profile
 
-**Historical v1 contract; executable retirement approved, integration pending.** This section and its existing anchors preserve the consumed opening contract, not the current opening API or an implementation assignment. Its implementation-era instructions and test paths are interpreted under the [historical compatibility reference](native-profiles.md#historical-compatibility-reference). Use the [referenced-intent prototype](referenced-intent-prototype.md) for the active path; no bytes, grants, retry or recovery rules below are redefined.
+**Historical v1 contract; executable semantic host retired.** This section and its existing anchors preserve the consumed opening contract, not the current opening API or an implementation assignment. Its implementation-era instructions and test paths are interpreted under the [historical compatibility reference](native-profiles.md#historical-compatibility-reference). Use the [referenced-intent prototype](referenced-intent-prototype.md) for the active path; no bytes, grants, retry or recovery rules below are redefined.
 
 This is the selected implementation contract for the first opening → inspection → restart/retry increment. It fixes one bounded source-test fixture, not a universal public API, executable conformance, qualified storage profile or completion of Phase 1. Intent revision, assessment and other supported lifecycle operations need subsequent records and checks; this increment does not manufacture them or select a universal pipeline.
 
