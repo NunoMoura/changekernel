@@ -45,8 +45,6 @@ pub(crate) fn errno(n: i32) -> Failure {
     }
 }
 
-// Separate native steps let the existing legacy wrapper retain its exact
-// before/after fault and accounting boundaries without importing them here.
 pub(crate) struct Acquisition {
     fs: libc::statfs,
     info: FsInfo,
@@ -54,12 +52,6 @@ pub(crate) struct Acquisition {
     mount: i32,
 }
 impl Acquisition {
-    pub const FS_TYPE_BYTES: usize = std::mem::size_of::<libc::statfs>();
-    pub const FS_INFO_BYTES: usize = 1024;
-    pub const HANDLE_BYTES: usize = 140;
-    pub const SCRATCH_BYTES: usize =
-        Self::FS_TYPE_BYTES + Self::FS_INFO_BYTES + Self::HANDLE_BYTES + 64;
-
     pub fn new() -> Result<Self, Failure> {
         if !supported() {
             return Err(Failure::damage());
@@ -118,9 +110,7 @@ impl Acquisition {
         }
         Ok(self.copy_identity_after_validation())
     }
-    // Both callers must validate all four groups before copying. In particular,
-    // the legacy caller has just observed those checks: do not repeat predicates
-    // or scans here, even as debug assertions.
+    // The caller has validated all four groups before copying.
     pub fn copy_identity_after_validation(&self) -> Identity {
         let mut handle = [0; 20];
         handle.copy_from_slice(&self.handle.data[..20]);
