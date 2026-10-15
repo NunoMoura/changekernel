@@ -1,6 +1,12 @@
 # ChangeKernel temporary source status
 
-## Current handoff — approved predecessor retirement
+## Current handoff — cleanup integration and native retirement
+
+Reviewed R84 corrected helpers, R85 docs and R86 TS cleanup are integrated at `4e8247b047066ba9aa2f0a8b39580b4811a37e35`; exact per-path identity verified from submitted commits. Fresh combined pinned native build/tests and root npm real-native/installed-Pi checks are running externally under `/home/canina7/.local/state/changekernel-source-review/retirement-integration.l3jrmnh1/combined/`. This is an integration candidate pending combined acceptance, not a qualified release. Manager root/nested README and package metadata reconciliation follows the already integrated current npm test boundary.
+
+R87 native retirement is prepared from that exact integrated subject in `work/r87-native-retirement`, `/home/canina7/Projects/changekernel-workers/r87-native-retirement`, assignment `74b3514f263c9f1bd9296230939529d73e8217c8:CHANGEKERNEL_STATUS.md`. Visible Herdr Pi uses Sol 6.1 medium; bootstrap complete, implementation awaits successful combined prerequisite checks. R86 RPC exited cleanly with code 0; its worktree/session/evidence remain preserved. Replacing that retired process keeps the retained worker pool at fifteen. Manager Astra 6 high reviews R87 directly; no further reviewer stage is mandatory.
+
+## Prior approved predecessor retirement handoff
 
 The user approved the concrete retirement/support boundary presented after R82/R83. Durable adoption is in the [native-profile disposition](.changekernel/wiki/items/system/components/native-profiles.md#approved-executable-retirement-boundary) and [Wiki dependency sequence](.changekernel/wiki/items/product/plan.md#source-architecture-and-predecessor-retirement). Implementation, affected tests and documentation/tooling reconciliation are authorized within that boundary; no existing-custody operation, release qualification or controller handoff is authorized.
 

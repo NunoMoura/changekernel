@@ -11,10 +11,10 @@ ownership:
     - src/main.rs
     - package-lock.json
     - package.json
-    - tsconfig*.json
     - src/adapters/pi/referenced-intent/package.json
     - src/adapters/pi/referenced-intent/tsconfig.json
   testPatterns:
+    - tests/package/**
     - tests/adapters/pi/referenced-intent/consumer.package.json
 source-history:
   provenance:
@@ -95,7 +95,7 @@ Rust's type, ownership and borrowing checks eliminate classes of invalid state a
 | Historical implementations | Retire predecessor native and Pi 0.85.1 APIs, dedicated tests and orphan protocol/codec/build surfaces together under the approved disposition. Preserve useful incidents and exact pre-retirement bytes in Git, not a permanent executable legacy tree. Required current guarantees and independently consumed private mechanisms remain. |
 | Structural ceremony | Remove source-file inventories, exact import-list snapshots, manifest-text/version duplication and documentation-wording tests. Compilation, lockfiles, review and exact-release qualification own those concerns. A future architectural check must enforce a concrete maintained boundary, not freeze a file layout. |
 
-The approved root source-development `npm test` target typechecks the existing Pi 1.2 adapter closure and runs the dedicated `tests/adapters/pi/referenced-intent/*.test.mjs` suite with Node's built-in runner. It retains the exact current external consumer dependency pins and does not change the nested adapter manifest or consumer bytes. This root manifest/lock reconciliation is implementation-pending here; the [dedicated external consumer checks](../../../../../src/adapters/pi/referenced-intent/README.md#external-checks) remain the way to check that closure before integration. The host README's separate legacy-root-suite instruction records the earlier split, not a continuing requirement after retirement.
+The approved root source-development `npm test` target typechecks the existing Pi 1.2 adapter closure and runs the dedicated `tests/adapters/pi/referenced-intent/*.test.mjs` suite with Node's built-in runner. It retains the exact current external consumer dependency pins and does not change the nested adapter manifest or consumer bytes. The root manifest/lock reconciliation is integrated: root source checks use `npm ci` against the tracked lock in an external candidate. The [dedicated external consumer checks](../../../../../src/adapters/pi/referenced-intent/README.md#external-checks) remain an alternative explicit consumer of the same closure, not a second legacy suite.
 
 Install dependencies and run candidate checks only in disposable external projects with isolated Pi/HOME/settings. Real-native and installed-Pi cases remain conditional on explicit supported executable/configuration inputs and fresh custody; absence/skips are not integration evidence. No root public SDK, legacy exports, `prepack`, `dist` library or release packaging format is selected by these source checks. Native-only slices do not require Node or npm; run adapter checks for changes to that closure, its dependencies or integration boundary. A broader SDK needs its actual consumed boundary tested, not inherited coverage claims.
 

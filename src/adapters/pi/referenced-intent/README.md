@@ -1,6 +1,6 @@
 # Referenced-intent Pi host (source candidate)
 
-ChangeKernel `0.5.0-prototype.1`, targeting Pi **1.2.0**. This is the new host closure, not an upgrade of the retained Pi 0.85.1 adapters. Governing contract: `.changekernel/wiki/items/system/components/referenced-intent-prototype.md`.
+ChangeKernel `0.5.0-prototype.1`, targeting Pi **1.2.0**. This is the current host closure, not an upgrade of the retired Pi 0.85.1 adapters. Governing contract: `.changekernel/wiki/items/system/components/referenced-intent-prototype.md`.
 
 Do not load this directory from the development checkout. Copy/pack candidate bytes to a fresh disposable external project; use isolated HOME, Pi settings/session directories and no credentials. A source test is not release qualification or controller authority.
 
@@ -28,7 +28,9 @@ One composition permits at most **64 native exchanges, 8 MiB returned encoded pa
 
 ## External checks
 
-`tests/adapters/pi/referenced-intent/consumer.package.json` is the dedicated **external consumer** manifest. Copy it to a fresh external root as `package.json`, copy this source subtree and its test subtree preserving their paths, and install there with `npm install --ignore-scripts`. Do not install it in this checkout.
+For reproducible source checks, stage the complete tracked candidate in a fresh disposable external project and run `npm ci --ignore-scripts` there using the root `package.json` and `package-lock.json`. Root `npm test` typechecks this strict adapter closure and runs its dedicated tests. Do not install dependencies or load this adapter in the development checkout.
+
+`tests/adapters/pi/referenced-intent/consumer.package.json` is also available as a dedicated **external consumer** manifest with the same direct pins. To test that separate consumer, copy it to a fresh external root as `package.json`, copy this source subtree and its test subtree preserving their paths, and install there with `npm install --ignore-scripts`. Preserve the resolved lockfile with that consumer's evidence; it is not a substitute for the tracked root source lock.
 
 In that external consumer:
 
@@ -41,4 +43,4 @@ CK_PI_TEST_EXECUTABLE=/absolute/pi-1.2.0/pi npm test
 
 Native/Pi checks skip when their explicit executable variables are absent; skipped runs are not integration evidence. `CK_TEST_ROOT` must already exist on the intended filesystem. Tests preserve disposable custody/evidence and verify child exits; do not point them at old custody. Approval input is explicitly simulated, including when production traversal code runs. The RPC lifecycle check sends only discovered operator commands, never a model prompt. Codemode budget tests use the real Pi sandbox with a simulated documented event pipeline and a framed test peer. The 60-second accounting boundary uses simulated elapsed time, not a benchmark.
 
-Separately run the repository's retained `npm test` in an external staged full candidate with its unchanged lockfile. That narrow legacy typecheck does **not** cover this new closure. Real-human TUI smoke, diagnostic benchmarks and release qualification remain separate gates.
+The retired Pi 0.85.1 root suite is no longer present; root source checks now cover this closure. Real-human TUI smoke, diagnostic benchmarks and release qualification remain separate gates.
