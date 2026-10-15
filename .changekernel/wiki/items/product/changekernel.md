@@ -6,20 +6,13 @@ aliases:
 source-id: cw:design:product
 ownership:
   sourcePatterns:
-    - src/application/**
-    - src/kernel/changes/**
-    - src/kernel/data-contracts/**
-    - src/kernel/identity/**
-  testPatterns: []
-  traceEvents:
-    - change.proposed
-    - change.revised
-    - change.planned
-    - change.completed
-    - change.superseded
-    - effect.recorded
-  roles:
-    - planning
+    - src/application/referenced_intent.rs
+    - src/application/referenced_intent/**
+    - src/kernel/changes/referenced_intent.rs
+    - src/kernel/changes/referenced_intent/**
+  testPatterns:
+    - tests/referenced_intent.rs
+    - tests/referenced_intent/**
 source-history:
   provenance:
     - attributes:
@@ -37,7 +30,7 @@ Ledger and Change remain the primary product primitives. Their [defining propert
 
 **Change carries intent. State describes observed reality within declared scope. History connects them with evidence.** Prior Changes explain how State evolved; they do not automatically justify its correctness. Rejected proposals have no intended effects, failed operations can have partial effects, and external changes need explicit reconciliation. Start an existing system from an acknowledged baseline rather than inventing its prehistory.
 
-This page defines intended product responsibilities. A desired capability is not an implemented or qualified capability. The [ChangeKernel plan](plan.md) sequences small, testable capability increments. [Research](../system/research.md) retains hypotheses, inspected alternatives and counterexamples without turning them into product commitments. [Retained native profiles](../system/components/native-profiles.md) describe existing compatibility contracts, not the future API.
+This page defines intended product responsibilities. A desired capability is not an implemented or qualified capability. The [ChangeKernel plan](plan.md) sequences small, testable capability increments. [Research](../system/research.md) retains hypotheses, inspected alternatives and counterexamples without turning them into product commitments. The [referenced-intent prototype](../system/components/referenced-intent-prototype.md) is the current concrete native/Pi 1.2 path. [Historical native profiles](../system/components/native-profiles.md) preserve predecessor meanings and exact source evidence under approved future-build support withdrawal, not competing active APIs. Removal and combined acceptance remain pending integration; ownership metadata selects current source responsibilities, not an assertion that all desired product capabilities or historical event names are implemented.
 
 ## Product boundary
 
@@ -62,13 +55,14 @@ A mechanism belongs behind a replaceable boundary when it can change without wea
 | --- | --- |
 | [State and persistence](../system/components/state.md) | Native State, explicit bindings, evidence, JSONL acceptance, retries and recovery. |
 | [Change format and lifecycle](../system/components/change-format.md) | Successor-format requirements: milestones, Work, prioritization, revision, composition and lossless navigation; no new frozen wire schema. |
-| [Composable SDK](../system/components/sdk.md) | Shared JavaScript/TypeScript access to supported Rust contracts for Pi tools, interfaces and deterministic clients; downstream of format design. |
+| [Current prototype](../system/components/referenced-intent-prototype.md) | Adopted `0.5.0-prototype.1`: one person's referenced intent, exact approval and original-result recovery, without effects or domain Checks. |
+| [Composable SDK](../system/components/sdk.md) | Shared code-use contract and thin Pi-first bridges; broader SDK surfaces remain downstream of supported native contracts. |
 | [Checks](../system/components/checks.md) | Custom requirements and their adoption/applicability, exact assessment subjects/results, and the distinction from engine semantics and authority. |
 | [Execution](../system/components/agent-execution.md) | Trusted-host integration first; later worker coordination and containment contracts. |
 | [Release and qualification](../system/components/package.md) | Supported capability claims, source tests, exact-release qualification and controller authority. |
 | [Phased plan](plan.md) | Dependencies, falsifiable propositions and evidence required to advance. |
 | [Research](../system/research.md) | Investigated mechanisms and limits, not an implementation queue. |
-| [Retained native profiles](../system/components/native-profiles.md) | Frozen SQLite/native/packet behavior and known implementation gaps. |
+| [Historical profiles and support disposition](../system/components/native-profiles.md) | Frozen predecessor SQLite/native/packet/v1–v6 meanings and known gaps; executable support withdrawal, not migration. |
 
 Wiki owns durable intent and capability gates. Source/tests own executable behavior. Git retains history and completed review evidence. The [temporary status note](../../../../CHANGEKERNEL_STATUS.md) owns unfinished source-development work until qualified Changes and Work can own execution state. No standalone refactoring roadmap or second lifecycle database is required. The retained `wiki/` name does not make Wiki a runtime primitive or require application State to be Markdown. Legacy metadata is historical provenance, not managed adoption.
 

@@ -6,13 +6,10 @@ aliases:
 source-id: cw:component:runtime
 ownership:
   sourcePatterns:
-    - src/adapters/linux/local_packet.rs
-    - src/adapters/pi/**
-    - src/ports/agent-runtime.ts
-    - src/ports/check-model.ts
+    - src/adapters/pi/referenced-intent/**
+    - src/adapters/stdio/referenced_intent.rs
   testPatterns:
-    - tests/native_local_packet.rs
-    - tests/adapters/pi/**
+    - tests/adapters/pi/referenced-intent/**
 source-history:
   provenance:
     - attributes:
@@ -63,7 +60,7 @@ The engine owns Work eligibility, attempt identity, dependency/continuation sema
 
 The [initial Pi-user distribution](package.md#user-distribution-and-deployment) follows supported native/client contracts; it does not make private sessions, task queues or checkpoints authoritative Change history. A durable Change can wait for months while agents stop or change. Reuse suitable scheduling/execution mechanisms rather than build a general-purpose scheduler, and do not treat ordinary session persistence as a durable work queue.
 
-This contract distinguishes the **first trusted-host profile** from **later untrusted-worker and standalone-host profiles**. [Research](../research.md) retains investigated mechanisms without making them dependencies. Existing [Linux packet ingress](native-profiles.md#linux-local-packet-ingress) and Pi adapters keep their unchanged narrower contracts.
+This contract distinguishes the **first trusted-host profile** from **later untrusted-worker and standalone-host profiles**. [Research](../research.md) retains investigated mechanisms without making them dependencies. The active consumer is the [referenced-intent native/Pi 1.2 host](referenced-intent-prototype.md), not a general worker runtime. [Linux packet ingress](native-profiles.md#linux-local-packet-ingress) and Pi 0.85.1 bridges preserve historical meanings, but their future-build support is [approved for withdrawal](native-profiles.md#approved-executable-retirement-boundary), with executable removal pending integration. Metadata selects only the retained current host boundary; legacy `source-history` remains provenance, not supported runtime inventory.
 
 ## First trusted-host profile
 

@@ -22,27 +22,6 @@ pub(super) struct TrackedFile {
     epoch: Cell<u64>,
 }
 type File = TrackedFile;
-/// Private descriptor identity reuse; does not select a legacy wire schema.
-pub(crate) fn held_identity(
-    file: &RawFile,
-) -> Result<super::continuity::identity::Identity, Failure> {
-    let mut ctx = Context::<super::layout::Native> {
-        hook: None,
-        profile: super::selection::Profile::Continuity,
-        phase: "identity",
-        latched: [false; 17],
-        failure_scope: None,
-    };
-    let copy = file.try_clone().map_err(|_| Failure::io())?;
-    work::descriptors(1);
-    let copy = TrackedFile::adopt(copy);
-    super::continuity::identity::acquire(
-        &mut ctx,
-        0,
-        super::continuity::LedgerIdentityObject::LedgerDirectory,
-        &copy,
-    )
-}
 impl TrackedFile {
     fn adopt(file: RawFile) -> Self {
         Self {

@@ -11,10 +11,11 @@ ownership:
     - src/main.rs
     - package-lock.json
     - package.json
-    - src/index.ts
     - tsconfig*.json
+    - src/adapters/pi/referenced-intent/package.json
+    - src/adapters/pi/referenced-intent/tsconfig.json
   testPatterns:
-    - tests/package/**
+    - tests/adapters/pi/referenced-intent/consumer.package.json
 source-history:
   provenance:
     - attributes:
@@ -69,7 +70,7 @@ An installed release identifies the exact Rust artifact, bridge, Pi integration,
 
 An immutable release identifies exact source/build/dependency bytes, protocol interpretation, supported bindings/configuration and host assumptions. Check definitions/settings, intent/plan grounds and native source identities retain their distinct meanings under the supported version contract. Historical Kernel, `policy` and `policyDigest` identifiers keep their frozen interpretations; this clarification creates no new version axis or migration. Matching labels or hashes do not establish qualification or grant authority.
 
-New JSONL interfaces are explicitly versioned and do not silently replace [retained native profiles](native-profiles.md). Existing SQLite files, `container_id` semantics, retry namespaces, attribution behavior and packet contracts stay unchanged. No schema extension, automatic migration, dual-writing or candidate-writer integration follows from this design review. Known defects and unintegrated paths remain visible.
+New JSONL interfaces are explicitly versioned and do not silently reinterpret [historical native profiles](native-profiles.md). The user separately approved [withdrawing predecessor executable support](native-profiles.md#approved-executable-retirement-boundary) from future builds, including Pi 0.85.1/root exports; implementation and combined acceptance remain pending integration. Existing SQLite bytes, `container_id` semantics, retry namespaces, attribution and packet meanings stay unchanged. Preservation of interpretation is not continued API availability or permission to reopen old custody. No schema extension, migration, dual-writing, cleanup or candidate-writer integration follows. Known defects and unintegrated paths remain visible.
 
 A supported migration needs exact scope/mapping, collision handling, backup and interruption/recovery evidence. Historical `ProjectSnapshot`, `codewiki.*` and Planning-stage records retain their original interpretation until such a transition. Source cleanup can remove unsupported scaffolding without claiming feature parity or rewriting historical Changes, archives and changelogs.
 
@@ -89,12 +90,14 @@ Rust's type, ownership and borrowing checks eliminate classes of invalid state a
 
 | Active test scope | Retention rule |
 | --- | --- |
-| Rust engine | Native behavior and consequential failures, using the standard harness. Keep the bounded intake/recovery case data already consumed by Rust; its former JavaScript runner is unnecessary. |
-| TypeScript integrations | Test retained Pi model/provider/session/protocol bridges and, when implemented, the SDK's actual JavaScript-to-Rust boundary: exact inputs/results, errors, usage, original-key recovery, limits, resource isolation and cancellation/cleanup. Native storage/authority claims need the real bridge and Rust host, not only mocks. Use controlled providers and loopback fixtures rather than live inference for Pi behavior. Do not execute retired engine authorization policy. |
-| Retired prototype | Remove its tests and orphan helpers, including Pi-named compositions that actually exercise TypeScript orchestration, Decision or persistence. This removes unsupported scope, not required native guarantees. Transitional wire/codec dependencies remain explicit until a separately agreed native boundary replaces them. |
+| Rust engine | Current referenced-intent behavior, required private mechanisms and consequential failures, using the standard harness. Keep independent application-resource fixtures with their own purpose; predecessor intake/v1–v6 tests retire with their APIs after helper extraction. |
+| TypeScript integrations | Test the retained Pi 1.2 referenced-intent host/TUI and native boundary: exact inputs/results, original-result recovery, authority/disclosure, review cancellation, composition limits and cleanup. Real native and installed-Pi claims require their explicit external test subjects, not only simulated peers or approval input. No live inference is needed. |
+| Historical implementations | Retire predecessor native and Pi 0.85.1 APIs, dedicated tests and orphan protocol/codec/build surfaces together under the approved disposition. Preserve useful incidents and exact pre-retirement bytes in Git, not a permanent executable legacy tree. Required current guarantees and independently consumed private mechanisms remain. |
 | Structural ceremony | Remove source-file inventories, exact import-list snapshots, manifest-text/version duplication and documentation-wording tests. Compilation, lockfiles, review and exact-release qualification own those concerns. A future architectural check must enforce a concrete maintained boundary, not freeze a file layout. |
 
-`npm test` currently typechecks only the retained adapter import closure and runs its TypeScript-implementation tests with Node's built-in runner. It does not build or test the legacy engine. The separately integrated referenced-intent host has its own [external consumer checks](../../../../../src/adapters/pi/referenced-intent/README.md#external-checks); this command does not cover that closure. A broader SDK implementation must extend the tested boundary rather than claim coverage from the retained adapter suite. Native-only slices do not require Node or npm; run client/adapter checks when changing them, their dependencies or the integration boundary. Current retained TypeScript sources are Pi bridges and their required protocol/codec dependencies, not a parallel engine. The supporting package is not the Rust product.
+The approved root source-development `npm test` target typechecks the existing Pi 1.2 adapter closure and runs the dedicated `tests/adapters/pi/referenced-intent/*.test.mjs` suite with Node's built-in runner. It retains the exact current external consumer dependency pins and does not change the nested adapter manifest or consumer bytes. This root manifest/lock reconciliation is implementation-pending here; the [dedicated external consumer checks](../../../../../src/adapters/pi/referenced-intent/README.md#external-checks) remain the way to check that closure before integration. The host README's separate legacy-root-suite instruction records the earlier split, not a continuing requirement after retirement.
+
+Install dependencies and run candidate checks only in disposable external projects with isolated Pi/HOME/settings. Real-native and installed-Pi cases remain conditional on explicit supported executable/configuration inputs and fresh custody; absence/skips are not integration evidence. No root public SDK, legacy exports, `prepack`, `dist` library or release packaging format is selected by these source checks. Native-only slices do not require Node or npm; run adapter checks for changes to that closure, its dependencies or integration boundary. A broader SDK needs its actual consumed boundary tested, not inherited coverage claims.
 
 Add ecosystem tools only when a measured problem calls for them: property testing for difficult input invariants, fuzzing for untrusted parsers, Miri for relevant unsafe/undefined-behavior risks, or nextest for demonstrated scheduling/isolation needs. None is a baseline dependency or a replacement for assertions about application behavior. There is no need to invent a test framework for this project.
 
@@ -167,13 +170,13 @@ Give shared interfaces and manifests one owner. Parallel work needs agreed non-o
 
 ## Native Rust bootstrap
 
-The native package is `changekernel`, with `src/lib.rs`, a thin `src/main.rs`, a pinned Rust toolchain and retained `Cargo.lock`. Its matching supporting-npm version does not establish identical artifact identity or release qualification. Native builds do not require Node or Pi; bundled SQLite also requires a compatible C compiler.
+The native package is `changekernel`, with `src/lib.rs`, a thin `src/main.rs`, a pinned Rust toolchain and retained `Cargo.lock`. Matching npm metadata does not establish identical artifact identity or release qualification. Native builds do not require Node or Pi; the retained bundled-SQLite application-resource fixture dependency requires a compatible C compiler for its checks.
 
-No arguments or `--help` shows unqualified usage; `--version` prints the package version; unsupported arguments fail. On Linux, `--referenced-intent-bridge` starts the trusted stdio bridge for the [closed referenced-intent prototype](referenced-intent-prototype.md), whose Pi host targets Pi 1.2.0 separately from the retained adapters. It supports bounded proposal/approval/revision/history/retry semantics, not application effects, general custom Check lifecycle or controller authority. The [source capability inventory](../../../../../README.md#executable-foundation) also includes bounded ledger collection/history/continuity. Source integration does not qualify an installed release; real-human TUI smoke and later runtime gates remain separate.
+No arguments or `--help` shows unqualified usage; `--version` prints the package version; unsupported arguments fail. On Linux, `--referenced-intent-bridge` starts the trusted stdio bridge for the [closed referenced-intent prototype](referenced-intent-prototype.md), whose Pi host targets Pi 1.2.0 rather than the historical Pi 0.85.1 adapters. It supports bounded proposal/approval/revision/history/retry semantics, not application effects, general custom Check lifecycle or controller authority. The [source capability inventory](../../../../../README.md#executable-foundation) distinguishes this active path from historical collection/history/continuity hosts approved for retirement. Source integration does not qualify an installed release; real-human TUI smoke and later runtime gates remain separate.
 
-Existing direct dependency and tool requirements remain defined by the actual manifests/lockfiles and bounded contracts: `rusqlite` with bundled SQLite, `sha2`, runtime `serde_json` plus manual `serde_core` traits for the consumed opening codec, Linux `libc`, and an explicitly configured trusted Git executable for the committed-source observer. This prose revision adopts no new dependency, model, toolchain, sandbox or runtime and does not remove compatibility code.
+Exact direct dependencies and tool requirements are defined by the integrated manifests/lockfiles and consumed contracts. Current referenced-intent code uses SHA-256, bounded Serde codecs and Linux native mechanisms; the standalone SQLite effect fixture remains an independent consumer. The historical committed-source observer's trusted Git executable is not a current engine transport or runtime requirement. This prose adopts no dependency upgrade, new model, toolchain, sandbox or runtime and does not itself remove predecessor code.
 
-The supporting npm package exports retained Pi bridges and required protocol/codec dependencies, not a parallel engine or native launcher. Run its checks only when that boundary changes. Source tests and normal builds do not establish installed capability or controller authority.
+The root npm package is selected as private source-development tooling for the current host closure, not a published SDK, native launcher or legacy `dist` library. Ownership metadata follows that selected closure, not the historical `src/index.ts` exports or package-inventory tests. Run adapter checks when that boundary changes. Source tests and normal builds do not establish installed capability or controller authority.
 
 ## Source-development boundary
 

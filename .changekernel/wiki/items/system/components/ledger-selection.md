@@ -5,6 +5,8 @@ source-id: cw:component:ledger-selection
 ---
 # Ledger Collection and Selection Profile
 
+**Historical v4 contract; executable support withdrawal adopted, integration pending.** Start with the [current referenced-intent prototype](referenced-intent-prototype.md) and [SDK/Pi boundary](sdk.md). This page preserves its consumed schemas, authority, custody, retry and accounting meanings and existing anchors. Implementation-era status, reuse instructions and old-API/test preservation statements below are historical, not an active assignment or perpetual support promise; see the [support disposition and exact source checkpoint](native-profiles.md#historical-compatibility-reference). No old-custody operation or current semantic change is authorized.
+
 ## Status and requirement authority
 
 **Selected consumed contract after independent correction review and manager adoption. Not implemented or source-accepted.** This page fixes the bounded producer/consumer protocol for a separately assigned source increment; adoption alone grants no implementation assignment, installation, qualification or controller authority. Existing opening, intent-revision and assessment profiles remain unchanged.

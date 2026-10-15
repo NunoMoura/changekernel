@@ -5,6 +5,8 @@ source-id: cw:component:ledger-history
 ---
 # Combined Ledger History and Understanding Profile
 
+**Historical v5 contract; executable support withdrawal adopted, integration pending.** Start with the [current referenced-intent prototype](referenced-intent-prototype.md) and [SDK/Pi boundary](sdk.md). This page preserves its consumed schemas, authority, custody, retry and accounting meanings and existing anchors. Implementation-era status, reuse instructions and old-API/test preservation statements below are historical, not an active assignment or perpetual support promise; see the [support disposition and exact source checkpoint](native-profiles.md#historical-compatibility-reference). No old-custody operation or current semantic change is authorized.
+
 **Status: selected contract after correction, independent review and manager adoption.** This is a fresh, bounded producer-to-consumer successor for the [deterministic foundation](../../product/plan.md#foundations-before-agent-integration). Source implementation requires a separate assignment against this contract. This document is not evidence of implementation, release qualification, activation or controller authority.
 
 The [opening](state.md#consumed-opening-profile), [revision](intent-trace.md), [assessment](assessment-trace.md) and [opening-only ledger](ledger-selection.md) profiles remain frozen, including their public APIs, bytes, errors, observation meanings and ceilings. None automatically composes into this profile. Native State remains native; there are no effects, agent runtime, inference, migration, archive, sharing, generic evaluator/query framework, index or cache.

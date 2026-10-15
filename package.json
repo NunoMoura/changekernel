@@ -1,7 +1,7 @@
 {
 	"name": "@nunomoura/changekernel",
 	"version": "0.5.0-prototype.1",
-	"description": "Private TypeScript Pi bridges supporting the native ChangeKernel engine.",
+	"description": "Private source-development checks for the ChangeKernel referenced-intent Pi adapter.",
 	"keywords": [
 		"changekernel",
 		"semantic-change",
@@ -10,22 +10,9 @@
 		"governance"
 	],
 	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./package.json": "./package.json"
-	},
-	"types": "./dist/index.d.ts",
 	"scripts": {
-		"clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-		"build": "npm run clean && tsc -p tsconfig.build.json",
-		"prepack": "npm run build",
-		"typecheck": "tsc --noEmit -p tsconfig.adapters.json",
-		"test:pack": "npm pack --dry-run",
-		"test": "npm run typecheck && node --experimental-strip-types --test \"tests/adapters/pi/*.test.mjs\"",
-		"audit:changekernel": "npm test && npm run build && npm run test:pack && npm audit --omit=dev && git diff --check"
+		"typecheck": "tsc --noEmit -p src/adapters/pi/referenced-intent/tsconfig.json",
+		"test": "npm run typecheck && node --experimental-strip-types --test --test-concurrency=1 \"tests/adapters/pi/referenced-intent/*.test.mjs\""
 	},
 	"license": "MIT",
 	"author": "Nuno Moura",
@@ -37,32 +24,16 @@
 		"url": "https://github.com/NunoMoura/changekernel/issues"
 	},
 	"homepage": "https://github.com/NunoMoura/changekernel#readme",
-	"files": [
-		"dist",
-		"README.md",
-		"CHANGELOG.md",
-		"LICENSE",
-		"package.json"
-	],
 	"devDependencies": {
-		"@types/node": "25.6.0",
-		"typescript": "^5.9.3"
-	},
-	"overrides": {
-		"zod": "4.4.3",
-		"@earendil-works/pi-ai": "0.85.1",
-		"@earendil-works/pi-agent-core": "0.85.1",
-		"@earendil-works/pi-coding-agent": "0.85.1",
-		"@earendil-works/pi-tui": "0.85.1",
-		"@earendil-works/pi-telemetry": "0.85.1",
-		"@earendil-works/chord": "0.85.1"
+		"@earendil-works/pi-coding-agent": "1.2.0",
+		"@earendil-works/pi-ai": "1.2.0",
+		"@earendil-works/pi-tui": "1.2.0",
+		"typebox": "1.3.27",
+		"typescript": "5.9.3",
+		"@types/node": "25.6.0"
 	},
 	"engines": {
 		"node": ">=22.19.0"
 	},
-	"private": true,
-	"dependencies": {
-		"@earendil-works/pi-ai": "0.85.1",
-		"@earendil-works/pi-coding-agent": "0.85.1"
-	}
+	"private": true
 }

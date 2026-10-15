@@ -5,6 +5,8 @@ source-id: cw:component:guarded-effect-fixture
 ---
 # Guarded Effect Validation Fixture
 
+**Deferred adopted contract, not the active prototype or permission to resume effects work.** The [current referenced-intent prototype](referenced-intent-prototype.md) has no effects and is not `@7`. The v5/v6 composition below is retained design evidence under the [approved predecessor disposition](native-profiles.md#approved-executable-retirement-boundary), not a reason to restore retired semantic hosts. The standalone SQLite application-resource fixture remains retained; removing predecessor SQLite APIs does not remove its separate dependency or prove an integrated effect path. Future composition needs its own consumed contract and assignment, preserving native CAS/receipt attribution, uncertainty and complete-custody obligations. No migration, replay or old-custody cleanup is authorized.
+
 **Adopted source contract, not runtime qualification.** Implementation/qualification state lives in the temporary status note and Git. Profile **`ck-ledger-notice-effect@7`**, JSON `v:7`, consumes the user-selected [SQLite validation resource](../../product/plan.md#guarded-effect-validation-fixture). SQLite retains application State/policy/native receipts, never Change history. JSONL alone retains adopted intent/operation/Check grounds, attributable attempt, uncertainty and actual outcome. No repository publication, model call, scheduler, generic adapter framework, migration or controller authority is selected.
 
 ## Fresh composition and unchanged contracts

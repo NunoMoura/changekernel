@@ -5,6 +5,8 @@ source-id: cw:component:ledger-continuity
 ---
 # Linux and Btrfs Ledger Continuity
 
+**Historical v6 contract; executable support withdrawal adopted, integration pending.** Start with the [current referenced-intent prototype](referenced-intent-prototype.md) and [SDK/Pi boundary](sdk.md). This page preserves its consumed schemas, authority, custody, retry and accounting meanings and existing anchors. Implementation-era status, reuse instructions and old-API/test preservation statements below are historical, not an active assignment or perpetual support promise; see the [support disposition and exact source checkpoint](native-profiles.md#historical-compatibility-reference). No old-custody operation or current semantic change is authorized.
+
 ## Authority, outcome and status
 
 **Adopted source contract; not qualification evidence.** Implementation acceptance and current execution state are recorded in the temporary status note and Git, not maintained on this requirements page. This page selects one consumed continuity contract for the [first Linux/btrfs dogfood target](../../product/plan.md#first-dogfood-target-and-initial-sharing-scope). It does not authorize implementation, installation, host events or controller use. The [ledger-history](ledger-history.md), [opening-only collection](ledger-selection.md) and [historical native profiles](native-profiles.md) remain frozen, including APIs, bytes, errors, counter meanings and ceilings.

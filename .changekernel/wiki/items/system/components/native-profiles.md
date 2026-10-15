@@ -5,6 +5,8 @@ source-id: cw:component:native-profiles
 ---
 # Retained Native Profiles
 
+**Historical contract reference, not the active product API.** Start with the [current referenced-intent prototype](referenced-intent-prototype.md) and [SDK/Pi boundary](sdk.md). “Retained” here means preserved interpretation and evidence, not perpetual executable support. The withdrawal below is adopted; executable removal and combined acceptance remain implementation-pending until integration.
+
 ## Approved executable retirement boundary
 
 The user approved retiring predecessor executable support from future source builds: container/intake and SQLite continuation/candidate APIs, the committed Git-observer profile, Linux local-packet API, JSONL v1–v6 semantic hosts, and the Pi 0.85.1/root TypeScript API closure. Their public exports, dedicated tests and obsolete package/build surfaces retire with them. This is an explicit support disposition, not a reinterpretation of their frozen records or a statement that no external consumer exists. The exact pre-retirement source and contracts remain recoverable from accepted Git checkpoints; this page preserves historical meanings rather than requiring a permanent executable `legacy/` tree.
@@ -15,13 +17,25 @@ No existing custody is deleted, migrated, reopened, repaired or cleaned by this 
 
 ## Historical compatibility reference
 
-This is a compatibility reference for bounded existing implementations and frozen, partly unintegrated contracts. It is not the desired file-first lifecycle, a migration specification or evidence that an operational host exists. Moving this documentation changes no public API, SQLite format, packet behavior, authorization assumption or known defect. The [product](../../product/changekernel.md), [State contract](state.md) and [phased plan](../../product/plan.md) describe the new path separately.
+This is a compatibility reference for historical implementations and frozen, partly unintegrated contracts. It is not the desired file-first lifecycle, a migration specification or evidence that an operational host exists. The approved support withdrawal changes which APIs future builds must provide, not SQLite formats, packet meanings, authorization assumptions or known defects. The [product](../../product/changekernel.md), [State contract](state.md) and [phased plan](../../product/plan.md) describe the active direction separately.
 
-Existing source/tests remain executable truth. Exact historical retries and their original attribution/access rules remain binding for these profiles; do not reuse their identifiers or receipts as implicit Workspace/Trace authority. The first trusted-host profile does not upgrade or relax these contracts. Qualification is distinct from source-test success.
+The exact accepted pre-retirement source/design checkpoint is `738490f253cb1b9c716bfb44e075503cb28986d5`. Inspect an original file with `git show 738490f253cb1b9c716bfb44e075503cb28986d5:<repository-relative-path>`; source names in historical contracts refer to that lineage, not a requirement to recreate removed paths. The R83 static audit is `acead6fac70b9dc37162c44b08e921c07c4b43f5:CHANGEKERNEL_STATUS.md` (its proposals were not adoption). Current source/tests and the temporary status note establish integrated implementation state, not this reference.
+
+Exact historical retry/result and attribution/access meanings remain binding when interpreting those profiles; do not reuse their identifiers or receipts as implicit Workspace/Trace authority. Statements below and in linked consumed contracts that old APIs/tests “remain unchanged” describe their original compatibility boundaries, not an obligation to ship or service retired interfaces in future builds. No old custody may be reopened, migrated or cleaned under this disposition. Qualification is distinct from source-test success.
+
+| Historical contract / evidence | Preserved meaning and support disposition |
+| --- | --- |
+| [Native intake](#native-rust-intake), [committed observations](#native-committed-source-observations), [private continuation/candidates](#native-private-continuation-profile), [packet ingress](#linux-local-packet-ingress) | APIs and dedicated tests are approved for withdrawal; original schemas, exact retries, permissions, unavailable/absent distinctions and known gaps remain evidence. |
+| [Opening v1](state.md#consumed-opening-profile), [intent v2](intent-trace.md), [fixed assessment v3](assessment-trace.md) | Historical semantic hosts, not current opening/revision/Check APIs. Preserve bytes, version separation, original results and custody rules. |
+| [Collection v4](ledger-selection.md), [history v5](ledger-history.md), [continuity v6](ledger-continuity.md) | Historical semantic hosts, not a competing active Ledger architecture. Bounded navigation, authority and custody obligations remain useful; required private mechanisms survive separately. |
+| Pi 0.85.1/root TypeScript closure | Historical `package.json`, `src/index.ts`, adapters and dedicated tests are recoverable at the checkpoint above. Exports/build surfaces retire; the existing Pi 1.2 referenced-intent consumer is retained unchanged. |
+| [Guarded notice-effect @7](guarded-effect-fixture.md) | Deferred adopted contract, not the current prototype or a direction to revive v5/v6. The standalone SQLite application-resource fixture remains separate. |
+
+Historical implementation-status labels record contract-era evidence, not rolling acceptance verdicts. Frozen `policy`, approval, authorization, identity and accounting names retain their exact meanings. The separately frozen current prototype's references to unchanged v1–v6 interfaces likewise preserve compatibility interpretation; this later explicit support disposition governs future-build availability without altering that prototype's current semantics.
 
 ## Native Rust intake
 
-**Existing bounded profile, not the new Workspace/file-first protocol.** Its container names, identifiers, store layout and retry rules below remain unchanged until an explicit supported disposition. No general membership, user-Kernel selection or portable Change-file authority is implied.
+**Historical bounded profile, not the current Workspace/file-first protocol.** The approved disposition withdraws future executable support; its container names, identifiers, store layout and retry meanings below remain unchanged. No general membership, user-Kernel selection or portable Change-file authority is implied.
 
 The first native intake capability is a library boundary for retaining original intent, not admitting pursuit or publishing State. It supports a single authenticated owner per container and multiple containers in one application-chosen store. SQLite is the first local/new-application binding, not a mandatory sidecar or the engine-wide database choice. Source files remain authoritative in place; intake writes only its own protected bookkeeping.
 

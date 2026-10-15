@@ -5,28 +5,8 @@ aliases:
   - Gate Checks
 source-id: cw:component:checks
 ownership:
-  sourcePatterns:
-    - src/adapters/pi/check-model.ts
-    - src/ports/check-model.ts
-  testPatterns:
-    - tests/adapters/pi/check-model.test.mjs
-  roles:
-    - model-check
-    - decision
-    - worker
-    - review
-  traceEvents:
-    - gate.recorded
-    - change.committed
-    - change.deferred
-    - change.rejected
-    - change.resumed
-    - change.withdrawn
-    - work.assigned
-    - work.attempt.recorded
-    - work.claimed
-    - work.integrated
-    - review.reconciled
+  sourcePatterns: []
+  testPatterns: []
 source-history:
   provenance:
     - attributes:
@@ -51,6 +31,8 @@ source-history:
       targetItemId: cw:story:check-author.author-composable-checks
 ---
 # Checks
+
+**Desired contract, not a claim of general executable Check support.** The [current prototype](referenced-intent-prototype.md) has closed empty domain requirements, not user-defined Check definition/adoption/enforcement. Historical fixed assessments and Pi 0.85.1 model-check bridges are covered by the [support withdrawal](native-profiles.md#approved-executable-retirement-boundary); retiring them does not retire the requirements below. Ownership lists are intentionally empty rather than attributing general Checks to those predecessors. Legacy `source-history` preserves provenance, not current operations or event names.
 
 **Checks express users' custom policy:** the requirements that must be met for a decision to be accepted or executed. A Check defines a bounded read-only assessment of explicit inputs, an exact subject and one reportable question. Authorized adoption makes it a requirement at a specified boundary; the engine enforces the applicable requirements. A definition can also be run for optional advice without becoming mandatory. Running it produces a **Check assessment**, tied to the exact Check version and subject/version. A completed result reports the defined passing condition, Boolean outcome, actionable feedback and evidence references. Missing inputs, failed execution and unavailable evidence are not fabricated Boolean judgments.
 

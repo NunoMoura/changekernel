@@ -77,6 +77,8 @@ mod adapters {
     }
     #[cfg(target_os = "linux")]
     pub mod linux {
+        pub(crate) mod custody_fs;
+        pub(crate) mod custody_identity;
         pub mod local_packet;
     }
 }

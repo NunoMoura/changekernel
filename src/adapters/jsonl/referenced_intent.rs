@@ -1,5 +1,5 @@
 //! V custody. Descriptor-relative operations; inspection never writes or cleans.
-use super::{ledger::held_identity, opening::storage as raw};
+use crate::adapters::linux::{custody_fs as raw, custody_identity::held_identity};
 use crate::kernel::changes::referenced_intent::*;
 use serde_core::{
     de::{self, MapAccess, Visitor},

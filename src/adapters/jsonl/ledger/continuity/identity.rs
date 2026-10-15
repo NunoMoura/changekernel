@@ -9,12 +9,14 @@ use super::{
     LedgerContinuityIoFault as Fault, LedgerIdentityObject as Object, LedgerIdentityStep as Step,
 };
 use crate::adapters::jsonl::opening::storage::Failure;
+use crate::adapters::linux::custody_identity::{self as raw, Acquisition};
+pub(crate) use raw::supported;
 use serde_core::{
     de::{self, MapAccess, Visitor},
     ser::SerializeStruct,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{fmt, os::fd::AsRawFd};
+use std::fmt;
 const MECHANISM: &str = "btrfs-fsid-fh@1";
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Identity {
@@ -281,42 +283,12 @@ impl Serialize for Identity {
         o.end()
     }
 }
-#[repr(C)]
-struct FsInfo {
-    max_id: u64,
-    num_devices: u64,
-    fsid: [u8; 16],
-    nodesize: u32,
-    sectorsize: u32,
-    clone_alignment: u32,
-    csum_type: u16,
-    csum_size: u16,
-    flags: u64,
-    generation: u64,
-    metadata_uuid: [u8; 16],
-    reserved: [u8; 944],
-}
-#[repr(C)]
-struct Handle {
-    bytes: u32,
-    kind: i32,
-    data: [u8; 128],
-}
-pub(crate) fn supported() -> bool {
-    cfg!(all(
-        target_os = "linux",
-        target_arch = "x86_64",
-        target_endian = "little",
-        target_pointer_width = "64"
-    ))
-}
 fn errno(n: i32) -> Failure {
-    if matches!(n, libc::EIO | libc::EUCLEAN | libc::EREMOTEIO) {
+    let failure = raw::errno(n);
+    if failure.observed {
         work::update(|w| w.identity_io_failures += 1);
-        Failure::io()
-    } else {
-        Failure::damage()
     }
+    failure
 }
 fn before<P: Layout>(
     ctx: &mut Context<P>,
@@ -370,24 +342,8 @@ pub(in crate::adapters::jsonl::ledger) fn acquire<P: Layout>(
 ) -> Result<Identity, Failure> {
     work::attempt(B::IdentityAcquisitions, 0, 1);
     let result = (|| {
-        if !supported() {
-            return Err(Failure::damage());
-        }
-        // Secure opens already checked roles/nlink and use normal descriptors.
-        // SAFETY: initialized native output, live owned fd. Exactly one attempt.
-        let mut fs: libc::statfs = unsafe { std::mem::zeroed() };
-        let mut info: FsInfo = unsafe { std::mem::zeroed() };
-        let mut handle = Handle {
-            bytes: 128,
-            kind: 0,
-            data: [0; 128],
-        };
-        let mut mount = 0i32;
-        let scratch = std::mem::size_of_val(&fs)
-            + std::mem::size_of_val(&info)
-            + std::mem::size_of_val(&handle)
-            + std::mem::size_of_val(&mount)
-            + 64;
+        let mut acquisition = Acquisition::new()?;
+        let scratch = Acquisition::SCRATCH_BYTES;
         let _fixed = work::Fixed::new(scratch);
         work::update(|w| {
             w.identity_scratch_bytes_peak = w.identity_scratch_bytes_peak.max(scratch as u64)
@@ -398,11 +354,11 @@ pub(in crate::adapters::jsonl::ledger) fn acquire<P: Layout>(
             object,
             Step::BeforeFsType,
             B::NativeFstype,
-            std::mem::size_of_val(&fs),
-            || unsafe { libc::fstatfs(fd.as_raw_fd(), &mut fs) },
+            Acquisition::FS_TYPE_BYTES,
+            || acquisition.fs_type(fd),
         )?;
         after(ctx, scope, object, Step::AfterFsType)?;
-        if !format(0, 1, true, || fs.f_type == 0x9123683e) {
+        if !format(0, 1, true, || acquisition.valid_fs_type()) {
             return Err(Failure::damage());
         }
         before(
@@ -411,11 +367,11 @@ pub(in crate::adapters::jsonl::ledger) fn acquire<P: Layout>(
             object,
             Step::BeforeFsInfo,
             B::NativeFsinfo,
-            1024,
-            || unsafe { libc::ioctl(fd.as_raw_fd(), 0x8400941f as libc::c_ulong, &mut info) },
+            Acquisition::FS_INFO_BYTES,
+            || acquisition.fs_info(fd),
         )?;
         after(ctx, scope, object, Step::AfterFsInfo)?;
-        if !format(16, 1, true, || info.fsid.iter().any(|b| *b != 0)) {
+        if !format(16, 1, true, || acquisition.valid_fsid()) {
             return Err(Failure::damage());
         }
         before(
@@ -424,30 +380,20 @@ pub(in crate::adapters::jsonl::ledger) fn acquire<P: Layout>(
             object,
             Step::BeforeHandle,
             B::NativeHandle,
-            140,
-            || unsafe {
-                libc::syscall(
-                    libc::SYS_name_to_handle_at,
-                    fd.as_raw_fd(),
-                    c"".as_ptr(),
-                    &mut handle,
-                    &mut mount,
-                    libc::AT_EMPTY_PATH,
-                ) as i32
-            },
+            Acquisition::HANDLE_BYTES,
+            || acquisition.file_handle(fd),
         )?;
         after(ctx, scope, object, Step::AfterHandle)?;
-        if !format(0, 2, true, || handle.bytes == 20 && handle.kind == 77) {
+        if !format(0, 2, true, || acquisition.valid_handle_shape()) {
             return Err(Failure::damage());
         }
-        if !format(128, 1, true, || handle.data[..20].iter().any(|b| *b != 0)) {
+        if !format(128, 1, true, || acquisition.valid_handle_data()) {
             return Err(Failure::damage());
         }
-        let mut raw = [0; 20];
-        raw.copy_from_slice(&handle.data[..20]);
+        let id = acquisition.copy_identity_after_validation();
         Ok(Identity {
-            fsid: info.fsid,
-            handle: raw,
+            fsid: id.fsid,
+            handle: id.handle,
         })
     })();
     work::complete(B::IdentityAcquisitions, result.is_ok());
@@ -456,8 +402,4 @@ pub(in crate::adapters::jsonl::ledger) fn acquire<P: Layout>(
     }
     result
 }
-const _: () = assert!(
-    std::mem::size_of::<FsInfo>() == 1024
-        && std::mem::size_of::<Handle>() == 136
-        && std::mem::size_of::<Identity>() == 36
-);
+const _: () = assert!(std::mem::size_of::<Identity>() == 36);

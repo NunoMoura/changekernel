@@ -4,35 +4,21 @@ aliases: []
 source-id: cw:component:state
 ownership:
   sourcePatterns:
-    - .changekernel/config.json
-    - src/adapters/git/**
-    - src/adapters/sqlite/**
-    - src/ports/container_intake.rs
-    - src/ports/continuation.rs
-    - src/ports/source_observer.rs
-    - src/application/intake.rs
-    - src/application/source_observation.rs
-    - src/kernel/containers/**
-    - src/kernel/state/**
+    - src/adapters/jsonl/referenced_intent.rs
+    - src/adapters/jsonl/referenced_intent/**
   testPatterns:
-    - tests/adapters/git/**
-    - tests/adapters/sqlite/**
-    - tests/kernel/containers/**
-    - tests/native_intent_revision.rs
-  generatedViews:
-    - alignment
-    - dictionary
-    - wiki-attribution
-    - wiki-graph
-    - wiki-history
-    - wiki-search
-    - wiki-semantic-diff
+    - tests/referenced_intent.rs
+    - tests/referenced_intent/**
+    - tests/sqlite_effect_fixture.rs
+    - tests/sqlite_effect_fixture/**
 ---
 # State and Persistence
 
 This contract defines the core State/evidence and JSONL custody obligations. [The plan](../../product/plan.md) selects when a capability must prove them. The first profile uses a trusted host, one authenticated user, one binding and a bounded operation. Multi-user sharing, autonomous workers and generalized discovery are later capabilities, not implicit prerequisites.
 
-The [consumed opening profile](#consumed-opening-profile), [consumed intent-revision profile](intent-trace.md) and [consumed deterministic assessment profile](assessment-trace.md) define concrete producer/consumer contracts. Each successor is explicitly selected for fresh custody, not an upgrade of an existing profile. The assessment profile separates operation tip from current intent under one optional fixed fixture policy. These bounded contracts do not establish implementation, general ledger formats or release qualification by themselves.
+The active concrete consumer is the [referenced-intent prototype](referenced-intent-prototype.md), through the [thin SDK/Pi boundary](sdk.md). The [opening v1](#consumed-opening-profile), [intent v2](intent-trace.md), [assessment v3](assessment-trace.md) and ledger v4–v6 contracts are historical profiles under the [approved support withdrawal](native-profiles.md#approved-executable-retirement-boundary), not parallel active State APIs. Their fresh-only boundaries and exact historical meanings remain intact. Executable retirement is implementation-pending until integration.
+
+Ownership metadata selects the current referenced-intent persistence/test closure and independent SQLite application-resource fixture; it is not a declaration of runtime State services or general effect support. Pre-retirement private filesystem/identity helpers still live under opening/ledger modules and must be extracted before those semantic hosts retire. Their exact historical locations remain in the [source reference](native-profiles.md#historical-compatibility-reference); no speculative replacement path, config or generated-View inventory is selected here.
 
 Native values, desired obligations, observations, candidates and research claims have different meanings. State is scoped and version-/time-bound; it is not necessarily a complete snapshot. A failed or uncertain operation must not produce an invented after-State. Existing systems begin from an acknowledged baseline. Confirmed effects and reconciled external changes explain subsequent State without fabricating earlier intent.
 
@@ -146,7 +132,7 @@ Future hosts must preserve per-user attribution, visibility, native rights and C
 
 ## Ledger working set, archive and restore
 
-The [ledger collection and selection profile](ledger-selection.md) selects the fresh-only, opening-only collection successor after independent correction review and manager adoption. Its bounded wire/storage, permanent creation association, authorization, recovery and live-pagination rules are consumed requirements for a separately assigned source increment, not evidence of implementation or qualification. Existing single-slot profiles remain unchanged.
+The historical [ledger collection and selection profile](ledger-selection.md) records the fresh-only v4 witness for permanent creation associations, authorization, recovery and live pagination. Its future-build executable support is approved for withdrawal under the [approved disposition](native-profiles.md#approved-executable-retirement-boundary); the broader collection obligations below remain desired product capabilities, not capabilities supplied by the one-Change current prototype.
 
 The logical user-owned ledger is the collection of Changes, including retained inactive history. Begin with stable flat Change identity/storage and an active-only default View, not folders for workflow stages. Use authorized bounded/paginated listing and, when justified by measured workloads, rebuildable metadata indexes rather than decoding every complete Trace for every list. Flatness alone proves neither scalability nor reliability. Supporting custody controls and referenced evidence keep their distinct roles; this is not a requirement that the physical directory contain only JSONL files.
 
@@ -190,7 +176,7 @@ Original intent, later clarification and actual delivery remain separately attri
 
 ### Structured history access and context projections
 
-The [combined ledger history and understanding profile](ledger-history.md) selects a fresh successor with ledger-bound intent revisions, fixed Check assessments, bounded history ranges and deterministic current/historical Change context. Its native interface and custody, authorization, coverage and resource requirements are consumed design obligations after independent review and manager adoption, not evidence of implementation or qualification. It does not migrate or widen the frozen profiles.
+The historical [combined ledger history and understanding profile](ledger-history.md) records the v5 witness for ledger-bound revisions, fixed Check assessments, bounded history and deterministic context. Its semantic host is not the active API. The general navigation, custody, authorization and coverage obligations below remain; they do not migrate old custody or widen the current prototype.
 
 Expose authorized, bounded reads over accepted history and retained evidence. The collection boundary is a user's Change ledger; the file boundary is one Change; the record boundary is one typed lifecycle-operation record. A ledger is not another lifecycle database, and listing a collection does not authorize disclosure of every member. The first single-slot opening profile below is a smaller witness, not an implementation of collection queries or longer histories.
 
@@ -238,9 +224,11 @@ The accepted Change Trace records explain decisions and evidenced effects within
 
 ## Recovery and continuation obligations
 
-The [phased plan](../../product/plan.md) requires concrete positive paths and failures before each supported claim. Preserve exact original-key results, authority/disclosure checks, no blind effect replay, and explicit unknown outcomes across interruption. Stronger host/custody profiles need stronger evidence; a trusted-host fixture cannot qualify them. [Retained native implementations](native-profiles.md) keep their own unchanged persistence and recovery meanings until an explicit supported transition.
+The [phased plan](../../product/plan.md) requires concrete positive paths and failures before each supported claim. Preserve exact original-key results, authority/disclosure checks, no blind effect replay, and explicit unknown outcomes across interruption. Stronger host/custody profiles need stronger evidence; a trusted-host fixture cannot qualify them. [Historical native profiles](native-profiles.md) keep their original persistence and recovery meanings despite approved future-build support withdrawal; this is not permission to operate their custody.
 
 ## Consumed opening profile
+
+**Historical v1 contract; executable retirement approved, integration pending.** This section and its existing anchors preserve the consumed opening contract, not the current opening API or an implementation assignment. Its implementation-era instructions and test paths are interpreted under the [historical compatibility reference](native-profiles.md#historical-compatibility-reference). Use the [referenced-intent prototype](referenced-intent-prototype.md) for the active path; no bytes, grants, retry or recovery rules below are redefined.
 
 This is the selected implementation contract for the first opening → inspection → restart/retry increment. It fixes one bounded source-test fixture, not a universal public API, executable conformance, qualified storage profile or completion of Phase 1. Intent revision, assessment and other supported lifecycle operations need subsequent records and checks; this increment does not manufacture them or select a universal pipeline.
 

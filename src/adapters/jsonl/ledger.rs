@@ -10,7 +10,6 @@ mod parser;
 mod selection;
 mod storage;
 use layout::{Layout, Legacy, Slot, Value};
-pub(crate) use storage::held_identity;
 pub(crate) mod work;
 use crate::{
     adapters::jsonl::opening::{

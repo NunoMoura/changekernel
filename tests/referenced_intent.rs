@@ -18,6 +18,8 @@ mod conformance;
 mod generated_recovery;
 #[path = "referenced_intent/provisioning.rs"]
 mod provisioning;
+#[path = "referenced_intent/raw_custody.rs"]
+mod raw_custody;
 #[path = "referenced_intent/recovery.rs"]
 mod recovery;
 const V: &str = "0.5.0-prototype.1";
