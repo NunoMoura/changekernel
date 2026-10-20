@@ -78,5 +78,5 @@ fn retention_decoder_carries_recovery_bytes_but_keeps_frame_and_utf8_bounds() {
 fn version_mismatch_precedes_dependent_record_decoding() {
     let bad = br#"{"input":{"foreign":{"deep":"ignored"}},"version":"future"}"#;
     assert_eq!(versioned_canonical::<Record>(bad), Err(Error::Unsupported));
-    assert!(parse::<versions::VersionScan>(bad).is_err());
+    assert!(parse::<version_scan::VersionScan>(bad).is_err());
 }

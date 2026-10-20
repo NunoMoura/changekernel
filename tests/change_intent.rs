@@ -10,17 +10,17 @@ use std::{
     process::{Child, Command, Stdio},
     sync::atomic::{AtomicU64, Ordering},
 };
-#[path = "referenced_intent/budgets.rs"]
+#[path = "change_intent/budgets.rs"]
 mod budgets;
-#[path = "referenced_intent/conformance.rs"]
+#[path = "change_intent/conformance.rs"]
 mod conformance;
-#[path = "referenced_intent/generated_recovery.rs"]
+#[path = "change_intent/generated_recovery.rs"]
 mod generated_recovery;
-#[path = "referenced_intent/provisioning.rs"]
+#[path = "change_intent/provisioning.rs"]
 mod provisioning;
-#[path = "referenced_intent/raw_custody.rs"]
+#[path = "change_intent/raw_custody.rs"]
 mod raw_custody;
-#[path = "referenced_intent/recovery.rs"]
+#[path = "change_intent/recovery.rs"]
 mod recovery;
 const V: &str = "0.5.0-prototype.1";
 const POLICY:&str="{\"format\":\"ck-plan-policy\",\"owner\":\"person-1\",\"ledger\":\"ledger-1\",\"change\":\"change-1\",\"coverage\":\"closed-personal-plan\",\"actions\":[\"open_intent\",\"revise_intent\"],\"approval\":\"local-tui-exact\",\"domain_requirements\":[],\"relationships\":[],\"external_effects\":false}\n";

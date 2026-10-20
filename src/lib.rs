@@ -1,34 +1,53 @@
 //! Unqualified referenced-intent source prototype; no controller or application effects.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg(target_os = "linux")]
-pub use adapters::jsonl::referenced_intent::{
+pub use adapters::jsonl::store::{
     ReferencedIntentIoEvent, ReferencedIntentIoFault, ReferencedIntentIoHook,
 };
 #[cfg(target_os = "linux")]
-pub use adapters::stdio::referenced_intent::run as referenced_intent_bridge;
-#[cfg(target_os = "linux")]
-pub use application::referenced_intent::ReferencedIntent;
+pub use adapters::stdio::bridge::run as referenced_intent_bridge;
 mod kernel {
-    pub mod changes {
-        pub mod referenced_intent;
+    pub mod change {
+        pub mod intent;
     }
 }
 mod application {
     #[cfg(target_os = "linux")]
-    pub mod referenced_intent;
+    pub mod change;
+    pub(crate) mod ports;
 }
 mod adapters {
+    pub(crate) mod codec;
     #[cfg(target_os = "linux")]
     pub mod jsonl {
-        pub mod referenced_intent;
+        pub mod store;
     }
     #[cfg(target_os = "linux")]
     pub mod stdio {
-        pub mod referenced_intent;
+        pub mod bridge;
+        pub(crate) mod session;
     }
     #[cfg(target_os = "linux")]
     pub mod linux {
         pub(crate) mod custody_fs;
         pub(crate) mod custody_identity;
+    }
+}
+#[cfg(target_os = "linux")]
+pub use adapters::stdio::session::ReferencedIntent;
+#[cfg(target_os = "linux")]
+impl ReferencedIntent {
+    pub fn new() -> Self {
+        Self::configured(None)
+    }
+    /// Source-test instrumentation only; the stdio bridge has no hook or auto-approval mode.
+    pub fn with_io_hook(hook: ReferencedIntentIoHook) -> Self {
+        Self::configured(Some(hook))
+    }
+    fn configured(hook: Option<ReferencedIntentIoHook>) -> Self {
+        Self::assemble(
+            adapters::jsonl::store::Factory { hook },
+            adapters::codec::LegacyCodec,
+        )
     }
 }

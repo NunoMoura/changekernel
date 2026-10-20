@@ -1,8 +1,9 @@
 use super::*;
 // Exact prospective bytes are checked before review and again before reservation.
-pub(super) fn preflight(
-    store: &Store,
-    s: &Snapshot,
+pub(super) fn preflight<P: Persistence, C: Encoding>(
+    codec: &C,
+    store: &P,
+    s: &P::State,
     r: &Request,
     presentation: &str,
     pending: Option<&Pending>,
@@ -11,12 +12,12 @@ pub(super) fn preflight(
     let receipt = Receipt {
         format: "ck-local-approval".into(),
         principal: "person-1".into(),
-        subject_sha256: hash(&emit(r)?),
+        subject_sha256: codec.subject(r)?,
         presentation: review_ref.clone(),
         decision: "adopt".into(),
         ui: "local-tui-exact".into(),
     };
-    let receipt_text = String::from_utf8(emit(&receipt)?).map_err(|_| Error::Unavailable)?;
+    let receipt_text = codec.receipt(&receipt)?;
     let approval = Material::of(receipt_text.as_bytes());
     if pending.is_none() {
         store.preflight_materials(&[presentation, &receipt_text])?;
@@ -25,17 +26,15 @@ pub(super) fn preflight(
         (review_ref, presentation),
         (approval.clone(), receipt_text.as_str()),
     ] {
-        reply(
+        codec.response(
             1_000_000,
-            &Resolved {
-                version: V.into(),
-                kind: "resolved".into(),
+            &Response::Resolved {
                 material,
                 text: text.into(),
             },
         )?;
     }
-    let seq = s.prefix.generation + 1;
+    let seq = s.generation() + 1;
     let record = Record {
         version: V.into(),
         custody: "custody-1".into(),
@@ -44,24 +43,11 @@ pub(super) fn preflight(
         input: r.clone(),
         approval: pending.map_or(approval, |p| p.approval.clone()),
     };
-    let record_bytes = emit(&record)?;
-    if s.prefix.end + record_bytes.len() as u64 > 4_194_304 {
-        return Err(Error::Unsupported);
-    }
-    let p = Pending {
-        input: r.clone(),
-        approval: record.approval.clone(),
-    };
-    emit(&Prefix {
-        pending: Some(p),
-        ..s.prefix.clone()
-    })?;
-    accepted(1_000_000, &record)?;
-    reply(
+    store.preflight_record(s, &record)?;
+    codec.response(1_000_000, &Response::Accepted(record.outcome()))?;
+    codec.response(
         1_000_000,
-        &HistoryReply {
-            version: V.into(),
-            kind: "history".into(),
+        &Response::History(History {
             tip: Some(Fact::at(seq)),
             through: Some(Fact::at(seq)),
             records: vec![record],
@@ -71,7 +57,7 @@ pub(super) fn preflight(
             },
             next_after: None,
             readiness: vec![],
-        },
+        }),
     )?;
     Ok(())
 }

@@ -1,0 +1,844 @@
+{
+  "baseline": "4f6945b527b3a7088d0dc0e995cf0f40daa49ab8",
+  "sessions": [
+    [
+      {
+        "label": "fresh provision",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 1,
+          "kind": "connect",
+          "mode": "fresh_provision",
+          "grant": {
+            "version": "0.5.0-prototype.1",
+            "custody": "custody-1",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "owner": "person-1",
+            "coverage": "closed-personal-plan",
+            "policy": {
+              "custody": "custody-1",
+              "sha256": "4bc94a543b98838a8af60b5dab821c9c30f8c9a388e360f84c916af6043360ad",
+              "bytes": 261,
+              "text": "utf8-exact"
+            },
+            "directory": "$ROOT/slot",
+            "anchor": "$ROOT/slot-anchor.json"
+          },
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          }
+        },
+        "response_sha256": "1248b818d492549aa54ca9a20cb466e6f8d3721ffbf035f90efec0effddf2ca4"
+      },
+      {
+        "label": "unopened context",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 2,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "read_context",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "at": null
+          }
+        },
+        "response_sha256": "2bf293031b365cb50590574350ef9df8e73d030717541f14c4de37b5ca3bdf06"
+      },
+      {
+        "label": "retain 'Adopt Café\\n\\x1b[31m / \\\\ \"'",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 3,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "retain_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "text": "Adopt Café\n\u001b[31m / \\ \""
+          }
+        },
+        "response_sha256": "7cc00fd72160cc474d96e78f04f905497a7e88a747c0531687fed57f32eb26a1"
+      },
+      {
+        "label": "retain 'Café\\n\\x1b[31m / \\\\ \"'",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 4,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "retain_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "text": "Café\n\u001b[31m / \\ \""
+          }
+        },
+        "response_sha256": "c8e6c2c1d893a67d3d8030185b8d1d3fb97721ccdcd1aa259f20c4483d4b1407"
+      },
+      {
+        "label": "unapproved mutation",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 5,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          }
+        },
+        "response_sha256": "41858de86a5693ff20480a2e39dbe1a1b8a7114858c87a13496297d72a5af407"
+      },
+      {
+        "label": "exact first review",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 6,
+          "kind": "prepare",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          }
+        },
+        "response_sha256": "e41df950a4872e74ead74da2ea9b5ad272c2ba22dd6ea74d7d4177336b763b5c"
+      },
+      {
+        "label": "different confirmation",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 7,
+          "kind": "confirm",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "input": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "different",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          },
+          "confirmed": true
+        },
+        "response_sha256": "0caa4520f70a14ccd43876ae793f712dc3864a576bb8748503043059113abca3"
+      },
+      {
+        "label": "prepare again",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 8,
+          "kind": "prepare",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          }
+        },
+        "response_sha256": "f51ae2e39156cbfba9f698fc84ce72c7f5b567e3054b747da6fafd4f1afc2909"
+      },
+      {
+        "label": "accept first",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 9,
+          "kind": "confirm",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "input": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          },
+          "confirmed": true
+        },
+        "response_sha256": "cba68a48d3d48ec88e8cedf9ab68d0dbff93e04593525669097d611319b667ff"
+      },
+      {
+        "label": "retain 'Adopt Saturday'",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 10,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "retain_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "text": "Adopt Saturday"
+          }
+        },
+        "response_sha256": "11967884b05c07a5cb157700689c2e4e1a5676ef9581c8745096ab99941588bb"
+      },
+      {
+        "label": "retain 'Saturday'",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 11,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "retain_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "text": "Saturday"
+          }
+        },
+        "response_sha256": "e16d7d0df92ae8136d6f0b9e21e10a744b79e65532128d481df5d0d3ae59140b"
+      },
+      {
+        "label": "retain ''",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 12,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "retain_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "text": ""
+          }
+        },
+        "response_sha256": "991e8583640ee158744f120578b02a63baafb56e640ce5961a0a9cc3f683dc38"
+      },
+      {
+        "label": "exact revision review",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 13,
+          "kind": "prepare",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "revise_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "second",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "1b6663cf9edb6da7c202bc4512815829135345eb27ef77f10f2a3a7ca3ed3b16",
+              "bytes": 14,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e",
+                "bytes": 8,
+                "text": "utf8-exact"
+              },
+              "why": {
+                "custody": "custody-1",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0,
+                "text": "utf8-exact"
+              }
+            },
+            "expected": {
+              "ledger": "ledger-1",
+              "change": "change-1",
+              "seq": 1
+            }
+          }
+        },
+        "response_sha256": "6401a0753edbf99accfdcf68d8c23f9f4bebfcc0855a932a2790e90cba1255b0"
+      },
+      {
+        "label": "accept second",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 14,
+          "kind": "confirm",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          },
+          "input": {
+            "version": "0.5.0-prototype.1",
+            "op": "revise_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "second",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "1b6663cf9edb6da7c202bc4512815829135345eb27ef77f10f2a3a7ca3ed3b16",
+              "bytes": 14,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e",
+                "bytes": 8,
+                "text": "utf8-exact"
+              },
+              "why": {
+                "custody": "custody-1",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0,
+                "text": "utf8-exact"
+              }
+            },
+            "expected": {
+              "ledger": "ledger-1",
+              "change": "change-1",
+              "seq": 1
+            }
+          },
+          "confirmed": true
+        },
+        "response_sha256": "823b61ddd94d8e95441848b2a56f8bd36d5e229ad17ea28e0335d3c0cc0db437"
+      },
+      {
+        "label": "historical context",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 15,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "read_context",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "at": {
+              "ledger": "ledger-1",
+              "change": "change-1",
+              "seq": 1
+            }
+          }
+        },
+        "response_sha256": "ff56372a84486c0a81261d683b62515ab7687583e1145c4b4aad7b0b66df229b"
+      },
+      {
+        "label": "original result retry",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 16,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+                "bytes": 17,
+                "text": "utf8-exact"
+              },
+              "why": null
+            }
+          }
+        },
+        "response_sha256": "eb34359446f73a82017e56d8ead48595faefd45b6648c6363c39bd5276d308a6"
+      },
+      {
+        "label": "conflicting key",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 17,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "open_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e",
+                "bytes": 8,
+                "text": "utf8-exact"
+              },
+              "why": {
+                "custody": "custody-1",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0,
+                "text": "utf8-exact"
+              }
+            }
+          }
+        },
+        "response_sha256": "262408f3564be3e0e36cc1a23820ee020930f7be23f69ac5aebac97d46d22bbb"
+      },
+      {
+        "label": "denied disclosure",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 18,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "deny",
+            "mutate": "allow"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "inspect_operation",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "second"
+          }
+        },
+        "response_sha256": "d2d2ff966c44aade389c7278fdfffa1e155f930f494859e4c5844b18ec160e08"
+      },
+      {
+        "label": "first history page",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 19,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "read_history",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "through": null,
+            "after": 0,
+            "limit": 1
+          }
+        },
+        "response_sha256": "cfe9bb422075a04ee5765d74aba2917ea1eb956086ecf93678f555e8fbf6d306"
+      },
+      {
+        "label": "second history page",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 20,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "read_history",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "through": {
+              "ledger": "ledger-1",
+              "change": "change-1",
+              "seq": 2
+            },
+            "after": 1,
+            "limit": 1
+          }
+        },
+        "response_sha256": "b4df70584eff9154a2d6fd68fd1fe63a65686bd57bb021daaea6dd2f9e287800"
+      },
+      {
+        "label": "resolve instruction",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 21,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "resolve_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "material": {
+              "custody": "custody-1",
+              "sha256": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+              "bytes": 23,
+              "text": "utf8-exact"
+            }
+          }
+        },
+        "response_sha256": "7d88ffd53ccb20ddbdbc565bb9e13d9b0b4e4dfc3ef8e58f5e8d0304d00d4782"
+      },
+      {
+        "label": "resolve what",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 22,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "resolve_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "material": {
+              "custody": "custody-1",
+              "sha256": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+              "bytes": 17,
+              "text": "utf8-exact"
+            }
+          }
+        },
+        "response_sha256": "585fb6ac3af3f7e7a3166d0529cc87e041324d612b684f9f9da5895af3c67133"
+      },
+      {
+        "label": "resolve approval",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 23,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "resolve_text",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "material": {
+              "custody": "custody-1",
+              "sha256": "70ee87c507e89be46ea51a4f6c3338b74b06c52e5cb2b4c282f9734950027737",
+              "bytes": 327,
+              "text": "utf8-exact"
+            }
+          }
+        },
+        "response_sha256": "531d8f59129ac33fc27655f0c3aabc994888138121317be50b28017619779962"
+      },
+      {
+        "label": "close",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 24,
+          "kind": "close"
+        },
+        "response_sha256": "6820c935583f0d90fb35dcc98ad07f1c5ddbd9a996a9a315ab1ad3b80dedeb73"
+      }
+    ],
+    [
+      {
+        "label": "reopen",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 1,
+          "kind": "connect",
+          "mode": "reopen",
+          "grant": {
+            "version": "0.5.0-prototype.1",
+            "custody": "custody-1",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "owner": "person-1",
+            "coverage": "closed-personal-plan",
+            "policy": {
+              "custody": "custody-1",
+              "sha256": "4bc94a543b98838a8af60b5dab821c9c30f8c9a388e360f84c916af6043360ad",
+              "bytes": 261,
+              "text": "utf8-exact"
+            },
+            "directory": "$ROOT/slot",
+            "anchor": "$ROOT/slot-anchor.json"
+          },
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "allow"
+          }
+        },
+        "response_sha256": "1248b818d492549aa54ca9a20cb466e6f8d3721ffbf035f90efec0effddf2ca4"
+      },
+      {
+        "label": "reopened original result",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 2,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "revise_intent",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "second",
+            "instruction": {
+              "custody": "custody-1",
+              "sha256": "1b6663cf9edb6da7c202bc4512815829135345eb27ef77f10f2a3a7ca3ed3b16",
+              "bytes": 14,
+              "text": "utf8-exact"
+            },
+            "replacement": {
+              "what": {
+                "custody": "custody-1",
+                "sha256": "dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e",
+                "bytes": 8,
+                "text": "utf8-exact"
+              },
+              "why": {
+                "custody": "custody-1",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "bytes": 0,
+                "text": "utf8-exact"
+              }
+            },
+            "expected": {
+              "ledger": "ledger-1",
+              "change": "change-1",
+              "seq": 1
+            }
+          }
+        },
+        "response_sha256": "5d5ac787951bb74b5b03493af74a4fe35123963e100e06d63d89467c31bdb31b"
+      },
+      {
+        "label": "reopened current context",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 3,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "read_context",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "at": null
+          }
+        },
+        "response_sha256": "6cddd45e29d3f8db729e9229ec14401408bd456e71cfac0f622e953dbe279c0b"
+      },
+      {
+        "label": "reopened inspection",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 4,
+          "kind": "call",
+          "authorization": {
+            "principal": "person-1",
+            "disclose": "allow",
+            "mutate": "deny"
+          },
+          "request": {
+            "version": "0.5.0-prototype.1",
+            "op": "inspect_operation",
+            "ledger": "ledger-1",
+            "change": "change-1",
+            "key": "first"
+          }
+        },
+        "response_sha256": "147489b12b7a3e13ce049304402e4622dc34c3cadb294ca5239380c8fbd34e81"
+      },
+      {
+        "label": "close",
+        "request": {
+          "bridge": "ck-intent-bridge",
+          "id": 5,
+          "kind": "close"
+        },
+        "response_sha256": "cf2f2615c16893ac3bd57effe4ee4e04d99c3cdf30cb69e2c5e9e284f18a64f8"
+      }
+    ]
+  ],
+  "files": {
+    "slot/checkpoint.json": "a62d0c5a8ffb2a2baab3ae6535e8b1507b9c42659f74d4c6d8db3eca8b351cfa",
+    "slot/incident.json": "4a5ee960c826dee8e6676c51aaaa00acc170e5a12d3a4a0ab569afb564949c54",
+    "slot/materials/1b6663cf9edb6da7c202bc4512815829135345eb27ef77f10f2a3a7ca3ed3b16.txt": "1b6663cf9edb6da7c202bc4512815829135345eb27ef77f10f2a3a7ca3ed3b16",
+    "slot/materials/4bc94a543b98838a8af60b5dab821c9c30f8c9a388e360f84c916af6043360ad.txt": "4bc94a543b98838a8af60b5dab821c9c30f8c9a388e360f84c916af6043360ad",
+    "slot/materials/593ca110f903bba0d7e6969ce79e3ac3b52608cefa7cdb33443e220be6d58dae.txt": "593ca110f903bba0d7e6969ce79e3ac3b52608cefa7cdb33443e220be6d58dae",
+    "slot/materials/67fa2269c7d25d06e99facc18493281265eb4a4e20ecea2a5118b4e683b98c11.txt": "67fa2269c7d25d06e99facc18493281265eb4a4e20ecea2a5118b4e683b98c11",
+    "slot/materials/70ee87c507e89be46ea51a4f6c3338b74b06c52e5cb2b4c282f9734950027737.txt": "70ee87c507e89be46ea51a4f6c3338b74b06c52e5cb2b4c282f9734950027737",
+    "slot/materials/a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88.txt": "a10109e06921ae1c0e766a39f6a61e276ab7619dea6f97178fa439f2872f9d88",
+    "slot/materials/b06be28625fdbd37e146b5136ec7f3a8613d7badd8e32240317ebca2a0e322ef.txt": "b06be28625fdbd37e146b5136ec7f3a8613d7badd8e32240317ebca2a0e322ef",
+    "slot/materials/dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e.txt": "dbe35c7363c2f7ec747b902fb240907fc58ae00b98f107be2d4c7b9cd7f6226e",
+    "slot/materials/e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b.txt": "e007c9de8812d7475c918a7714ac87d8a2d0d47aadd36f8f8ef4d3ca0f96655b",
+    "slot/materials/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "slot/trace.jsonl": "73fdfb2ae5218c7714af993ec6b0c7018736deaccb4c6075d36c5bcb598ddeed"
+  }
+}

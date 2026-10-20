@@ -1,57 +1,17 @@
-//! Closed values for the referenced-intent entry point. No legacy interpretation.
+//! Frozen JSON compatibility codec, shared by the JSONL store and process adapter.
+use crate::{application::ports::*, kernel::change::intent::*};
 use serde_core::{
     de::{self, MapAccess, Visitor},
     ser::SerializeStruct,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use sha2::{Digest, Sha256};
 use std::{fmt, io};
+pub const LIMIT: usize = 262_144;
 #[cfg(test)]
 mod tests;
-pub(crate) mod versions;
-pub const V: &str = "0.5.0-prototype.1";
-pub const LIMIT: usize = 262_144;
-pub const POLICY: &str = "{\"format\":\"ck-plan-policy\",\"owner\":\"person-1\",\"ledger\":\"ledger-1\",\"change\":\"change-1\",\"coverage\":\"closed-personal-plan\",\"actions\":[\"open_intent\",\"revise_intent\"],\"approval\":\"local-tui-exact\",\"domain_requirements\":[],\"relationships\":[],\"external_effects\":false}\n";
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Error {
-    Invalid,
-    Unsupported,
-    Conflict,
-    Denied,
-    Unavailable,
-}
-pub type Result<T> = std::result::Result<T, Error>;
-impl Error {
-    pub fn code(self) -> &'static str {
-        match self {
-            Self::Invalid => "invalid_input",
-            Self::Unsupported => "unsupported",
-            Self::Conflict => "conflict",
-            Self::Denied => "denied",
-            Self::Unavailable => "unavailable",
-        }
-    }
-}
-pub fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
-}
-pub fn hex(s: &str, n: usize) -> bool {
-    s.len() == n
-        && s.bytes()
-            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-}
-pub fn key(s: &str) -> bool {
-    !s.is_empty()
-        && s.len() <= 64
-        && s.bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
-}
-
-// Every field is required, including Option fields. No intermediate Value tree.
-macro_rules! closed {
+pub(crate) mod version_scan;
+macro_rules! value_codec {
     ($name:ident { $($field:ident : $ty:ty),+ $(,)? }) => {
-        #[derive(Clone,Debug,PartialEq,Eq)]
-        pub struct $name { $(pub $field: $ty),+ }
         impl Serialize for $name {
             fn serialize<S: Serializer>(&self,s:S)->std::result::Result<S::Ok,S::Error>{
                 let mut o=s.serialize_struct(stringify!($name),0 $(+ {let _=stringify!($field);1})+)?;
@@ -78,77 +38,33 @@ macro_rules! closed {
         }
     }
 }
+pub(crate) use value_codec;
+macro_rules! closed {
+    ($name:ident { $($field:ident : $ty:ty),+ $(,)? }) => {
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct $name { $(pub $field: $ty),+ }
+        value_codec!($name { $($field: $ty),+ });
+    }
+}
 pub(crate) use closed;
-closed!(Material {
+value_codec!(Material {
     custody: String,
     sha256: String,
     bytes: u64,
     text: String
 });
-impl Material {
-    pub fn of(bytes: &[u8]) -> Self {
-        Self {
-            custody: "custody-1".into(),
-            sha256: hash(bytes),
-            bytes: bytes.len() as u64,
-            text: "utf8-exact".into(),
-        }
-    }
-    pub fn valid(&self) -> bool {
-        self.custody == "custody-1"
-            && hex(&self.sha256, 64)
-            && self.bytes <= 65_536
-            && self.text == "utf8-exact"
-    }
-}
-closed!(Fact {
+value_codec!(Fact {
     ledger: String,
     change: String,
     seq: u64
 });
-impl Fact {
-    pub fn at(seq: u64) -> Self {
-        Self {
-            ledger: "ledger-1".into(),
-            change: "change-1".into(),
-            seq,
-        }
-    }
-    pub fn valid(&self) -> bool {
-        self.ledger == "ledger-1" && self.change == "change-1" && (1..=128).contains(&self.seq)
-    }
-}
-closed!(Intent { what:Material, why:Option<Material> });
-impl Intent {
-    fn valid(&self) -> bool {
-        self.what.valid() && self.why.as_ref().is_none_or(Material::valid)
-    }
-}
-closed!(Lease {
+value_codec!(Intent { what:Material, why:Option<Material> });
+value_codec!(Lease {
     principal: String,
     disclose: String,
     mutate: String
 });
-impl Lease {
-    pub fn check(&self, mutation: bool) -> Result<()> {
-        if self.principal != "person-1"
-            || ![&self.disclose, &self.mutate]
-                .iter()
-                .all(|s| matches!(s.as_str(), "allow" | "deny" | "unavailable"))
-        {
-            return Err(Error::Invalid);
-        }
-        for p in std::iter::once(&self.disclose).chain(mutation.then_some(&self.mutate)) {
-            match p.as_str() {
-                "allow" => {}
-                "deny" => return Err(Error::Denied),
-                _ => return Err(Error::Unavailable),
-            }
-        }
-        Ok(())
-    }
-}
-closed!(Grant {
+value_codec!(Grant {
     version: String,
     custody: String,
     ledger: String,
@@ -159,46 +75,35 @@ closed!(Grant {
     directory: String,
     anchor: String
 });
-impl Grant {
-    pub fn validate(&self) -> Result<()> {
-        if self.version != V || crate::VERSION != V {
-            return Err(Error::Unsupported);
+value_codec!(Record { version:String, custody:String, seq:u64, prev:Option<Fact>, input:Request, approval:Material });
+value_codec!(Pending {
+    input: Request,
+    approval: Material
+});
+closed!(Prefix { format:String, custody:String, generation:u64, end:u64, sha256:Option<String>, pending:Option<Pending> });
+impl Prefix {
+    pub fn empty() -> Self {
+        Self {
+            format: "ck-ref-prefix".into(),
+            custody: "custody-1".into(),
+            generation: 0,
+            end: 0,
+            sha256: None,
+            pending: None,
         }
-        if self.custody != "custody-1"
-            || self.ledger != "ledger-1"
-            || self.change != "change-1"
-            || self.owner != "person-1"
-            || self.coverage != "closed-personal-plan"
-            || self.policy != Material::of(POLICY.as_bytes())
-        {
-            return Err(Error::Unsupported);
-        }
-        Ok(())
     }
 }
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Request {
-    pub op: String,
-    pub key: Option<String>,
-    pub expected: Option<Fact>,
-    pub instruction: Option<Material>,
-    pub replacement: Option<Intent>,
-    pub text: Option<String>,
-    pub at: Option<Fact>,
-    pub through: Option<Fact>,
-    pub after: Option<u64>,
-    pub limit: Option<u64>,
-    pub material: Option<Material>,
-}
-impl Request {
-    pub fn mutation(&self) -> bool {
-        matches!(self.op.as_str(), "open_intent" | "revise_intent")
-    }
-    pub fn key(&self) -> &str {
-        self.key.as_deref().unwrap_or("")
-    }
-}
+value_codec!(Previous { fact:Fact, what_text:String, why_text:Option<String> });
+value_codec!(Review { format:String, input:Request, policy_text:String, previous:Option<Previous>, instruction_text:String, what_text:String, why_text:Option<String> });
+value_codec!(Receipt {
+    format: String,
+    principal: String,
+    subject_sha256: String,
+    presentation: Material,
+    decision: String,
+    ui: String
+});
+value_codec!(Outcome { format:String, version:String, kind:String, key:String, actor:String, fact:Fact, previous:Option<Fact> });
 impl Serialize for Request {
     fn serialize<S: Serializer>(&self, s: S) -> std::result::Result<S::Ok, S::Error> {
         let fields = match self.op.as_str() {
@@ -345,54 +250,6 @@ impl<'de> Deserialize<'de> for Request {
         d.deserialize_map(Fields)
     }
 }
-closed!(Record { version:String, custody:String, seq:u64, prev:Option<Fact>, input:Request, approval:Material });
-closed!(Pending {
-    input: Request,
-    approval: Material
-});
-closed!(Prefix { format:String, custody:String, generation:u64, end:u64, sha256:Option<String>, pending:Option<Pending> });
-impl Prefix {
-    pub fn empty() -> Self {
-        Self {
-            format: "ck-ref-prefix".into(),
-            custody: "custody-1".into(),
-            generation: 0,
-            end: 0,
-            sha256: None,
-            pending: None,
-        }
-    }
-}
-closed!(Previous { fact:Fact, what_text:String, why_text:Option<String> });
-closed!(Review { format:String, input:Request, policy_text:String, previous:Option<Previous>, instruction_text:String, what_text:String, why_text:Option<String> });
-closed!(Receipt {
-    format: String,
-    principal: String,
-    subject_sha256: String,
-    presentation: Material,
-    decision: String,
-    ui: String
-});
-closed!(Outcome { format:String, version:String, kind:String, key:String, actor:String, fact:Fact, previous:Option<Fact> });
-impl Record {
-    pub fn outcome(&self) -> Outcome {
-        Outcome {
-            format: "ck-intent-result".into(),
-            version: V.into(),
-            kind: if self.seq == 1 {
-                "opened"
-            } else {
-                "intent_revised"
-            }
-            .into(),
-            key: self.input.key().into(),
-            actor: "person-1".into(),
-            fact: Fact::at(self.seq),
-            previous: self.prev.clone(),
-        }
-    }
-}
-
 struct Canonical;
 impl serde_json::ser::Formatter for Canonical {
     fn write_char_escape<W: io::Write + ?Sized>(
@@ -454,7 +311,7 @@ pub fn parse<T: de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     Ok(t)
 }
 pub fn versioned_canonical<T: de::DeserializeOwned + Serialize>(bytes: &[u8]) -> Result<T> {
-    parse::<versions::VersionScan>(bytes).map_err(|e| {
+    parse::<version_scan::VersionScan>(bytes).map_err(|e| {
         if e == Error::Unsupported {
             e
         } else {
@@ -470,3 +327,6 @@ pub fn canonical<T: de::DeserializeOwned + Serialize>(bytes: &[u8]) -> Result<T>
     }
     Ok(t)
 }
+
+pub(crate) mod envelopes;
+pub(crate) struct LegacyCodec;

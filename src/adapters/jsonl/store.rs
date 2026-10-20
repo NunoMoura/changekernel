@@ -1,13 +1,20 @@
 //! V custody. Descriptor-relative operations; inspection never writes or cleans.
 use crate::adapters::linux::{custody_fs as raw, custody_identity::held_identity};
-use crate::kernel::changes::referenced_intent::*;
+use crate::{
+    adapters::codec::*,
+    application::{
+        change::review,
+        ports::{self, Grant, ReadState, Review},
+    },
+    kernel::change::intent::*,
+};
 use serde_core::{
     de::{self, MapAccess, Visitor},
     ser::SerializeStruct,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-mod generated;
 mod io;
+mod material_validation;
 use io::Io;
 pub use io::{ReferencedIntentIoEvent, ReferencedIntentIoFault, ReferencedIntentIoHook};
 use std::{
@@ -137,14 +144,6 @@ pub(crate) struct Snapshot {
     pub trace: Vec<u8>,
     pub temp: Option<Prefix>,
     pub readiness: Vec<String>,
-}
-impl Snapshot {
-    pub fn tip(&self) -> Option<Fact> {
-        (self.prefix.generation > 0).then(|| Fact::at(self.prefix.generation))
-    }
-    pub fn accepted(&self, key: &str) -> Option<&Record> {
-        self.records.iter().find(|r| r.input.key() == key)
-    }
 }
 impl Store {
     pub fn connect(grant: Grant, mode: &str, hook: Option<ReferencedIntentIoHook>) -> Result<Self> {
@@ -481,85 +480,10 @@ impl Store {
         self.sync(&self.materials)?;
         Ok(s)
     }
-    fn source(&self, r: &Material) -> Result<String> {
-        if r.bytes > 4096 {
-            return Err(Error::Unsupported);
-        }
-        self.resolve(r)
-    }
-    pub fn review(&self, r: &Request, previous: Option<&Record>) -> Result<Review> {
-        if !r.mutation() {
-            return Err(Error::Invalid);
-        }
-        let instruction_text = self.source(r.instruction.as_ref().ok_or(Error::Invalid)?)?;
-        let i = r.replacement.as_ref().ok_or(Error::Invalid)?;
-        let what_text = self.source(&i.what)?;
-        let why_text = i.why.as_ref().map(|r| self.source(r)).transpose()?;
-        if instruction_text.is_empty()
-            || !what_text
-                .chars()
-                .any(|c| !matches!(c, ' ' | '\t' | '\r' | '\n'))
-        {
-            return Err(Error::Invalid);
-        }
-        let previous = previous
-            .map(|p| {
-                let i = p.input.replacement.as_ref().ok_or(Error::Unavailable)?;
-                Ok(Previous {
-                    fact: Fact::at(p.seq),
-                    what_text: self.source(&i.what)?,
-                    why_text: i.why.as_ref().map(|r| self.source(r)).transpose()?,
-                })
-            })
-            .transpose()?;
-        let v = Review {
-            format: "ck-intent-review".into(),
-            input: r.clone(),
-            policy_text: self.resolve(&self.grant.policy)?,
-            previous,
-            instruction_text,
-            what_text,
-            why_text,
-        };
-        if v.policy_text != POLICY || emit(&v)?.len() > 65_536 {
-            return Err(Error::Unsupported);
-        }
-        Ok(v)
-    }
-    fn grounds(&self, r: &Request, approval: &Material, previous: Option<&Record>) -> Result<()> {
-        let receipt: Receipt = canonical(self.resolve(approval)?.as_bytes())?;
-        let review = self.review(r, previous)?;
-        if receipt.format != "ck-local-approval"
-            || receipt.principal != "person-1"
-            || receipt.subject_sha256 != hash(&emit(r)?)
-            || receipt.decision != "adopt"
-            || receipt.ui != "local-tui-exact"
-            || self.resolve(&receipt.presentation)?.as_bytes() != emit(&review)?
-        {
-            return Err(Error::Unavailable);
-        }
-        Ok(())
-    }
     fn prospective(&self, p: &Pending, records: &[Record]) -> Result<Record> {
-        let n = records.len() as u64 + 1;
-        if n > 128
-            || !p.input.mutation()
-            || (n == 1 && p.input.op != "open_intent")
-            || (n > 1
-                && (p.input.op != "revise_intent" || p.input.expected != Some(Fact::at(n - 1))))
-            || records.iter().any(|r| r.input.key() == p.input.key())
-        {
-            return Err(Error::Unavailable);
-        }
-        self.grounds(&p.input, &p.approval, records.last())?;
-        Ok(Record {
-            version: V.into(),
-            custody: "custody-1".into(),
-            seq: n,
-            prev: (n > 1).then(|| Fact::at(n - 1)),
-            input: p.input.clone(),
-            approval: p.approval.clone(),
-        })
+        let record = prospective(p, records)?;
+        review::grounds(self, &LegacyCodec, &p.input, &p.approval, records.last())?;
+        Ok(record)
     }
     pub fn snapshot(&self) -> Result<Snapshot> {
         self.binding()?;
@@ -787,7 +711,7 @@ impl Store {
             return Err(Error::Unavailable);
         }
         lease.check(true)?;
-        self.grounds(&p.input, &p.approval, s.records.last())?;
+        review::grounds(self, &LegacyCodec, &p.input, &p.approval, s.records.last())?;
         self.io.phase.set("checkpoint");
         let accepted = Prefix {
             generation: prospective.seq,
@@ -872,5 +796,93 @@ impl Store {
     pub fn original_presentation(&self, p: &Pending) -> Result<String> {
         let receipt: Receipt = canonical(self.resolve(&p.approval)?.as_bytes())?;
         self.resolve(&receipt.presentation)
+    }
+}
+
+impl ReadState for Snapshot {
+    fn records(&self) -> &[Record] {
+        &self.records
+    }
+    fn generation(&self) -> u64 {
+        self.prefix.generation
+    }
+    fn pending(&self) -> Option<&Pending> {
+        self.prefix.pending.as_ref()
+    }
+    fn temporary_pending(&self) -> Option<&Option<Pending>> {
+        self.temp.as_ref().map(|t| &t.pending)
+    }
+    fn readiness(&self) -> &[String] {
+        &self.readiness
+    }
+}
+impl ports::Materials for Store {
+    fn resolve(&self, material: &Material) -> Result<String> {
+        Store::resolve(self, material)
+    }
+    fn policy(&self) -> Material {
+        Store::policy(self)
+    }
+}
+impl ports::Persistence for Store {
+    type State = Snapshot;
+    fn snapshot(&self) -> Result<Snapshot> {
+        Store::snapshot(self)
+    }
+    fn original_presentation(&self, pending: &Pending) -> Result<String> {
+        Store::original_presentation(self, pending)
+    }
+    fn preflight_materials(&self, texts: &[&str]) -> Result<()> {
+        Store::preflight_materials(self, texts)
+    }
+    fn preflight_record(&self, s: &Snapshot, record: &Record) -> Result<()> {
+        let record_bytes = emit(record)?;
+        if s.prefix.end + record_bytes.len() as u64 > 4_194_304 {
+            return Err(Error::Unsupported);
+        }
+        let pending = Pending {
+            input: record.input.clone(),
+            approval: record.approval.clone(),
+        };
+        emit(&Prefix {
+            pending: Some(pending),
+            ..s.prefix.clone()
+        })?;
+        Ok(())
+    }
+    fn retain_agent(&mut self, text: &str, state: &Snapshot) -> Result<Material> {
+        Store::retain_agent(self, text, state)
+    }
+    fn retain(&mut self, text: &str) -> Result<Material> {
+        Store::retain(self, text)
+    }
+    fn reserve_commit(
+        &mut self,
+        state: &Snapshot,
+        pending: Pending,
+        lease: &Lease,
+    ) -> Result<Record> {
+        Store::reserve_commit(self, state, pending, lease)
+    }
+    fn phase(&self, phase: &'static str) {
+        Store::phase(self, phase)
+    }
+    fn io_failed(&self) -> bool {
+        Store::io_failed(self)
+    }
+    fn quarantine(&mut self) {
+        Store::quarantine(self)
+    }
+    fn finish_failure(&mut self) {
+        Store::finish_failure(self)
+    }
+}
+pub(crate) struct Factory {
+    pub hook: Option<ReferencedIntentIoHook>,
+}
+impl ports::Connect for Factory {
+    type Store = Store;
+    fn connect(&mut self, grant: Grant, mode: &str) -> Result<Store> {
+        Store::connect(grant, mode, self.hook.take())
     }
 }

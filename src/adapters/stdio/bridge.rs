@@ -1,7 +1,5 @@
 //! Length-bounded stdio framing; stdout contains protocol frames only.
-use crate::{
-    application::referenced_intent::ReferencedIntent, kernel::changes::referenced_intent::LIMIT,
-};
+use crate::{adapters::codec::LIMIT, ReferencedIntent};
 use std::io::{self, Read, Write};
 pub fn run() -> io::Result<()> {
     let mut owner = ReferencedIntent::new();
