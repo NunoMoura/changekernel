@@ -3,6 +3,8 @@ use std::collections::BTreeSet;
 #[path = "adaptive_pursuit/fixture.rs"]
 mod fixture;
 use fixture::*;
+#[path = "adaptive_pursuit/references.rs"]
+mod references;
 
 #[test]
 fn exact_agreement_activates_in_either_order_and_never_from_proposal_alone() {
@@ -26,13 +28,13 @@ fn exact_agreement_activates_in_either_order_and_never_from_proposal_alone() {
         assert_eq!(f.status().current_agreement, Some(p.agreement.clone()));
         let count = f.status().accepted_operations;
         let mut changed = p.clone();
-        changed.terms.what = f.text("new terms under old identity");
+        changed.terms.binding[0].statement.material = f.text("new terms under old identity");
         assert_eq!(
             f.execute(Command::Propose {
                 proposal: changed,
                 access: Access::Owner
             }),
-            Err(Error::Stale)
+            Err(Error::Conflict)
         );
         assert_eq!(f.status().accepted_operations, count);
     }
@@ -415,7 +417,7 @@ fn learning_adaptation_and_both_progress_dimensions_are_claims_not_revision_or_f
     .unwrap();
     let adaptation = Adaptation {
         agreement: p.agreement.clone(),
-        previous_approach: p.terms.how.clone(),
+        previous_approach: p.terms.context.first().unwrap().material.clone(),
         changed_approach: f.text("use another local layout method"),
         grounds: f.ports.native_evidence.clone(),
         discretion: ScopeId::new(),
@@ -627,7 +629,8 @@ fn same_kind_subject_identity_cannot_be_rebound_and_missing_material_does_not_cr
     })
     .unwrap();
     let mut rebound = p.clone();
-    rebound.terms.how = f.text("replacement contents under old proposal ID");
+    rebound.terms.binding[0].statement.material =
+        f.text("replacement contents under old proposal ID");
     let before = f.status().accepted_operations;
     assert_eq!(
         f.execute(Command::Propose {
@@ -652,7 +655,9 @@ fn same_kind_subject_identity_cannot_be_rebound_and_missing_material_does_not_cr
         Err(Error::Conflict)
     );
     let missing = f.proposal(None, vec![]);
-    f.ports.materials.remove(&missing.terms.why);
+    f.ports
+        .materials
+        .remove(&missing.terms.binding[0].statement.material);
     assert_eq!(
         f.execute(Command::Propose {
             proposal: missing,

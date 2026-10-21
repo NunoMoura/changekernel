@@ -65,6 +65,33 @@ impl Pursuit {
         checks.materials.insert(id.clone(), bytes);
         Ok(())
     }
+    fn proposal_references(&self, operation: &Operation, checks: &Checks) -> Result<()> {
+        let Command::Propose { proposal, .. } = &operation.command else {
+            return Ok(());
+        };
+        for reference in proposal.terms.references() {
+            if reference.identity != self.state.identity {
+                return Err(Error::Invalid);
+            }
+            // This map is the original acceptance snapshot, never latest material presence.
+            // Own bindings are private checks until the guarded operation is accepted atomically.
+            let bindings = if reference.operation == operation.id {
+                &checks.materials
+            } else {
+                &self
+                    .records
+                    .get(&reference.operation)
+                    .ok_or(Error::Invalid)?
+                    .checks
+                    .materials
+            };
+            let original = bindings.get(&reference.material).ok_or(Error::Invalid)?;
+            if checks.materials.get(&reference.material) != Some(original) {
+                return Err(Error::Conflict);
+            }
+        }
+        Ok(())
+    }
     fn evidence(
         &self,
         ports: &mut impl Ports,
@@ -128,6 +155,7 @@ impl Pursuit {
             self.evidence(ports, &mut checks, &conditions.evidence)?;
             checks.native = Some((action.clone(), conditions));
         }
+        self.proposal_references(&operation, &checks)?;
         let mut candidate = self.state.clone();
         let effect = candidate.transition(&operation.command, &Self::validation(&checks))?;
         let accepted = Accepted {

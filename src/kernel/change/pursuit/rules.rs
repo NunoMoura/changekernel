@@ -12,14 +12,57 @@ fn evidence_materials(evidence: &[Evidence], out: &mut BTreeSet<MaterialId>) {
         out.extend([e.material.clone(), e.limitations.clone()]);
     }
 }
+impl Terms {
+    pub(crate) fn references(&self) -> BTreeSet<MaterialReference> {
+        self.binding
+            .iter()
+            .flat_map(|t| std::iter::once(t.statement.clone()).chain(t.context.iter().cloned()))
+            .chain(self.context.iter().cloned())
+            .chain(
+                self.criteria.iter().flat_map(|c| {
+                    std::iter::once(c.definition.clone()).chain(c.terms.iter().cloned())
+                }),
+            )
+            .chain(
+                self.unknowns
+                    .iter()
+                    .flat_map(|u| u.affected.iter().cloned()),
+            )
+            .collect()
+    }
+
+    fn validate_roles(&self) -> Result<()> {
+        let selected: BTreeSet<_> = self.binding.iter().map(|t| t.statement.clone()).collect();
+        if selected.len() != self.binding.len()
+            || self
+                .binding
+                .iter()
+                .any(|t| !t.context.is_subset(&self.context))
+            || self
+                .criteria
+                .iter()
+                .any(|c| c.terms.is_empty() || !c.terms.is_subset(&selected))
+        {
+            return Err(Error::Invalid);
+        }
+        // Compare material identity, not operation references or byte equality. Another
+        // accepted binding of the same material cannot bypass binding/context separation.
+        let binding: BTreeSet<_> = selected
+            .iter()
+            .map(|r| &r.material)
+            .chain(self.criteria.iter().map(|c| &c.definition.material))
+            .collect();
+        if self.context.iter().any(|r| binding.contains(&r.material)) {
+            return Err(Error::Conflict);
+        }
+        Ok(())
+    }
+}
 fn terms_materials(terms: &Terms, out: &mut BTreeSet<MaterialId>) {
-    out.extend([terms.why.clone(), terms.what.clone(), terms.how.clone()]);
+    out.extend(terms.references().into_iter().map(|r| r.material));
     for u in &terms.unknowns {
         out.extend([u.question.clone(), u.bounded_by.clone()]);
     }
-    out.extend(terms.criteria.iter().map(|c| c.definition.clone()));
-    out.extend(terms.mandatory.iter().cloned());
-    out.extend(terms.discretion.iter().cloned());
 }
 fn assessment_materials(a: &Assessment, out: &mut BTreeSet<MaterialId>) {
     out.extend([
@@ -521,6 +564,7 @@ impl State {
                     return Err(Error::Conflict);
                 }
                 nonempty(&p.terms.criteria)?;
+                p.terms.validate_roles()?;
                 let mut criteria = BTreeSet::new();
                 for c in &p.terms.criteria {
                     if !criteria.insert(c.id.clone())
@@ -528,7 +572,7 @@ impl State {
                             .proposals
                             .values()
                             .flat_map(|p| &p.terms.criteria)
-                            .any(|old| old.id == c.id && old.definition != c.definition)
+                            .any(|old| old.id == c.id && old != c)
                     {
                         return Err(Error::Conflict);
                     }
@@ -553,6 +597,7 @@ impl State {
             Command::Decide(d) => {
                 self.party(&d.kind, &v.authority)?;
                 let p = self.proposal(&d.proposal)?;
+                nonempty(&p.terms.binding)?;
                 if p.expected_agreement != self.current {
                     return Err(Error::Stale);
                 }

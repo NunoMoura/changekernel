@@ -221,23 +221,40 @@ impl Harness {
         terms: Option<Terms>,
     ) -> Pair {
         self.actor(true);
-        let terms = terms.unwrap_or_else(|| Terms {
-            why: self.io.text("User values price clarity"),
-            what: self.io.text("Investigate the price display"),
-            how: self
+        let operation = OperationId::new();
+        let terms = terms.unwrap_or_else(|| {
+            let statement = self
                 .io
-                .text("Bounded inspection; stop before changing payment behavior"),
-            unknowns: vec![Unknown {
-                dimension: Dimension::What,
-                question: self.io.text("Which label misleads?"),
-                bounded_by: self.io.text("Read-only investigation"),
-            }],
-            criteria: vec![Criterion {
-                id: CriterionId::new(),
-                definition: self.io.text("Explain the observed discrepancy"),
-            }],
-            mandatory: vec![self.io.text("Do not change payment behavior")],
-            discretion: vec![self.io.text("Choose inspection method")],
+                .text("Investigate price display; do not change payment behavior");
+            let context = self
+                .io
+                .text("User values price clarity; choose inspection method");
+            let definition = self.io.text("Explain the observed discrepancy");
+            let reference = |material| MaterialReference {
+                identity: self.identity.clone(),
+                operation: operation.clone(),
+                material,
+            };
+            let statement = reference(statement);
+            let context = reference(context);
+            let definition = reference(definition);
+            Terms {
+                binding: vec![TermSelection {
+                    statement: statement.clone(),
+                    context: BTreeSet::from([context.clone()]),
+                }],
+                context: BTreeSet::from([context]),
+                unknowns: vec![Unknown {
+                    question: self.io.text("Which label misleads?"),
+                    bounded_by: self.io.text("Read-only investigation"),
+                    affected: BTreeSet::from([statement.clone()]),
+                }],
+                criteria: vec![Criterion {
+                    id: CriterionId::new(),
+                    definition,
+                    terms: BTreeSet::from([statement]),
+                }],
+            }
         });
         let proposal = Proposal {
             id: ProposalId::new(),
@@ -247,10 +264,14 @@ impl Harness {
             terms,
             dependencies: deps.clone(),
         };
-        let (proposal_op, _) = self.execute(Command::Propose {
-            proposal: proposal.clone(),
-            access: Access::Owner,
-        });
+        let proposal_op = Operation {
+            id: operation,
+            command: Command::Propose {
+                proposal: proposal.clone(),
+                access: Access::Owner,
+            },
+        };
+        self.app.execute(proposal_op.clone(), &mut self.io).unwrap();
         let assessment = Assessment {
             id: AssessmentId::new(),
             proposal: proposal.id.clone(),

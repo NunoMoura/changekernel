@@ -53,7 +53,7 @@ pub enum Error {
     NeedsRevision,
 }
 pub type Result<T> = std::result::Result<T, Error>;
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identity {
     pub owner: OwnerId,
     pub owner_actor: ActorId,
@@ -72,32 +72,39 @@ pub struct Evidence {
     pub material: MaterialId,
     pub limitations: MaterialId,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Dimension {
-    Why,
-    What,
-    How,
+/// Exact material membership in one accepted operation of this subject.
+/// Only the executing operation's own bindings may be provisional until guarded acceptance.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MaterialReference {
+    pub identity: Identity,
+    pub operation: OperationId,
+    pub material: MaterialId,
+}
+/// A retained proposed statement, with explicit nonbinding source/context links.
+/// The kernel neither extracts requirements from prose nor infers these links.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TermSelection {
+    pub statement: MaterialReference,
+    pub context: BTreeSet<MaterialReference>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Unknown {
-    pub dimension: Dimension,
     pub question: MaterialId,
     pub bounded_by: MaterialId,
+    pub affected: BTreeSet<MaterialReference>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Criterion {
     pub id: CriterionId,
-    pub definition: MaterialId,
+    pub definition: MaterialReference,
+    pub terms: BTreeSet<MaterialReference>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Terms {
-    pub why: MaterialId,
-    pub what: MaterialId,
-    pub how: MaterialId,
+    pub binding: Vec<TermSelection>,
+    pub context: BTreeSet<MaterialReference>,
     pub unknowns: Vec<Unknown>,
     pub criteria: Vec<Criterion>,
-    pub mandatory: Vec<MaterialId>,
-    pub discretion: Vec<MaterialId>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {

@@ -24,6 +24,8 @@ pub struct Checks {
     pub expected_operation: Option<OperationId>,
     pub context: Context,
     pub disclosure: ReadScope,
+    /// The operation's exact material bindings, frozen with its acceptance. Later use of
+    /// a material does not add membership to an earlier operation. No creation rights follow.
     pub materials: BTreeMap<MaterialId, Vec<u8>>,
     pub grounds: BTreeMap<GroundId, GroundVersion>,
     pub adaptation: Option<(Adaptation, ScopeJudgment)>,
@@ -46,7 +48,9 @@ pub trait Ports {
     /// Revalidate *all* checks and current disclosure at one serialization point, then accept
     /// this exact operation/result once, or return an error without accepting anything.
     /// The scoped expected operation, context version, actor/capabilities, material contents,
-    /// grounds and supplied judgments must still match. No implementation of this persistence/host contract is selected here.
+    /// grounds and supplied judgments must still match. The expected accepted prefix protects
+    /// the immutable operation/material membership used by application reference validation.
+    /// Publish the operation and its exact bindings together or neither. No implementation of this persistence/host contract is selected here.
     fn accept(&mut self, checks: &Checks, operation: &Operation, result: &Accepted) -> Result<()>;
     /// Revalidate all checks, including current disclosure, before returning a read/retry.
     /// This must not append or mutate accepted history.

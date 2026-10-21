@@ -6,6 +6,8 @@ pub enum Race {
     Material(MaterialId),
     Ground(GroundId),
     Context,
+    Disclosure,
+    Prefix,
 }
 pub struct FixturePorts {
     pub context: Context,
@@ -32,6 +34,12 @@ impl FixturePorts {
             Some(Race::Context) => {
                 self.context.version = ContextVersion::new();
                 self.context.authority.owner_control = None;
+            }
+            Some(Race::Disclosure) => {
+                self.context.disclosure.clear();
+            }
+            Some(Race::Prefix) => {
+                self.last_operation = Some(OperationId::new());
             }
             None => {}
         }
@@ -113,6 +121,7 @@ pub struct Fixture {
     pub pursuit: Pursuit,
     pub ports: FixturePorts,
     pub identity: Identity,
+    pub proposal_operations: BTreeMap<ProposalId, OperationId>,
 }
 impl Fixture {
     pub fn new() -> Self {
@@ -159,6 +168,7 @@ impl Fixture {
             pursuit: Pursuit::new(identity.clone()).unwrap(),
             ports,
             identity,
+            proposal_operations: BTreeMap::new(),
         }
     }
     pub fn owner(&mut self) {
@@ -195,7 +205,14 @@ impl Fixture {
     pub fn execute(&mut self, command: Command) -> Result<Accepted> {
         self.pursuit.execute(
             Operation {
-                id: OperationId::new(),
+                id: match &command {
+                    Command::Propose { proposal, .. } => self
+                        .proposal_operations
+                        .get(&proposal.id)
+                        .cloned()
+                        .unwrap_or_default(),
+                    _ => OperationId::new(),
+                },
                 command,
             },
             &mut self.ports,
@@ -227,26 +244,42 @@ impl Fixture {
         dependencies: Vec<Dependency>,
     ) -> Proposal {
         self.owner();
+        let id = ProposalId::new();
+        let operation = OperationId::new();
+        self.proposal_operations
+            .insert(id.clone(), operation.clone());
+        let statement = self.text("show total before payment; preserve billing");
+        let context = self.text("earlier price clarity matters; inspect then adapt local layout");
+        let definition = self.text("total is visible before payment");
+        let reference = |material| MaterialReference {
+            identity: self.identity.clone(),
+            operation: operation.clone(),
+            material,
+        };
+        let statement = reference(statement);
+        let context = reference(context);
+        let definition = reference(definition);
         Proposal {
-            id: ProposalId::new(),
+            id,
             agreement: AgreementId::new(),
             identity: self.identity.clone(),
             expected_agreement: expected,
             terms: Terms {
-                why: self.text("earlier price clarity matters"),
-                what: self.text("show total before payment; preserve billing"),
-                how: self.text("bounded investigation then adapt within discretion"),
+                binding: vec![TermSelection {
+                    statement: statement.clone(),
+                    context: BTreeSet::from([context.clone()]),
+                }],
+                context: BTreeSet::from([context]),
                 unknowns: vec![Unknown {
-                    dimension: Dimension::How,
                     question: self.text("which display works?"),
                     bounded_by: self.text("local fixture observations only"),
+                    affected: BTreeSet::from([statement.clone()]),
                 }],
                 criteria: vec![Criterion {
                     id: CriterionId::new(),
-                    definition: self.text("total is visible before payment"),
+                    definition,
+                    terms: BTreeSet::from([statement]),
                 }],
-                mandatory: vec![self.text("no billing changes")],
-                discretion: vec![self.text("layout and local method may change")],
             },
             dependencies,
         }
