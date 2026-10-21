@@ -6,22 +6,3 @@ publish = false
 
 [lib]
 path = "src/lib.rs"
-
-[[bin]]
-name = "changekernel"
-path = "src/main.rs"
-
-[[test]]
-name = "native_bootstrap"
-path = "tests/package/native_bootstrap.rs"
-
-[dev-dependencies]
-rusqlite = { version = "=0.37.0", features = ["bundled"] }
-
-[dependencies]
-serde_core = { version = "=1.0.229", default-features = false, features = ["std"] }
-serde_json = "=1.0.145"
-sha2 = "=0.10.9"
-
-[target.'cfg(target_os = "linux")'.dependencies]
-libc = "=0.2.189"
