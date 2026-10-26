@@ -1,79 +1,74 @@
 # ChangeKernel
 
-**A redistributable State-and-Change engine for applications.**
+**An owner-controlled ledger of pursuits, preserving intent, decisions, evidence and accountable progress across sessions and agents.**
 
-Developers expose native resources and abilities. Users own goals and adopt Checks expressing their custom requirements. Agents and other workers compose paths. ChangeKernel is designed to govern Changes to Workspaces, retain attributable history and support recovery within declared limits.
+A **Change** holds a developing intent contract and its pursuit history. A **Ledger** is its owner's collection of Changes. These are the two core primitives. WHY, WHAT and HOW are dimensions of intent, not required fields or a prescribed workflow.
 
-The intended product connects application development, ordinary use and improvement through the same actor-neutral primitives. Users own intent; supported hosts and bindings enforce native permissions; observed effects do not automatically prove the intended benefit. Automation and agent-mediated use are later capabilities, not permission to change software, deploy releases or alter policy.
+The foundation should let agents work intelligently and creatively within agreed authority. Explicit obligations remain distinct from context and provisional tactics. Native applications retain their data, business rules and permissions; ChangeKernel is not their database or a universal workflow engine.
 
-**This is source development, not a qualified operational release.** The approved direction is a new Rust product with narrow TypeScript integrations, not a feature-parity port of the historical prototype. The active path is the `0.5.0-prototype.1` referenced-intent native engine and thin Pi 1.2 host/TUI, with the private custody mechanisms it requires. Predecessor native and Pi 0.85.1 implementations have been removed under the approved support disposition. Exact source acceptance and check evidence remain in the temporary status note and Git. General custom Check definition/adoption/applicability, required-pass dependent-transition enforcement, application effects and the complete lifecycle remain unfinished. See [temporary status](CHANGEKERNEL_STATUS.md).
+## Current source
 
-## Design and plan
+The current implementation is an **unqualified, in-process Rust foundation**, not an operational product:
 
-**Change carries intent. State describes observed reality. History connects them with evidence.** ChangeKernel owns the [adopted Ledger/Change semantics](.changekernel/wiki/items/product/change-ledger-properties.md#defining-properties-and-value), applicable Check enforcement and Ledger-associated AuthN/AuthZ—not merely storage integrity. This includes owner-controlled continuity, revision/composition, supported transfer, typed progression, authoritative JSONL history, exact requirement/subject bindings, execution coordination and truthful outcomes. Native applications retain State, business rules and permissions; trusted hosts and replaceable adapters supply their declared mechanisms.
+- Pure agreement, authority, adaptation and settlement rules.
+- Explicit binding/context selections, exact operation/material references and immutable criterion links.
+- Grant-bounded fresh-material recording, immutable origins, separate reuse/disclosure and original-result recovery.
+- Application coordination over trusted fixture ports, with behavioral and failure-boundary tests; no durable acceptance or authentic host/source enforcement yet.
 
-The first target is one trusted-host, single-user, single-binding typed transition with deterministic Checks, durable history and honest retry/recovery. No agent, model, custom evaluator runtime, rich console or privileged standalone service is required. This profile does not claim protection from compromise of its trusted host or hostile processes sharing that host's authority. A later hardened profile must prove its stronger guarantees separately.
+The legacy referenced-intent CLI, ordinary-Pi adapter, persistence path and npm package machinery have been retired. There is no replacement CLI, durable service, authenticated host or native execution implementation. Bounded agreement rules now permit incomplete drafts and term-scoped progress without criteria, but refuse criterion-free fulfillment. General composed/temporal completion remains open.
 
-**Change is independent of a fixed pipeline.** Custom policy is expressed through adopted Checks, without a separate user Kernel policy-governor. Packs are reusable collections of Checks, not independent authority or automatic requirement activation. Planning and formal review are required where applicable requirements call for them, not universal stages; actual approval remains an attributable decision under current authority. Explicit typed requests identify operations before the backend records them; operations remain grounded in exact intent without reassessing the whole pursuit on every call. Native applications retain their domain semantics. The engine enforces exact subjects, current authority, valid progression and evidence; substantive feasibility, comparative value and quality criteria belong in applicable Checks, not a hidden universal engine veto.
-
-The ledger is a stable collection of intent-bearing Changes, not a workflow directory tree. Relationships use explicit references; completion is an evidenced conclusion; default active-only Views and optional later archival are separate storage concerns. Restore or file transfer does not replay effects or grant continuation authority. [Product semantics](.changekernel/wiki/items/product/changekernel.md#intent-and-lifecycle) and the [storage contract](.changekernel/wiki/items/system/components/state.md#ledger-working-set-archive-and-restore) define these boundaries without freezing a universal opcode list or archive layout.
-
-| Document | Purpose |
+| Path | Responsibility |
 | --- | --- |
-| [Product](.changekernel/wiki/items/product/changekernel.md) | Intended responsibilities, core boundaries and explicitly later capabilities. |
-| [ChangeKernel plan](.changekernel/wiki/items/product/plan.md) | Small phases, falsifiable propositions, useful witnesses and evidence required to advance. |
-| [Change Format and Lifecycle](.changekernel/wiki/items/system/components/change-format.md), [Worked Change Streams](.changekernel/wiki/items/system/components/change-streams.md) | Adopted semantic requirements and conditional design witnesses, not a frozen successor wire schema or implemented capability. |
-| [State](.changekernel/wiki/items/system/components/state.md), [Checks](.changekernel/wiki/items/system/components/checks.md), [Execution](.changekernel/wiki/items/system/components/agent-execution.md), [Release](.changekernel/wiki/items/system/components/package.md) | Desired contracts and capability-specific qualification. |
-| [Current prototype](.changekernel/wiki/items/system/components/referenced-intent-prototype.md), [SDK and Pi boundary](.changekernel/wiki/items/system/components/sdk.md) | The adopted `0.5.0-prototype.1` contract and thin integration direction; not a general SDK or qualified release. |
-| [Research](.changekernel/wiki/items/system/research.md) | Inspected alternatives, counterexamples and unproven mechanisms—not an implementation queue. |
-| [Historical profiles and support disposition](.changekernel/wiki/items/system/components/native-profiles.md) | Frozen predecessor meanings, source checkpoints, limits and known gaps; not active product APIs. |
+| `src/kernel/change/pursuit.rs` and `pursuit/{rules,material}.rs` | Domain types, pure rules and material authority |
+| `src/application/pursuit.rs` | Guarded operation coordination and original-result recovery |
+| `src/application/pursuit_ports.rs` | Explicit trusted boundary contracts, not production implementations |
+| `src/lib.rs` | Unqualified source exports, not a supported SDK |
+| `tests/adaptive_pursuit*`, `tests/adaptive_authority_adversarial.rs` | Model-free behavioral and adversarial checks |
 
-A phase advances only on actual bounded evidence and independent acceptance. Failed hypotheses are revised or rejected, not disguised as successful implementation. A useful core engine release precedes autonomous self-development; activation and explicit controller handoff remain separate gates. No phase is completed by this documentation.
+## Controlled source checks (Linux)
 
-Future capabilities include richer clients, agent execution, domain Packs, additional bindings, collaboration, automation and learning through the same Change mechanism. Jev/Jaz, automatic discovery, recursive runtimes and Linux containment proposals are optional mechanisms to evaluate against concrete needs, not core dependencies. Sharing a Change file does not grant authority or exclusive continuation.
+Build preparation now pins Rust **1.99.1** (edition 2021), rusqlite **0.41.0** with only `backup`/`limits`, libsqlite3-sys **0.39.0** and prost **0.14.4** with `derive`/`std`. A bounded current-development Protobuf codec is implemented; the SQLite store is not. No protoc or bundled SQLite is used.
 
-Wiki stores durable design and the phased capability plan. Execution state stays in the short temporary status note until qualified Change/Work can own it. The retained `wiki/` name does not require a runtime Wiki or Markdown State. Prior committed design and archived plans are historical evidence, not parallel active specifications.
+Use an isolated external Cargo home/target and a disposable external native staging directory. Prerequisites are Python 3.11+, Rust 1.99.1 with rustfmt/clippy, `/usr/bin/cc`, `ar`, `readelf` and `nm`; do not install OS packages as part of a build. Explicitly fetch the locked crates once before offline checks:
 
-## Executable foundation
-
-The native executable is `changekernel`. On Linux, `--referenced-intent-bridge` serves the [current referenced-intent prototype](.changekernel/wiki/items/system/components/referenced-intent-prototype.md): exact local approval, referenced What/Why revision, bounded inspection and original-result recovery under a closed no-domain-Check, no-effect policy. Its thin [Pi 1.2 host/TUI](src/adapters/pi/referenced-intent/README.md) provides readable preview plus complete authoritative exact review, default Cancel and separate affirmative adoption. Source integration is not real-human TUI smoke, diagnostic benchmarking, release qualification or controller handoff.
-
-The [approved retirement boundary](.changekernel/wiki/items/system/components/native-profiles.md#approved-executable-retirement-boundary) withdraws future-build support for container/intake, SQLite continuation/candidate APIs, committed Git observations, Linux local-packet ingress, JSONL v1–v6 semantic hosts and Pi 0.85.1/root TypeScript exports. Their contracts and exact pre-retirement source remain [historically navigable](.changekernel/wiki/items/system/components/native-profiles.md#historical-compatibility-reference), not a feature-parity target or a permanent legacy library. Required private filesystem and held-descriptor identity mechanisms remain in `src/adapters/linux/`; their current caller-level I/O hooks and budgets remain intact. Retired semantic hosts, exports and dedicated tests are absent from the active source tree; the [temporary status](CHANGEKERNEL_STATUS.md) and Git preserve exact acceptance evidence.
-
-Historical compatibility means preserving original bytes, attribution, retry, authority and custody interpretation—not promising that future builds continue to expose those APIs. Withdrawal does not repair known defects, authorize old-store migration/recovery/cleanup or change the current prototype's policy, approval, disclosure or recovery guarantees. The independent SQLite application-effect fixture remains a later-capability witness, not a current effect API.
-
-General Check definition/adoption/revision/retirement, applicability and required-pass dependent-transition enforcement remain unimplemented. Fixed optional assessments and the referenced-intent profile's empty domain-requirements array are not those capabilities. General semantic discovery, guarded effects and complete continuation remain unfinished. Broader discovery, model integration, worker coordination, rich clients, borrowing/forks, encrypted sharing and cross-Workspace dependencies are unsupported later capabilities, not initial release prerequisites. Draft persistence and passing source tests do not establish qualified adoption.
-
-## Development and repository truth
-
-The primary `changekernel/` checkout on **`main`** is the accepted development baseline. Its Wiki and source are the versions to read for current adopted design and integrated implementation. Sibling `changekernel-workers/<assignment>/` folders are isolated Git worktrees, each with its own branch snapshot; they are not separately maintained products or automatically synchronized Wikis. Reviewed changes return to `main`. Archived task checkouts preserve history or unaccepted work, not another current source of truth. See [checkout and branch procedure](AGENTS.md#canonical-checkout-and-branches).
-
-Native checks use the pinned Rust 1.88.0 toolchain and require a C compiler for the retained bundled-SQLite fixture dependency, but neither Node nor Pi. Exact dependency placement follows the integrated Cargo manifests. Use the standard Rust harness:
-
-```bash
-cargo test --locked
-# Before native acceptance:
-cargo fmt --check
-cargo clippy --locked --all-targets -- -D warnings
+```sh
+export CARGO_HOME=/absolute/external/cargo-home
+export CARGO_TARGET_DIR=/absolute/external/cargo-target
+rustup run 1.99.1 cargo fetch --locked
+native=/absolute/external/native-staging
 ```
 
-`cargo test` compiles and runs unit, integration and documentation tests. Compilation owns type/borrow/exhaustiveness checks; tests cover runtime behavior and consequential failures, not compiler guarantees. No extra testing framework is required. Use `cargo build --locked` when checking a native build artifact.
+Stage the official `sqlite-amalgamation-3540100.zip` (2,990,966 bytes) at `$native/`, with its unmodified `sqlite3.c`, `sqlite3.h` and `sqlite3ext.h` under `$native/source/`. The helper verifies archive SHA3-256 `92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30`, source bytes, version and source ID before building. It never downloads source.
 
-For current Pi adapter/dependency changes, use Node.js 22.19.0 or newer. Stage candidate bytes in a disposable external project with isolated Pi/HOME/settings, then install dependencies there with `npm ci --ignore-scripts` and run `npm test`; never install dependencies in this checkout. The root source-tooling target is private: typecheck the existing Pi 1.2 adapter closure and run `tests/adapters/pi/referenced-intent/*.test.mjs` with the exact existing consumer pins, not the retired Pi 0.85.1 model/provider/session suite. The root manifest and lockfile now own reproducible source checks; the dedicated [external consumer checks](src/adapters/pi/referenced-intent/README.md#external-checks) remain available for the same adapter boundary. There is no separate legacy root suite.
+```sh
+python3 scripts/native_sqlite.py build "$native"
+python3 scripts/native_sqlite.py verify "$native"
+python3 scripts/native_sqlite.py cargo "$native" fmt --check
+python3 scripts/native_sqlite.py cargo "$native" clippy --locked --all-targets -- -D warnings
+python3 scripts/native_sqlite.py cargo "$native" test --locked
+```
 
-Real-native and installed-Pi tests remain conditional on explicitly supplied supported artifacts and fresh isolated test configuration; skipped tests are not integration evidence. Source checks do not select a public SDK, release package, legacy exports, `prepack` or `dist` library build. They do not run Rust tests; Rust-only work does not require npm checks. The Cargo executable remains the native entry point.
+The helper supplies explicit include/library paths, static linkage, offline Cargo and `SQLITE3_NO_PKG_CONFIG=1` (the sys crate otherwise probes even with a library path). Compiler/linker overrides and unreviewed lock changes are refused. The package build guard rejects absent/wrong profiles rather than successfully linking ambient SQLite. It independently reproduces the static archive from checksum-verified source; a supplied report/hash alone is insufficient. The native probe and tests verify the actual version/source ID/options and linkage, thread safety, disabled extension loading and disabled double-quoted string literals. Future storage opening must call `adapters::native_profile::verify_runtime()` before using the engine.
 
-Use [AGENTS.md](AGENTS.md) and the researched [testing policy](.changekernel/wiki/items/system/components/package.md#testing-policy). Passing tests/builds are not operational qualification. Pack/test candidates only in disposable external projects with isolated Pi settings.
+The 18 locked crates use MIT/Apache-2.0 licensing, with Unicode-3.0 additionally required by `unicode-ident`. Preserve applicable upstream licenses/copyright notices on distribution. Source checks and native build verification are not release, host, storage or power-loss qualification. An IDE running build scripts also needs the controlled environment; do not bypass the guard to silence missing-`OUT_DIR` diagnostics.
 
-**Never load this mutable checkout as its own controller.** Do not call ChangeKernel `wiki_*` tools or `/wiki-*` commands here, install it under repository `.pi/`, or create local package links, duplicate skills or controller pins. Later governed Changes/Work require a qualified immutable external release, activation and explicit handoff; an unavailable designated controller never falls back to source.
+## Product direction and development
 
-- [`.changekernel/wiki/`](.changekernel/wiki/) owns desired design, not fabricated managed adoption.
-- [`.changekernel/changes/`](.changekernel/changes/) owns governed lifecycle history; existing records remain unchanged.
-- [`src/`](src/) and [`tests/`](tests/) own executable truth; Git preserves history/checkpoints.
-- [`CHANGEKERNEL_STATUS.md`](CHANGEKERNEL_STATUS.md) is a short temporary gap note, not a roadmap. Change/Work replaces it after qualified adoption.
-- [Archives](docs/archive/README.md) are historical evidence, not active plans.
+**Related Changes organize intent; optional work units organize execution within a Change.** Pursuits can reveal new related Changes without forming a decomposition tree. Work preparation can be separated from resource allocation and dispatch, with distinct execution attempts—not mandatory planning/execution phases. Completing work does not itself fulfill intent. These are adopted design directions, not implemented queue or parallel-execution capabilities; see the [relationship](CHANGEKERNEL_SYSTEM.md#related-changes) and [work-unit](CHANGEKERNEL_SYSTEM.md#work-units-and-execution) operation matrices.
 
-Generated views, private runtime state, credentials, caches, sockets, worktrees and package artifacts are not source truth. Documentation approval is not implementation, release activation or controller handoff.
+**Pi Durable is the only target product host.** Agents will use typed tools and authorized Views over one service protocol, composable from code mode. Host admission and outcome recording must happen below agent-authored scripts; schemas, integration and recovery still require qualification. No new CLI is planned.
+
+- [System](CHANGEKERNEL_SYSTEM.md): adopted design, constraints and unresolved mechanisms.
+- [Status](CHANGEKERNEL_STATUS.md): implementation gaps, assignments, checkpoints and evidence.
+- [AGENTS](AGENTS.md): development, review and check procedure.
+
+Development is intent → approved docs → code review → implementation/tests → qualification. Existing code does not override design. Keep current implementation and valid WIP in the tree; Git preserves retired code and historical records without making them current interfaces.
+
+## Source safety
+
+Never load this mutable checkout as its controller or install ChangeKernel under its `.pi/` directory. Use Pi-native development tools. Pack and test candidate packages only in disposable external projects with isolated Pi/HOME/settings.
+
+Source tests do not establish release qualification or controller authority. Dogfooding requires a qualified immutable external release, activation and explicit handoff. See the [qualification boundary](CHANGEKERNEL_SYSTEM.md#qualification-and-controller-boundary).
 
 ## License
 

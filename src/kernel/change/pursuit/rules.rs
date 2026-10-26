@@ -151,7 +151,7 @@ impl State {
             DecisionKind::Undertake { .. } => self.agent(a),
         }
     }
-    fn grant(&self, used: &GrantUse, authority: &Authority) -> Result<&Grant> {
+    pub(super) fn grant(&self, used: &GrantUse, authority: &Authority) -> Result<&Grant> {
         let g = self.grants.get(&used.id).ok_or(Error::Denied)?;
         if g.revoked
             || g.generation != used.generation
@@ -305,6 +305,12 @@ impl State {
             Command::SetGrant { spec, .. } => {
                 m.extend(spec.materials.iter().cloned());
                 m.extend(spec.disclosure.iter().cloned());
+                self.validate_origin_selectors(spec)?;
+                for selector in spec.material_origins.iter().chain(&spec.disclosure_origins) {
+                    if let OriginSelector::Historical(origin) = selector {
+                        m.insert(origin.binding.material.clone());
+                    }
+                }
             }
             Command::Admit(a) => {
                 self.agreement_requirements(&a.agreement, &mut m, &mut g)?;
@@ -336,6 +342,8 @@ impl State {
                 evidence_materials(&a.grounds, &mut m);
             }
             Command::Progress { progress: p, .. } => {
+                // The validated term subset adds no material: retain and revalidate the
+                // complete agreement, not just the statements selected for progress.
                 self.agreement_requirements(&p.agreement, &mut m, &mut g)?;
                 m.extend([
                     p.understanding.assessment.clone(),
@@ -368,14 +376,13 @@ impl State {
         access: &Access,
         action: GrantAction,
         agreement: Option<&AgreementId>,
-        materials: &BTreeSet<MaterialId>,
         v: &Validation,
     ) -> Result<()> {
         match access {
             Access::Owner => self.owner(&v.authority),
             Access::Grant(used) => {
                 let g = self.grant(used, &v.authority)?;
-                if !g.spec.actions.contains(&action) || !materials.is_subset(&g.spec.materials) {
+                if !g.spec.actions.contains(&action) || !self.covers_materials(g, v) {
                     return Err(Error::Denied);
                 }
                 match (&g.spec.target, agreement, action) {
@@ -484,7 +491,7 @@ impl State {
                 {
                     return Err(Error::Terminal);
                 }
-                if material.is_none_or(|id| !g.spec.disclosure.contains(id)) {
+                if material.is_none_or(|id| !self.discloses_material(g, id)) {
                     return Err(Error::Denied);
                 }
                 Ok(())
@@ -537,13 +544,12 @@ impl State {
         {
             return Err(Error::Invalid);
         }
-        let materials = self.requirements(command)?.0;
         match command {
             Command::Initiate { wish: _, access } => {
                 if self.initiated {
                     return Err(Error::Conflict);
                 }
-                self.record_access(access, GrantAction::CreateDraft, None, &materials, v)?;
+                self.record_access(access, GrantAction::CreateDraft, None, v)?;
                 self.initiated = true;
                 Ok(Effect::Initiated)
             }
@@ -551,7 +557,7 @@ impl State {
                 proposal: p,
                 access,
             } => {
-                self.record_access(access, GrantAction::Propose, None, &materials, v)?;
+                self.record_access(access, GrantAction::Propose, None, v)?;
                 if p.identity != self.identity || p.expected_agreement != self.current {
                     return Err(Error::Stale);
                 }
@@ -563,7 +569,6 @@ impl State {
                 {
                     return Err(Error::Conflict);
                 }
-                nonempty(&p.terms.criteria)?;
                 p.terms.validate_roles()?;
                 let mut criteria = BTreeSet::new();
                 for c in &p.terms.criteria {
@@ -585,7 +590,7 @@ impl State {
                 assessment: a,
                 access,
             } => {
-                self.record_access(access, GrantAction::Assess, None, &materials, v)?;
+                self.record_access(access, GrantAction::Assess, None, v)?;
                 self.proposal(&a.proposal)?;
                 if self.assessments.contains_key(&a.id) {
                     return Err(Error::Conflict);
@@ -710,7 +715,11 @@ impl State {
                 spec,
             } => {
                 self.owner(&v.authority)?;
-                if spec.actions.is_empty() && spec.disclosure.is_empty() {
+                self.validate_origin_selectors(spec)?;
+                if spec.actions.is_empty()
+                    && spec.disclosure.is_empty()
+                    && spec.disclosure_origins.is_empty()
+                {
                     return Err(Error::Invalid);
                 }
                 if spec.actions.is_empty()
@@ -819,13 +828,7 @@ impl State {
                 if let Some(a) = &f.agreement {
                     self.current_grounds(a, v)?;
                 }
-                self.record_access(
-                    access,
-                    GrantAction::Finding,
-                    f.agreement.as_ref(),
-                    &materials,
-                    v,
-                )?;
+                self.record_access(access, GrantAction::Finding, f.agreement.as_ref(), v)?;
                 nonempty(&f.evidence)?;
                 Ok(Effect::Recorded)
             }
@@ -834,13 +837,7 @@ impl State {
                 access,
             } => {
                 self.current_grounds(&a.agreement, v)?;
-                self.record_access(
-                    access,
-                    GrantAction::Adapt,
-                    Some(&a.agreement),
-                    &materials,
-                    v,
-                )?;
+                self.record_access(access, GrantAction::Adapt, Some(&a.agreement), v)?;
                 nonempty(&a.grounds)?;
                 match v.scope.as_ref().ok_or(Error::Unavailable)? {
                     ScopeJudgment::WithinDiscretion(_) => {}
@@ -854,28 +851,29 @@ impl State {
                 access,
             } => {
                 self.current_grounds(&p.agreement, v)?;
-                self.record_access(
-                    access,
-                    GrantAction::Progress,
-                    Some(&p.agreement),
-                    &materials,
-                    v,
-                )?;
+                self.record_access(access, GrantAction::Progress, Some(&p.agreement), v)?;
                 nonempty(&p.evidence)?;
                 let a = self.agreement(&p.agreement)?;
-                let criteria: BTreeSet<_> = self
-                    .proposal(&a.proposal)?
+                let proposal = self.proposal(&a.proposal)?;
+                let terms: BTreeSet<_> = proposal
+                    .terms
+                    .binding
+                    .iter()
+                    .map(|t| t.statement.clone())
+                    .collect();
+                let criteria: BTreeSet<_> = proposal
                     .terms
                     .criteria
                     .iter()
                     .map(|c| c.id.clone())
                     .collect();
-                if p.criteria.is_empty() || !p.criteria.is_subset(&criteria) {
+                if p.terms.is_empty()
+                    || !p.terms.is_subset(&terms)
+                    || !p.criteria.is_subset(&criteria)
+                {
                     return Err(Error::Invalid);
                 }
-                if p.basis == ChangeBasis::RevisedTargets
-                    && self.proposal(&a.proposal)?.expected_agreement.is_none()
-                {
+                if p.basis == ChangeBasis::RevisedTargets && proposal.expected_agreement.is_none() {
                     return Err(Error::Invalid);
                 }
                 Ok(Effect::Recorded)
@@ -893,7 +891,8 @@ impl State {
                     .collect();
                 let provided: BTreeSet<_> =
                     f.criteria.iter().map(|c| c.criterion.clone()).collect();
-                if criteria != provided
+                if criteria.is_empty()
+                    || criteria != provided
                     || provided.len() != f.criteria.len()
                     || f.criteria.iter().any(|c| c.evidence.is_empty())
                 {
@@ -930,7 +929,7 @@ impl State {
                 let g = self.grant(grant, &v.authority)?;
                 if !g.spec.actions.contains(&GrantAction::Reconcile)
                     || !matches!(&g.spec.target, GrantTarget::Reconciliation(actions) if actions.contains(action))
-                    || !materials.is_subset(&g.spec.materials)
+                    || !self.covers_materials(g, v)
                 {
                     return Err(Error::Denied);
                 }

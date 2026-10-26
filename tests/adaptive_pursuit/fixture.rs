@@ -1,6 +1,12 @@
 //! Model-free trusted fixtures. Assertions here are not native permission or semantic truth.
 use changekernel::unqualified_pursuit::*;
 use std::collections::{BTreeMap, BTreeSet};
+#[path = "../support/ids.rs"]
+mod ids;
+pub use ids::TestId;
+#[path = "../support/submission.rs"]
+mod submission;
+pub use submission::TestSubmit;
 
 pub enum Race {
     Material(MaterialId),
@@ -8,12 +14,19 @@ pub enum Race {
     Context,
     Disclosure,
     Prefix,
+    CreationSource,
+    CreationGrant,
 }
 pub struct FixturePorts {
     pub context: Context,
     pub materials: BTreeMap<MaterialId, Vec<u8>>,
+    pub created: BTreeMap<MaterialId, RecordedMaterial>,
+    pub grants: BTreeMap<GrantId, Grant>,
+    pub creation_sources: BTreeSet<(Identity, ActorId, ActorId)>,
+    pub denied_materials: BTreeSet<MaterialId>,
     pub grounds: BTreeMap<GroundId, GroundVersion>,
     pub accepted: BTreeMap<OperationId, (Operation, Accepted)>,
+    pub records: Vec<StoredOperation>,
     pub last_operation: Option<OperationId>,
     pub scope_judgment: ScopeJudgment,
     pub native_evidence: Vec<Evidence>,
@@ -41,6 +54,11 @@ impl FixturePorts {
             Some(Race::Prefix) => {
                 self.last_operation = Some(OperationId::new());
             }
+            Some(Race::CreationSource) => self.creation_sources.clear(),
+            Some(Race::CreationGrant) => {
+                let grant = &checks.creation.as_ref().unwrap().grant;
+                self.grants.get_mut(&grant.id).unwrap().generation += 1;
+            }
             None => {}
         }
         if checks.expected_operation != self.last_operation {
@@ -49,7 +67,33 @@ impl FixturePorts {
         if checks.context != self.context {
             return Err(Error::Stale);
         }
+        if !self.context.disclosure.contains(&checks.disclosure)
+            && !self
+                .context
+                .disclosure
+                .contains(&ReadScope::Change(checks.identity.change.clone()))
+            && !checks.disclosure_origin.as_ref().is_some_and(|origin| {
+                matches!(&checks.disclosure, ReadScope::Material(id)
+                    if self.created.get(id).is_some_and(|r| r.origin.scope() == *origin))
+                    && self
+                        .context
+                        .disclosure
+                        .contains(&ReadScope::Origin(origin.clone()))
+            })
+        {
+            return Err(Error::Denied);
+        }
         for (id, bytes) in &checks.materials {
+            if checks
+                .creation
+                .as_ref()
+                .is_some_and(|c| c.materials.contains_key(id))
+            {
+                continue;
+            }
+            if self.denied_materials.contains(id) {
+                return Err(Error::Denied);
+            }
             if self.materials.get(id) != Some(bytes) {
                 return Err(Error::Conflict);
             }
@@ -79,7 +123,65 @@ impl Ports for FixturePorts {
         Ok(self.context.clone())
     }
     fn material(&mut self, id: &MaterialId) -> Result<Vec<u8>> {
+        if self.denied_materials.contains(id) {
+            return Err(Error::Denied);
+        }
         self.materials.get(id).cloned().ok_or(Error::Unavailable)
+    }
+    fn authorize_creation(&mut self, checks: &Checks, operation: &Operation) -> Result<()> {
+        let creation = checks.creation.as_ref().ok_or(Error::Invalid)?;
+        if self.grants.get(&creation.grant.id) != Some(&creation.grant) {
+            return Err(Error::Stale);
+        }
+        let grant = &creation.grant;
+        if grant.revoked
+            || grant.spec.recipient != checks.context.authority.actor
+            || checks.identity.owner != checks.context.authority.represented_owner
+        {
+            return Err(Error::Denied);
+        }
+        let usage = MaterialUsage::measure(&operation.fresh)?;
+        if usage != creation.usage
+            || !usage.within(grant.spec.creation.as_ref().ok_or(Error::Denied)?)
+            || creation.materials.len() != operation.fresh.len()
+        {
+            return Err(Error::Invalid);
+        }
+        for payload in &operation.fresh {
+            if self.materials.contains_key(&payload.id) || self.created.contains_key(&payload.id) {
+                return Err(Error::Conflict);
+            }
+            if !self.creation_sources.contains(&(
+                checks.identity.clone(),
+                checks.context.authority.actor.clone(),
+                payload.attributed_source.clone(),
+            )) {
+                return Err(Error::Denied);
+            }
+            let expected = RecordedMaterial {
+                payload: payload.clone(),
+                origin: MaterialOrigin {
+                    binding: MaterialReference {
+                        identity: checks.identity.clone(),
+                        operation: operation.id.clone(),
+                        material: payload.id.clone(),
+                    },
+                    recorder: checks.context.authority.actor.clone(),
+                    represented_owner: checks.context.authority.represented_owner.clone(),
+                    grant: GrantUse {
+                        id: grant.id.clone(),
+                        generation: grant.generation,
+                    },
+                    target: grant.spec.target.clone(),
+                },
+            };
+            if creation.materials.get(&payload.id) != Some(&expected)
+                || checks.materials.get(&payload.id) != Some(&payload.bytes)
+            {
+                return Err(Error::Conflict);
+            }
+        }
+        Ok(())
     }
     fn ground(&mut self, id: &GroundId) -> Result<GroundVersion> {
         self.grounds.get(id).cloned().ok_or(Error::Unavailable)
@@ -93,27 +195,78 @@ impl Ports for FixturePorts {
             evidence: self.native_evidence.clone(),
         })
     }
-    fn accept(
-        &mut self,
-        checks: &Checks,
-        operation: &Operation,
-        accepted: &Accepted,
-    ) -> Result<()> {
-        self.validate(checks)?;
-        if self.refuse_acceptance {
-            return Err(Error::Unavailable);
+    fn accept(&mut self, record: &StoredOperation) -> Acceptance {
+        let checks = &record.checks;
+        let operation = &record.operation;
+        let accepted = &record.accepted;
+        let validation = self.validate(checks).and_then(|()| {
+            if checks.creation.is_some() {
+                self.authorize_creation(checks, operation)
+            } else {
+                Ok(())
+            }
+        });
+        if let Err(error) = validation {
+            return Acceptance::Refused(error);
         }
         if self.accepted.contains_key(&operation.id) {
-            return Err(Error::Conflict);
+            return Acceptance::Refused(Error::Conflict);
+        }
+        if self.refuse_acceptance {
+            // A complete authorized prefix and authoritative absence are known here.
+            return Acceptance::NotAccepted(Error::Unavailable);
+        }
+        // All fallible checks precede publication of any bytes, origin or accepted ID.
+        if let Some(creation) = &checks.creation {
+            for (id, recorded) in &creation.materials {
+                self.materials
+                    .insert(id.clone(), recorded.payload.bytes.clone());
+                self.created.insert(id.clone(), recorded.clone());
+            }
+        }
+        match (&operation.command, &accepted.effect) {
+            (Command::SetGrant { spec, .. }, Effect::Grant(g)) => {
+                self.grants.insert(
+                    g.id.clone(),
+                    Grant {
+                        id: g.id.clone(),
+                        generation: g.generation,
+                        spec: spec.clone(),
+                        revoked: false,
+                    },
+                );
+            }
+            (Command::RevokeGrant { id, .. }, Effect::Revoked(g)) => {
+                let grant = self.grants.get_mut(id).unwrap();
+                grant.generation = g.generation;
+                grant.revoked = true;
+            }
+            _ => {}
         }
         self.accepted
             .insert(operation.id.clone(), (operation.clone(), accepted.clone()));
         self.last_operation = Some(operation.id.clone());
-        Ok(())
+        self.records.push(record.clone());
+        Acceptance::Accepted
     }
     fn disclose(&mut self, checks: &Checks) -> Result<()> {
         self.disclose_calls += 1;
         self.validate(checks)
+    }
+}
+
+/// Explicit cached caller metadata; does not fetch context or repair a Submission.
+pub fn submission_for(
+    identity: &Identity,
+    authority: &Authority,
+    operation: Operation,
+) -> Submission {
+    Submission {
+        profile: CURRENT_PROFILE,
+        target: identity.change_key(),
+        actor: authority.actor.clone(),
+        represented_owner: authority.represented_owner.clone(),
+        operation,
     }
 }
 
@@ -155,8 +308,13 @@ impl Fixture {
                 (evidence_material, b"supplied fixture observation".to_vec()),
                 (limitations, b"fixture only; no native execution".to_vec()),
             ]),
+            created: BTreeMap::new(),
+            grants: BTreeMap::new(),
+            creation_sources: BTreeSet::new(),
+            denied_materials: BTreeSet::new(),
             grounds: BTreeMap::new(),
             accepted: BTreeMap::new(),
+            records: Vec::new(),
             last_operation: None,
             scope_judgment: ScopeJudgment::WithinDiscretion(evidence.clone()),
             native_evidence: vec![evidence],
@@ -202,21 +360,25 @@ impl Fixture {
         self.ports.grounds.insert(ground.clone(), version.clone());
         Dependency { ground, version }
     }
+    /// Caller fixture declaration; never queries the live port or repairs an existing request.
+    pub fn submission(&self, operation: Operation) -> Submission {
+        submission_for(&self.identity, &self.ports.context.authority, operation)
+    }
     pub fn execute(&mut self, command: Command) -> Result<Accepted> {
-        self.pursuit.execute(
-            Operation {
-                id: match &command {
-                    Command::Propose { proposal, .. } => self
-                        .proposal_operations
-                        .get(&proposal.id)
-                        .cloned()
-                        .unwrap_or_default(),
-                    _ => OperationId::new(),
-                },
-                command,
+        let operation = Operation {
+            fresh: vec![],
+            id: match &command {
+                Command::Propose { proposal, .. } => self
+                    .proposal_operations
+                    .get(&proposal.id)
+                    .cloned()
+                    .unwrap_or_else(OperationId::new),
+                _ => OperationId::new(),
             },
-            &mut self.ports,
-        )
+            command,
+        };
+        let submission = self.submission(operation);
+        self.pursuit.submit(submission, &mut self.ports)
     }
     pub fn status(&mut self) -> Status {
         self.owner();
@@ -363,6 +525,9 @@ impl Fixture {
     }
     pub fn draft_spec(&self, actions: BTreeSet<GrantAction>) -> GrantSpec {
         GrantSpec {
+            creation: None,
+            material_origins: BTreeSet::new(),
+            disclosure_origins: BTreeSet::new(),
             recipient: self.identity.agent.clone(),
             target: GrantTarget::Draft(self.identity.change.clone()),
             actions,
@@ -379,6 +544,9 @@ impl Fixture {
         let scope = BTreeSet::from([ScopeId::new()]);
         let limits = BTreeSet::from([LimitId::new()]);
         let spec = GrantSpec {
+            creation: None,
+            material_origins: BTreeSet::new(),
+            disclosure_origins: BTreeSet::new(),
             recipient: self.identity.agent.clone(),
             target: GrantTarget::Pursuit(p.agreement.clone()),
             actions: BTreeSet::from([

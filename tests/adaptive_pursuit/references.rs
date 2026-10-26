@@ -2,6 +2,7 @@ use super::*;
 
 fn operation(f: &Fixture, proposal: &Proposal, access: Access) -> Operation {
     Operation {
+        fresh: vec![],
         id: f.proposal_operations[&proposal.id].clone(),
         command: Command::Propose {
             proposal: proposal.clone(),
@@ -143,7 +144,7 @@ fn references_require_original_accepted_pairs_not_current_material_presence_or_e
         .unwrap();
     let retry = f
         .pursuit
-        .execute(original.operation.clone(), &mut f.ports)
+        .submit(original.submission().unwrap(), &mut f.ports)
         .unwrap();
     assert_eq!(retry, initial);
     let mut p = f.proposal(None, vec![]);
@@ -227,7 +228,10 @@ fn failed_acceptance_publishes_no_provisional_membership_or_material_freeze() {
             _ => None,
         };
         f.ports.refuse_acceptance = cut == 3;
-        assert!(f.pursuit.execute(op.clone(), &mut f.ports).is_err());
+        assert!(f
+            .pursuit
+            .submit(f.submission(op.clone()), &mut f.ports)
+            .is_err());
         f.ports.refuse_acceptance = false;
         f.owner();
         f.ports
@@ -254,8 +258,14 @@ fn failed_acceptance_publishes_no_provisional_membership_or_material_freeze() {
         f.ports
             .materials
             .insert(material, b"replacement before first acceptance".to_vec());
-        let accepted = f.pursuit.execute(op.clone(), &mut f.ports).unwrap();
-        assert_eq!(f.pursuit.execute(op, &mut f.ports), Ok(accepted));
+        let accepted = f
+            .pursuit
+            .submit(f.submission(op.clone()), &mut f.ports)
+            .unwrap();
+        assert_eq!(
+            f.pursuit.submit(f.submission(op), &mut f.ports),
+            Ok(accepted)
+        );
         propose(&mut f, &other).unwrap();
     }
 }
@@ -322,7 +332,10 @@ fn guarded_granted_proposal_checks_prefix_disclosure_and_content_before_publicat
             1 => Race::Disclosure,
             _ => Race::Material(p.terms.binding[0].statement.material.clone()),
         });
-        assert!(f.pursuit.execute(op.clone(), &mut f.ports).is_err());
+        assert!(f
+            .pursuit
+            .submit(f.submission(op.clone()), &mut f.ports)
+            .is_err());
         assert_eq!(f.ports.accepted.len(), before);
         assert!(!f.ports.accepted.contains_key(&op.id));
     }
@@ -425,40 +438,44 @@ fn revised_roles_need_fresh_proposal_and_matching_decisions_not_inheritance() {
 }
 
 #[test]
-fn early_criterion_gate_remains_and_reference_retries_use_current_sources_and_disclosure() {
+fn incomplete_draft_reference_retries_use_current_sources_and_disclosure() {
     let mut f = Fixture::new();
     f.initiate();
     let mut incomplete = f.proposal(None, vec![]);
     incomplete.terms.criteria.clear();
-    assert_eq!(propose(&mut f, &incomplete), Err(Error::Invalid));
-    let p = f.proposal(None, vec![]);
-    let op = operation(&f, &p, Access::Owner);
-    let accepted = f.pursuit.execute(op.clone(), &mut f.ports).unwrap();
+    let op = operation(&f, &incomplete, Access::Owner);
+    let accepted = f
+        .pursuit
+        .submit(f.submission(op.clone()), &mut f.ports)
+        .unwrap();
     let original = f.pursuit.record(&op.id, &mut f.ports).unwrap().unwrap();
-    let material = p.terms.context.first().unwrap().material.clone();
+    let material = incomplete.terms.context.first().unwrap().material.clone();
     let bytes = f.ports.materials.remove(&material).unwrap();
     assert_eq!(
-        f.pursuit.execute(op.clone(), &mut f.ports),
+        f.pursuit.submit(f.submission(op.clone()), &mut f.ports),
         Err(Error::Unavailable)
     );
     f.ports
         .materials
         .insert(material.clone(), b"rebound context".to_vec());
     assert_eq!(
-        f.pursuit.execute(op.clone(), &mut f.ports),
+        f.pursuit.submit(f.submission(op.clone()), &mut f.ports),
         Err(Error::Conflict)
     );
     f.ports.materials.insert(material, bytes);
     f.ports.race = Some(Race::Disclosure);
     assert_eq!(
-        f.pursuit.execute(op.clone(), &mut f.ports),
+        f.pursuit.submit(f.submission(op.clone()), &mut f.ports),
         Err(Error::Stale)
     );
     f.ports
         .context
         .disclosure
         .insert(ReadScope::Change(f.identity.change.clone()));
-    assert_eq!(f.pursuit.execute(op, &mut f.ports), Ok(accepted));
+    assert_eq!(
+        f.pursuit.submit(f.submission(op), &mut f.ports),
+        Ok(accepted)
+    );
     assert_eq!(
         f.pursuit
             .record(&original.operation.id, &mut f.ports)
@@ -478,14 +495,15 @@ fn fresh_operations_cannot_edit_proposals_or_rebind_agreement_identity() {
     let before = f.ports.accepted.len();
     // A new operation is not an exact retry and cannot edit the accepted proposal.
     assert_eq!(
-        f.pursuit.execute(
-            Operation {
+        f.pursuit.submit(
+            f.submission(Operation {
+                fresh: vec![],
                 id: OperationId::new(),
                 command: Command::Propose {
                     proposal: changed.clone(),
                     access: Access::Owner
                 },
-            },
+            }),
             &mut f.ports
         ),
         Err(Error::Conflict)

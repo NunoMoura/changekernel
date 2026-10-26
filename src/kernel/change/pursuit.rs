@@ -1,25 +1,26 @@
-//! Unqualified, in-process P2 rules. No durable identity, authentication or native execution.
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fmt,
-    sync::Arc,
-};
+//! Portable pursuit rules. No identity generation, authentication or native execution.
+use std::collections::{BTreeMap, BTreeSet};
+mod material;
 mod rules;
+pub use material::*;
 
 macro_rules! identities {
     ($($name:ident),+ $(,)?) => {$(
-        #[derive(Clone)]
-        pub struct $name(Arc<()>);
-        impl $name { pub fn new() -> Self { Self(Arc::new(())) } }
-        impl Default for $name { fn default() -> Self { Self::new() } }
-        impl PartialEq for $name { fn eq(&self, other: &Self) -> bool { Arc::ptr_eq(&self.0, &other.0) } }
-        impl Eq for $name {}
-        impl PartialOrd for $name { fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(other)) } }
-        impl Ord for $name { fn cmp(&self, other: &Self) -> std::cmp::Ordering { Arc::as_ptr(&self.0).cmp(&Arc::as_ptr(&other.0)) } }
-        impl fmt::Debug for $name { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.write_str(concat!(stringify!($name), "(..)")) } }
+        #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+        pub struct $name([u8; 16]);
+        impl $name {
+            pub fn from_bytes(bytes: [u8; 16]) -> Result<Self> {
+                if bytes == [0; 16] { Err(Error::Invalid) } else { Ok(Self(bytes)) }
+            }
+            pub fn as_bytes(&self) -> &[u8; 16] { &self.0 }
+        }
+        impl TryFrom<[u8; 16]> for $name {
+            type Error = Error;
+            fn try_from(bytes: [u8; 16]) -> Result<Self> { Self::from_bytes(bytes) }
+        }
     )+};
 }
-// These are separate handle types, not a global resource registry or a serialization grammar.
+// Separate value types, not a global registry. Value ordering is never history order.
 identities!(
     ActorId,
     OwnerId,
@@ -53,6 +54,13 @@ pub enum Error {
     NeedsRevision,
 }
 pub type Result<T> = std::result::Result<T, Error>;
+/// Entity namespace. Participant and authority bindings remain independent checks.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ChangeKey {
+    pub owner: OwnerId,
+    pub ledger: LedgerId,
+    pub change: ChangeId,
+}
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Identity {
     pub owner: OwnerId,
@@ -60,6 +68,15 @@ pub struct Identity {
     pub ledger: LedgerId,
     pub change: ChangeId,
     pub agent: ActorId,
+}
+impl Identity {
+    pub fn change_key(&self) -> ChangeKey {
+        ChangeKey {
+            owner: self.owner.clone(),
+            ledger: self.ledger.clone(),
+            change: self.change.clone(),
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Dependency {
@@ -140,7 +157,7 @@ pub struct Decision {
     pub kind: DecisionKind,
     pub dependencies: Vec<Dependency>,
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GrantUse {
     pub id: GrantId,
     pub generation: u64,
@@ -150,7 +167,7 @@ pub enum Access {
     Owner,
     Grant(GrantUse),
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GrantTarget {
     DraftCreation(ChangeId),
     Draft(ChangeId),
@@ -176,6 +193,10 @@ pub struct GrantSpec {
     pub actions: BTreeSet<GrantAction>,
     pub materials: BTreeSet<MaterialId>,
     pub disclosure: BTreeSet<MaterialId>,
+    /// Explicit per-operation creation bounds. Absence permits retained inputs only.
+    pub creation: Option<MaterialLimits>,
+    pub material_origins: BTreeSet<OriginSelector>,
+    pub disclosure_origins: BTreeSet<OriginSelector>,
     pub native_actions: BTreeSet<NativeActionId>,
     pub native_scope: BTreeSet<ScopeId>,
     pub limits: BTreeSet<LimitId>,
@@ -229,6 +250,9 @@ pub enum ChangeBasis {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Progress {
     pub agreement: AgreementId,
+    /// Nonempty exact selection of current binding statements, never context or aliases.
+    pub terms: BTreeSet<MaterialReference>,
+    /// Optional current criteria; progress does not accept fulfillment.
     pub criteria: BTreeSet<CriterionId>,
     pub evidence: Vec<Evidence>,
     pub understanding: ProgressDimension,
@@ -355,6 +379,7 @@ pub enum Command {
 pub struct Operation {
     pub id: OperationId,
     pub command: Command,
+    pub fresh: Vec<FreshMaterial>,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Effect {
@@ -415,6 +440,8 @@ pub struct NativeConditions {
 #[derive(Clone, Debug)]
 pub(crate) struct Validation {
     pub authority: Authority,
+    pub materials: BTreeSet<MaterialId>,
+    pub fresh: BTreeSet<MaterialId>,
     pub grounds: BTreeMap<GroundId, GroundVersion>,
     pub scope: Option<ScopeJudgment>,
     pub native: Option<NativeConditions>,
@@ -449,6 +476,7 @@ pub(crate) struct State {
     pub history: BTreeMap<OperationId, (Operation, Accepted)>,
     pub last_operation: Option<OperationId>,
     pub materials: BTreeMap<MaterialId, Vec<u8>>,
+    pub created: BTreeMap<MaterialId, RecordedMaterial>,
 }
 impl State {
     pub fn new(identity: Identity) -> Result<Self> {
@@ -469,6 +497,7 @@ impl State {
             history: BTreeMap::new(),
             last_operation: None,
             materials: BTreeMap::new(),
+            created: BTreeMap::new(),
         })
     }
     pub fn status(&self) -> Status {

@@ -3,6 +3,10 @@ use std::collections::BTreeSet;
 #[path = "adaptive_pursuit/fixture.rs"]
 mod fixture;
 use fixture::*;
+#[path = "adaptive_pursuit/material.rs"]
+mod material;
+#[path = "adaptive_pursuit/readiness.rs"]
+mod readiness;
 #[path = "adaptive_pursuit/references.rs"]
 mod references;
 
@@ -301,6 +305,7 @@ fn original_result_retry_retains_original_authority_and_requires_current_disclos
     let mut f = Fixture::new();
     let wish = f.text("draft");
     let operation = Operation {
+        fresh: vec![],
         id: OperationId::new(),
         command: Command::Initiate {
             wish: wish.clone(),
@@ -308,7 +313,10 @@ fn original_result_retry_retains_original_authority_and_requires_current_disclos
         },
     };
     let original_context = f.ports.context.clone();
-    let accepted = f.pursuit.execute(operation.clone(), &mut f.ports).unwrap();
+    let accepted = f
+        .pursuit
+        .submit(f.submission(operation.clone()), &mut f.ports)
+        .unwrap();
     let count = f.ports.accepted.len();
     f.owner();
     let stored = f
@@ -318,13 +326,15 @@ fn original_result_retry_retains_original_authority_and_requires_current_disclos
         .unwrap();
     assert_eq!(stored.checks.context, original_context);
     assert_eq!(
-        f.pursuit.execute(operation.clone(), &mut f.ports),
+        f.pursuit
+            .submit(f.submission(operation.clone()), &mut f.ports),
         Ok(accepted.clone())
     );
     assert_eq!(f.ports.accepted.len(), count);
     f.ports.context.disclosure.clear();
     assert_eq!(
-        f.pursuit.execute(operation.clone(), &mut f.ports),
+        f.pursuit
+            .submit(f.submission(operation.clone()), &mut f.ports),
         Err(Error::Denied)
     );
     f.ports
@@ -335,7 +345,8 @@ fn original_result_retry_retains_original_authority_and_requires_current_disclos
         .materials
         .insert(wish.clone(), b"rebound under the same identity".to_vec());
     assert_eq!(
-        f.pursuit.execute(operation.clone(), &mut f.ports),
+        f.pursuit
+            .submit(f.submission(operation.clone()), &mut f.ports),
         Err(Error::Conflict)
     );
     f.ports.materials.insert(wish, b"draft".to_vec());
@@ -344,12 +355,12 @@ fn original_result_retry_retains_original_authority_and_requires_current_disclos
         reason: f.text("changed exact input"),
     };
     assert_eq!(
-        f.pursuit.execute(conflict, &mut f.ports),
+        f.pursuit.submit(f.submission(conflict), &mut f.ports),
         Err(Error::Conflict)
     );
     f.agent();
     assert_eq!(
-        f.pursuit.execute(operation, &mut f.ports),
+        f.pursuit.submit(f.submission(operation), &mut f.ports),
         Err(Error::Conflict)
     );
 }
@@ -360,6 +371,7 @@ fn guarded_acceptance_rejects_toctou_and_failure_without_partial_state_or_reserv
         let mut f = Fixture::new();
         let wish = f.text("original");
         let operation = Operation {
+            fresh: vec![],
             id: OperationId::new(),
             command: Command::Initiate {
                 wish: wish.clone(),
@@ -375,12 +387,17 @@ fn guarded_acceptance_rejects_toctou_and_failure_without_partial_state_or_reserv
             f.ports.race = None;
             f.ports.refuse_acceptance = true;
         }
-        assert!(f.pursuit.execute(operation.clone(), &mut f.ports).is_err());
+        assert!(f
+            .pursuit
+            .submit(f.submission(operation.clone()), &mut f.ports)
+            .is_err());
         assert_eq!(f.ports.accepted.len(), 0);
         assert!(!f.status().initiated);
         f.ports.materials.insert(wish, b"original".to_vec());
         f.ports.refuse_acceptance = false;
-        f.pursuit.execute(operation, &mut f.ports).unwrap();
+        f.pursuit
+            .submit(f.submission(operation), &mut f.ports)
+            .unwrap();
         assert!(f.status().initiated);
     }
     let mut f = Fixture::new();
@@ -440,6 +457,12 @@ fn learning_adaptation_and_both_progress_dimensions_are_claims_not_revision_or_f
     .unwrap();
     let progress = Progress {
         agreement: p.agreement.clone(),
+        terms: p
+            .terms
+            .binding
+            .iter()
+            .map(|t| t.statement.clone())
+            .collect(),
         criteria: p.terms.criteria.iter().map(|c| c.id.clone()).collect(),
         evidence: f.ports.native_evidence.clone(),
         understanding: ProgressDimension {
@@ -677,10 +700,14 @@ fn accepted_grant_operation_retry_recovers_after_revocation_without_dispatch_or_
     f.agent();
     let original_context = f.ports.context.clone();
     let op = Operation {
+        fresh: vec![],
         id: OperationId::new(),
         command: Command::Admit(action.clone()),
     };
-    let accepted = f.pursuit.execute(op.clone(), &mut f.ports).unwrap();
+    let accepted = f
+        .pursuit
+        .submit(f.submission(op.clone()), &mut f.ports)
+        .unwrap();
     f.owner();
     f.execute(Command::RevokeGrant {
         id: action.grant.id.clone(),
@@ -693,7 +720,10 @@ fn accepted_grant_operation_retry_recovers_after_revocation_without_dispatch_or_
     assert_eq!(record.grant_snapshot.unwrap().spec, spec);
     let count = f.ports.accepted.len();
     f.agent();
-    assert_eq!(f.pursuit.execute(op, &mut f.ports), Ok(accepted));
+    assert_eq!(
+        f.pursuit.submit(f.submission(op), &mut f.ports),
+        Ok(accepted)
+    );
     assert_eq!(f.ports.accepted.len(), count);
     assert_eq!(
         f.execute(Command::Dispatch { action: action.id }),
@@ -709,13 +739,17 @@ fn a_second_state_instance_cannot_overwrite_scoped_accepted_state_at_the_boundar
     let before = f.ports.accepted.len();
     let wish = f.text("second competing draft");
     let operation = Operation {
+        fresh: vec![],
         id: OperationId::new(),
         command: Command::Initiate {
             wish,
             access: Access::Owner,
         },
     };
-    assert_eq!(stale.execute(operation, &mut f.ports), Err(Error::Stale));
+    assert_eq!(
+        stale.submit(f.submission(operation), &mut f.ports),
+        Err(Error::Stale)
+    );
     assert_eq!(f.ports.accepted.len(), before);
     assert_eq!(
         stale.read(Query::Status, Access::Owner, &mut f.ports),

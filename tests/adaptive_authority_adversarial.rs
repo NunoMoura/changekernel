@@ -2,6 +2,12 @@
 //! in-process fixtures; these tests establish no host permission or durable acceptance.
 use changekernel::unqualified_pursuit::*;
 use std::collections::{BTreeMap, BTreeSet};
+#[path = "support/ids.rs"]
+mod ids;
+use ids::TestId;
+#[path = "support/submission.rs"]
+mod submission;
+use submission::TestSubmit;
 
 #[derive(Clone)]
 enum Cut {
@@ -80,6 +86,10 @@ impl Ports for Boundary {
     fn material(&mut self, id: &MaterialId) -> Result<Vec<u8>> {
         self.materials.get(id).cloned().ok_or(Error::Unavailable)
     }
+    fn authorize_creation(&mut self, _: &Checks, _: &Operation) -> Result<()> {
+        // This retained-input fixture has no source/creation authorization profile.
+        Err(Error::Denied)
+    }
     fn ground(&mut self, id: &GroundId) -> Result<GroundVersion> {
         self.grounds.get(id).cloned().ok_or(Error::Unavailable)
     }
@@ -92,15 +102,26 @@ impl Ports for Boundary {
             evidence: vec![self.evidence.clone()],
         })
     }
-    fn accept(&mut self, checks: &Checks, op: &Operation, result: &Accepted) -> Result<()> {
-        self.check(checks)?;
-        assert!(
-            !self.accepted.iter().any(|(old, _)| old.id == op.id),
-            "duplicate acceptance"
-        );
-        self.accepted.push((op.clone(), result.clone()));
-        self.last_operation = Some(op.id.clone());
-        Ok(())
+    fn accept(&mut self, record: &StoredOperation) -> Acceptance {
+        let checks = &record.checks;
+        let op = &record.operation;
+        let result = &record.accepted;
+        match (|| -> Result<()> {
+            self.check(checks)?;
+            if checks.creation.is_some() {
+                self.authorize_creation(checks, op)?;
+            }
+            assert!(
+                !self.accepted.iter().any(|(old, _)| old.id == op.id),
+                "duplicate acceptance"
+            );
+            self.accepted.push((op.clone(), result.clone()));
+            self.last_operation = Some(op.id.clone());
+            Ok(())
+        })() {
+            Ok(()) => Acceptance::Accepted,
+            Err(error) => Acceptance::Refused(error),
+        }
     }
     fn disclose(&mut self, checks: &Checks) -> Result<()> {
         self.check(checks)
@@ -178,21 +199,38 @@ impl Harness {
         self.io.context.disclosure =
             BTreeSet::from([ReadScope::Change(self.identity.change.clone())]);
     }
+    fn submission(&self, operation: Operation) -> Submission {
+        Submission {
+            profile: CURRENT_PROFILE,
+            target: self.identity.change_key(),
+            actor: self.io.context.authority.actor.clone(),
+            represented_owner: self.io.context.authority.represented_owner.clone(),
+            operation,
+        }
+    }
     fn execute(&mut self, command: Command) -> (Operation, Accepted) {
         let op = Operation {
+            fresh: vec![],
             id: OperationId::new(),
             command,
         };
-        let result = self.app.execute(op.clone(), &mut self.io).unwrap();
+        let result = self
+            .app
+            .submit(self.submission(op.clone()), &mut self.io)
+            .unwrap();
         (op, result)
     }
     fn refuse(&mut self, command: Command) -> Error {
         let n = self.io.accepted.len();
         let op = Operation {
+            fresh: vec![],
             id: OperationId::new(),
             command,
         };
-        let error = self.app.execute(op, &mut self.io).unwrap_err();
+        let error = self
+            .app
+            .submit(self.submission(op), &mut self.io)
+            .unwrap_err();
         assert_eq!(self.io.accepted.len(), n);
         error
     }
@@ -265,13 +303,16 @@ impl Harness {
             dependencies: deps.clone(),
         };
         let proposal_op = Operation {
+            fresh: vec![],
             id: operation,
             command: Command::Propose {
                 proposal: proposal.clone(),
                 access: Access::Owner,
             },
         };
-        self.app.execute(proposal_op.clone(), &mut self.io).unwrap();
+        self.app
+            .submit(self.submission(proposal_op.clone()), &mut self.io)
+            .unwrap();
         let assessment = Assessment {
             id: AssessmentId::new(),
             proposal: proposal.id.clone(),
@@ -330,6 +371,9 @@ impl Harness {
         self.actor(true);
         let id = GrantId::new();
         let spec = GrantSpec {
+            creation: None,
+            material_origins: BTreeSet::new(),
+            disclosure_origins: BTreeSet::new(),
             recipient: self.identity.agent.clone(),
             target: GrantTarget::Pursuit(agreement.clone()),
             actions: BTreeSet::from([GrantAction::Admit, GrantAction::Dispatch]),
@@ -372,6 +416,7 @@ fn serialization_cuts_do_not_publish_or_reserve_a_retry_identity() {
         let wish = h.io.text("Bounded draft");
         let bytes = h.io.materials[&wish].clone();
         let op = Operation {
+            fresh: vec![],
             id: OperationId::new(),
             command: Command::Initiate {
                 wish: wish.clone(),
@@ -383,12 +428,12 @@ fn serialization_cuts_do_not_publish_or_reserve_a_retry_identity() {
             1 => Cut::Context,
             _ => Cut::Material(wish.clone()),
         });
-        assert!(h.app.execute(op.clone(), &mut h.io).is_err());
+        assert!(h.app.submit(h.submission(op.clone()), &mut h.io).is_err());
         h.actor(true);
         h.io.materials.insert(wish, bytes);
         assert!(!h.status().initiated);
-        let first = h.app.execute(op.clone(), &mut h.io).unwrap();
-        assert_eq!(h.app.execute(op, &mut h.io).unwrap(), first);
+        let first = h.app.submit(h.submission(op.clone()), &mut h.io).unwrap();
+        assert_eq!(h.app.submit(h.submission(op), &mut h.io).unwrap(), first);
         assert_eq!(h.io.accepted.len(), 1);
     }
 }
@@ -406,18 +451,27 @@ fn retry_keeps_original_authority_but_requires_current_disclosure_and_exact_mate
     let reason = h.io.text("Withdraw without fulfilling");
     h.execute(Command::Withdraw { reason });
     h.io.cut = Some(Cut::Context);
-    assert!(h.app.execute(op.clone(), &mut h.io).is_err());
+    assert!(h.app.submit(h.submission(op.clone()), &mut h.io).is_err());
     h.actor(true);
-    assert_eq!(h.app.execute(op.clone(), &mut h.io).unwrap(), result);
+    assert_eq!(
+        h.app.submit(h.submission(op.clone()), &mut h.io).unwrap(),
+        result
+    );
     assert_eq!(h.app.record(&op.id, &mut h.io).unwrap(), Some(original));
     let mut conflict = op.clone();
     conflict.command = Command::Withdraw {
         reason: wish.clone(),
     };
-    assert_eq!(h.app.execute(conflict, &mut h.io), Err(Error::Conflict));
+    assert_eq!(
+        h.app.submit(h.submission(conflict), &mut h.io),
+        Err(Error::Conflict)
+    );
     h.io.materials
         .insert(wish, b"same handle, changed content".to_vec());
-    assert_eq!(h.app.execute(op, &mut h.io), Err(Error::Conflict));
+    assert_eq!(
+        h.app.submit(h.submission(op), &mut h.io),
+        Err(Error::Conflict)
+    );
     assert_eq!(h.io.accepted.len(), 2);
 }
 
@@ -581,6 +635,9 @@ fn revision_cannot_hide_pending_effects_and_withdrawal_keeps_action_association(
     h.actor(true);
     let id = GrantId::new();
     let spec = GrantSpec {
+        creation: None,
+        material_origins: BTreeSet::new(),
+        disclosure_origins: BTreeSet::new(),
         recipient: h.identity.agent.clone(),
         target: GrantTarget::Reconciliation(BTreeSet::from([action.id.clone()])),
         actions: BTreeSet::from([GrantAction::Reconcile]),
