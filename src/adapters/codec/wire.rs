@@ -1,10 +1,11 @@
 //! Borrowing schema-aware preflight. No untrusted heap allocation or prost decode here.
-use super::{CodecError, Result, SubmissionProfile, MAX_DEPTH, MAX_MATERIAL};
+use super::framing::{CodecError, Result, MAX_CONTENT, MAX_DEPTH};
+use crate::application::operation_request::OperationRequestProfile;
 
 #[derive(Clone, Copy)]
 pub(super) enum Shape {
     Id,
-    Material,
+    Content,
     Uint,
     Bool,
     Version(u32),
@@ -52,7 +53,7 @@ fn chunk<'a>(input: &mut &'a [u8]) -> Result<&'a [u8]> {
 /// Inspect only the bounded top-level envelope. Opaque spans are borrowed/skipped,
 /// never recursively scanned or decoded before the complete tuple is selected.
 /// The subsequent schema scan still checks every field, payload, duplicate and bound.
-pub(super) fn envelope(mut input: &[u8]) -> Result<SubmissionProfile> {
+pub(super) fn envelope(mut input: &[u8]) -> Result<OperationRequestProfile> {
     let mut versions = [None; 3];
     while !input.is_empty() {
         let key = varint(&mut input)?;
@@ -82,7 +83,7 @@ pub(super) fn envelope(mut input: &[u8]) -> Result<SubmissionProfile> {
             }
         }
     }
-    let profile = SubmissionProfile {
+    let profile = OperationRequestProfile {
         codec: versions[0].ok_or(CodecError::Presence)?,
         schema: versions[1].ok_or(CodecError::Presence)?,
         semantic: versions[2].ok_or(CodecError::Presence)?,
@@ -103,7 +104,7 @@ fn scalar(shape: Shape, value: u64) -> Result<()> {
         _ => Err(CodecError::Wire),
     }
 }
-/// Returns material byte count for the enclosing Operation.fresh field's local accounting.
+/// Returns content byte count for the enclosing Operation.fresh field's local accounting.
 /// Other copies in checks/origins do not recharge that logical creation budget.
 pub(super) fn scan(mut input: &[u8], schema: Schema, depth: usize) -> Result<usize> {
     if depth > MAX_DEPTH {
@@ -116,7 +117,7 @@ pub(super) fn scan(mut input: &[u8], schema: Schema, depth: usize) -> Result<usi
     let mut counts = [0usize; 32];
     let mut fresh_bytes = [0usize; 32];
     let mut oneof_seen = false;
-    let mut material_bytes = 0usize;
+    let mut content_bytes = 0usize;
     while !input.is_empty() {
         let key = varint(&mut input)?;
         let tag = key >> 3;
@@ -167,9 +168,9 @@ pub(super) fn scan(mut input: &[u8], schema: Schema, depth: usize) -> Result<usi
                 }
                 0
             }
-            (Shape::Material, 2) => {
+            (Shape::Content, 2) => {
                 let bytes = chunk(&mut input)?;
-                if bytes.len() > MAX_MATERIAL {
+                if bytes.len() > MAX_CONTENT {
                     return Err(CodecError::Limit);
                 }
                 bytes.len()
@@ -181,7 +182,7 @@ pub(super) fn scan(mut input: &[u8], schema: Schema, depth: usize) -> Result<usi
             }
             _ => return Err(CodecError::Wire),
         };
-        material_bytes = material_bytes.checked_add(bytes).ok_or(CodecError::Limit)?;
+        content_bytes = content_bytes.checked_add(bytes).ok_or(CodecError::Limit)?;
         if rule.fresh {
             fresh_bytes[index] = fresh_bytes[index]
                 .checked_add(bytes)
@@ -202,7 +203,77 @@ pub(super) fn scan(mut input: &[u8], schema: Schema, depth: usize) -> Result<usi
     {
         return Err(CodecError::Presence);
     }
-    Ok(material_bytes)
+    Ok(content_bytes)
+}
+
+/// Borrowed length-delimited fields for projections over already verified current frames.
+pub(super) fn message_fields(
+    mut input: &[u8],
+    mut visit: impl FnMut(u32, &[u8]) -> Result<()>,
+) -> Result<()> {
+    while !input.is_empty() {
+        let key = varint(&mut input)?;
+        match key & 7 {
+            0 => {
+                varint(&mut input)?;
+            }
+            2 => {
+                visit((key >> 3) as u32, chunk(&mut input)?)?;
+            }
+            _ => return Err(CodecError::Wire),
+        }
+    }
+    Ok(())
+}
+
+/// Conservative representation cost before prost/Bridge allocation. Every length-delimited
+/// message reserves both wire and domain object slots plus collection-node/growth slack;
+/// IDs/scalars reserve leaf slots, and payload bytes are tracked independently of metadata.
+/// The fixed 4096-byte object bound is checked against the enclosing current record types.
+pub(super) fn allocation_cost(
+    mut input: &[u8],
+    schema: Schema,
+    depth: usize,
+) -> Result<(u64, u64)> {
+    if depth > MAX_DEPTH {
+        return Err(CodecError::Limit);
+    }
+    let mut bytes = 4096u64;
+    let mut payload = 0u64;
+    while !input.is_empty() {
+        let key = varint(&mut input)?;
+        let rule = schema
+            .fields
+            .iter()
+            .find(|r| u64::from(r.tag) == key >> 3)
+            .ok_or(CodecError::UnknownField)?;
+        bytes = bytes.checked_add(256).ok_or(CodecError::Limit)?;
+        match (rule.shape, key & 7) {
+            (Shape::Message(child), 2) => {
+                let (b, p) = allocation_cost(chunk(&mut input)?, child(), depth + 1)?;
+                bytes = bytes.checked_add(b).ok_or(CodecError::Limit)?;
+                payload = payload.checked_add(p).ok_or(CodecError::Limit)?;
+            }
+            (Shape::Id | Shape::Content, 2) => {
+                let part = chunk(&mut input)?;
+                payload = payload
+                    .checked_add(part.len() as u64)
+                    .ok_or(CodecError::Limit)?;
+            }
+            (_, 0) => {
+                varint(&mut input)?;
+            }
+            (_, 2) if rule.repeated => {
+                let mut part = chunk(&mut input)?;
+                while !part.is_empty() {
+                    varint(&mut part)?;
+                    bytes = bytes.checked_add(256).ok_or(CodecError::Limit)?;
+                }
+            }
+            _ => return Err(CodecError::Wire),
+        }
+    }
+    Ok((bytes, payload))
 }
 
 #[cfg(test)]
@@ -232,8 +303,8 @@ mod tests {
         for _ in 0..31 {
             value = wrap(value);
         }
-        assert!(scan(&value, recursive(), 1).is_ok());
+        assert!(super::scan(&value, recursive(), 1).is_ok());
         value = wrap(value);
-        assert_eq!(scan(&value, recursive(), 1), Err(CodecError::Limit));
+        assert_eq!(super::scan(&value, recursive(), 1), Err(CodecError::Limit));
     }
 }

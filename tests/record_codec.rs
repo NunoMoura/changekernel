@@ -1,8 +1,9 @@
-use changekernel::{adapters::codec::*, unqualified_pursuit::*};
-#[path = "adaptive_pursuit/fixture.rs"]
+use changekernel::adapters::codec;
+use changekernel::unqualified_change::{Change, Command, HistoryHead, CURRENT_PROFILE};
+#[path = "change/fixture.rs"]
 #[allow(dead_code)]
 mod fixture;
-use fixture::*;
+use fixture::Fixture;
 #[path = "record_codec/adversarial.rs"]
 mod adversarial;
 #[path = "record_codec/histories.rs"]
@@ -22,11 +23,14 @@ fn accepted_records_and_caller_retained_requests_roundtrip_and_reconstruct() {
         .records
         .iter()
         .map(|record| {
-            let raw = encode_record(record).unwrap();
-            let restored = decode_record(&raw).unwrap();
+            let raw = codec::encode_record(record).unwrap();
+            let restored = codec::decode_record(&raw).unwrap();
             assert_eq!(&restored, record);
-            let request = encode_request(&record.submission().unwrap()).unwrap();
-            assert_eq!(decode_request(&request), Ok(record.submission().unwrap()));
+            let request = codec::encode_request(&record.operation_request().unwrap()).unwrap();
+            assert_eq!(
+                codec::decode_request(&request),
+                Ok(record.operation_request().unwrap())
+            );
             restored
         })
         .collect();
@@ -36,6 +40,9 @@ fn accepted_records_and_caller_retained_requests_roundtrip_and_reconstruct() {
         accepted_operations: records.len() as u64,
         last_operation: f.ports.last_operation.clone(),
     };
-    f.pursuit = Pursuit::reconstruct(head, records).unwrap();
+    f.pursuit = Change::reconstruct(head, records).unwrap();
     assert_eq!(f.status(), expected);
 }
+
+#[path = "record_codec/intake.rs"]
+mod intake;

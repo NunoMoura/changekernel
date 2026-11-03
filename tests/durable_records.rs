@@ -1,4 +1,14 @@
-use changekernel::unqualified_pursuit::*;
+use changekernel::unqualified_change::{
+    Acceptance, Access, ActionId, ActionOutcome, ActionPhase, ActionRequest, ActorId, Adaptation,
+    AgreementId, AssessmentId, Attribution, Change, ChangeId, Checks, Command, ContentId,
+    ContentKey, ContentLimits, ContentObservation, Context, ContextVersion, CreatedIdentity,
+    CriterionId, Decision, DecisionId, DecisionKind, Dependency, Disposition, Effect, Error,
+    Finding, GrantAction, GrantId, GrantTarget, GrantUse, GroundId, GroundVersion, HistoryHead,
+    Identity, IntakeRequest, LedgerId, LimitId, NativeActionId, NativeConditions, Operation,
+    OperationId, OperationRequestError, OriginScope, OriginSelector, OwnerId, Ports, ProposalId,
+    Query, Read, ReadScope, Result, ScopeId, ScopeJudgment, Settlement, StoredOperation,
+    CURRENT_PROFILE,
+};
 
 #[test]
 fn persistent_ids_reject_zero_and_preserve_values_across_independent_construction() {
@@ -27,7 +37,7 @@ fn persistent_ids_reject_zero_and_preserve_values_across_independent_constructio
         GrantId,
         ActionId,
         OperationId,
-        MaterialId,
+        ContentId,
         GroundId,
         GroundVersion,
         CriterionId,
@@ -38,10 +48,10 @@ fn persistent_ids_reject_zero_and_preserve_values_across_independent_constructio
     );
 }
 
-#[path = "adaptive_pursuit/fixture.rs"]
+#[path = "change/fixture.rs"]
 #[allow(dead_code)]
 mod fixture;
-use fixture::*;
+use fixture::{Fixture, FixturePorts, Race, TestId};
 
 fn head(f: &Fixture) -> HistoryHead {
     HistoryHead {
@@ -52,36 +62,37 @@ fn head(f: &Fixture) -> HistoryHead {
     }
 }
 fn reopen(f: &mut Fixture) {
-    f.pursuit = Pursuit::reconstruct(head(f), f.ports.records.clone()).unwrap();
+    f.pursuit = Change::reconstruct(head(f), f.ports.records.clone()).unwrap();
 }
 fn refuse_history(head: HistoryHead, records: Vec<StoredOperation>) {
-    assert!(Pursuit::reconstruct(head, records).is_err());
+    assert!(Change::reconstruct(head, records).is_err());
 }
-fn op(command: Command) -> Operation {
-    Operation {
-        id: OperationId::new(),
-        command,
-        fresh: vec![],
-    }
+fn op(f: &Fixture, command: Command) -> Operation {
+    fixture::new_operation(OperationId::new(), command, vec![], f)
 }
 
 #[test]
 fn reconstruction_uses_accepted_order_not_persistent_id_order_and_preserves_retry() {
     let mut f = Fixture::new();
     let wish = f.text("a retained draft");
-    let mut initial = op(Command::Initiate {
-        wish,
-        access: Access::Owner,
-    });
+    let mut initial = op(
+        &f,
+        Command::Initiate {
+            wish,
+            access: Access::Owner,
+        },
+    );
     initial.id = OperationId::from_bytes([0xff; 16]).unwrap();
     let accepted = f
         .pursuit
-        .execute(f.submission(initial.clone()), &mut f.ports)
+        .execute(f.operation_request(initial.clone()), &mut f.ports)
         .unwrap();
     let reason = f.text("withdraw without fulfilling");
-    let mut last = op(Command::Withdraw { reason });
+    let mut last = op(&f, Command::Withdraw { reason });
     last.id = OperationId::from_bytes([1; 16]).unwrap();
-    f.pursuit.execute(f.submission(last), &mut f.ports).unwrap();
+    f.pursuit
+        .execute(f.operation_request(last), &mut f.ports)
+        .unwrap();
     assert!(f.ports.records[0].operation.id > f.ports.records[1].operation.id);
     let expected = f.status();
     reopen(&mut f);
@@ -89,7 +100,7 @@ fn reconstruction_uses_accepted_order_not_persistent_id_order_and_preserves_retr
     let count = f.ports.records.len();
     assert_eq!(
         f.pursuit
-            .execute(f.submission(initial.clone()), &mut f.ports),
+            .execute(f.operation_request(initial.clone()), &mut f.ports),
         Ok(accepted.clone())
     );
     assert_eq!(f.ports.records.len(), count);
@@ -104,20 +115,22 @@ fn reconstruction_uses_accepted_order_not_persistent_id_order_and_preserves_retr
         reason: f.text("different original request"),
     };
     assert_eq!(
-        f.pursuit.execute(f.submission(conflicting), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Conflict))
+        f.pursuit
+            .execute(f.operation_request(conflicting), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Conflict))
     );
     f.agent();
     assert_eq!(
         f.pursuit
-            .execute(f.submission(initial.clone()), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Conflict))
+            .execute(f.operation_request(initial.clone()), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Conflict))
     );
     f.owner();
     f.ports.context.disclosure.clear();
     assert_eq!(
-        f.pursuit.execute(f.submission(initial), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Denied))
+        f.pursuit
+            .execute(f.operation_request(initial), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Denied))
     );
 }
 
@@ -137,11 +150,15 @@ impl Ports for Uncertain<'_> {
         self.calls += 1;
         self.inner.context()
     }
-    fn material(&mut self, id: &MaterialId) -> Result<Vec<u8>> {
-        self.inner.material(id)
+    fn resolve_content(
+        &mut self,
+        checks: &Checks,
+        request: &IntakeRequest,
+    ) -> Result<ContentObservation> {
+        self.inner.resolve_content(checks, request)
     }
-    fn authorize_creation(&mut self, checks: &Checks, operation: &Operation) -> Result<()> {
-        self.inner.authorize_creation(checks, operation)
+    fn authorize_intake(&mut self, checks: &Checks, operation: &Operation) -> Result<()> {
+        self.inner.authorize_intake(checks, operation)
     }
     fn ground(&mut self, id: &GroundId) -> Result<GroundVersion> {
         self.inner.ground(id)
@@ -171,10 +188,13 @@ impl Ports for Uncertain<'_> {
 fn definite_rejection_leaves_handle_writable_and_same_id_can_be_submitted() {
     let mut f = Fixture::new();
     let wish = f.text("not yet accepted");
-    let operation = op(Command::Initiate {
-        wish,
-        access: Access::Owner,
-    });
+    let operation = op(
+        &f,
+        Command::Initiate {
+            wish,
+            access: Access::Owner,
+        },
+    );
     let mut ports = Uncertain {
         inner: &mut f.ports,
         cut: OutcomeCut::Reject,
@@ -182,20 +202,20 @@ fn definite_rejection_leaves_handle_writable_and_same_id_can_be_submitted() {
     };
     assert_eq!(
         f.pursuit.execute(
-            submission_for(
+            fixture::operation_request_for(
                 &f.identity,
                 &ports.inner.context.authority,
                 operation.clone()
             ),
             &mut ports
         ),
-        Err(SubmissionError::NotAccepted(Error::Unavailable))
+        Err(OperationRequestError::NotAccepted(Error::Unavailable))
     );
     assert!(ports.inner.records.is_empty());
     assert_eq!(f.pursuit.record(&operation.id, &mut ports), Ok(None));
     assert!(!f.status().initiated);
     f.pursuit
-        .execute(f.submission(operation), &mut f.ports)
+        .execute(f.operation_request(operation), &mut f.ports)
         .unwrap();
     assert!(f.status().initiated);
     assert_eq!(f.ports.records.len(), 1);
@@ -206,10 +226,13 @@ fn indeterminate_before_or_after_commit_fences_without_a_false_nonacceptance_res
     for cut in [OutcomeCut::BeforeCommit, OutcomeCut::AfterCommit] {
         let mut f = Fixture::new();
         let wish = f.text("may have been accepted");
-        let operation = op(Command::Initiate {
-            wish,
-            access: Access::Owner,
-        });
+        let operation = op(
+            &f,
+            Command::Initiate {
+                wish,
+                access: Access::Owner,
+            },
+        );
         let mut ports = Uncertain {
             inner: &mut f.ports,
             cut,
@@ -217,36 +240,45 @@ fn indeterminate_before_or_after_commit_fences_without_a_false_nonacceptance_res
         };
         assert_eq!(
             f.pursuit.execute(
-                submission_for(
+                fixture::operation_request_for(
                     &f.identity,
                     &ports.inner.context.authority,
                     operation.clone()
                 ),
                 &mut ports
             ),
-            Err(SubmissionError::Indeterminate)
+            Err(OperationRequestError::Indeterminate)
         );
         let calls = ports.calls;
         assert_eq!(
             f.pursuit.execute(
-                submission_for(
+                fixture::operation_request_for(
                     &f.identity,
                     &ports.inner.context.authority,
                     operation.clone()
                 ),
                 &mut ports
             ),
-            Err(SubmissionError::Fenced)
+            Err(OperationRequestError::Fenced)
         );
-        let different = op(Command::Withdraw {
-            reason: operation_material(&operation),
-        });
+        let different = Operation {
+            id: OperationId::new(),
+            command: Command::Withdraw {
+                reason: operation_content(&operation),
+            },
+            fresh: vec![],
+            first_retention: std::collections::BTreeSet::new(),
+        };
         assert_eq!(
             f.pursuit.execute(
-                submission_for(&f.identity, &ports.inner.context.authority, different),
+                fixture::operation_request_for(
+                    &f.identity,
+                    &ports.inner.context.authority,
+                    different
+                ),
                 &mut ports
             ),
-            Err(SubmissionError::Fenced)
+            Err(OperationRequestError::Fenced)
         );
         assert_eq!(
             f.pursuit.record(&operation.id, &mut ports),
@@ -268,21 +300,22 @@ fn indeterminate_before_or_after_commit_fences_without_a_false_nonacceptance_res
             let original = original.unwrap();
             assert_eq!(original.operation, operation);
             assert_eq!(
-                f.pursuit.execute(f.submission(operation), &mut f.ports),
+                f.pursuit
+                    .execute(f.operation_request(operation), &mut f.ports),
                 Ok(original.accepted)
             );
         } else {
             assert_eq!(original, None);
             assert!(!f.status().initiated);
             f.pursuit
-                .execute(f.submission(operation), &mut f.ports)
+                .execute(f.operation_request(operation), &mut f.ports)
                 .unwrap();
         }
         assert_eq!(f.ports.records.len(), 1);
         assert!(f.status().initiated);
     }
 }
-fn operation_material(operation: &Operation) -> MaterialId {
+fn operation_content(operation: &Operation) -> ContentKey {
     let Command::Initiate { wish, .. } = &operation.command else {
         unreachable!()
     };
@@ -328,17 +361,15 @@ fn reconstruction_refuses_missing_reordered_duplicate_unsupported_and_inconsiste
                 records[1].creations.clear();
             }
             21 => {
-                records[0].retained_materials.clear();
+                records[0].retained_content_items.clear();
             }
             _ => {
-                records[0]
-                    .creations
-                    .insert(CreatedIdentity::Material(MaterialId::new()));
+                records[0].establishments.insert(f.key());
             }
         }
         refuse_history(h, records);
     }
-    let restored = Pursuit::reconstruct(original_head, original).unwrap();
+    let restored = Change::reconstruct(original_head, original).unwrap();
     assert_eq!(
         restored.read(Query::Status, Access::Owner, &mut f.ports),
         Ok(Read::Status(f.status()))
@@ -347,7 +378,7 @@ fn reconstruction_refuses_missing_reordered_duplicate_unsupported_and_inconsiste
 }
 
 #[test]
-fn reconstruction_checks_material_membership_and_historical_grounds_instead_of_live_ports() {
+fn reconstruction_checks_content_membership_and_historical_grounds_instead_of_live_ports() {
     let mut f = Fixture::new();
     f.initiate();
     let dependency = f.dependency();
@@ -362,17 +393,17 @@ fn reconstruction_checks_material_membership_and_historical_grounds_instead_of_l
         let r = &mut records[2];
         match kind {
             0 => {
-                r.checks.materials.remove(&a.coverage);
+                r.checks.content_items.remove(&a.coverage);
             }
             1 => {
                 r.checks
-                    .materials
-                    .insert(MaterialId::new(), b"extra implicit binding".to_vec());
+                    .content_items
+                    .insert(f.key(), b"extra implicit binding".to_vec());
             }
             2 => {
                 r.checks
-                    .materials
-                    .get_mut(&p.terms.binding[0].statement.material)
+                    .content_items
+                    .get_mut(&p.terms.binding[0].statement.content)
                     .unwrap()
                     .push(1);
             }
@@ -413,20 +444,20 @@ fn reconstruction_checks_material_membership_and_historical_grounds_instead_of_l
     }
     // Reconstruction does not consult the changed present or fetch missing sources.
     f.ports.grounds.clear();
-    let materials = std::mem::take(&mut f.ports.materials);
+    let content_items = std::mem::take(&mut f.ports.content_items);
     reopen(&mut f);
     assert_eq!(f.status().current_agreement, Some(p.agreement));
     f.agent();
     let undertaking = original.last().unwrap();
     assert_eq!(
         f.pursuit
-            .execute(undertaking.submission().unwrap(), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Unavailable))
+            .execute(undertaking.operation_request().unwrap(), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Unavailable))
     );
-    f.ports.materials = materials;
+    f.ports.content_items = content_items;
     assert_eq!(
         f.pursuit
-            .execute(undertaking.submission().unwrap(), &mut f.ports),
+            .execute(undertaking.operation_request().unwrap(), &mut f.ports),
         Ok(undertaking.accepted.clone())
     );
 }
@@ -437,11 +468,11 @@ fn records_operation(record: &StoredOperation) -> OperationId {
 fn fresh_finding(f: &mut Fixture) -> (Operation, GrantUse) {
     f.initiate();
     let mut spec = f.draft_spec(std::collections::BTreeSet::from([GrantAction::Finding]));
-    spec.creation = Some(MaterialLimits {
+    spec.creation = Some(ContentLimits {
         items: 2,
         payload_bytes: 200,
     });
-    spec.material_origins.insert(OriginSelector::CurrentGrant);
+    spec.content_origins.insert(OriginSelector::CurrentGrant);
     spec.disclosure_origins.insert(OriginSelector::CurrentGrant);
     let grant = f.grant(spec);
     f.ports.creation_sources.insert((
@@ -449,21 +480,29 @@ fn fresh_finding(f: &mut Fixture) -> (Operation, GrantUse) {
         f.identity.agent.clone(),
         f.identity.owner_actor.clone(),
     ));
-    let payload = FreshMaterial {
-        id: MaterialId::new(),
-        bytes: b"a new attributed finding".to_vec(),
-        attributed_source: f.identity.owner_actor.clone(),
-    };
-    let mut operation = op(Command::Finding {
-        finding: Finding {
-            agreement: None,
-            claim: payload.id.clone(),
-            evidence: f.ports.native_evidence.clone(),
-            disposition: Disposition::Unknown,
+    let mut payload = f.fresh(b"a new attributed finding");
+    payload.attributed_source = f.identity.owner_actor.clone();
+    f.ports
+        .inputs
+        .borrow_mut()
+        .get_mut(&payload.key)
+        .unwrap()
+        .source_claim
+        .attribution = Attribution::Actor(f.identity.owner_actor.clone());
+    let operation = fixture::new_operation(
+        OperationId::new(),
+        Command::Finding {
+            finding: Finding {
+                agreement: None,
+                claim: payload.key.clone(),
+                evidence: f.ports.native_evidence.clone(),
+                disposition: Disposition::Unknown,
+            },
+            access: Access::Grant(grant.clone()),
         },
-        access: Access::Grant(grant.clone()),
-    });
-    operation.fresh.push(payload);
+        vec![payload],
+        f,
+    );
     (operation, grant)
 }
 
@@ -474,7 +513,7 @@ fn reconstruction_preserves_original_creation_origins_usage_snapshots_and_retry_
     f.agent();
     let accepted = f
         .pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
     let creation = f
         .ports
@@ -502,42 +541,42 @@ fn reconstruction_preserves_original_creation_origins_usage_snapshots_and_retry_
     let count = f.ports.records.len();
     assert_eq!(
         f.pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports),
+            .execute(f.operation_request(operation.clone()), &mut f.ports),
         Ok(accepted)
     );
     assert_eq!(f.ports.records.len(), count);
     let mut new_id = operation.clone();
     new_id.id = OperationId::new();
     assert_eq!(
-        f.pursuit.execute(f.submission(new_id), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Denied))
+        f.pursuit.execute(f.operation_request(new_id), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Denied))
     );
-    let material = operation.fresh[0].id.clone();
-    f.ports.denied_materials.insert(material.clone());
+    let content = operation.fresh[0].key.clone();
+    f.ports.denied_content_items.insert(content.clone());
     assert_eq!(
         f.pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Denied))
+            .execute(f.operation_request(operation.clone()), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Denied))
     );
-    f.ports.denied_materials.clear();
-    // A new independent explicit historical-origin grant can reuse retained material.
-    let origin = creation.materials[&material].origin.clone();
+    f.ports.denied_content_items.clear();
+    // A new independent explicit historical-origin grant can reuse retained content.
+    let origin = creation.content_items[&content].origin.clone();
     let mut spec = f.draft_spec(std::collections::BTreeSet::from([GrantAction::Finding]));
-    spec.materials.remove(&material);
-    spec.material_origins
-        .insert(OriginSelector::Historical(origin.clone()));
+    spec.content_items.remove(&content);
+    spec.content_origins
+        .insert(OriginSelector::Historical(Box::new(origin.clone())));
     spec.disclosure_origins
-        .insert(OriginSelector::Historical(origin));
+        .insert(OriginSelector::Historical(Box::new(origin)));
     let independent = f.grant(spec);
     reopen(&mut f);
     f.agent();
     assert_eq!(
         f.pursuit.read(
-            Query::Material(material),
+            Query::Content(content),
             Access::Grant(independent),
             &mut f.ports
         ),
-        Ok(Read::Material(operation.fresh[0].bytes.clone()))
+        Ok(Read::Content(operation.fresh[0].bytes.clone()))
     );
 }
 
@@ -547,7 +586,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
     let (operation, _) = fresh_finding(&mut f);
     f.agent();
     f.pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
     let h = head(&f);
     let original = f.ports.records.clone();
@@ -569,7 +608,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                     .creation
                     .as_mut()
                     .unwrap()
-                    .materials
+                    .content_items
                     .values_mut()
                     .next()
                     .unwrap()
@@ -581,7 +620,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                     .creation
                     .as_mut()
                     .unwrap()
-                    .materials
+                    .content_items
                     .values_mut()
                     .next()
                     .unwrap()
@@ -593,7 +632,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                     .creation
                     .as_mut()
                     .unwrap()
-                    .materials
+                    .content_items
                     .values_mut()
                     .next()
                     .unwrap()
@@ -606,7 +645,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                     .creation
                     .as_mut()
                     .unwrap()
-                    .materials
+                    .content_items
                     .values_mut()
                     .next()
                     .unwrap()
@@ -620,7 +659,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                     .creation
                     .as_mut()
                     .unwrap()
-                    .materials
+                    .content_items
                     .values_mut()
                     .next()
                     .unwrap()
@@ -633,7 +672,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
                 .creation
                 .as_mut()
                 .unwrap()
-                .materials
+                .content_items
                 .values_mut()
                 .next()
                 .unwrap()
@@ -643,7 +682,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
             15 => r.operation.fresh[0].attributed_source = ActorId::new(),
             16 => r.operation.fresh.push(r.operation.fresh[0].clone()),
             _ => {
-                r.checks.materials.remove(&operation.fresh[0].id);
+                r.checks.content_items.remove(&operation.fresh[0].key);
             }
         }
         refuse_history(h.clone(), records);
@@ -652,7 +691,7 @@ fn reconstruction_rejects_tampered_creation_grant_snapshot_origin_usage_and_payl
     f.agent();
     assert_eq!(
         f.pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports)
+            .execute(f.operation_request(operation.clone()), &mut f.ports)
             .unwrap()
             .operation,
         operation.id
@@ -672,33 +711,34 @@ fn accepted_but_unacknowledged_fresh_record_recovers_without_reallocation_or_rec
     };
     assert_eq!(
         f.pursuit.execute(
-            submission_for(
+            fixture::operation_request_for(
                 &f.identity,
                 &ports.inner.context.authority,
                 operation.clone()
             ),
             &mut ports
         ),
-        Err(SubmissionError::Indeterminate)
+        Err(OperationRequestError::Indeterminate)
     );
     assert_eq!(ports.inner.records.len(), before + 1);
     assert_eq!(ports.inner.created.len(), 1);
     assert_eq!(
         f.pursuit.execute(
-            submission_for(
+            fixture::operation_request_for(
                 &f.identity,
                 &ports.inner.context.authority,
                 operation.clone()
             ),
             &mut ports
         ),
-        Err(SubmissionError::Fenced)
+        Err(OperationRequestError::Fenced)
     );
     reopen(&mut f);
     f.agent();
     let expected = f.ports.records.last().unwrap().accepted.clone();
     assert_eq!(
-        f.pursuit.execute(f.submission(operation), &mut f.ports),
+        f.pursuit
+            .execute(f.operation_request(operation), &mut f.ports),
         Ok(expected)
     );
     assert_eq!(f.ports.created.len(), 1);
@@ -733,10 +773,10 @@ fn restoration_keeps_unmatched_decisions_stale_grounds_revision_and_original_act
     .unwrap();
     let (spec, action) = f.action(&p);
     f.agent();
-    let admission = op(Command::Admit(action.clone()));
+    let admission = op(&f, Command::Admit(action.clone()));
     let admitted = f
         .pursuit
-        .execute(f.submission(admission.clone()), &mut f.ports)
+        .execute(f.operation_request(admission.clone()), &mut f.ports)
         .unwrap();
     f.execute(Command::Dispatch {
         action: action.id.clone(),
@@ -776,7 +816,8 @@ fn restoration_keeps_unmatched_decisions_stale_grounds_revision_and_original_act
     reopen(&mut f);
     f.agent();
     assert_eq!(
-        f.pursuit.execute(f.submission(admission), &mut f.ports),
+        f.pursuit
+            .execute(f.operation_request(admission), &mut f.ports),
         Ok(admitted)
     );
     assert_eq!(
@@ -836,7 +877,7 @@ fn reconstruction_validates_original_native_and_scope_judgments_not_new_observat
     f.execute(Command::Admit(action.clone())).unwrap();
     let adaptation = Adaptation {
         agreement: p.agreement.clone(),
-        previous_approach: p.terms.context.first().unwrap().material.clone(),
+        previous_approach: p.terms.context.first().unwrap().content.clone(),
         changed_approach: f.text("a supported alternate approach"),
         grounds: f.ports.native_evidence.clone(),
         discretion: ScopeId::new(),
@@ -966,11 +1007,15 @@ impl Ports for CollisionPort<'_> {
     fn context(&mut self) -> Result<Context> {
         self.inner.context()
     }
-    fn material(&mut self, id: &MaterialId) -> Result<Vec<u8>> {
-        self.inner.material(id)
+    fn resolve_content(
+        &mut self,
+        checks: &Checks,
+        request: &IntakeRequest,
+    ) -> Result<ContentObservation> {
+        self.inner.resolve_content(checks, request)
     }
-    fn authorize_creation(&mut self, checks: &Checks, operation: &Operation) -> Result<()> {
-        self.inner.authorize_creation(checks, operation)
+    fn authorize_intake(&mut self, checks: &Checks, operation: &Operation) -> Result<()> {
+        self.inner.authorize_intake(checks, operation)
     }
     fn ground(&mut self, id: &GroundId) -> Result<GroundVersion> {
         self.inner.ground(id)
@@ -986,7 +1031,7 @@ impl Ports for CollisionPort<'_> {
             == record.checks.identity.owner
             && old.checks.identity.ledger == record.checks.identity.ledger));
         for old in self.other {
-            // Exactly eight entity kinds are Change-local. Material protection is independent.
+            // Exactly eight entity kinds are Change-local. Content protection is independent.
             if old.checks.identity.change_key() == record.checks.identity.change_key()
                 && old.creations.iter().any(|claim| match claim {
                     CreatedIdentity::Operation(_)
@@ -997,24 +1042,21 @@ impl Ports for CollisionPort<'_> {
                     | CreatedIdentity::Grant(_)
                     | CreatedIdentity::Action(_)
                     | CreatedIdentity::Criterion(_) => record.creations.contains(claim),
-                    CreatedIdentity::Material(_) => false,
                 })
             {
                 return Acceptance::Refused(Error::Conflict);
             }
-            for created in &record.creations {
-                if let CreatedIdentity::Material(id) = created {
-                    if old.checks.materials.contains_key(id) {
-                        return Acceptance::Refused(Error::Conflict);
-                    }
+            for key in &record.establishments {
+                if old.establishments.contains(key) {
+                    return Acceptance::Refused(Error::Conflict);
                 }
             }
-            for id in &record.retained_materials {
+            for id in &record.retained_content_items {
                 if old
                     .checks
-                    .materials
+                    .content_items
                     .get(id)
-                    .is_some_and(|original| Some(original) != record.checks.materials.get(id))
+                    .is_some_and(|original| Some(original) != record.checks.content_items.get(id))
                 {
                     return Acceptance::Refused(Error::Conflict);
                 }
@@ -1032,7 +1074,7 @@ fn second_change(first: &Fixture) -> Fixture {
         change: second.identity.change.clone(),
         ..first.identity.clone()
     };
-    second.pursuit = Pursuit::new(second.identity.clone()).unwrap();
+    second.pursuit = Change::try_new(second.identity.clone()).unwrap();
     second.ports.context.disclosure =
         std::collections::BTreeSet::from([ReadScope::Change(second.identity.change.clone())]);
     second.owner();
@@ -1042,111 +1084,123 @@ fn second_change(first: &Fixture) -> Fixture {
 #[test]
 fn creation_claims_distinguish_cross_change_retention_from_fresh_collision_and_typed_ids() {
     let mut first = Fixture::new();
-    let material = first.text("shared immutable source");
-    let operation = op(Command::Initiate {
-        wish: material.clone(),
-        access: Access::Owner,
-    });
+    let content = first.text("shared immutable source");
+    let operation = op(
+        &first,
+        Command::Initiate {
+            wish: content.clone(),
+            access: Access::Owner,
+        },
+    );
     first
         .pursuit
-        .execute(first.submission(operation.clone()), &mut first.ports)
+        .execute(first.operation_request(operation.clone()), &mut first.ports)
         .unwrap();
     let mut second = second_change(&first);
+    // Equal bytes and another Change's key do NOT admit foreign provenance.
+    let foreign = second.operation(
+        OperationId::new(),
+        Command::Initiate {
+            wish: content.clone(),
+            access: Access::Owner,
+        },
+        vec![],
+    );
     second
         .ports
-        .materials
-        .insert(material.clone(), b"rebound".to_vec());
-    let mut reuse = op(Command::Initiate {
-        wish: material.clone(),
-        access: Access::Owner,
-    });
+        .content_items
+        .insert(content.clone(), b"shared immutable source".to_vec());
     let mut ports = CollisionPort {
         inner: &mut second.ports,
         other: &first.ports.records,
     };
     assert_eq!(
         second.pursuit.execute(
-            submission_for(
+            fixture::operation_request_for(
                 &second.identity,
                 &ports.inner.context.authority,
-                reuse.clone()
+                foreign
             ),
             &mut ports
         ),
-        Err(SubmissionError::Refused(Error::Conflict))
+        Err(OperationRequestError::Refused(Error::Unavailable))
     );
-    ports
-        .inner
-        .materials
-        .insert(material.clone(), b"shared immutable source".to_vec());
-    // ID namespaces are typed: these bytes exist as MaterialId, not OperationId.
-    reuse.id = OperationId::from_bytes(*material.as_bytes()).unwrap();
+    assert!(ports.inner.records.is_empty());
+    // The same raw leaf is independent in this Change's namespace. Explicitly observed
+    // pre-existing/unbound here; byte equality is not used to prove derivation or reuse.
+    let local = ContentKey {
+        establishing: second.identity.change_key(),
+        id: content.id.clone(),
+    };
+    second
+        .ports
+        .content_items
+        .insert(local.clone(), b"independent local input".to_vec());
+    second.ports.inputs.borrow_mut().insert(
+        local.clone(),
+        ContentObservation {
+            bytes: b"independent local input".to_vec(),
+            source_claim: fixture::unbound_source(),
+        },
+    );
+    let mut independent = op(
+        &second,
+        Command::Initiate {
+            wish: local.clone(),
+            access: Access::Owner,
+        },
+    );
+    independent.id = OperationId::from_bytes(*content.id.as_bytes()).unwrap();
+    let mut ports = CollisionPort {
+        inner: &mut second.ports,
+        other: &first.ports.records,
+    };
     second
         .pursuit
         .execute(
-            submission_for(&second.identity, &ports.inner.context.authority, reuse),
+            fixture::operation_request_for(
+                &second.identity,
+                &ports.inner.context.authority,
+                independent,
+            ),
             &mut ports,
         )
         .unwrap();
     let retained = ports.inner.records.last().unwrap();
-    assert!(retained.retained_materials.contains(&material));
-    assert!(!retained
-        .creations
-        .contains(&CreatedIdentity::Material(material.clone())));
+    assert_eq!(
+        retained.establishments,
+        std::collections::BTreeSet::from([local.clone()])
+    );
+    assert!(retained.retained_content_items.contains(&local));
+    assert!(!retained.establishments.contains(&content));
     reopen(&mut second);
     assert!(second.status().initiated);
-
-    let mut fresh_change = second_change(&first);
-    let (mut fresh, _) = fresh_finding(&mut fresh_change);
-    fresh.fresh[0].id = material.clone();
-    fresh.fresh[0].bytes = b"shared immutable source".to_vec();
-    let Command::Finding { finding, .. } = &mut fresh.command else {
-        unreachable!()
-    };
-    finding.claim = material;
-    fresh_change.agent();
-    let count = fresh_change.ports.records.len();
-    let mut ports = CollisionPort {
-        inner: &mut fresh_change.ports,
-        other: &first.ports.records,
-    };
-    assert_eq!(
-        fresh_change.pursuit.execute(
-            submission_for(
-                &fresh_change.identity,
-                &ports.inner.context.authority,
-                fresh
-            ),
-            &mut ports
-        ),
-        Err(SubmissionError::Refused(Error::Conflict))
+    // Entity OperationId collision across Changes remains independent as well.
+    let mut third = second_change(&first);
+    let wish = third.text("separate draft");
+    let mut independent = op(
+        &third,
+        Command::Initiate {
+            wish,
+            access: Access::Owner,
+        },
     );
-    assert_eq!(ports.inner.records.len(), count);
-    assert!(ports.inner.created.is_empty());
-
-    let mut colliding_operation = second_change(&first);
-    let wish = colliding_operation.text("separate draft");
-    let mut collision = op(Command::Initiate {
-        wish,
-        access: Access::Owner,
-    });
-    collision.id = operation.id;
+    independent.id = operation.id;
     let mut ports = CollisionPort {
-        inner: &mut colliding_operation.ports,
+        inner: &mut third.ports,
         other: &first.ports.records,
     };
-    colliding_operation
+    third
         .pursuit
         .execute(
-            submission_for(
-                &colliding_operation.identity,
+            fixture::operation_request_for(
+                &third.identity,
                 &ports.inner.context.authority,
-                collision,
+                independent,
             ),
             &mut ports,
         )
         .unwrap();
-    assert_eq!(ports.inner.records.len(), 1);
 }
 
 #[test]
@@ -1205,20 +1259,25 @@ fn exact_criterion_reuse_and_grant_generation_changes_are_not_new_identity_claim
 fn stale_instance_cannot_publish_a_candidate_just_because_its_operation_id_exists() {
     let mut f = Fixture::new();
     let wish = f.text("the actual original request");
-    let operation = op(Command::Initiate {
-        wish,
-        access: Access::Owner,
-    });
+    let operation = op(
+        &f,
+        Command::Initiate {
+            wish,
+            access: Access::Owner,
+        },
+    );
     f.pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
     let reason = f.text("a later accepted settlement");
     f.execute(Command::Withdraw { reason }).unwrap();
     let count = f.ports.records.len();
-    let mut stale = Pursuit::new(f.identity.clone()).unwrap();
+    let mut stale = Change::try_new(f.identity.clone()).unwrap();
     assert_eq!(
-        stale.execute(f.submission(operation), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Stale))
+        stale.execute(f.operation_request(operation), &mut f.ports),
+        // Current source now identifies the established object; stale first-retention
+        // cannot relabel it unbound. This is a refusal, not original-outcome knowledge.
+        Err(OperationRequestError::Refused(Error::Conflict))
     );
     assert_eq!(f.ports.records.len(), count);
     assert_eq!(
@@ -1232,13 +1291,16 @@ fn stale_instance_cannot_publish_a_candidate_just_because_its_operation_id_exist
 fn denied_original_lookup_is_a_refusal_not_evidence_of_noncommit() {
     let mut f = Fixture::new();
     let wish = f.text("an already accepted request");
-    let operation = op(Command::Initiate {
-        wish,
-        access: Access::Owner,
-    });
+    let operation = op(
+        &f,
+        Command::Initiate {
+            wish,
+            access: Access::Owner,
+        },
+    );
     let accepted = f
         .pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
     reopen(&mut f);
     f.ports.context.disclosure.clear();
@@ -1248,8 +1310,8 @@ fn denied_original_lookup_is_a_refusal_not_evidence_of_noncommit() {
     );
     assert_eq!(
         f.pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Denied))
+            .execute(f.operation_request(operation.clone()), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Denied))
     );
     assert_eq!(f.ports.records.len(), 1);
     f.ports
@@ -1257,7 +1319,8 @@ fn denied_original_lookup_is_a_refusal_not_evidence_of_noncommit() {
         .disclosure
         .insert(ReadScope::Change(f.identity.change.clone()));
     assert_eq!(
-        f.pursuit.execute(f.submission(operation), &mut f.ports),
+        f.pursuit
+            .execute(f.operation_request(operation), &mut f.ports),
         Ok(accepted)
     );
     assert_eq!(f.ports.records.len(), 1);
@@ -1267,25 +1330,29 @@ fn denied_original_lookup_is_a_refusal_not_evidence_of_noncommit() {
 fn denied_accepted_retry_source_and_port_refusals_never_assert_noncommit() {
     let mut f = Fixture::new();
     let wish = f.text("a committed source");
-    let operation = op(Command::Initiate {
-        wish: wish.clone(),
-        access: Access::Owner,
-    });
+    let operation = op(
+        &f,
+        Command::Initiate {
+            wish: wish.clone(),
+            access: Access::Owner,
+        },
+    );
     let accepted = f
         .pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
     reopen(&mut f);
-    f.ports.denied_materials.insert(wish);
+    f.ports.denied_content_items.insert(wish);
     assert_eq!(
         f.pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports),
-        Err(SubmissionError::Refused(Error::Denied))
+            .execute(f.operation_request(operation.clone()), &mut f.ports),
+        Err(OperationRequestError::Refused(Error::Denied))
     );
     assert_eq!(f.ports.records.len(), 1);
-    f.ports.denied_materials.clear();
+    f.ports.denied_content_items.clear();
     assert_eq!(
-        f.pursuit.execute(f.submission(operation), &mut f.ports),
+        f.pursuit
+            .execute(f.operation_request(operation), &mut f.ports),
         Ok(accepted)
     );
 
@@ -1299,11 +1366,11 @@ fn denied_accepted_retry_source_and_port_refusals_never_assert_noncommit() {
         f.ports.race = Some(race);
         let error = f
             .pursuit
-            .execute(f.submission(operation.clone()), &mut f.ports)
+            .execute(f.operation_request(operation.clone()), &mut f.ports)
             .unwrap_err();
         assert!(matches!(
             error,
-            SubmissionError::Refused(Error::Stale | Error::Denied)
+            OperationRequestError::Refused(Error::Stale | Error::Denied)
         ));
         assert!(!f.ports.accepted.contains_key(&operation.id));
         f.ports.context = context;
@@ -1320,7 +1387,7 @@ fn denied_accepted_retry_source_and_port_refusals_never_assert_noncommit() {
         assert_eq!(f.pursuit.record(&operation.id, &mut f.ports), Ok(None));
         f.agent();
         f.pursuit
-            .execute(f.submission(operation), &mut f.ports)
+            .execute(f.operation_request(operation), &mut f.ports)
             .unwrap();
         assert_eq!(f.ports.created.len(), 1);
     }

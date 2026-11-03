@@ -2,34 +2,34 @@
 
 **An owner-controlled ledger of pursuits, preserving intent, decisions, evidence and accountable progress across sessions and agents.**
 
-A **Change** holds a developing intent contract and its pursuit history. A **Ledger** is its owner's collection of Changes. These are the two core primitives. WHY, WHAT and HOW are dimensions of intent, not required fields or a prescribed workflow.
+A **Change** holds developing intent and its history; a **Ledger** is its owner's collection. Native apps retain their data, rules and permissions. ChangeKernel is an **unqualified Rust foundation with bounded local persistence, elementary local reads and a fixture-only structured read adapter**, not an operational product, supported SDK or authenticated host service.
 
-The foundation should let agents work intelligently and creatively within agreed authority. Explicit obligations remain distinct from context and provisional tactics. Native applications retain their data, business rules and permissions; ChangeKernel is not their database or a universal workflow engine.
+## Documentation and source
 
-## Current source
+- [System](CHANGEKERNEL_SYSTEM.md): desired architecture, [philosophical foundations](CHANGEKERNEL_SYSTEM.md#philosophical-foundations), authority, operations and read contracts. The implemented [P34 profile](CHANGEKERNEL_SYSTEM.md#p34-first-delivery-boundary) is the local-owner delivery subset, not the complete read API.
+- [Status](CHANGEKERNEL_STATUS.md): implemented slices, gaps, approvals, checks, preserved work and resumption.
+- [AGENTS](AGENTS.md): development/review procedure, documentation limits and Rust style.
 
-The current implementation is an **unqualified, in-process Rust foundation**, not an operational product:
-
-- Pure agreement, authority, adaptation and settlement rules.
-- Explicit binding/context selections, exact operation/material references and immutable criterion links.
-- Grant-bounded fresh-material recording, immutable origins, separate reuse/disclosure and original-result recovery.
-- Application coordination over trusted fixture ports, with behavioral and failure-boundary tests; no durable acceptance or authentic host/source enforcement yet.
-
-The legacy referenced-intent CLI, ordinary-Pi adapter, persistence path and npm package machinery have been retired. There is no replacement CLI, durable service, authenticated host or native execution implementation. Bounded agreement rules now permit incomplete drafts and term-scoped progress without criteria, but refuse criterion-free fulfillment. General composed/temporal completion remains open.
-
-| Path | Responsibility |
+| Source | Responsibility |
 | --- | --- |
-| `src/kernel/change/pursuit.rs` and `pursuit/{rules,material}.rs` | Domain types, pure rules and material authority |
-| `src/application/pursuit.rs` | Guarded operation coordination and original-result recovery |
-| `src/application/pursuit_ports.rs` | Explicit trusted boundary contracts, not production implementations |
-| `src/lib.rs` | Unqualified source exports, not a supported SDK |
-| `tests/adaptive_pursuit*`, `tests/adaptive_authority_adversarial.rs` | Model-free behavioral and adversarial checks |
+| `src/kernel/change/` | Pure domain types, Content authority and rules |
+| `src/application/` | Guarded coordination, retained OperationRequests, public read types and supplied Ports |
+| `src/adapters/codec/`, `src/adapters/sqlite/` | Bounded Protobuf, guarded persistence and nonmutating local reads |
+| `src/adapters/read_adapter/` | Fixture-only JSON request validation, framed calls and faithful public projection |
+| `src/lib.rs`, `src/unqualified_change.rs` | Routing and explicitly unqualified exports |
+| `tests/` | Behavioral and failure-boundary checks, not qualification |
+
+P34 exposes `sqlite::{read_local, read_local_framed}` from one Included `OriginalReference`, using supplied owner/disclosure/custody checks. `ReadCall` covers cursor resolution, history pages and exact retained Content; codec helpers handle read framing. See `src/application/read*.rs` and `src/adapters/sqlite/cold_read.rs`.
+
+`adapters::read_adapter::read_fixture` accepts bounded JSON request bytes, makes one framed P34 read and returns `Result<serde_json::Value, AdapterError>`. It preserves qualified identities, exact bytes, wide integers, provenance, coverage and cursors. Semantic refusals remain structured results, distinct from adapter failures and empty success. The [public function documentation](src/adapters/read_adapter/fixture_read.rs) defines the request representation and example; [System](CHANGEKERNEL_SYSTEM.md#fixture-only-read-adapter-core) defines the fixture boundary and limits. Trusted Rust wiring supplies owner/disclosure/custody observations; JSON grants no authority. There is no automatic paging, retry or hidden fetching. The live agent-facing host adapter remains unimplemented.
+
+Legacy CLI, ordinary-Pi adapter, persistence path and npm package machinery are retired. No replacement CLI, durable service or native execution implementation exists. Naming changes preserve stored tags, bytes and SQL names without aliases or migration; they establish no general style conformance. Pi Durable is the first intended host, not the exclusive one; [host qualification](CHANGEKERNEL_SYSTEM.md#host-boundary) remains separate.
 
 ## Controlled source checks (Linux)
 
-Build preparation now pins Rust **1.99.1** (edition 2021), rusqlite **0.41.0** with only `backup`/`limits`, libsqlite3-sys **0.39.0** and prost **0.14.4** with `derive`/`std`. A bounded current-development Protobuf codec is implemented; the SQLite store is not. No protoc or bundled SQLite is used.
+Use the [pinned build/encoding profile](CHANGEKERNEL_SYSTEM.md#adopted-trusted-port-durable-records), not ambient SQLite or a relaxed IDE configuration. Prerequisites: Python 3.11+, Rust 1.99.1 with rustfmt/clippy, `/usr/bin/cc`, `ar`, `readelf` and `nm`. Do not install OS packages as part of a build.
 
-Use an isolated external Cargo home/target and a disposable external native staging directory. Prerequisites are Python 3.11+, Rust 1.99.1 with rustfmt/clippy, `/usr/bin/cc`, `ar`, `readelf` and `nm`; do not install OS packages as part of a build. Explicitly fetch the locked crates once before offline checks:
+Use isolated external Cargo home/target and disposable external native staging. Explicitly fetch locked crates once before the offline checks:
 
 ```sh
 export CARGO_HOME=/absolute/external/cargo-home
@@ -38,9 +38,10 @@ rustup run 1.99.1 cargo fetch --locked
 native=/absolute/external/native-staging
 ```
 
-Stage the official `sqlite-amalgamation-3540100.zip` (2,990,966 bytes) at `$native/`, with its unmodified `sqlite3.c`, `sqlite3.h` and `sqlite3ext.h` under `$native/source/`. The helper verifies archive SHA3-256 `92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30`, source bytes, version and source ID before building. It never downloads source.
+Stage official `sqlite-amalgamation-3540100.zip` (2,990,966 bytes) at `$native/`, with unmodified `sqlite3.c`, `sqlite3.h` and `sqlite3ext.h` under `$native/source/`. The helper verifies archive SHA3-256 `92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30`, source bytes, version and source ID. It never downloads source.
 
 ```sh
+python3 -I -B tests/native_dependency_guard.py
 python3 scripts/native_sqlite.py build "$native"
 python3 scripts/native_sqlite.py verify "$native"
 python3 scripts/native_sqlite.py cargo "$native" fmt --check
@@ -48,27 +49,15 @@ python3 scripts/native_sqlite.py cargo "$native" clippy --locked --all-targets -
 python3 scripts/native_sqlite.py cargo "$native" test --locked
 ```
 
-The helper supplies explicit include/library paths, static linkage, offline Cargo and `SQLITE3_NO_PKG_CONFIG=1` (the sys crate otherwise probes even with a library path). Compiler/linker overrides and unreviewed lock changes are refused. The package build guard rejects absent/wrong profiles rather than successfully linking ambient SQLite. It independently reproduces the static archive from checksum-verified source; a supplied report/hash alone is insufficient. The native probe and tests verify the actual version/source ID/options and linkage, thread safety, disabled extension loading and disabled double-quoted string literals. Future storage opening must call `adapters::native_profile::verify_runtime()` before using the engine.
+The helper supplies explicit include/library paths, static linkage, offline Cargo and `SQLITE3_NO_PKG_CONFIG=1`; the sys crate otherwise probes despite an explicit library path. Compiler/linker overrides and unreviewed lock changes are refused. The build guard independently reproduces the static archive from verified source; a supplied report/hash is insufficient. Wrong/missing profiles fail, never silently link ambient SQLite. Native probes/tests check actual version, source ID, options, linkage, thread safety and disabled extension loading/double-quoted strings; opening calls `adapters::native_profile::verify_runtime()` before engine use.
 
-The 18 locked crates use MIT/Apache-2.0 licensing, with Unicode-3.0 additionally required by `unicode-ident`. Preserve applicable upstream licenses/copyright notices on distribution. Source checks and native build verification are not release, host, storage or power-loss qualification. An IDE running build scripts also needs the controlled environment; do not bypass the guard to silence missing-`OUT_DIR` diagnostics.
+Fixtures use `$native/sqlite-fixtures`, derived from the verified `CHANGEKERNEL_SQLITE_STAGE` build setting. Unit/integration tests require absolute external Linux/Btrfs staging and a private mode-0700 fixture root. Missing, unsupported or project-local staging fails; no temporary-directory fallback or automatic cleanup of existing fixtures. An IDE running build scripts needs the same controlled environment; never bypass the guard to silence missing-`OUT_DIR` diagnostics.
 
-## Product direction and development
-
-**Related Changes organize intent; optional work units organize execution within a Change.** Pursuits can reveal new related Changes without forming a decomposition tree. Work preparation can be separated from resource allocation and dispatch, with distinct execution attempts—not mandatory planning/execution phases. Completing work does not itself fulfill intent. These are adopted design directions, not implemented queue or parallel-execution capabilities; see the [relationship](CHANGEKERNEL_SYSTEM.md#related-changes) and [work-unit](CHANGEKERNEL_SYSTEM.md#work-units-and-execution) operation matrices.
-
-**Pi Durable is the only target product host.** Agents will use typed tools and authorized Views over one service protocol, composable from code mode. Host admission and outcome recording must happen below agent-authored scripts; schemas, integration and recovery still require qualification. No new CLI is planned.
-
-- [System](CHANGEKERNEL_SYSTEM.md): adopted design, constraints and unresolved mechanisms.
-- [Status](CHANGEKERNEL_STATUS.md): implementation gaps, assignments, checkpoints and evidence.
-- [AGENTS](AGENTS.md): development, review and check procedure.
-
-Development is intent → approved docs → code review → implementation/tests → qualification. Existing code does not override design. Keep current implementation and valid WIP in the tree; Git preserves retired code and historical records without making them current interfaces.
+The 26 locked external crates permit MIT and/or Apache-2.0 licensing, using memchr's reviewed MIT option, with Unicode-3.0 additionally required by `unicode-ident`. The adapter's exact Serde/JSON profile preserves the existing native and Protobuf dependency versions/features. Preserve upstream licenses/copyright notices on distribution. Build separately for artifact claims; checks do not establish host, storage, power-loss or release qualification.
 
 ## Source safety
 
-Never load this mutable checkout as its controller or install ChangeKernel under its `.pi/` directory. Use Pi-native development tools. Pack and test candidate packages only in disposable external projects with isolated Pi/HOME/settings.
-
-Source tests do not establish release qualification or controller authority. Dogfooding requires a qualified immutable external release, activation and explicit handoff. See the [qualification boundary](CHANGEKERNEL_SYSTEM.md#qualification-and-controller-boundary).
+Never load this mutable checkout as its controller or install/link ChangeKernel into its `.pi/`. Use Pi-native development tools. Pack/test candidate bytes only in disposable external projects with isolated Pi/HOME/settings. Controller authority requires a qualified immutable external release, activation and explicit handoff; see the [qualification boundary](CHANGEKERNEL_SYSTEM.md#qualification-and-controller-boundary) and repository boundary in `.pi/APPEND_SYSTEM.md`.
 
 ## License
 

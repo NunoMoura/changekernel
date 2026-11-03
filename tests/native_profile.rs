@@ -1,9 +1,9 @@
 //! B0 native profile checks; not storage, host or power-loss qualification.
-use changekernel::adapters::native_profile::{verify_runtime, NativeProfileError};
+use changekernel::adapters::native_profile::{self, NativeProfileError};
 
 #[test]
 fn selected_runtime_is_exact_and_rejects_modified_profile_evidence() {
-    let profile = verify_runtime().unwrap();
+    let profile = native_profile::verify_runtime().unwrap();
     profile.validate().unwrap();
     let mut wrong = profile.clone();
     wrong.version_number -= 1;
@@ -29,7 +29,7 @@ fn selected_runtime_is_exact_and_rejects_modified_profile_evidence() {
 
 #[test]
 fn double_quoted_literals_and_extension_loading_are_actually_disabled() {
-    verify_runtime().unwrap();
+    native_profile::verify_runtime().unwrap();
     let connection = rusqlite::Connection::open_in_memory().unwrap();
     let error = connection
         .query_row("SELECT \"not_a_column\"", [], |row| row.get::<_, String>(0))
@@ -49,8 +49,10 @@ fn double_quoted_literals_and_extension_loading_are_actually_disabled() {
 
 #[test]
 fn selected_backup_and_limits_apis_work_against_the_linked_engine() {
-    use rusqlite::{backup::Backup, limits::Limit, Connection};
-    verify_runtime().unwrap();
+    use rusqlite::backup::Backup;
+    use rusqlite::limits::Limit;
+    use rusqlite::Connection;
+    native_profile::verify_runtime().unwrap();
     let source = Connection::open_in_memory().unwrap();
     source
         .execute_batch("CREATE TABLE subject(value TEXT); INSERT INTO subject VALUES ('original')")
@@ -91,7 +93,8 @@ fn external_test_dir(label: &str) -> std::path::PathBuf {
 
 #[test]
 fn build_guard_refuses_missing_wrong_and_fallback_profiles() {
-    use std::{path::Path, process::Command};
+    use std::path::Path;
+    use std::process::Command;
     let directory = external_test_dir("guard");
     let executable = directory.join("guard");
     let compiled = Command::new("rustup")
@@ -173,7 +176,9 @@ fn build_guard_refuses_missing_wrong_and_fallback_profiles() {
 
 #[test]
 fn altered_native_bytes_cannot_be_authorized_by_relabeling_the_checksum_report() {
-    use std::{fs, path::Path, process::Command};
+    use std::fs;
+    use std::path::Path;
+    use std::process::Command;
     let original = Path::new(env!("CHANGEKERNEL_SQLITE_STAGE"));
     let copy = external_test_dir("tampered");
     fs::create_dir(copy.join("source")).unwrap();
@@ -223,7 +228,7 @@ fn altered_native_bytes_cannot_be_authorized_by_relabeling_the_checksum_report()
 #[test]
 fn actual_test_executable_contains_sqlite_without_a_dynamic_sqlite_dependency() {
     use std::process::Command;
-    verify_runtime().unwrap();
+    native_profile::verify_runtime().unwrap();
     let executable = std::env::current_exe().unwrap();
     let dynamic = Command::new("/usr/bin/readelf")
         .arg("-d")
@@ -245,7 +250,10 @@ fn actual_test_executable_contains_sqlite_without_a_dynamic_sqlite_dependency() 
 
 #[test]
 fn controlled_sys_build_does_not_execute_pkg_config_even_with_an_explicit_library_path() {
-    use std::{fs, os::unix::fs::PermissionsExt, path::Path, process::Command};
+    use std::fs;
+    use std::os::unix::fs::PermissionsExt;
+    use std::path::Path;
+    use std::process::Command;
     let directory = external_test_dir("pkgconfig");
     let marker = directory.join("ambient-probe-was-invoked");
     let spy = directory.join("pkg-config");

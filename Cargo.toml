@@ -12,3 +12,5 @@ path = "src/lib.rs"
 rusqlite = { version = "=0.41.0", default-features = false, features = ["backup", "limits"] }
 libsqlite3-sys = { version = "=0.39.0", default-features = false }
 prost = { version = "=0.14.4", default-features = false, features = ["derive", "std"] }
+serde = { version = "=1.0.229", default-features = false, features = ["std", "derive"] }
+serde_json = { version = "=1.0.154", default-features = false, features = ["std"] }

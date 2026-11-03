@@ -18,7 +18,7 @@ SIZE = 2990966
 SHA3 = "92281c86e2957f9b9305890f9ac04204caa7b677cc868dc326d942689df28e30"
 SOURCE_ID = "2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76"
 # Exact reviewed dependency closure, not a license approval for later lock changes.
-LOCK_SHA256 = "bad71fcf54b2eac94e772682e3c3e88c3ab0c55c3aad1b1a5ab2dbd1dd5b7966"
+LOCK_SHA256 = "5838182c6bd96d83e01657af06af6499f22103b1c101ac2dfdb320f3ba12b53e"
 FLAGS = ["-O2", "-fPIC", "-std=c11", "-D_POSIX_C_SOURCE=200809L",
          "-DSQLITE_THREADSAFE=1", "-DSQLITE_OMIT_LOAD_EXTENSION", "-DSQLITE_DQS=0"]
 OVERRIDES = ["RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "LIBRARY_PATH", "LD_LIBRARY_PATH",
@@ -30,6 +30,8 @@ FEATURES = {
     # by SQLITE3_NO_PKG_CONFIG, vcpkg cannot run on this native Linux profile.
     "libsqlite3-sys": ["default", "min_sqlite_version_3_45_3", "pkg-config", "vcpkg"],
     "prost": ["derive", "std"],
+    "serde": ["derive", "serde_derive", "std"],
+    "serde_json": ["std"],
 }
 
 
@@ -166,6 +168,8 @@ def check_lock():
         "rusqlite": {"version": "=0.41.0", "default-features": False, "features": ["backup", "limits"]},
         "libsqlite3-sys": {"version": "=0.39.0", "default-features": False},
         "prost": {"version": "=0.14.4", "default-features": False, "features": ["derive", "std"]},
+        "serde": {"version": "=1.0.229", "default-features": False, "features": ["std", "derive"]},
+        "serde_json": {"version": "=1.0.154", "default-features": False, "features": ["std"]},
     }, "unreviewed direct dependencies/features")
 
 
@@ -206,7 +210,9 @@ def audit_dependencies(env):
         if package["name"] == "changekernel":
             continue
         require(package["source"] == "registry+https://github.com/rust-lang/crates.io-index", "non-registry dependency")
-        require(package["license"] in ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "MIT/Apache-2.0", "(MIT OR Apache-2.0) AND Unicode-3.0"],
+        require(package["license"] in ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "MIT/Apache-2.0", "(MIT OR Apache-2.0) AND Unicode-3.0"]
+                or (package["name"], package["version"], package["license"])
+                == ("memchr", "2.8.3", "Unlicense OR MIT"),
                 f"unreviewed license: {package['name']}")
         if package["name"] in FEATURES:
             require(nodes[package["id"]]["features"] == FEATURES[package["name"]], "unapproved direct dependency features")

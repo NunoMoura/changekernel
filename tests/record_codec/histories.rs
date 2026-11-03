@@ -1,4 +1,11 @@
-use super::*;
+use super::fixture::{self, Fixture, TestId};
+use changekernel::adapters::codec;
+use changekernel::unqualified_change::{
+    Access, ActionId, ActionOutcome, Adaptation, Attribution, Change, ChangeBasis, Command,
+    ContentLimits, Disposition, Error, Finding, FreshContent, GrantAction, GrantTarget,
+    HistoryHead, OperationId, OriginSelector, Progress, ProgressDimension, ProgressValue, Query,
+    Read, ReadScope, Resolution, ScopeId, ScopeJudgment, Settlement, CURRENT_PROFILE,
+};
 use std::collections::BTreeSet;
 
 fn restore(f: &mut Fixture) {
@@ -7,17 +14,19 @@ fn restore(f: &mut Fixture) {
     let records = originals
         .iter()
         .map(|record| {
-            let raw = encode_record(record).unwrap();
-            let decoded = decode_record(&raw).unwrap();
+            let raw = codec::encode_record(record).unwrap();
+            let decoded = codec::decode_record(&raw).unwrap();
             assert_eq!(&decoded, record);
             assert_eq!(
-                decode_request(&encode_request(&record.submission().unwrap()).unwrap()),
-                Ok(record.submission().unwrap())
+                codec::decode_request(
+                    &codec::encode_request(&record.operation_request().unwrap()).unwrap()
+                ),
+                Ok(record.operation_request().unwrap())
             );
             decoded
         })
         .collect::<Vec<_>>();
-    f.pursuit = Pursuit::reconstruct(
+    f.pursuit = Change::reconstruct(
         HistoryHead {
             profile: CURRENT_PROFILE,
             identity: f.identity.clone(),
@@ -81,7 +90,7 @@ fn adaptive_agreement_actions_revisions_and_fulfillment_restore_their_actual_mea
     f.owner();
     let adaptation = Adaptation {
         agreement: p.agreement.clone(),
-        previous_approach: p.terms.context.first().unwrap().material.clone(),
+        previous_approach: p.terms.context.first().unwrap().content.clone(),
         changed_approach: f.text("a different provisional approach"),
         grounds: f.ports.native_evidence.clone(),
         discretion: ScopeId::new(),
@@ -214,23 +223,28 @@ fn adaptive_agreement_actions_revisions_and_fulfillment_restore_their_actual_mea
     assert_eq!(restored.outcome, ActionOutcome::ReportedApplied);
 }
 
-fn payload(f: &Fixture, text: &[u8]) -> FreshMaterial {
-    FreshMaterial {
-        id: MaterialId::new(),
-        bytes: text.to_vec(),
-        attributed_source: f.identity.owner_actor.clone(),
-    }
+fn payload(f: &Fixture, text: &[u8]) -> FreshContent {
+    let mut p = f.fresh(text);
+    p.attributed_source = f.identity.owner_actor.clone();
+    f.ports
+        .inputs
+        .borrow_mut()
+        .get_mut(&p.key)
+        .unwrap()
+        .source_claim
+        .attribution = Attribution::Actor(f.identity.owner_actor.clone());
+    p
 }
 #[test]
 fn fresh_draft_and_historical_origin_replacement_revocation_restore_without_recharge() {
     let mut f = Fixture::new();
     let mut spec = f.draft_spec(BTreeSet::from([GrantAction::CreateDraft]));
     spec.target = GrantTarget::DraftCreation(f.identity.change.clone());
-    spec.creation = Some(MaterialLimits {
+    spec.creation = Some(ContentLimits {
         items: 64,
         payload_bytes: 8 * 1024 * 1024,
     });
-    spec.material_origins.insert(OriginSelector::CurrentGrant);
+    spec.content_origins.insert(OriginSelector::CurrentGrant);
     spec.disclosure_origins.insert(OriginSelector::CurrentGrant);
     let grant = f.grant(spec);
     f.ports.creation_sources.insert((
@@ -240,19 +254,20 @@ fn fresh_draft_and_historical_origin_replacement_revocation_restore_without_rech
     ));
     let fresh = payload(&f, b"fresh draft wish");
     f.agent();
-    let operation = Operation {
-        id: OperationId::new(),
-        command: Command::Initiate {
-            wish: fresh.id.clone(),
+    let operation = fixture::new_operation(
+        OperationId::new(),
+        Command::Initiate {
+            wish: fresh.key.clone(),
             access: Access::Grant(grant),
         },
-        fresh: vec![fresh.clone()],
-    };
+        vec![fresh.clone()],
+        &f,
+    );
     let accepted = f
         .pursuit
-        .execute(f.submission(operation.clone()), &mut f.ports)
+        .execute(f.operation_request(operation.clone()), &mut f.ports)
         .unwrap();
-    let origin = f.ports.created[&fresh.id].origin.clone();
+    let origin = f.ports.created[&fresh.key].origin.clone();
     let mut proposal = f.proposal(None, vec![]);
     proposal.terms.criteria.clear();
     let assessment = f.assessment(&proposal, vec![]);
@@ -261,16 +276,16 @@ fn fresh_draft_and_historical_origin_replacement_revocation_restore_without_rech
         GrantAction::Propose,
         GrantAction::Assess,
     ]));
-    spec.materials.remove(&fresh.id);
-    spec.material_origins
-        .insert(OriginSelector::Historical(origin.clone()));
+    spec.content_items.remove(&fresh.key);
+    spec.content_origins
+        .insert(OriginSelector::Historical(Box::new(origin.clone())));
     spec.disclosure_origins
-        .insert(OriginSelector::Historical(origin));
-    spec.creation = Some(MaterialLimits {
+        .insert(OriginSelector::Historical(Box::new(origin)));
+    spec.creation = Some(ContentLimits {
         items: 64,
         payload_bytes: 8 * 1024 * 1024,
     });
-    spec.material_origins.insert(OriginSelector::CurrentGrant);
+    spec.content_origins.insert(OriginSelector::CurrentGrant);
     spec.disclosure_origins.insert(OriginSelector::CurrentGrant);
     let grant = f.grant(spec.clone());
     f.agent();
@@ -288,20 +303,23 @@ fn fresh_draft_and_historical_origin_replacement_revocation_restore_without_rech
         &f,
         b"new observed question, attributed not independent proof",
     );
-    let new = Operation {
-        id: OperationId::new(),
-        command: Command::Finding {
+    let new = fixture::new_operation(
+        OperationId::new(),
+        Command::Finding {
             finding: Finding {
                 agreement: None,
-                claim: finding.id.clone(),
+                claim: finding.key.clone(),
                 evidence: f.ports.native_evidence.clone(),
                 disposition: Disposition::Unknown,
             },
             access: Access::Grant(grant.clone()),
         },
-        fresh: vec![finding],
-    };
-    f.pursuit.execute(f.submission(new), &mut f.ports).unwrap();
+        vec![finding],
+        &f,
+    );
+    f.pursuit
+        .execute(f.operation_request(new), &mut f.ports)
+        .unwrap();
     f.owner();
     f.execute(Command::SetGrant {
         id: grant.id.clone(),
@@ -319,7 +337,10 @@ fn fresh_draft_and_historical_origin_replacement_revocation_restore_without_rech
     let count = f.ports.records.len();
     assert_eq!(
         f.pursuit.execute(
-            decode_request(&encode_request(&f.submission(operation.clone())).unwrap()).unwrap(),
+            codec::decode_request(
+                &codec::encode_request(&f.operation_request(operation.clone())).unwrap()
+            )
+            .unwrap(),
             &mut f.ports
         ),
         Ok(accepted)
@@ -339,7 +360,7 @@ fn unavailable_and_revision_judgments_survive_codec_but_never_become_permission(
     f.owner();
     let adaptation = Adaptation {
         agreement: p.agreement,
-        previous_approach: p.terms.context.first().unwrap().material.clone(),
+        previous_approach: p.terms.context.first().unwrap().content.clone(),
         changed_approach: f.text("another method"),
         grounds: f.ports.native_evidence.clone(),
         discretion: ScopeId::new(),
@@ -353,7 +374,7 @@ fn unavailable_and_revision_judgments_survive_codec_but_never_become_permission(
         let mut records = f.ports.records.clone();
         let r = records.last_mut().unwrap();
         r.checks.adaptation.as_mut().unwrap().1 = judgment;
-        let decoded = decode_record(&encode_record(r).unwrap()).unwrap();
+        let decoded = codec::decode_record(&codec::encode_record(r).unwrap()).unwrap();
         assert_eq!(&decoded, r);
         *r = decoded;
         let head = HistoryHead {
@@ -362,7 +383,7 @@ fn unavailable_and_revision_judgments_survive_codec_but_never_become_permission(
             accepted_operations: records.len() as u64,
             last_operation: f.ports.last_operation.clone(),
         };
-        assert!(Pursuit::reconstruct(head, records).is_err());
+        assert!(Change::reconstruct(head, records).is_err());
     }
 }
 
@@ -371,7 +392,7 @@ fn scoped_context_and_origin_metadata_survive_without_authorizing_forged_history
     let mut f = Fixture::new();
     f.initiate();
     let mut spec = f.draft_spec(BTreeSet::from([GrantAction::Finding]));
-    spec.creation = Some(MaterialLimits {
+    spec.creation = Some(ContentLimits {
         items: 1,
         payload_bytes: 100,
     });
@@ -382,29 +403,30 @@ fn scoped_context_and_origin_metadata_survive_without_authorizing_forged_history
         f.identity.owner_actor.clone(),
     ));
     let fresh = payload(&f, b"scoped source");
-    let operation = Operation {
-        id: OperationId::new(),
-        command: Command::Finding {
+    let operation = fixture::new_operation(
+        OperationId::new(),
+        Command::Finding {
             finding: Finding {
                 agreement: None,
-                claim: fresh.id.clone(),
+                claim: fresh.key.clone(),
                 evidence: f.ports.native_evidence.clone(),
                 disposition: Disposition::Supports,
             },
             access: Access::Grant(grant),
         },
-        fresh: vec![fresh.clone()],
-    };
+        vec![fresh.clone()],
+        &f,
+    );
     f.agent();
     f.pursuit
-        .execute(f.submission(operation), &mut f.ports)
+        .execute(f.operation_request(operation), &mut f.ports)
         .unwrap();
-    let origin = f.ports.created[&fresh.id].origin.scope();
+    let origin = f.ports.created[&fresh.key].origin.scope();
     f.owner();
     let claim = f.text("a scoped context remains attributable");
-    let operation = Operation {
-        id: OperationId::new(),
-        command: Command::Finding {
+    let operation = fixture::new_operation(
+        OperationId::new(),
+        Command::Finding {
             finding: Finding {
                 agreement: None,
                 claim,
@@ -413,28 +435,29 @@ fn scoped_context_and_origin_metadata_survive_without_authorizing_forged_history
             },
             access: Access::Owner,
         },
-        fresh: vec![],
-    };
+        vec![],
+        &f,
+    );
     f.ports.context.disclosure.extend([
         ReadScope::Operation(operation.id.clone()),
-        ReadScope::Material(fresh.id.clone()),
+        ReadScope::Content(fresh.key.clone()),
         ReadScope::Action(ActionId::new()),
         ReadScope::Origin(origin.clone()),
     ]);
     f.pursuit
-        .execute(f.submission(operation), &mut f.ports)
+        .execute(f.operation_request(operation), &mut f.ports)
         .unwrap();
     restore(&mut f);
     // An operation's original checks cannot be silently turned into a read-origin authority.
     let mut records = f.ports.records.clone();
     let last = records.last_mut().unwrap();
     last.checks.disclosure_origin = Some(origin);
-    *last = decode_record(&encode_record(last).unwrap()).unwrap();
+    *last = codec::decode_record(&codec::encode_record(last).unwrap()).unwrap();
     let head = HistoryHead {
         profile: CURRENT_PROFILE,
         identity: f.identity.clone(),
         accepted_operations: records.len() as u64,
         last_operation: f.ports.last_operation.clone(),
     };
-    assert!(Pursuit::reconstruct(head, records).is_err());
+    assert!(Change::reconstruct(head, records).is_err());
 }

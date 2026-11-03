@@ -1,21 +1,7 @@
-//! Unqualified, in-process P2 source library; no host, persistence or native execution.
-/// Unqualified, in-process P2 source surface. Not a supported SDK, host or durable service.
-pub mod unqualified_pursuit {
-    pub use crate::application::pursuit::{Pursuit, SubmissionError};
-    pub use crate::application::pursuit_ports::*;
-    pub use crate::application::pursuit_records::*;
-    pub use crate::application::submission::*;
-    pub use crate::kernel::change::pursuit::*;
-}
+//! Unqualified Rust source library with bounded local persistence.
+//! The Change surface is an in-process core, not a supported host/durable-service SDK.
+//! No authentic host/source enforcement or native-action execution is implemented.
 pub mod adapters;
-mod kernel {
-    pub mod change {
-        pub mod pursuit;
-    }
-}
-mod application {
-    pub mod pursuit;
-    pub mod pursuit_ports;
-    pub mod pursuit_records;
-    pub mod submission;
-}
+mod application;
+mod kernel;
+pub mod unqualified_change;

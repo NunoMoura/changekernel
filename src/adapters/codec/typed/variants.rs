@@ -1,5 +1,24 @@
 // Checked-in typed oneof definitions and conversions; field numbers are never reused.
-use super::*;
+use super::super::bridge::{self, Bridge, Budget};
+use super::super::framing::Result;
+use super::super::wire::{Rule, Schema, Shape, WireSchema};
+use super::messages::{
+    WActionRequest, WActionSet, WCommandAdapt, WCommandAssess, WCommandDispatch, WCommandFinding,
+    WCommandInitiate, WCommandProgress, WCommandPropose, WCommandReaffirm, WCommandReconcile,
+    WCommandRetract, WCommandRevokeGrant, WCommandSetGrant, WCommandWithdraw, WContentKey,
+    WContentOrigin, WDecision, WDecisionKindUndertake, WEffectDecision, WEffectReaffirmed, WEmpty,
+    WEvidence, WFulfillment, WGrantUse, WOriginScope,
+};
+use crate::application::ports::ReadScope;
+use crate::application::records::CreatedIdentity;
+use crate::kernel::change::{
+    Access, ActionId, ActionOutcome, ActionRequest, ActorId, Adaptation, AgreementId, Assessment,
+    AssessmentId, Attribution, BindingKnowledge, ChangeId, Command, ContentKey, ContentOrigin,
+    CriterionId, Decision, DecisionId, DecisionKind, Effect, Evidence, Finding, Fulfillment,
+    GrantId, GrantSpec, GrantTarget, GrantUse, OperationId, OriginScope, OriginSelector, Progress,
+    Proposal, ProposalId, ScopeJudgment, Settlement,
+};
+use std::collections::BTreeSet;
 
 #[derive(Clone, PartialEq, prost::Message)]
 pub(in crate::adapters::codec) struct WDecisionKind {
@@ -58,10 +77,10 @@ impl Bridge for DecisionKind {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_decision_kind::Kind::Adopt(_) => Self::Adopt,
             w_decision_kind::Kind::Undertake(v) => Self::Undertake {
-                assessment: <AssessmentId as Bridge>::unpack(required(v.assessment)?)?,
+                assessment: <AssessmentId as Bridge>::unpack(bridge::required(v.assessment)?)?,
             },
         })
     }
@@ -119,7 +138,7 @@ impl Bridge for Access {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_access::Kind::Owner(_) => Self::Owner,
             w_access::Kind::Grant(v) => Self::Grant(<GrantUse as Bridge>::unpack(v)?),
         })
@@ -200,7 +219,7 @@ impl Bridge for GrantTarget {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_grant_target::Kind::DraftCreation(v) => {
                 Self::DraftCreation(<ChangeId as Bridge>::unpack(v)?)
             }
@@ -224,7 +243,7 @@ pub(in crate::adapters::codec) mod w_origin_selector {
         #[prost(message, tag = "1")]
         CurrentGrant(WEmpty),
         #[prost(message, boxed, tag = "2")]
-        Historical(Box<WMaterialOrigin>),
+        Historical(Box<WContentOrigin>),
     }
 }
 impl WireSchema for WOriginSelector {
@@ -242,7 +261,7 @@ impl WireSchema for WOriginSelector {
                 },
                 Rule {
                     tag: 2,
-                    shape: Shape::Message(WMaterialOrigin::schema),
+                    shape: Shape::Message(WContentOrigin::schema),
                     required: false,
                     repeated: false,
                     limit: 4096,
@@ -267,10 +286,10 @@ impl Bridge for OriginSelector {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_origin_selector::Kind::CurrentGrant(_) => Self::CurrentGrant,
             w_origin_selector::Kind::Historical(v) => {
-                Self::Historical(<MaterialOrigin as Bridge>::unpack(*v)?)
+                Self::Historical(Box::<ContentOrigin>::unpack(*v)?)
             }
         })
     }
@@ -328,7 +347,7 @@ impl Bridge for Settlement {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_settlement::Kind::Fulfilled(v) => {
                 Self::Fulfilled(<AgreementId as Bridge>::unpack(v)?)
             }
@@ -345,8 +364,8 @@ pub(in crate::adapters::codec) mod w_scope_judgment {
     use super::*;
     #[derive(Clone, PartialEq, prost::Oneof)]
     pub enum Kind {
-        #[prost(message, tag = "1")]
-        WithinDiscretion(WEvidence),
+        #[prost(message, boxed, tag = "1")]
+        WithinDiscretion(Box<WEvidence>),
         #[prost(message, tag = "2")]
         RequiresRevision(WEmpty),
         #[prost(message, tag = "3")]
@@ -393,7 +412,7 @@ impl Bridge for ScopeJudgment {
             Ok(WScopeJudgment {
                 kind: Some(match self {
                     Self::WithinDiscretion(v) => {
-                        w_scope_judgment::Kind::WithinDiscretion(v.pack(b)?)
+                        w_scope_judgment::Kind::WithinDiscretion(Box::new(v.pack(b)?))
                     }
                     Self::RequiresRevision => w_scope_judgment::Kind::RequiresRevision(().pack(b)?),
                     Self::Unavailable => w_scope_judgment::Kind::Unavailable(().pack(b)?),
@@ -402,9 +421,9 @@ impl Bridge for ScopeJudgment {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_scope_judgment::Kind::WithinDiscretion(v) => {
-                Self::WithinDiscretion(<Evidence as Bridge>::unpack(v)?)
+                Self::WithinDiscretion(<Evidence as Bridge>::unpack(*v)?)
             }
             w_scope_judgment::Kind::RequiresRevision(_) => Self::RequiresRevision,
             w_scope_judgment::Kind::Unavailable(_) => Self::Unavailable,
@@ -413,7 +432,7 @@ impl Bridge for ScopeJudgment {
 }
 #[derive(Clone, PartialEq, prost::Message)]
 pub(in crate::adapters::codec) struct WReadScope {
-    #[prost(oneof = "w_read_scope::Kind", tags = "1, 2, 3, 4, 5")]
+    #[prost(oneof = "w_read_scope::Kind", tags = "1, 2, 3, 104, 5")]
     pub kind: Option<w_read_scope::Kind>,
 }
 pub(in crate::adapters::codec) mod w_read_scope {
@@ -426,8 +445,9 @@ pub(in crate::adapters::codec) mod w_read_scope {
         Operation(Vec<u8>),
         #[prost(message, tag = "3")]
         Origin(WOriginScope),
-        #[prost(bytes = "vec", tag = "4")]
-        Material(Vec<u8>),
+        // Tag 4 retired.
+        #[prost(message, tag = "104")]
+        Content(WContentKey),
         #[prost(bytes = "vec", tag = "5")]
         Action(Vec<u8>),
     }
@@ -462,8 +482,8 @@ impl WireSchema for WReadScope {
                     fresh: false,
                 },
                 Rule {
-                    tag: 4,
-                    shape: Shape::Id,
+                    tag: 104,
+                    shape: Shape::Message(WContentKey::schema),
                     required: false,
                     repeated: false,
                     limit: 4096,
@@ -490,27 +510,27 @@ impl Bridge for ReadScope {
                     Self::Change(v) => w_read_scope::Kind::Change(v.pack(b)?),
                     Self::Operation(v) => w_read_scope::Kind::Operation(v.pack(b)?),
                     Self::Origin(v) => w_read_scope::Kind::Origin(v.pack(b)?),
-                    Self::Material(v) => w_read_scope::Kind::Material(v.pack(b)?),
+                    Self::Content(v) => w_read_scope::Kind::Content(v.pack(b)?),
                     Self::Action(v) => w_read_scope::Kind::Action(v.pack(b)?),
                 }),
             })
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_read_scope::Kind::Change(v) => Self::Change(<ChangeId as Bridge>::unpack(v)?),
             w_read_scope::Kind::Operation(v) => {
                 Self::Operation(<OperationId as Bridge>::unpack(v)?)
             }
             w_read_scope::Kind::Origin(v) => Self::Origin(<OriginScope as Bridge>::unpack(v)?),
-            w_read_scope::Kind::Material(v) => Self::Material(<MaterialId as Bridge>::unpack(v)?),
+            w_read_scope::Kind::Content(v) => Self::Content(<ContentKey as Bridge>::unpack(v)?),
             w_read_scope::Kind::Action(v) => Self::Action(<ActionId as Bridge>::unpack(v)?),
         })
     }
 }
 #[derive(Clone, PartialEq, prost::Message)]
 pub(in crate::adapters::codec) struct WCreatedIdentity {
-    #[prost(oneof = "w_created_identity::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9")]
+    #[prost(oneof = "w_created_identity::Kind", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
     pub kind: Option<w_created_identity::Kind>,
 }
 pub(in crate::adapters::codec) mod w_created_identity {
@@ -532,8 +552,7 @@ pub(in crate::adapters::codec) mod w_created_identity {
         Action(Vec<u8>),
         #[prost(bytes = "vec", tag = "8")]
         Criterion(Vec<u8>),
-        #[prost(bytes = "vec", tag = "9")]
-        Material(Vec<u8>),
+        // Tag 9 retired: content establishments are separate full-key claims.
     }
 }
 impl WireSchema for WCreatedIdentity {
@@ -605,14 +624,6 @@ impl WireSchema for WCreatedIdentity {
                     limit: 4096,
                     fresh: false,
                 },
-                Rule {
-                    tag: 9,
-                    shape: Shape::Id,
-                    required: false,
-                    repeated: false,
-                    limit: 4096,
-                    fresh: false,
-                },
             ],
         }
     }
@@ -631,13 +642,12 @@ impl Bridge for CreatedIdentity {
                     Self::Grant(v) => w_created_identity::Kind::Grant(v.pack(b)?),
                     Self::Action(v) => w_created_identity::Kind::Action(v.pack(b)?),
                     Self::Criterion(v) => w_created_identity::Kind::Criterion(v.pack(b)?),
-                    Self::Material(v) => w_created_identity::Kind::Material(v.pack(b)?),
                 }),
             })
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_created_identity::Kind::Operation(v) => {
                 Self::Operation(<OperationId as Bridge>::unpack(v)?)
             }
@@ -658,9 +668,6 @@ impl Bridge for CreatedIdentity {
             w_created_identity::Kind::Criterion(v) => {
                 Self::Criterion(<CriterionId as Bridge>::unpack(v)?)
             }
-            w_created_identity::Kind::Material(v) => {
-                Self::Material(<MaterialId as Bridge>::unpack(v)?)
-            }
         })
     }
 }
@@ -680,8 +687,8 @@ pub(in crate::adapters::codec) mod w_command {
         Initiate(WCommandInitiate),
         #[prost(message, tag = "2")]
         Propose(WCommandPropose),
-        #[prost(message, tag = "3")]
-        Assess(WCommandAssess),
+        #[prost(message, boxed, tag = "3")]
+        Assess(Box<WCommandAssess>),
         #[prost(message, tag = "4")]
         Decide(WDecision),
         #[prost(message, tag = "5")]
@@ -866,10 +873,10 @@ impl Bridge for Command {
                         })
                     }
                     Self::Assess { assessment, access } => {
-                        w_command::Kind::Assess(WCommandAssess {
+                        w_command::Kind::Assess(Box::new(WCommandAssess {
                             assessment: Some((assessment).pack(b)?),
                             access: Some((access).pack(b)?),
-                        })
+                        }))
                     }
                     Self::Decide(v) => w_command::Kind::Decide(v.pack(b)?),
                     Self::Retract { decision } => w_command::Kind::Retract(WCommandRetract {
@@ -881,8 +888,8 @@ impl Bridge for Command {
                         assessment,
                     } => w_command::Kind::Reaffirm(WCommandReaffirm {
                         decision: Some((decision).pack(b)?),
-                        dependencies: pack_list(dependencies, b)?,
-                        assessment: pack_optional(assessment, b)?,
+                        dependencies: bridge::pack_list(dependencies, b)?,
+                        assessment: bridge::pack_optional(assessment, b)?,
                     }),
                     Self::SetGrant {
                         id,
@@ -890,7 +897,7 @@ impl Bridge for Command {
                         spec,
                     } => w_command::Kind::SetGrant(WCommandSetGrant {
                         id: Some((id).pack(b)?),
-                        expected_generation: pack_optional(expected_generation, b)?,
+                        expected_generation: bridge::pack_optional(expected_generation, b)?,
                         spec: Some((spec).pack(b)?),
                     }),
                     Self::RevokeGrant {
@@ -932,7 +939,7 @@ impl Bridge for Command {
                     } => w_command::Kind::Reconcile(WCommandReconcile {
                         action: Some((action).pack(b)?),
                         grant: Some((grant).pack(b)?),
-                        evidence: pack_list(evidence, b)?,
+                        evidence: bridge::pack_list(evidence, b)?,
                         outcome: Some((outcome).pack(b)?),
                     }),
                 }),
@@ -940,62 +947,64 @@ impl Bridge for Command {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_command::Kind::Initiate(v) => Self::Initiate {
-                wish: <MaterialId as Bridge>::unpack(required(v.wish)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                wish: <ContentKey as Bridge>::unpack(bridge::required(v.wish)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Propose(v) => Self::Propose {
-                proposal: <Proposal as Bridge>::unpack(required(v.proposal)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                proposal: <Proposal as Bridge>::unpack(bridge::required(v.proposal)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Assess(v) => Self::Assess {
-                assessment: <Assessment as Bridge>::unpack(required(v.assessment)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                assessment: <Assessment as Bridge>::unpack(bridge::required(v.assessment)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Decide(v) => Self::Decide(<Decision as Bridge>::unpack(v)?),
             w_command::Kind::Retract(v) => Self::Retract {
-                decision: <DecisionId as Bridge>::unpack(required(v.decision)?)?,
+                decision: <DecisionId as Bridge>::unpack(bridge::required(v.decision)?)?,
             },
             w_command::Kind::Reaffirm(v) => Self::Reaffirm {
-                decision: <DecisionId as Bridge>::unpack(required(v.decision)?)?,
-                dependencies: unpack_list(v.dependencies)?,
-                assessment: unpack_optional(v.assessment)?,
+                decision: <DecisionId as Bridge>::unpack(bridge::required(v.decision)?)?,
+                dependencies: bridge::unpack_list(v.dependencies)?,
+                assessment: bridge::unpack_optional(v.assessment)?,
             },
             w_command::Kind::SetGrant(v) => Self::SetGrant {
-                id: <GrantId as Bridge>::unpack(required(v.id)?)?,
-                expected_generation: unpack_optional(v.expected_generation)?,
-                spec: <GrantSpec as Bridge>::unpack(required(v.spec)?)?,
+                id: <GrantId as Bridge>::unpack(bridge::required(v.id)?)?,
+                expected_generation: bridge::unpack_optional(v.expected_generation)?,
+                spec: <GrantSpec as Bridge>::unpack(bridge::required(v.spec)?)?,
             },
             w_command::Kind::RevokeGrant(v) => Self::RevokeGrant {
-                id: <GrantId as Bridge>::unpack(required(v.id)?)?,
-                expected_generation: <u64 as Bridge>::unpack(required(v.expected_generation)?)?,
+                id: <GrantId as Bridge>::unpack(bridge::required(v.id)?)?,
+                expected_generation: <u64 as Bridge>::unpack(bridge::required(
+                    v.expected_generation,
+                )?)?,
             },
             w_command::Kind::Admit(v) => Self::Admit(<ActionRequest as Bridge>::unpack(v)?),
             w_command::Kind::Dispatch(v) => Self::Dispatch {
-                action: <ActionId as Bridge>::unpack(required(v.action)?)?,
+                action: <ActionId as Bridge>::unpack(bridge::required(v.action)?)?,
             },
             w_command::Kind::Finding(v) => Self::Finding {
-                finding: <Finding as Bridge>::unpack(required(v.finding)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                finding: <Finding as Bridge>::unpack(bridge::required(v.finding)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Adapt(v) => Self::Adapt {
-                adaptation: <Adaptation as Bridge>::unpack(required(v.adaptation)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                adaptation: <Adaptation as Bridge>::unpack(bridge::required(v.adaptation)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Progress(v) => Self::Progress {
-                progress: <Progress as Bridge>::unpack(required(v.progress)?)?,
-                access: <Access as Bridge>::unpack(required(v.access)?)?,
+                progress: <Progress as Bridge>::unpack(bridge::required(v.progress)?)?,
+                access: <Access as Bridge>::unpack(bridge::required(v.access)?)?,
             },
             w_command::Kind::Fulfill(v) => Self::Fulfill(<Fulfillment as Bridge>::unpack(v)?),
             w_command::Kind::Withdraw(v) => Self::Withdraw {
-                reason: <MaterialId as Bridge>::unpack(required(v.reason)?)?,
+                reason: <ContentKey as Bridge>::unpack(bridge::required(v.reason)?)?,
             },
             w_command::Kind::Reconcile(v) => Self::Reconcile {
-                action: <ActionId as Bridge>::unpack(required(v.action)?)?,
-                grant: <GrantUse as Bridge>::unpack(required(v.grant)?)?,
-                evidence: unpack_list(v.evidence)?,
-                outcome: <ActionOutcome as Bridge>::unpack(required(v.outcome)?)?,
+                action: <ActionId as Bridge>::unpack(bridge::required(v.action)?)?,
+                grant: <GrantUse as Bridge>::unpack(bridge::required(v.grant)?)?,
+                evidence: bridge::unpack_list(v.evidence)?,
+                outcome: <ActionOutcome as Bridge>::unpack(bridge::required(v.outcome)?)?,
             },
         })
     }
@@ -1167,7 +1176,7 @@ impl Bridge for Effect {
                         activated,
                     } => w_effect::Kind::Decision(WEffectDecision {
                         decision: Some((decision).pack(b)?),
-                        activated: pack_optional(activated, b)?,
+                        activated: bridge::pack_optional(activated, b)?,
                     }),
                     Self::Retracted(v) => w_effect::Kind::Retracted(v.pack(b)?),
                     Self::Reaffirmed {
@@ -1175,7 +1184,7 @@ impl Bridge for Effect {
                         activated,
                     } => w_effect::Kind::Reaffirmed(WEffectReaffirmed {
                         decision: Some((decision).pack(b)?),
-                        activated: pack_optional(activated, b)?,
+                        activated: bridge::pack_optional(activated, b)?,
                     }),
                     Self::Grant(v) => w_effect::Kind::Grant(v.pack(b)?),
                     Self::Revoked(v) => w_effect::Kind::Revoked(v.pack(b)?),
@@ -1189,18 +1198,18 @@ impl Bridge for Effect {
         })
     }
     fn unpack(w: Self::Wire) -> Result<Self> {
-        Ok(match required(w.kind)? {
+        Ok(match bridge::required(w.kind)? {
             w_effect::Kind::Initiated(_) => Self::Initiated,
             w_effect::Kind::Proposed(v) => Self::Proposed(<ProposalId as Bridge>::unpack(v)?),
             w_effect::Kind::Assessed(v) => Self::Assessed(<AssessmentId as Bridge>::unpack(v)?),
             w_effect::Kind::Decision(v) => Self::Decision {
-                decision: <DecisionId as Bridge>::unpack(required(v.decision)?)?,
-                activated: unpack_optional(v.activated)?,
+                decision: <DecisionId as Bridge>::unpack(bridge::required(v.decision)?)?,
+                activated: bridge::unpack_optional(v.activated)?,
             },
             w_effect::Kind::Retracted(v) => Self::Retracted(<DecisionId as Bridge>::unpack(v)?),
             w_effect::Kind::Reaffirmed(v) => Self::Reaffirmed {
-                decision: <DecisionId as Bridge>::unpack(required(v.decision)?)?,
-                activated: unpack_optional(v.activated)?,
+                decision: <DecisionId as Bridge>::unpack(bridge::required(v.decision)?)?,
+                activated: bridge::unpack_optional(v.activated)?,
             },
             w_effect::Kind::Grant(v) => Self::Grant(<GrantUse as Bridge>::unpack(v)?),
             w_effect::Kind::Revoked(v) => Self::Revoked(<GrantUse as Bridge>::unpack(v)?),
@@ -1209,6 +1218,126 @@ impl Bridge for Effect {
             w_effect::Kind::Recorded(_) => Self::Recorded,
             w_effect::Kind::Settled(v) => Self::Settled(<Settlement as Bridge>::unpack(v)?),
             w_effect::Kind::Reconciled(v) => Self::Reconciled(<ActionId as Bridge>::unpack(v)?),
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, prost::Message)]
+pub(in crate::adapters::codec) struct WBindingKnowledge {
+    #[prost(oneof = "w_binding_knowledge::Kind", tags = "1,2")]
+    pub kind: Option<w_binding_knowledge::Kind>,
+}
+pub(in crate::adapters::codec) mod w_binding_knowledge {
+    use super::*;
+    #[derive(Clone, PartialEq, prost::Oneof)]
+    pub enum Kind {
+        #[prost(message, tag = "1")]
+        NoKnownBinding(WEmpty),
+        #[prost(message, tag = "2")]
+        Known(WContentKey),
+    }
+}
+impl WireSchema for WBindingKnowledge {
+    fn schema() -> Schema {
+        Schema {
+            oneof: true,
+            fields: &[
+                Rule {
+                    tag: 1,
+                    shape: Shape::Message(WEmpty::schema),
+                    required: false,
+                    repeated: false,
+                    limit: 4096,
+                    fresh: false,
+                },
+                Rule {
+                    tag: 2,
+                    shape: Shape::Message(WContentKey::schema),
+                    required: false,
+                    repeated: false,
+                    limit: 4096,
+                    fresh: false,
+                },
+            ],
+        }
+    }
+}
+impl Bridge for BindingKnowledge {
+    type Wire = WBindingKnowledge;
+    fn pack(&self, b: &mut Budget) -> Result<Self::Wire> {
+        b.message(|b| {
+            Ok(WBindingKnowledge {
+                kind: Some(match self {
+                    Self::NoKnownBinding => w_binding_knowledge::Kind::NoKnownBinding(().pack(b)?),
+                    Self::Known(v) => w_binding_knowledge::Kind::Known(v.pack(b)?),
+                }),
+            })
+        })
+    }
+    fn unpack(w: Self::Wire) -> Result<Self> {
+        Ok(match bridge::required(w.kind)? {
+            w_binding_knowledge::Kind::NoKnownBinding(_) => Self::NoKnownBinding,
+            w_binding_knowledge::Kind::Known(v) => Self::Known(ContentKey::unpack(v)?),
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, prost::Message)]
+pub(in crate::adapters::codec) struct WAttribution {
+    #[prost(oneof = "w_attribution::Kind", tags = "1,2")]
+    pub kind: Option<w_attribution::Kind>,
+}
+pub(in crate::adapters::codec) mod w_attribution {
+    use super::*;
+    #[derive(Clone, PartialEq, prost::Oneof)]
+    pub enum Kind {
+        #[prost(message, tag = "1")]
+        Unknown(WEmpty),
+        #[prost(bytes = "vec", tag = "2")]
+        Actor(Vec<u8>),
+    }
+}
+impl WireSchema for WAttribution {
+    fn schema() -> Schema {
+        Schema {
+            oneof: true,
+            fields: &[
+                Rule {
+                    tag: 1,
+                    shape: Shape::Message(WEmpty::schema),
+                    required: false,
+                    repeated: false,
+                    limit: 4096,
+                    fresh: false,
+                },
+                Rule {
+                    tag: 2,
+                    shape: Shape::Id,
+                    required: false,
+                    repeated: false,
+                    limit: 4096,
+                    fresh: false,
+                },
+            ],
+        }
+    }
+}
+impl Bridge for Attribution {
+    type Wire = WAttribution;
+    fn pack(&self, b: &mut Budget) -> Result<Self::Wire> {
+        b.message(|b| {
+            Ok(WAttribution {
+                kind: Some(match self {
+                    Self::Unknown => w_attribution::Kind::Unknown(().pack(b)?),
+                    Self::Actor(v) => w_attribution::Kind::Actor(v.pack(b)?),
+                }),
+            })
+        })
+    }
+    fn unpack(w: Self::Wire) -> Result<Self> {
+        Ok(match bridge::required(w.kind)? {
+            w_attribution::Kind::Unknown(_) => Self::Unknown,
+            w_attribution::Kind::Actor(v) => Self::Actor(ActorId::unpack(v)?),
         })
     }
 }

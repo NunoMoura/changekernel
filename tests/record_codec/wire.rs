@@ -1,4 +1,5 @@
 //! Trusted test mutation helpers, independent of production decode/conversion.
+use changekernel::unqualified_change::ContentKey;
 #[derive(Clone, Debug)]
 pub enum Value {
     Uint(u64),
@@ -105,4 +106,18 @@ pub fn mutate(frame: &[u8], path: &[u32], f: impl FnOnce(&mut Vec<Field>)) -> Ve
         encode(&all)
     }
     framed(&frame[..4], body(&frame[8..], path, f))
+}
+
+pub fn content_key(key: &ContentKey) -> Vec<u8> {
+    encode(&[
+        bytes(
+            1,
+            encode(&[
+                bytes(1, key.establishing.owner.as_bytes().to_vec()),
+                bytes(2, key.establishing.ledger.as_bytes().to_vec()),
+                bytes(3, key.establishing.change.as_bytes().to_vec()),
+            ]),
+        ),
+        bytes(2, key.id.as_bytes().to_vec()),
+    ])
 }

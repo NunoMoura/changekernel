@@ -1,5 +1,9 @@
 //! Deterministic allocation for tests only. Production callers retain adapter-generated IDs.
-use changekernel::unqualified_pursuit::*;
+use changekernel::unqualified_change::{
+    ActionId, ActorId, AgreementId, AssessmentId, ChangeId, ContentId, ContextVersion, CriterionId,
+    DecisionId, GrantId, GroundId, GroundVersion, LedgerId, LimitId, NativeActionId, OperationId,
+    OwnerId, ProposalId, ScopeId,
+};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub trait TestId {
@@ -29,7 +33,7 @@ ids!(
     GrantId,
     ActionId,
     OperationId,
-    MaterialId,
+    ContentId,
     GroundId,
     GroundVersion,
     CriterionId,

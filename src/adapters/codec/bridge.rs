@@ -1,6 +1,10 @@
 //! Typed conversions. Collections preserve lists and reject duplicate typed set/map members.
-use super::{CodecError, Result, MAX_DEPTH, MAX_FRAME, MAX_MATERIAL, MAX_REPEATED};
-use crate::unqualified_pursuit::*;
+use super::framing::{CodecError, Result, MAX_CONTENT, MAX_DEPTH, MAX_FRAME, MAX_REPEATED};
+use crate::kernel::change::{
+    ActionId, ActorId, AgreementId, AssessmentId, ChangeId, ContentId, ContextVersion, CriterionId,
+    DecisionId, FreshContent, GrantId, GroundId, GroundVersion, LedgerId, LimitId, NativeActionId,
+    OperationId, OwnerId, ProposalId, ScopeId,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) trait Bridge: Sized {
@@ -54,7 +58,7 @@ ids!(
     GrantId,
     ActionId,
     OperationId,
-    MaterialId,
+    ContentId,
     GroundId,
     GroundVersion,
     CriterionId,
@@ -84,14 +88,14 @@ impl Bridge for bool {
 impl Bridge for Vec<u8> {
     type Wire = Vec<u8>;
     fn pack(&self, b: &mut Budget) -> Result<Self> {
-        if self.len() > MAX_MATERIAL {
+        if self.len() > MAX_CONTENT {
             return Err(CodecError::Limit);
         }
         b.charge(self.len())?;
         Ok(self.clone())
     }
     fn unpack(value: Self) -> Result<Self> {
-        if value.len() > MAX_MATERIAL {
+        if value.len() > MAX_CONTENT {
             return Err(CodecError::Limit);
         }
         Ok(value)
@@ -168,14 +172,14 @@ pub(super) fn unpack_map<K: Ord, V, E: Entry<K, V>>(values: Vec<E>) -> Result<BT
     }
     Ok(result)
 }
-pub(super) fn check_fresh(values: &[FreshMaterial]) -> Result<()> {
+pub(super) fn check_fresh(values: &[FreshContent]) -> Result<()> {
     if values.len() > 64 {
         return Err(CodecError::Limit);
     }
     let mut bytes = 0usize;
     let mut ids = BTreeSet::new();
     for value in values {
-        if value.bytes.len() > MAX_MATERIAL {
+        if value.bytes.len() > MAX_CONTENT {
             return Err(CodecError::Limit);
         }
         bytes = bytes
@@ -184,9 +188,19 @@ pub(super) fn check_fresh(values: &[FreshMaterial]) -> Result<()> {
         if bytes > 8 * 1024 * 1024 {
             return Err(CodecError::Limit);
         }
-        if !ids.insert(&value.id) {
+        if !ids.insert(&value.key) {
             return Err(CodecError::Duplicate);
         }
     }
     Ok(())
+}
+
+impl<T: Bridge> Bridge for Box<T> {
+    type Wire = T::Wire;
+    fn pack(&self, b: &mut Budget) -> Result<Self::Wire> {
+        self.as_ref().pack(b)
+    }
+    fn unpack(value: Self::Wire) -> Result<Self> {
+        T::unpack(value).map(Box::new)
+    }
 }
